@@ -362,6 +362,32 @@ const Map<String, String> frTexts = {
   'fleet_invite_driver': 'Inviter un chauffeur',
   'fleet_invite_pending': 'EN ATTENTE',
 
+  // Fleet Phase 4 -- inspections avant/après trajet, style DVIR
+  'inspection_start': 'Inspecter le véhicule',
+  'inspection_pre_trip': 'Avant le trajet',
+  'inspection_post_trip': 'Après le trajet',
+  'inspection_category_tires_wheels': 'Pneus et roues',
+  'inspection_category_brakes': 'Freins',
+  'inspection_category_lights_signals': 'Feux et clignotants',
+  'inspection_category_mirrors': 'Rétroviseurs',
+  'inspection_category_windshield_wipers': 'Pare-brise et essuie-glaces',
+  'inspection_category_horn': 'Klaxon',
+  'inspection_category_steering': 'Direction',
+  'inspection_category_fluid_leaks': 'Fuites de liquide',
+  'inspection_category_seatbelts': 'Ceintures de sécurité',
+  'inspection_category_body_damage': 'Dommages à la carrosserie',
+  'inspection_category_other': 'Autre',
+  'inspection_status_ok': 'OK',
+  'inspection_status_defect': 'Défaut',
+  'inspection_defect_note_hint': 'Décrivez le problème',
+  'inspection_defect_note_required': 'Ajoutez une note pour chaque défaut avant d\'envoyer.',
+  'inspection_photo_optional': 'Ajouter une photo',
+  'inspection_photo_added': 'Photo ajoutée',
+  'inspection_odometer_optional': 'Odomètre (facultatif)',
+  'inspection_submit': 'Envoyer l\'inspection',
+  'inspection_result_pass': 'Inspection réussie -- aucun défaut trouvé',
+  'inspection_result_fail': 'Inspection envoyée -- défauts signalés à votre gestionnaire de flotte',
+
   // ============================================================
   // RAPPORTS
   // ============================================================

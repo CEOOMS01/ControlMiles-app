@@ -354,6 +354,32 @@ const Map<String, String> zhTexts = {
   'fleet_invite_driver': '邀请司机',
   'fleet_invite_pending': '待处理',
 
+  // Fleet 第4阶段 -- DVIR 风格的行前/行后车辆检查
+  'inspection_start': '检查车辆',
+  'inspection_pre_trip': '行前检查',
+  'inspection_post_trip': '行后检查',
+  'inspection_category_tires_wheels': '轮胎和车轮',
+  'inspection_category_brakes': '刹车',
+  'inspection_category_lights_signals': '灯光和转向灯',
+  'inspection_category_mirrors': '后视镜',
+  'inspection_category_windshield_wipers': '挡风玻璃和雨刷',
+  'inspection_category_horn': '喇叭',
+  'inspection_category_steering': '转向系统',
+  'inspection_category_fluid_leaks': '液体泄漏',
+  'inspection_category_seatbelts': '安全带',
+  'inspection_category_body_damage': '车身损坏',
+  'inspection_category_other': '其他',
+  'inspection_status_ok': '正常',
+  'inspection_status_defect': '故障',
+  'inspection_defect_note_hint': '描述问题',
+  'inspection_defect_note_required': '提交前请为每个故障添加备注。',
+  'inspection_photo_optional': '添加照片',
+  'inspection_photo_added': '已添加照片',
+  'inspection_odometer_optional': '里程表（可选）',
+  'inspection_submit': '提交检查',
+  'inspection_result_pass': '检查通过 -- 未发现故障',
+  'inspection_result_fail': '检查已提交 -- 故障已报告给车队经理',
+
   // ============================================================
   // 报告
   // ============================================================

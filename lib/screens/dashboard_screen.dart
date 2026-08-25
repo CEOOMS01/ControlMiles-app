@@ -12,8 +12,10 @@ import 'package:intl/intl.dart';
 import '../tracking/tracking_controller.dart';
 import '../models/gig_app.dart';
 import '../models/vehicle.dart';
+import '../models/vehicle_inspection.dart';
 import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
+import '../screens/vehicle_inspection_screen.dart';
 import '../widgets/main_drawer.dart';
 import '../widgets/mileage_deduction_badge.dart';
 import '../widgets/tracking_action_button.dart';
@@ -1080,8 +1082,46 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ],
               ),
             ),
+            // Fleet Phase 4: DVIR-style pre/post-trip inspection, only
+            // relevant for a fleet driver's assigned vehicle -- a Gig
+            // owner's personal vehicle has no fleet admin to report to, so
+            // there's no one for a checklist submission to be visible to.
+            if (isFleetDriver) ...[
+              Divider(height: 1, color: borderColor),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _startInspection(_activeVehicle!),
+                    icon: const Icon(Icons.checklist_rounded, size: 18),
+                    label: Text(appState.tr('inspection_start').toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _startInspection(Vehicle vehicle) async {
+    final result = await Navigator.push<VehicleInspection>(
+      context,
+      MaterialPageRoute(builder: (_) => VehicleInspectionScreen(vehicle: vehicle)),
+    );
+    if (result == null || !mounted) return;
+
+    final appState = context.read<AppState>();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.isPass
+            ? appState.tr('inspection_result_pass')
+            : appState.tr('inspection_result_fail')),
+        backgroundColor: result.isPass ? Colors.green.shade600 : Colors.orange.shade700,
+        duration: const Duration(seconds: 3),
       ),
     );
   }

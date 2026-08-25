@@ -354,6 +354,32 @@ const Map<String, String> ptTexts = {
   'fleet_invite_driver': 'Convidar motorista',
   'fleet_invite_pending': 'PENDENTE',
 
+  // Fleet Fase 4 -- inspeções pré/pós-viagem estilo DVIR
+  'inspection_start': 'Inspecionar veículo',
+  'inspection_pre_trip': 'Antes da viagem',
+  'inspection_post_trip': 'Depois da viagem',
+  'inspection_category_tires_wheels': 'Pneus e rodas',
+  'inspection_category_brakes': 'Freios',
+  'inspection_category_lights_signals': 'Luzes e setas',
+  'inspection_category_mirrors': 'Espelhos',
+  'inspection_category_windshield_wipers': 'Para-brisa e limpadores',
+  'inspection_category_horn': 'Buzina',
+  'inspection_category_steering': 'Direção',
+  'inspection_category_fluid_leaks': 'Vazamentos de fluido',
+  'inspection_category_seatbelts': 'Cintos de segurança',
+  'inspection_category_body_damage': 'Danos na carroceria',
+  'inspection_category_other': 'Outro',
+  'inspection_status_ok': 'OK',
+  'inspection_status_defect': 'Defeito',
+  'inspection_defect_note_hint': 'Descreva o problema',
+  'inspection_defect_note_required': 'Adicione uma nota para cada defeito antes de enviar.',
+  'inspection_photo_optional': 'Adicionar foto',
+  'inspection_photo_added': 'Foto adicionada',
+  'inspection_odometer_optional': 'Hodômetro (opcional)',
+  'inspection_submit': 'Enviar inspeção',
+  'inspection_result_pass': 'Inspeção aprovada -- nenhum defeito encontrado',
+  'inspection_result_fail': 'Inspeção enviada -- defeitos reportados ao seu gerente de frota',
+
   // ============================================================
   // RELATÓRIOS
   // ============================================================

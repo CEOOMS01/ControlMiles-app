@@ -354,6 +354,32 @@ const Map<String, String> deTexts = {
   'fleet_invite_driver': 'Fahrer einladen',
   'fleet_invite_pending': 'AUSSTEHEND',
 
+  // Fleet Phase 4 -- DVIR-artige Fahrzeugprüfungen vor/nach der Fahrt
+  'inspection_start': 'Fahrzeug prüfen',
+  'inspection_pre_trip': 'Vor der Fahrt',
+  'inspection_post_trip': 'Nach der Fahrt',
+  'inspection_category_tires_wheels': 'Reifen & Räder',
+  'inspection_category_brakes': 'Bremsen',
+  'inspection_category_lights_signals': 'Licht & Blinker',
+  'inspection_category_mirrors': 'Spiegel',
+  'inspection_category_windshield_wipers': 'Windschutzscheibe & Scheibenwischer',
+  'inspection_category_horn': 'Hupe',
+  'inspection_category_steering': 'Lenkung',
+  'inspection_category_fluid_leaks': 'Flüssigkeitslecks',
+  'inspection_category_seatbelts': 'Sicherheitsgurte',
+  'inspection_category_body_damage': 'Karosserieschäden',
+  'inspection_category_other': 'Sonstiges',
+  'inspection_status_ok': 'OK',
+  'inspection_status_defect': 'Mangel',
+  'inspection_defect_note_hint': 'Problem beschreiben',
+  'inspection_defect_note_required': 'Füge für jeden Mangel eine Notiz hinzu, bevor du sendest.',
+  'inspection_photo_optional': 'Foto hinzufügen',
+  'inspection_photo_added': 'Foto hinzugefügt',
+  'inspection_odometer_optional': 'Kilometerstand (optional)',
+  'inspection_submit': 'Prüfung senden',
+  'inspection_result_pass': 'Prüfung bestanden -- keine Mängel gefunden',
+  'inspection_result_fail': 'Prüfung gesendet -- Mängel an deinen Flottenmanager gemeldet',
+
   // ============================================================
   // BERICHTE
   // ============================================================

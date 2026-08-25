@@ -444,6 +444,32 @@ const Map<String, String> enTexts = {
   'fleet_invite_driver': 'Invite driver',
   'fleet_invite_pending': 'PENDING',
 
+  // Fleet Phase 4 -- DVIR-style pre/post-trip inspections
+  'inspection_start': 'Inspect vehicle',
+  'inspection_pre_trip': 'Pre-trip',
+  'inspection_post_trip': 'Post-trip',
+  'inspection_category_tires_wheels': 'Tires & wheels',
+  'inspection_category_brakes': 'Brakes',
+  'inspection_category_lights_signals': 'Lights & signals',
+  'inspection_category_mirrors': 'Mirrors',
+  'inspection_category_windshield_wipers': 'Windshield & wipers',
+  'inspection_category_horn': 'Horn',
+  'inspection_category_steering': 'Steering',
+  'inspection_category_fluid_leaks': 'Fluid leaks',
+  'inspection_category_seatbelts': 'Seatbelts',
+  'inspection_category_body_damage': 'Body damage',
+  'inspection_category_other': 'Other',
+  'inspection_status_ok': 'OK',
+  'inspection_status_defect': 'Defect',
+  'inspection_defect_note_hint': 'Describe the issue',
+  'inspection_defect_note_required': 'Add a note for each defect before submitting.',
+  'inspection_photo_optional': 'Add photo',
+  'inspection_photo_added': 'Photo added',
+  'inspection_odometer_optional': 'Odometer (optional)',
+  'inspection_submit': 'Submit inspection',
+  'inspection_result_pass': 'Inspection passed -- no defects found',
+  'inspection_result_fail': 'Inspection submitted -- defects reported to your fleet manager',
+
   // ============================================================
   // REPORT EXTENSIONS
   // ============================================================
