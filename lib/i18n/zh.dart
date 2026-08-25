@@ -335,8 +335,6 @@ const Map<String, String> zhTexts = {
   'account_type_gig_title': 'ControlMiles 个人版',
   'account_type_gig_desc': '为 Uber、Lyft 或 DoorDash 等应用记录您自己的里程。',
   'account_type_fleet_desc': '创建企业车队，管理多名司机和车辆。',
-  'account_type_have_invite_title': '我有邀请码',
-  'account_type_have_invite_desc': '即将推出 — 加入您的经理已创建的车队。',
   'create_fleet_title': '设置您的车队',
   'create_fleet_subtitle': '为您的公司或车队命名，您将成为其所有者。',
   'fleet_name_label': '车队或公司名称',

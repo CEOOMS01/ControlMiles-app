@@ -335,8 +335,6 @@ const Map<String, String> ptTexts = {
   'account_type_gig_title': 'ControlMiles Individual',
   'account_type_gig_desc': 'Registre suas próprias milhas para apps como Uber, Lyft ou DoorDash.',
   'account_type_fleet_desc': 'Crie uma frota de empresa e gerencie vários motoristas e veículos.',
-  'account_type_have_invite_title': 'Tenho um código de convite',
-  'account_type_have_invite_desc': 'Em breve — junte-se a uma frota que seu gerente já configurou.',
   'create_fleet_title': 'Configure sua frota',
   'create_fleet_subtitle': 'Dê um nome à sua empresa ou frota. Você será o proprietário.',
   'fleet_name_label': 'Nome da frota ou empresa',

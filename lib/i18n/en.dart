@@ -425,8 +425,6 @@ const Map<String, String> enTexts = {
   'account_type_gig_title': 'ControlMiles Individual',
   'account_type_gig_desc': 'Track your own mileage for apps like Uber, Lyft, or DoorDash.',
   'account_type_fleet_desc': 'Create a company fleet and manage multiple drivers and vehicles.',
-  'account_type_have_invite_title': 'I have an invite code',
-  'account_type_have_invite_desc': 'Coming soon — join a fleet your manager already set up.',
   'create_fleet_title': 'Set up your fleet',
   'create_fleet_subtitle': 'Give your company or fleet a name. You\'ll be its owner.',
   'fleet_name_label': 'Fleet or company name',

@@ -343,8 +343,6 @@ const Map<String, String> frTexts = {
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',
   'account_type_fleet_desc': 'Créez une flotte d\'entreprise et gérez plusieurs chauffeurs et véhicules.',
-  'account_type_have_invite_title': 'J\'ai un code d\'invitation',
-  'account_type_have_invite_desc': 'Bientôt disponible — rejoignez une flotte déjà créée par votre gestionnaire.',
   'create_fleet_title': 'Configurez votre flotte',
   'create_fleet_subtitle': 'Donnez un nom à votre entreprise ou flotte. Vous en serez le propriétaire.',
   'fleet_name_label': 'Nom de la flotte ou de l\'entreprise',

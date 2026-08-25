@@ -6,9 +6,16 @@
 // user_onboarding.account_type_chosen is true. Picking "Gig" is a pure
 // local flag flip -- profiles.account_type is already 'gig' by default
 // (handle_new_user trigger), nothing to write. Picking "Fleet" leads into
-// CreateOrganizationScreen; "I have an invite code" is Phase 2 (driver
-// invites) and is shown disabled rather than silently omitted, so the
-// choice screen doesn't imply a feature that isn't built yet.
+// CreateOrganizationScreen.
+//
+// BUG FIX (pedido explícito): un tercer card deshabilitado "I have an
+// invite code" vivía acá desde la Fase 1, cuando ese flujo todavía no
+// existía. Desde la Fase 2, PendingInviteScreen intercepta ANTES que esta
+// pantalla (ver AppRoutes.getInitialRoute: pending invites tiene
+// prioridad sobre account-type-chosen) -- un usuario con invitación
+// pendiente nunca llega a ver este choice screen. El card deshabilitado
+// quedó como UI muerta que insinuaba "coming soon" para algo que ya
+// funciona por otro camino -- se quita.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -99,22 +106,6 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
                       accent: primary,
                       isLoading: false,
                       onTap: _chooseFleet,
-                    ),
-                    const SizedBox(height: 16),
-                    Opacity(
-                      opacity: 0.5,
-                      child: _ChoiceCard(
-                        icon: Icons.mail_outline_rounded,
-                        title: appState.tr('account_type_have_invite_title'),
-                        description: appState.tr('account_type_have_invite_desc'),
-                        cardColor: cardColor,
-                        borderColor: borderColor,
-                        textColor: textColor,
-                        subTextColor: subTextColor,
-                        accent: subTextColor,
-                        isLoading: false,
-                        onTap: null,
-                      ),
                     ),
                   ],
                 ),

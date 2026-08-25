@@ -335,8 +335,6 @@ const Map<String, String> deTexts = {
   'account_type_gig_title': 'ControlMiles Einzelfahrer',
   'account_type_gig_desc': 'Erfassen Sie Ihre eigenen Kilometer für Apps wie Uber, Lyft oder DoorDash.',
   'account_type_fleet_desc': 'Erstellen Sie eine Unternehmensflotte und verwalten Sie mehrere Fahrer und Fahrzeuge.',
-  'account_type_have_invite_title': 'Ich habe einen Einladungscode',
-  'account_type_have_invite_desc': 'Demnächst verfügbar — treten Sie einer Flotte bei, die Ihr Manager bereits eingerichtet hat.',
   'create_fleet_title': 'Richten Sie Ihre Flotte ein',
   'create_fleet_subtitle': 'Geben Sie Ihrem Unternehmen oder Ihrer Flotte einen Namen. Sie werden deren Inhaber.',
   'fleet_name_label': 'Name der Flotte oder des Unternehmens',
