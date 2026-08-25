@@ -1,0 +1,127 @@
+name: controlmiles
+description: "Olympus Mont Systems LLC - ControlMiles Enterprise 2026"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+  flutter: ^3.24.0
+
+# ============================================================
+# DEPENDENCIES
+# ============================================================
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # --- AI & OCR (Automatic Odometer Scanning) ---
+  google_mlkit_text_recognition: ^0.15.0
+
+  # --- Local storage ---
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+  flutter_secure_storage: ^9.2.4
+
+  # --- IDs, hashing, utilities ---
+  uuid: ^4.5.2
+  crypto: ^3.0.3
+  shared_preferences: ^2.5.4
+
+  # --- GPS + background tracking ---
+  flutter_background_geolocation: ^5.0.5
+  geolocator:
+  flutter_background_service: ^5.0.5
+  permission_handler: ^12.0.1
+  flutter_activity_recognition: ^4.0.0
+  provider: ^6.1.1
+
+  # --- Camera + images + EXIF ---
+  camera: ^0.12.0
+  image_picker: ^1.1.0
+  exif: ^3.3.0
+
+  # --- Supabase ---
+  supabase_flutter: ^2.5.6
+  mime: ^2.0.0
+
+  # --- PDF & Printing ---
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  intl: ^0.20.2
+  device_info_plus: ^12.3.0
+
+  # --- Connectivity (offline buffer sync check) ---
+  connectivity_plus: ^7.0.0
+
+  # --- Local notifications (recordatorio de viaje olvidado + resumen semanal) ---
+  flutter_local_notifications: ^19.5.0
+  flutter_timezone: ^5.1.0
+
+# ============================================================
+# DEV DEPENDENCIES
+# ============================================================
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.0
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
+
+# ============================================================
+# DEPENDENCY OVERRIDES
+# ============================================================
+# flutter_local_notifications 19.5.0 declara timezone: ^0.10.0, pero esa
+# versión de timezone tiene su propio pubspec con sdk: ">=2.19.0 <3.0.0"
+# — un límite superior desactualizado (nunca lo subieron para Dart 3) que
+# choca directo con el sdk: ^3.10.7 de este proyecto y rompería `pub get`.
+# timezone 0.11.0 corrige ese límite (sdk: ^3.10.0). flutter_local_notifications
+# solo usa TZDateTime/getLocation/setLocalLocation de este paquete — ninguna
+# de esas APIs cambió entre 0.10.x y 0.11.0, así que forzar la versión acá
+# es seguro en la práctica aunque técnicamente "rompe" lo que declaró.
+dependency_overrides:
+  timezone: ^0.11.0
+
+# ============================================================
+# FLUTTER CONFIG
+# ============================================================
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+# ============================================================
+# APP ICON CONFIGURATION
+# ============================================================
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo_controlmiles.png"
+  adaptive_icon_background: "#F8FAFC"
+  adaptive_icon_foreground: "assets/images/logo_controlmiles.png"
+
+# ============================================================
+# SPLASH SCREEN CONFIGURATION
+# ============================================================
+
+flutter_native_splash:
+  color: "#F8FAFC"
+  image: "assets/images/logo_controlmiles.png"
+
+  android_12:
+    image: "assets/images/logo_controlmiles.png"
+    icon_background_color: "#F8FAFC"
+
+  web: false
+  fullscreen: true

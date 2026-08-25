@@ -1,0 +1,482 @@
+// Olympus Mont Systems LLC - ControlMiles
+// lib/i18n/es.dart - Español (ESP)
+
+const Map<String, String> esTexts = {
+  // ============================================================
+  // APLICACIÓN GENERAL
+  // ============================================================
+  'app_name': 'ControlMiles',
+  'splash': 'Pantalla de inicio',
+  'not_found': 'No encontrado',
+  'error': 'Error',
+  'system_error': 'Error del sistema',
+  'loading': 'Cargando...',
+  'please_wait': 'Por favor espera...',
+
+  // ============================================================
+  // AUTENTICACIÓN
+  // ============================================================
+  'login': 'Iniciar sesión',
+  'register': 'Registrarse',
+  'signup': 'Crear cuenta',
+  'logout': 'Cerrar sesión',
+  'forgot_password': '¿Olvidaste tu contraseña?',
+  'reset_password': 'Restablecer contraseña',
+  'auth_session_expired': 'Sesión de autenticación expirada',
+  'email': 'Correo electrónico',
+  'password': 'Contraseña',
+  'confirm_password': 'Confirmar contraseña',
+  'sign_in': 'Iniciar sesión',
+  'sign_up': 'Crear cuenta',
+  'sign_out': 'Cerrar sesión',
+  'active_activity': 'Actividad activa',
+  'configuration_updated': 'Configuración actualizada',
+  // BUG FIX (pedido explícito, bug silencioso carrusel+pausa): tocar otra
+  // gig app mientras el viaje está en pausa no cambiaba nada en el
+  // backend (switchSection solo se llama con tracking corriendo), pero la
+  // UI igual mostraba "SWITCHED" -- mentira visual. Ahora se bloquea el
+  // tap y se explica por qué.
+  'resume_to_switch_app': 'Reanuda el seguimiento para cambiar de actividad',
+  'switch_activity_failed': 'No se pudo cambiar de actividad — sigues en la anterior. Intenta de nuevo.',
+
+  // ============================================================
+  // PERFIL DE USUARIO
+  // ============================================================
+  'name': 'Nombre',
+  'edit_name': 'Editar nombre',
+  'last_name': 'Apellido',
+  'adress': 'Dirección',
+  'number': 'Número',
+  'dark_mode': 'Modo Oscuro',
+  'dark_mode_description': 'Cambiar entre tema claro y oscuro',
+  'profile_updated_success': 'Perfil actualizado correctamente',
+
+  // ============================================================
+  // NAVEGACIÓN
+  // ============================================================
+  'dashboard': 'Panel principal',
+  'home': 'Inicio',
+  'profile': 'Perfil',
+  'settings': 'Ajustes',
+  'help': 'Ayuda',
+  'about': 'Acerca de',
+  'support': 'Soporte',
+
+  // ============================================================
+  // TRACKING (SEGUIMIENTO)
+  // ============================================================
+  'tracking': 'Seguimiento',
+  'tracking_active': 'Seguimiento activo',
+  'tracking_paused': 'En pausa',
+  'tracking_stopped': 'Seguimiento detenido',
+  'start_tracking': 'INICIAR SEGUIMIENTO',
+  'stop_tracking': 'DETENER SEGUIMIENTO',
+  'pause_tracking': 'Pausar seguimiento',
+  'resume_tracking': 'Reanudar seguimiento',
+  'trip_details': 'Detalles del viaje',
+  'trip_history': 'Historial de viajes',
+  'trip_ended': 'Viaje finalizado',
+  'miles': 'Millas',
+  'kilometers': 'Kilómetros',
+  'speed': 'Velocidad',
+  'duration': 'Duración',
+  'distance': 'Distancia',
+  // BUG FIX (pedido explícito): saludo dinámico del AppBar del Dashboard,
+  // reemplaza el badge "IRS 2026 · X¢/mi". Sin el "!" ni el nombre --
+  // dashboard_screen.dart arma "$greeting! $firstName".
+  'greeting_morning': 'Buenos días',
+  'greeting_afternoon': 'Buenas tardes',
+  'greeting_evening': 'Buenas noches',
+  'start_time': 'Hora de inicio',
+  'end_time': 'Hora de fin',
+  'select_an_activity_before_starting_tracking': 'Selecciona una actividad antes de iniciar el seguimiento',
+  // BUG FIX (pedido explícito, alerta de hallazgos relacionados): pause/
+  // resume/stop ahora devuelven bool -- estos mensajes se muestran solo
+  // cuando de verdad fallan, en vez de asumir éxito y animar la UI igual.
+  'pause_failed': 'No se pudo pausar — sigue en seguimiento. Intenta de nuevo.',
+  'resume_failed': 'No se pudo reanudar el seguimiento. Intenta de nuevo.',
+  'end_trip_failed': 'No se pudo terminar el viaje — sigue activo. Intenta de nuevo.',
+
+  // ============================================================
+  // ODOMETER (ODÓMETRO)
+  // ============================================================
+  'odometer': 'Odómetro',
+  'odometer_capture': 'Captura de odómetro',
+  'start_odometer_capture': 'Capturar odómetro inicial',
+  'end_odometer_capture': 'Capturar odómetro final',
+  'capture_photo': 'Capturar foto',
+  'retry_camera': 'Reintentar cámara',
+  'camera_error': 'Error en la cámara',
+  'odometer_not_detected': 'Odómetro no detectado',
+  'center_odometer_numbers': 'Centra los números del odómetro',
+  'ai_processing': 'Procesando con IA',
+  'validating_mileage_gps_hash': 'Validando millas, GPS y hash',
+
+  // ============================================================
+  // GPS / UBICACIÓN
+  // ============================================================
+  'gps': 'GPS',
+  'gps_enabled': 'GPS activado',
+  'gps_disabled': 'GPS desactivado',
+  'location_permission_required': 'Se requiere permiso de ubicación',
+  'location_permission_denied': 'Permiso de ubicación denegado',
+
+  // ============================================================
+  // HISTORIAL Y REPORTES
+  // ============================================================
+  'history': 'Historial',
+  'reports': 'Reportes',
+  'audit_logs': 'Registros de auditoría',
+  'statistics': 'Estadísticas',
+  'summary': 'Resumen',
+  'total_miles': 'Total de millas',
+  'total_trips': 'Total de viajes',
+  'average_speed': 'Velocidad promedio',
+  'RECENT_TRIPS': 'VIAJES RECIENTES',
+  'SEE_ALL': 'VER TODO',
+  'not_trips_yet': 'Aún no hay viajes',
+  'generate_pdf': 'Generar PDF',
+  'generate_global_pdf': 'Generar PDF Global',
+  'trip_note': 'Nota del viaje',
+  'trip_note_hint': 'ej. "faltaron 5 millas — se perdió señal GPS"',
+  'add_note': 'Agregar nota',
+  'edit_note': 'Editar nota',
+  'note_saved_success': 'Nota guardada',
+  'delete_trip': 'Eliminar viaje',
+  'delete_trip_confirm_title': '¿Eliminar este viaje de forma permanente?',
+  'delete_trip_confirm_body': 'Esto eliminará el viaje y todas sus millas registradas de ControlMiles de forma permanente, incluyendo su registro de auditoría. No se puede deshacer y el viaje dejará de contar en tus reportes y en el estimado de deducción del IRS.',
+  'delete_trip_success': 'Viaje eliminado',
+  'send_reset_code': 'Enviar código',
+  'reset_code_sent': 'Revisa tu email, te enviamos un código',
+  'enter_reset_code': 'Ingresa el código que recibiste por email',
+  'reset_code_hint': 'Código',
+  'verify_code': 'Verificar código',
+  'resend_code': 'Reenviar código',
+  'new_password': 'Nueva contraseña',
+  'confirm_new_password': 'Confirmar nueva contraseña',
+  'password_mismatch': 'Las contraseñas no coinciden',
+  'reset_password_title': 'Restablece tu contraseña',
+  'forgot_password_body': 'Ingresa el email de tu cuenta y te enviaremos un código para restablecer tu contraseña.',
+  'reset_password_success': 'Contraseña actualizada. Ya puedes iniciar sesión.',
+  'back_to_login': 'Volver a iniciar sesión',
+  'danger_zone': 'Zona de peligro',
+  'delete_account': 'Eliminar cuenta',
+  'delete_account_confirm_title': '¿Eliminar tu cuenta de forma permanente?',
+  'delete_account_confirm_body': 'Esto elimina tu cuenta y todo lo que contiene: vehículos, historial de viajes, registros de millas y reportes, de forma permanente. No se puede deshacer.',
+  'delete_account_type_to_confirm': 'Escribe DELETE para confirmar',
+  'delete_account_word': 'DELETE',
+  'delete_account_success': 'Cuenta eliminada',
+  // BUG FIX (pedido explícito): badge de millas del Dashboard reemplaza al
+  // de "Cloud Sync" (roto — ver CloudStatusService). El disclaimer vive
+  // detrás de un tap, nunca en el badge en sí.
+  'year_miles_deduction_estimate': 'Deducción est.',
+  'irs_estimate_title': 'Sobre este estimado',
+  'irs_estimate_disclaimer': 'Estimado según la tarifa estándar de millaje del IRS 2026 (\$0.725/milla). ControlMiles no está afiliado ni respaldado por el IRS ni ninguna entidad oficial. Es solo una referencia informativa, no una deducción garantizada — consulta a un profesional de impuestos.',
+
+  // ============================================================
+  // TRIP PURPOSES & IRS
+  // ============================================================
+  'select_trip_purpose': 'Seleccione el propósito del viaje',
+  'irs_deduction_note': 'Para fines de deducción de impuestos del IRS',
+  'business_purpose': 'Negocios',
+  'work_commute': 'Trayecto al trabajo',
+  'medical': 'Médico',
+  'moving': 'Mudanza',
+  'charitable': 'Caridad / Voluntariado',
+  'education_study': 'Educación / Estudio',
+  'personal_other': 'Personal / Otros',
+
+  // ============================================================
+  // AJUSTES
+  // ============================================================
+  'preferences': 'Preferencias',
+  'language': 'Idioma',
+  'language_description': 'Selecciona tu idioma preferido',
+  'language_changed': 'Idioma cambiado a',
+  'notifications': 'Notificaciones',
+  'notifications_description': 'Recibir notificaciones de la app',
+  'notifications_enabled': 'Notificaciones activadas',
+  'notifications_disabled': 'Notificaciones desactivadas',
+  'analytics': 'Analíticas',
+  'analytics_description': 'Compartir datos de uso',
+
+  // ============================================================
+  // PRIVACIDAD Y SEGURIDAD
+  // ============================================================
+  'privacy_security': 'Privacidad y Seguridad',
+  'privacy_policy': 'Política de privacidad',
+  'terms_conditions': 'Términos y Condiciones',
+  'data_security': 'Seguridad de datos',
+  'security_audit': 'Auditoría de seguridad',
+
+  // ============================================================
+  // ACERCA DE
+  // ============================================================
+  'about_app': 'Acerca de la aplicación',
+  'app_version': 'Versión de la app',
+  'build_number': 'Número de compilación',
+  'company': 'Empresa',
+  'copyright': 'Todos los derechos reservados',
+  'developer': 'Desarrollador',
+
+  // ============================================================
+  // BOTONES
+  // ============================================================
+  'ok': 'OK',
+  'cancel': 'Cancelar',
+  'save': 'Guardar',
+  'delete': 'Eliminar',
+  'edit': 'Editar',
+  'close': 'Cerrar',
+  'refresh': 'Actualizar',
+  'retry': 'Reintentar',
+  'next': 'Siguiente',
+  'previous': 'Anterior',
+  'done': 'Listo',
+  'submit': 'Enviar',
+  'continue': 'Continuar',
+  'back': 'Atrás',
+  'start': 'Iniciar',
+  'stop': 'Detener',
+  'pause': 'PAUSAR',
+  'resume': 'REANUDAR',
+  'end_trip': 'FINALIZAR VIAJE',
+  'skip': 'Saltar',
+  'confirm': 'Confirmar',
+
+  // ============================================================
+  // MENSAJES
+  // ============================================================
+  'success': 'Éxito',
+  'failed': 'Falló',
+  'warning': 'Advertencia',
+  'info': 'Información',
+  'no_data': 'Sin datos',
+  'no_results': 'No se encontraron resultados',
+  'something_went_wrong': 'Algo salió mal',
+  'please_try_again': 'Por favor inténtalo de nuevo',
+  'network_error': 'Error de red',
+  'internet_required': 'Se requiere conexión a internet',
+  'offline_mode': 'Modo sin conexión',
+  'syncing': 'Sincronizando...',
+  'synced': 'Sincronizado',
+  'feature_coming_soon': 'Función próximamente',
+
+  // ============================================================
+  // ESTADO DE LA NUBE
+  // ============================================================
+  'cloud_status': 'Estado de la nube',
+  'cloud_connected': 'Sincronización en la nube: Activa y Segura',
+  'cloud_disconnected': 'Sincronización en la nube: Sin conexión / Problemas',
+  'audit_chain_healthy': 'Cadena de auditoría saludable',
+  'audit_chain_compromised': 'Cadena de auditoría comprometida',
+
+  // ============================================================
+  // TIEMPO
+  // ============================================================
+  'today': 'Hoy',
+  'yesterday': 'Ayer',
+  'this_week': 'Esta semana',
+  'this_month': 'Este mes',
+  'this_year': 'Este año',
+  'all_time': 'Todo el tiempo',
+  'january': 'Enero',
+  'february': 'Febrero',
+  'march': 'Marzo',
+  'april': 'Abril',
+  'may': 'Mayo',
+  'june': 'Junio',
+  'july': 'Julio',
+  'august': 'Agosto',
+  'september': 'Septiembre',
+  'october': 'Octubre',
+  'november': 'Noviembre',
+  'december': 'Diciembre',
+  'monday': 'Lunes',
+  'tuesday': 'Martes',
+  'wednesday': 'Miércoles',
+  'thursday': 'Jueves',
+  'friday': 'Viernes',
+  'saturday': 'Sábado',
+  'sunday': 'Domingo',
+
+  // ============================================================
+  // UNIDADES
+  // ============================================================
+  'metric_system': 'Sistema Métrico',
+  'meter': 'metro',
+  'meter_short': 'm',
+  'kilometer': 'kilómetro',
+  'kilometer_short': 'km',
+  'mile': 'milla',
+  'mile_short': 'mi',
+  'hour': 'hora',
+  'minute': 'minuto',
+  'second': 'segundo',
+  'kmh': 'km/h',
+  'mph': 'mph',
+
+  // ============================================================
+  // VALIDACIÓN
+  // ============================================================
+  'field_required': 'Este campo es obligatorio',
+  'data_protected_footer': 'Tus datos están protegidos',
+  'invalid_email': 'Correo electrónico inválido',
+  'password_too_short': 'La contraseña es demasiado corta',
+  'passwords_do_not_match': 'Las contraseñas no coinciden',
+  'invalid_input': 'Entrada inválida',
+
+  // ============================================================
+  // PERMISOS
+  // ============================================================
+  'permissions_required': 'Se requieren permisos',
+  'camera_permission': 'Permiso de cámara',
+  'location_permission': 'Permiso de ubicación',
+  'storage_permission': 'Permiso de almacenamiento',
+  'grant_permission': 'Conceder permiso',
+  'deny_permission': 'Denegar permiso',
+
+  // ============================================================
+  // CARACTERÍSTICAS ESPECÍFICAS
+  // ============================================================
+  'evidence': 'Evidencia',
+  'evidence_photo': 'Foto de evidencia',
+  'hash_verification': 'Verificación de hash',
+  'verified': 'Verificado',
+  'unverified': 'No verificado',
+  'blockchain_status': 'Estado de blockchain',
+  'integrity_check': 'Verificación de integridad',
+  'anomaly_detection': 'Detección de anomalías',
+  'fraud_alert': 'Alerta de fraude',
+  'suspicious_activity': 'Actividad sospechosa detectada',
+
+  // ============================================================
+  // VEHÍCULOS
+  // ============================================================
+  'vehicle': 'Vehículo',
+  'vehicles': 'Vehículos',
+  'add_vehicle': 'Agregar vehículo',
+  'add_vehicle_prompt': 'Aún no agregaste un vehículo',
+  'current_trip': 'Viaje actual',
+  'edit_vehicle': 'Editar vehículo',
+  'delete_vehicle': 'Eliminar vehículo',
+  'vehicle_make': 'Marca',
+  'vehicle_model': 'Modelo',
+  'vehicle_color': 'Color',
+  'vehicle_year': 'Año',
+  'vehicle_mileage': 'Kilometraje',
+  'vehicle_information': 'Información del vehículo',
+  'no_vehicle_registered': 'No hay vehículo registrado',
+  'delete_vehicle_confirmation': '¿Estás seguro de eliminar este vehículo? Su historial de viajes se conservará.',
+
+  // ============================================================
+  // VEHÍCULO — pantalla nueva (separada de Settings) + mantenimiento
+  // ============================================================
+  'my_vehicle': 'Mi Vehículo',
+  'maintenance': 'Mantenimiento',
+  'select_vehicle': 'Seleccionar vehículo',
+  'add_maintenance_record': 'Agregar registro de mantenimiento',
+  'maintenance_type': 'Tipo',
+  'service_date': 'Fecha de servicio',
+  'odometer_at_service': 'Odómetro al momento del servicio',
+  'cost_optional': 'Costo (opcional)',
+  'next_due_odometer_optional': 'Próximo cambio a las (millas, opcional)',
+  'next_due_date_optional': 'Próxima fecha (opcional)',
+  'notes_optional': 'Notas (opcional)',
+  'no_maintenance_records': 'Todavía no hay registros de mantenimiento',
+  'maintenance_record_added_success': 'Registro de mantenimiento agregado',
+  'maintenance_record_deleted_success': 'Registro de mantenimiento eliminado',
+  'maintenance_type_oil_change': 'Cambio de aceite',
+  'maintenance_type_tire_rotation': 'Rotación de llantas',
+  'maintenance_type_brake_service': 'Servicio de frenos',
+  'maintenance_type_inspection': 'Inspección',
+  'maintenance_type_registration': 'Registro/placa',
+  'maintenance_type_battery': 'Batería',
+  'maintenance_type_other': 'Otro',
+
+  // ============================================================
+  // SUSCRIPCIÓN
+  // ============================================================
+  'subscription': 'Suscripción',
+  'plan': 'Plan',
+  'basic_plan': 'Plan básico',
+  'premium_plan': 'Plan premium',
+  'pro_plan': 'Plan pro',
+  'upgrade_plan': 'Mejorar plan',
+  'manage_subscription': 'Gestionar suscripción',
+  'trial_period': 'Período de prueba',
+  'trial_expired': 'Prueba expirada',
+  'subscription_active': 'Suscripción activa',
+  'subscription_required': 'Se requiere suscripción',
+
+  // ============================================================
+  // FLOTA
+  // ============================================================
+  'fleet_management': 'Gestión de flota',
+  'fleet_vehicle': 'Vehículo de flota',
+  'fleet_dashboard': 'Panel de flota',
+  'driver_management': 'Gestión de conductores',
+  'company_account': 'Cuenta de empresa',
+
+  // Fleet Phase 1: account-type choice + create-fleet screens
+  'account_type_title': '¿Cómo vas a usar ControlMiles?',
+  'account_type_subtitle': 'Esta elección decide cómo funciona tu cuenta. Elige la opción que te corresponda.',
+  'account_type_gig_title': 'ControlMiles Individual',
+  'account_type_gig_desc': 'Registra tus propias millas para apps como Uber, Lyft o DoorDash.',
+  'account_type_fleet_desc': 'Crea una flota de empresa y administra varios conductores y vehículos.',
+  'account_type_have_invite_title': 'Tengo un código de invitación',
+  'account_type_have_invite_desc': 'Próximamente — únete a una flota que tu gerente ya creó.',
+  'create_fleet_title': 'Configura tu flota',
+  'create_fleet_subtitle': 'Dale un nombre a tu empresa o flota. Serás su propietario.',
+  'fleet_name_label': 'Nombre de la flota o empresa',
+  'create_fleet_button': 'Crear flota',
+  'fleet_stat_members': 'Miembros',
+  'fleet_stat_month_miles': 'Millas este mes',
+
+  // ============================================================
+  // REPORTES
+  // ============================================================
+  'report_generated': 'Reporte generado',
+  'report_download': 'Descargar reporte',
+  'report_verification': 'Verificación de reporte',
+  'report_qr_verification': 'Verificación por QR',
+  'report_integrity': 'Integridad del reporte',
+
+  // ============================================================
+  // IMPUESTOS / IRS
+  // ============================================================
+  'tax_deduction': 'Deducciones fiscales',
+  'irs_rate': 'IRS 2026',
+  'estimated_deduction': 'Deducción estimada',
+  'tax_summary': 'Resumen fiscal',
+
+  // ============================================================
+  // VERIFICACIÓN QR
+  // ============================================================
+  'verification_page': 'Página de verificación',
+  'scan_qr': 'Escanear código QR',
+  'verify_report': 'Verificar reporte',
+  'session_hash': 'Hash de sesión',
+  'section_hash': 'Hash de sección',
+
+  // ============================================================
+  // FORMULARIO DE VEHÍCULO
+  // ============================================================
+  'enter_vehicle_make': 'Ingresa la marca del vehículo',
+  'enter_vehicle_model': 'Ingresa el modelo del vehículo',
+  'enter_vehicle_color': 'Ingresa el color del vehículo',
+  'enter_vehicle_year': 'Ingresa el año del vehículo',
+  'enter_vehicle_mileage': 'Ingresa el kilometraje del vehículo',
+
+  // ============================================================
+  // ÉXITOS Y ALERTAS
+  // ============================================================
+  'vehicle_added_success': 'Vehículo agregado correctamente',
+  'vehicle_deleted_success': 'Vehículo eliminado',
+  // BUG FIX (pedido explícito, nueva regla multi-auto): mensaje limpio
+  // para cuando la DB rechaza un cambio de vehículo activo porque hay un
+  // viaje sin cerrar (ver trigger tr_vehicles_block_switch_during_session).
+  'vehicle_switch_blocked_active_session': 'No puedes cambiar de vehículo activo mientras tienes un viaje en curso. Termina el viaje actual primero.',
+  'vehicle_saved': 'Vehículo guardado',
+  'vehicle_required': 'Se requiere un vehículo',
+};

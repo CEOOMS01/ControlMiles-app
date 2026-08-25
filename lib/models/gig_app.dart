@@ -1,0 +1,121 @@
+// Olympus Mont Systems LLC - ControlMiles
+// lib/models/gig_app.dart
+//
+// FUENTE ÚNICA DE VERDAD para el catálogo de gig apps (id, nombre, ícono,
+// color). Antes este catálogo estaba duplicado a mano en 4 archivos
+// (gig_app_selector.dart, dashboard_screen.dart, reports_screen.dart,
+// history_screen.dart) — agregar o cambiar una app significaba editar los
+// 4 y arriesgarse a que queden desincronizados (ya pasó: Custom/Truck tenía
+// dos colores distintos según la pantalla). Ahora todos importan este
+// archivo.
+
+import 'package:flutter/material.dart';
+
+@immutable
+class GigApp {
+  final String id;
+  final String name;
+  final IconData icon;
+  final Color color;
+
+  const GigApp({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class GigAppCatalog {
+  GigAppCatalog._();
+
+  // Ícono/color de fallback para cualquier gig_app que no esté en la lista
+  // (dato legado, o gig_app_id todavía no agregado acá).
+  static const GigApp _fallback = GigApp(
+    id: '',
+    name: '',
+    icon: Icons.local_shipping_rounded,
+    color: Color(0xFF475569),
+  );
+
+  static const List<GigApp> all = [
+    GigApp(
+      id: 'uber',
+      name: 'Uber',
+      icon: Icons.directions_car_rounded,
+      color: Color(0xFF1E1E1E),
+    ),
+    GigApp(
+      id: 'lyft',
+      name: 'Lyft',
+      icon: Icons.electric_car_rounded,
+      color: Color(0xFFFF00BF),
+    ),
+    // Empower pasó de teal (0xFF00A3AD) a azul navy — ese teal que dejó
+    // libre se lo lleva el ícono nuevo de Roadie.
+    GigApp(
+      id: 'empower',
+      name: 'Empower',
+      icon: Icons.person_pin_circle_rounded,
+      color: Color(0xFF1E3A8A),
+    ),
+    GigApp(
+      id: 'amazon',
+      name: 'Amazon Flex',
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFFFF9900),
+    ),
+    GigApp(
+      id: 'uber_eats',
+      name: 'Uber Eats',
+      icon: Icons.restaurant_rounded,
+      color: Color(0xFF06C167),
+    ),
+    GigApp(
+      id: 'doordash',
+      name: 'DoorDash',
+      icon: Icons.fastfood_rounded,
+      color: Color(0xFFFF3008),
+    ),
+    GigApp(
+      id: 'instacart',
+      name: 'Instacart',
+      icon: Icons.shopping_basket_rounded,
+      color: Color(0xFF43B02A),
+    ),
+    GigApp(
+      id: 'roadie',
+      name: 'Roadie',
+      icon: Icons.route_rounded,
+      color: Color(0xFF00A3AD),
+    ),
+    // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
+    // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)
+    // vs. gris pizarra #475569 en Dashboard/Reports/Historial. Se unificó
+    // a #475569 (el que ya usaban 3 de las 4 pantallas).
+    // BUG FIX (pedido explícito, bug #1 del batch de 4): Custom debe ser
+    // siempre la última tarjeta del carrusel (extremo derecho) — se movió
+    // al final de la lista, después de Roadie.
+    GigApp(
+      id: 'custom',
+      name: 'Custom/Truck',
+      icon: Icons.local_shipping_rounded,
+      color: Color(0xFF475569),
+    ),
+  ];
+
+  /// Busca una gig app por id. Si no existe en el catálogo (dato legado o
+  /// id nuevo todavía no agregado acá), devuelve un fallback neutro con el
+  /// mismo id/nombre crudo en vez de tirar una excepción.
+  static GigApp byId(String id) {
+    for (final app in all) {
+      if (app.id == id) return app;
+    }
+    return GigApp(
+      id: id,
+      name: id,
+      icon: _fallback.icon,
+      color: _fallback.color,
+    );
+  }
+}
