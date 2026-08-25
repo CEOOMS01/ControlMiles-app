@@ -79,14 +79,22 @@ class _WelcomePageState extends State<WelcomePage> {
       await _markWelcomeSeen(user.id);
       appState.completePermissionsSetup();
       await appState.fetchAccountTypeChosen();
+      await appState.fetchPendingInvites();
 
       if (!mounted) return;
-      // Fleet Phase 1: after permissions, a first-time user still needs to
-      // pick Gig vs Fleet before landing on either dashboard.
-      Navigator.pushReplacementNamed(
-        context,
-        appState.accountTypeChosen ? AppRoutes.dashboard : AppRoutes.accountType,
+      // Fleet Phase 2: same centralized routing decision as
+      // login_screen.dart/splash_page.dart -- a first-time user might
+      // already have a pending fleet invite waiting (sent while they were
+      // still finishing permissions setup).
+      final targetRoute = AppRoutes.getInitialRoute(
+        isAuthenticated: true,
+        onboardingCompleted: true,
+        hasPendingInvites: appState.hasPendingInvites,
+        accountTypeChosen: appState.accountTypeChosen,
+        isFleetAdmin: appState.isFleetAdmin,
+        isFleetDriver: appState.isFleetDriver,
       );
+      Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {
       debugPrint('[WelcomePage Error]: $e');
       if (mounted) {

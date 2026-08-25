@@ -342,6 +342,17 @@ const Map<String, String> zhTexts = {
   'create_fleet_button': '创建车队',
   'fleet_stat_members': '成员',
   'fleet_stat_month_miles': '本月里程',
+  'fleet_invite_title': '您已受邀加入车队',
+  'fleet_invite_role_driver': '您将以司机身份加入',
+  'fleet_invite_accept': '接受',
+  'fleet_invite_decline': '拒绝',
+  'fleet_no_vehicle_assigned': '尚未分配车辆',
+  'fleet_invite_dialog_title': '邀请司机',
+  'fleet_invite_send': '发送邀请',
+  'fleet_assign_vehicle_title': '分配车辆',
+  'fleet_vehicle_already_assigned': '已分配给其他司机',
+  'fleet_invite_driver': '邀请司机',
+  'fleet_invite_pending': '待处理',
 
   // ============================================================
   // 报告

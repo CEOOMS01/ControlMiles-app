@@ -70,3 +70,34 @@ class OrganizationMember {
     );
   }
 }
+
+/// Fleet Phase 2: a not-yet-accepted organization_members row (is_active =
+/// false), read from the invited user's own side -- includes the org's
+/// name via the embedded FK select (organization_members.organization_id
+/// -> organizations), so the accept/decline screen never needs a second
+/// round-trip just to show which fleet is inviting them.
+class PendingInvite {
+  final String membershipId;
+  final String organizationId;
+  final String organizationName;
+  final DateTime? invitedAt;
+
+  const PendingInvite({
+    required this.membershipId,
+    required this.organizationId,
+    required this.organizationName,
+    this.invitedAt,
+  });
+
+  factory PendingInvite.fromMap(Map<String, dynamic> map) {
+    final org = map['organizations'] as Map<String, dynamic>?;
+    return PendingInvite(
+      membershipId: map['id'] as String,
+      organizationId: map['organization_id'] as String,
+      organizationName: org?['name'] as String? ?? '',
+      invitedAt: map['invited_at'] != null
+          ? DateTime.parse(map['invited_at'] as String)
+          : null,
+    );
+  }
+}

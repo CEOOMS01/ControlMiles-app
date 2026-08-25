@@ -45,9 +45,19 @@ class _SplashPageState extends State<SplashPage> {
       }
 
       // 2) Splash SOLO resuelve ruta inicial (SIN permisos aquí)
+      // BUG FIX (verificado en DB, Fleet Phase 2): antes esta llamada no
+      // pasaba nada de Fleet -- un fleet_admin/fleet_driver que reabría la
+      // app con una sesión ya activa (sin pasar por LoginScreen, que sí
+      // tenía su propio chequeo) siempre aterrizaba en el Dashboard de Gig.
+      // getInitialRoute() ahora es la única fuente de verdad para esta
+      // decisión (login_screen.dart y welcome_page.dart también la usan).
       final targetRoute = AppRoutes.getInitialRoute(
         isAuthenticated: appState.isAuthenticated,
         onboardingCompleted: appState.permissionsCompleted,
+        hasPendingInvites: appState.hasPendingInvites,
+        accountTypeChosen: appState.accountTypeChosen,
+        isFleetAdmin: appState.isFleetAdmin,
+        isFleetDriver: appState.isFleetDriver,
       );
 
       Navigator.pushReplacementNamed(context, targetRoute);

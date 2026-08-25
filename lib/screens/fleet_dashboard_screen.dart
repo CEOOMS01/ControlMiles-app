@@ -103,6 +103,11 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.groups_rounded, color: subTextColor),
+            tooltip: appState.tr('driver_management'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetRoster),
+          ),
+          IconButton(
             icon: Icon(Icons.logout_rounded, color: subTextColor),
             onPressed: () => _logout(appState),
           ),

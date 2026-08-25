@@ -17,6 +17,10 @@ class Vehicle {
   final bool isActive;
   final bool isArchived;
   final DateTime? createdAt;
+  // Fleet Phase 2 -- both null for every Gig-mode vehicle (owner_user_id is
+  // the relevant column there instead).
+  final String? organizationId;
+  final String? assignedDriverId;
 
   const Vehicle({
     required this.id,
@@ -29,7 +33,11 @@ class Vehicle {
     this.isActive = false,
     this.isArchived = false,
     this.createdAt,
+    this.organizationId,
+    this.assignedDriverId,
   });
+
+  bool get isFleetVehicle => organizationId != null;
 
   static double? _toDoubleOrNull(dynamic v) {
     if (v == null) return null;
@@ -53,6 +61,8 @@ class Vehicle {
       createdAt: map['created_at'] != null
           ? DateTime.tryParse(map['created_at'] as String)
           : null,
+      organizationId: map['organization_id'] as String?,
+      assignedDriverId: map['assigned_driver_id'] as String?,
     );
   }
 

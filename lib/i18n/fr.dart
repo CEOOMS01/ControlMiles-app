@@ -350,6 +350,17 @@ const Map<String, String> frTexts = {
   'create_fleet_button': 'Créer la flotte',
   'fleet_stat_members': 'Membres',
   'fleet_stat_month_miles': 'Miles ce mois-ci',
+  'fleet_invite_title': 'Vous avez été invité à rejoindre une flotte',
+  'fleet_invite_role_driver': 'Vous rejoindrez en tant que chauffeur',
+  'fleet_invite_accept': 'Accepter',
+  'fleet_invite_decline': 'Refuser',
+  'fleet_no_vehicle_assigned': 'Aucun véhicule assigné pour le moment',
+  'fleet_invite_dialog_title': 'Inviter un chauffeur',
+  'fleet_invite_send': 'Envoyer l\'invitation',
+  'fleet_assign_vehicle_title': 'Assigner un véhicule',
+  'fleet_vehicle_already_assigned': 'Déjà assigné à un autre chauffeur',
+  'fleet_invite_driver': 'Inviter un chauffeur',
+  'fleet_invite_pending': 'EN ATTENTE',
 
   // ============================================================
   // RAPPORTS

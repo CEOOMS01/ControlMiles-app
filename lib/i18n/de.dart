@@ -342,6 +342,17 @@ const Map<String, String> deTexts = {
   'create_fleet_button': 'Flotte erstellen',
   'fleet_stat_members': 'Mitglieder',
   'fleet_stat_month_miles': 'Meilen diesen Monat',
+  'fleet_invite_title': 'Sie wurden zu einer Flotte eingeladen',
+  'fleet_invite_role_driver': 'Sie treten als Fahrer bei',
+  'fleet_invite_accept': 'Annehmen',
+  'fleet_invite_decline': 'Ablehnen',
+  'fleet_no_vehicle_assigned': 'Noch kein Fahrzeug zugewiesen',
+  'fleet_invite_dialog_title': 'Fahrer einladen',
+  'fleet_invite_send': 'Einladung senden',
+  'fleet_assign_vehicle_title': 'Fahrzeug zuweisen',
+  'fleet_vehicle_already_assigned': 'Bereits einem anderen Fahrer zugewiesen',
+  'fleet_invite_driver': 'Fahrer einladen',
+  'fleet_invite_pending': 'AUSSTEHEND',
 
   // ============================================================
   // BERICHTE

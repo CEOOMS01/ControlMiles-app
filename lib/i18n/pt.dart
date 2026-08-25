@@ -342,6 +342,17 @@ const Map<String, String> ptTexts = {
   'create_fleet_button': 'Criar frota',
   'fleet_stat_members': 'Membros',
   'fleet_stat_month_miles': 'Milhas neste mês',
+  'fleet_invite_title': 'Você foi convidado para uma frota',
+  'fleet_invite_role_driver': 'Você entrará como motorista',
+  'fleet_invite_accept': 'Aceitar',
+  'fleet_invite_decline': 'Recusar',
+  'fleet_no_vehicle_assigned': 'Nenhum veículo atribuído ainda',
+  'fleet_invite_dialog_title': 'Convidar motorista',
+  'fleet_invite_send': 'Enviar convite',
+  'fleet_assign_vehicle_title': 'Atribuir veículo',
+  'fleet_vehicle_already_assigned': 'Já atribuído a outro motorista',
+  'fleet_invite_driver': 'Convidar motorista',
+  'fleet_invite_pending': 'PENDENTE',
 
   // ============================================================
   // RELATÓRIOS

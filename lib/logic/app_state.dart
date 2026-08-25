@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../i18n/app_texts.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
+import '../models/organization.dart';
 
 class AppState extends ChangeNotifier {
 
@@ -46,6 +47,11 @@ class AppState extends ChangeNotifier {
   // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
   String _accountType = 'gig';
   String? _defaultOrgId;
+  // Deliberately NOT cached to SharedPreferences like accountType/etc --
+  // invites can arrive or get withdrawn at any time, so a stale disk copy
+  // risks showing an already-handled invite (or hiding a brand new one).
+  // Always fetched fresh in _init() and after any accept/decline.
+  List<PendingInvite> _pendingInvites = [];
 
   // ============================================================
   // ONBOARDING
@@ -75,6 +81,8 @@ class AppState extends ChangeNotifier {
   bool get isFleetAdmin => _accountType == 'fleet_admin';
   bool get isFleetDriver => _accountType == 'fleet_driver';
   bool get isFleetAccount => isFleetAdmin || isFleetDriver;
+  List<PendingInvite> get pendingInvites => _pendingInvites;
+  bool get hasPendingInvites => _pendingInvites.isNotEmpty;
 
   bool get isAuthenticated => Supabase.instance.client.auth.currentUser != null;
   String? get currentUserId => Supabase.instance.client.auth.currentUser?.id;
@@ -92,6 +100,7 @@ class AppState extends ChangeNotifier {
     if (isAuthenticated) {
       await fetchUserProfile();
       await fetchAccountTypeChosen();
+      await fetchPendingInvites();
     }
 
     _isInitialized = true;
@@ -180,6 +189,31 @@ class AppState extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('[AppState] Error fetching account_type_chosen: $e');
+    }
+  }
+
+  /// Fleet Phase 2: pending organization_members rows (is_active = false)
+  /// for the current user. org_members_select_own (RLS) already lets a
+  /// member see their own row regardless of is_active -- no policy change
+  /// was needed for this to work.
+  Future<void> fetchPendingInvites() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final data = await Supabase.instance.client
+          .from('organization_members')
+          .select('id, organization_id, invited_at, organizations(name)')
+          .eq('user_id', user.id)
+          .eq('is_active', false)
+          .order('invited_at', ascending: false);
+
+      _pendingInvites = List<Map<String, dynamic>>.from(data)
+          .map(PendingInvite.fromMap)
+          .toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[AppState] Error fetching pending invites: $e');
     }
   }
 
@@ -342,6 +376,7 @@ class AppState extends ChangeNotifier {
     _accountType = 'gig';
     _defaultOrgId = null;
     _accountTypeChosen = false;
+    _pendingInvites = [];
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('controlmiles_user_display_id');

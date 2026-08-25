@@ -23,6 +23,9 @@ class AppRoutes {
   static const String accountType = '/account-type';
   static const String createOrganization = '/create-organization';
   static const String fleetDashboard = '/fleet-dashboard';
+  static const String fleetRoster = '/fleet-roster';
+  static const String fleetDriverHome = '/fleet-driver-home';
+  static const String pendingInvite = '/pending-invite';
 
   // ============================================================
   // RUTAS PRINCIPALES
@@ -89,6 +92,9 @@ class AppRoutes {
         accountType,
         createOrganization,
         fleetDashboard,
+        fleetRoster,
+        fleetDriverHome,
+        pendingInvite,
         home,
         dashboard,
         tracking,
@@ -126,11 +132,13 @@ class AppRoutes {
     home,
     dashboard,
     fleetDashboard,
+    fleetDriverHome,
   ];
 
   static const List<String> fleetSetupRoutes = [
     accountType,
     createOrganization,
+    pendingInvite,
   ];
 
   static const List<String> trackingRoutes = [
@@ -237,6 +245,9 @@ class AppRoutes {
       case accountType: return 'Account Type';
       case createOrganization: return 'Create Organization';
       case fleetDashboard: return 'Fleet Dashboard';
+      case fleetRoster: return 'Fleet Roster';
+      case fleetDriverHome: return 'Fleet Driver Home';
+      case pendingInvite: return 'Pending Invite';
 
       case tracking: return 'Tracking';
       case trackingActive: return 'Tracking Active';
@@ -306,18 +317,32 @@ class AppRoutes {
     return null; 
   }
 
-  /// Obtener ruta de inicio según estado de autenticación
-   static String getInitialRoute({
-   required bool isAuthenticated,
-   required bool onboardingCompleted,
-    }) {
-
-  if (!isAuthenticated) return login;
-
-  if (!onboardingCompleted) return welcome;
-
-  return dashboard;
-}
+  /// Ruta correcta para un usuario ya autenticado, en un solo lugar --
+  /// antes esta decisión vivía duplicada (y desincronizada) en
+  /// splash_page.dart, login_screen.dart y welcome_page.dart. La
+  /// desincronización fue real: splash nunca supo de cuentas Fleet, así que
+  /// un fleet_admin que reabría la app (sesión ya activa, sin pasar por
+  /// LoginScreen) aterrizaba en el Dashboard de Gig. Orden de prioridad:
+  /// onboarding de permisos -> invitaciones pendientes (aplica aunque la
+  /// cuenta sea 'gig' -- alguien puede recibir su primera invitación de
+  /// flota después de meses usando el modo individual) -> elección
+  /// Gig/Fleet -> destino final según el tipo de cuenta.
+  static String getInitialRoute({
+    required bool isAuthenticated,
+    required bool onboardingCompleted,
+    bool hasPendingInvites = false,
+    bool accountTypeChosen = true,
+    bool isFleetAdmin = false,
+    bool isFleetDriver = false,
+  }) {
+    if (!isAuthenticated) return login;
+    if (!onboardingCompleted) return welcome;
+    if (hasPendingInvites) return pendingInvite;
+    if (!accountTypeChosen) return accountType;
+    if (isFleetAdmin) return fleetDashboard;
+    if (isFleetDriver) return fleetDriverHome;
+    return dashboard;
+  }
 
   static List<String> get breadcrumbExcluded => [
         splash,

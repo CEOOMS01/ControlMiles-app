@@ -432,6 +432,17 @@ const Map<String, String> enTexts = {
   'create_fleet_button': 'Create fleet',
   'fleet_stat_members': 'Members',
   'fleet_stat_month_miles': 'Miles this month',
+  'fleet_invite_title': 'You\'ve been invited to join a fleet',
+  'fleet_invite_role_driver': 'You\'ll join as a driver',
+  'fleet_invite_accept': 'Accept',
+  'fleet_invite_decline': 'Decline',
+  'fleet_no_vehicle_assigned': 'No vehicle assigned yet',
+  'fleet_invite_dialog_title': 'Invite a driver',
+  'fleet_invite_send': 'Send invite',
+  'fleet_assign_vehicle_title': 'Assign a vehicle',
+  'fleet_vehicle_already_assigned': 'Already assigned to another driver',
+  'fleet_invite_driver': 'Invite driver',
+  'fleet_invite_pending': 'PENDING',
 
   // ============================================================
   // REPORT EXTENSIONS

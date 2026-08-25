@@ -432,6 +432,17 @@ const Map<String, String> esTexts = {
   'create_fleet_button': 'Crear flota',
   'fleet_stat_members': 'Miembros',
   'fleet_stat_month_miles': 'Millas este mes',
+  'fleet_invite_title': 'Te invitaron a unirte a una flota',
+  'fleet_invite_role_driver': 'Te unirás como conductor',
+  'fleet_invite_accept': 'Aceptar',
+  'fleet_invite_decline': 'Rechazar',
+  'fleet_no_vehicle_assigned': 'Aún no tienes vehículo asignado',
+  'fleet_invite_dialog_title': 'Invitar a un conductor',
+  'fleet_invite_send': 'Enviar invitación',
+  'fleet_assign_vehicle_title': 'Asignar vehículo',
+  'fleet_vehicle_already_assigned': 'Ya asignado a otro conductor',
+  'fleet_invite_driver': 'Invitar conductor',
+  'fleet_invite_pending': 'PENDIENTE',
 
   // ============================================================
   // REPORTES

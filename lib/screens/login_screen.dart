@@ -82,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // autenticarse, así se pise cualquier valor viejo cacheado.
       await appState.fetchUserProfile();
       await appState.fetchAccountTypeChosen();
+      await appState.fetchPendingInvites();
 
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
@@ -107,18 +108,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // Fleet Phase 1: después del onboarding de permisos, la app todavía
-      // necesita saber Gig vs Fleet (account_type_chosen) antes de decidir
-      // a qué dashboard mandar a un usuario que ya lo había elegido antes.
-      if (!hasSeenWelcome) {
-        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
-      } else if (!appState.accountTypeChosen) {
-        Navigator.pushReplacementNamed(context, AppRoutes.accountType);
-      } else if (appState.isFleetAccount) {
-        Navigator.pushReplacementNamed(context, AppRoutes.fleetDashboard);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-      }
+      // Fleet Phase 2: la decisión de a dónde ir ahora vive en un solo
+      // lugar (AppRoutes.getInitialRoute) -- splash_page.dart y
+      // welcome_page.dart usan la misma llamada, en vez de cada uno
+      // mantener su propia copia del if/else (que fue exactamente lo que
+      // dejó a splash_page.dart sin enterarse de cuentas Fleet).
+      final targetRoute = AppRoutes.getInitialRoute(
+        isAuthenticated: true,
+        onboardingCompleted: hasSeenWelcome,
+        hasPendingInvites: appState.hasPendingInvites,
+        accountTypeChosen: appState.accountTypeChosen,
+        isFleetAdmin: appState.isFleetAdmin,
+        isFleetDriver: appState.isFleetDriver,
+      );
+      Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {
       if (mounted) {
         _showError(_getErrorMessage(e.toString(), appState));
