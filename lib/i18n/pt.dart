@@ -380,6 +380,18 @@ const Map<String, String> ptTexts = {
   'inspection_result_pass': 'Inspeção aprovada -- nenhum defeito encontrado',
   'inspection_result_fail': 'Inspeção enviada -- defeitos reportados ao seu gerente de frota',
 
+  // Fleet Fase 5 -- mapa ao vivo / geocercas
+  'fleet_live_map_title': 'Mapa ao vivo',
+  'fleet_live_map_no_vehicles': 'Nenhum veículo está reportando posição ao vivo ainda',
+  'fleet_live_map_tap_to_place': 'Toque no mapa para posicionar o centro da geocerca',
+  'fleet_live_map_add_geofence': 'Adicionar geocerca',
+  'fleet_live_map_new_geofence': 'Nova geocerca',
+  'fleet_live_map_geofence_name': 'Nome da zona',
+  'fleet_live_map_geofence_radius': 'Raio',
+  'fleet_live_map_create': 'Criar',
+  'fleet_live_map_alerts_title': 'Alertas de geocerca',
+  'fleet_live_map_no_alerts': 'Sem alertas',
+
   // ============================================================
   // RELATÓRIOS
   // ============================================================

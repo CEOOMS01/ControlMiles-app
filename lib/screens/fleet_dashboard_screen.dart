@@ -103,6 +103,11 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.map_rounded, color: subTextColor),
+            tooltip: appState.tr('fleet_live_map_title'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetLiveMap),
+          ),
+          IconButton(
             icon: Icon(Icons.groups_rounded, color: subTextColor),
             tooltip: appState.tr('driver_management'),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetRoster),

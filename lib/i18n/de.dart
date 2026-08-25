@@ -380,6 +380,18 @@ const Map<String, String> deTexts = {
   'inspection_result_pass': 'Prüfung bestanden -- keine Mängel gefunden',
   'inspection_result_fail': 'Prüfung gesendet -- Mängel an deinen Flottenmanager gemeldet',
 
+  // Fleet Phase 5 -- Live-Karte / Geofencing
+  'fleet_live_map_title': 'Live-Karte',
+  'fleet_live_map_no_vehicles': 'Noch kein Fahrzeug meldet eine Live-Position',
+  'fleet_live_map_tap_to_place': 'Tippe auf die Karte, um den Mittelpunkt der Geozone zu setzen',
+  'fleet_live_map_add_geofence': 'Geozone hinzufügen',
+  'fleet_live_map_new_geofence': 'Neue Geozone',
+  'fleet_live_map_geofence_name': 'Zonenname',
+  'fleet_live_map_geofence_radius': 'Radius',
+  'fleet_live_map_create': 'Erstellen',
+  'fleet_live_map_alerts_title': 'Geozone-Warnungen',
+  'fleet_live_map_no_alerts': 'Keine Warnungen',
+
   // ============================================================
   // BERICHTE
   // ============================================================

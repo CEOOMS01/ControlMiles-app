@@ -37,6 +37,7 @@ import 'screens/account_type_screen.dart';
 import 'screens/create_organization_screen.dart';
 import 'screens/fleet_dashboard_screen.dart';
 import 'screens/fleet_roster_screen.dart';
+import 'screens/fleet_live_map_screen.dart';
 import 'screens/pending_invite_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
@@ -199,6 +200,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.createOrganization: (_) => const CreateOrganizationScreen(),
         AppRoutes.fleetDashboard: (_) => const FleetDashboardScreen(),
         AppRoutes.fleetRoster: (_) => const FleetRosterScreen(),
+        AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
         AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),

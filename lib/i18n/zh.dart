@@ -380,6 +380,18 @@ const Map<String, String> zhTexts = {
   'inspection_result_pass': '检查通过 -- 未发现故障',
   'inspection_result_fail': '检查已提交 -- 故障已报告给车队经理',
 
+  // Fleet 第5阶段 -- 实时地图 / 地理围栏
+  'fleet_live_map_title': '实时地图',
+  'fleet_live_map_no_vehicles': '暂无车辆报告实时位置',
+  'fleet_live_map_tap_to_place': '点击地图以放置地理围栏中心',
+  'fleet_live_map_add_geofence': '添加地理围栏',
+  'fleet_live_map_new_geofence': '新建地理围栏',
+  'fleet_live_map_geofence_name': '区域名称',
+  'fleet_live_map_geofence_radius': '半径',
+  'fleet_live_map_create': '创建',
+  'fleet_live_map_alerts_title': '地理围栏警报',
+  'fleet_live_map_no_alerts': '暂无警报',
+
   // ============================================================
   // 报告
   // ============================================================

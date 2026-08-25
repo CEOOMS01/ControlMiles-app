@@ -28,8 +28,17 @@ class TrackingController {
   static TrackingState currentState = TrackingState.idle;
   static String? currentGigApp;
 
+  // Fleet Phase 5: live map. SessionSection has no organizationId field
+  // (the DB row does, the model never grew one -- see startTripFlow's own
+  // comment on organizationId), so these two are kept the same way
+  // activeSessionId/currentGigApp already are: plain static state set once
+  // at trip start, not derived from a model each tick.
+  static String? activeVehicleId;
+  static String? activeOrganizationId;
+
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
+  static DateTime _lastLocationUpdateTime = DateTime.now();
   static int _gpTicksProcessed = 0;
 
   static double _totalSectionMiles = 0.0;
@@ -85,6 +94,8 @@ class TrackingController {
     activeSessionId = null;
     activeSection = null;
     currentGigApp = null;
+    activeVehicleId = null;
+    activeOrganizationId = null;
     currentState = TrackingState.idle;
     _totalSectionMiles = 0.0;
     _totalSessionMiles = 0.0;
@@ -132,6 +143,12 @@ class TrackingController {
       // VehicleService antes de reimplementar esta decisión en otro lado.
       final activeVehicle = await VehicleService()
           .getActiveOrAssignedVehicle(user.id, organizationId: organizationId);
+
+      // Fleet Phase 5: live map needs these on every GPS tick (see
+      // _smartSync) -- set once here, cleared in _resetState(), same
+      // lifecycle as activeSessionId/currentGigApp.
+      activeVehicleId = activeVehicle?.id;
+      activeOrganizationId = organizationId;
 
       // Crear sesión principal
       await Supabase.instance.client.from('sessions').insert({
@@ -655,7 +672,7 @@ class TrackingController {
           );
         }
 
-        await _smartSync(result.drivingSignatureScore);
+        await _smartSync(result.drivingSignatureScore, latitude: latitude, longitude: longitude, speed: speed);
       }
     }
   }
@@ -973,7 +990,12 @@ class TrackingController {
     }
   }
 
-  static Future<void> _smartSync(double score) async {
+  static Future<void> _smartSync(
+    double score, {
+    required double latitude,
+    required double longitude,
+    required double speed,
+  }) async {
     final now = DateTime.now().toUtc();
     if (activeSection == null) return;
 
@@ -993,6 +1015,29 @@ class TrackingController {
         eventType: "GPS_TICK",
         payload: {"score": score, "miles": _totalSessionMiles},
       );
+    }
+
+    // Fleet Phase 5: live map. Fleet-only (update_vehicle_location itself
+    // also no-ops on a Gig vehicle server-side, but skipping the call
+    // entirely here avoids a useless round-trip on every Gig trip tick).
+    // Failures are swallowed -- a live-map write is not trip-critical, and
+    // must never be able to interrupt mileage tracking the way a thrown
+    // exception here would (this whole method is awaited from
+    // processGpsTick's hot path).
+    if (activeOrganizationId != null &&
+        activeVehicleId != null &&
+        now.difference(_lastLocationUpdateTime).inSeconds >= 15) {
+      _lastLocationUpdateTime = now;
+      try {
+        await Supabase.instance.client.rpc('update_vehicle_location', params: {
+          'p_vehicle_id': activeVehicleId,
+          'p_latitude': latitude,
+          'p_longitude': longitude,
+          'p_speed': speed,
+        });
+      } catch (e) {
+        _logError('LIVE_LOCATION_SYNC_ERROR', e.toString());
+      }
     }
   }
 

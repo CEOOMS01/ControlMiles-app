@@ -388,6 +388,18 @@ const Map<String, String> frTexts = {
   'inspection_result_pass': 'Inspection réussie -- aucun défaut trouvé',
   'inspection_result_fail': 'Inspection envoyée -- défauts signalés à votre gestionnaire de flotte',
 
+  // Fleet Phase 5 -- carte en direct / géorepérage
+  'fleet_live_map_title': 'Carte en direct',
+  'fleet_live_map_no_vehicles': 'Aucun véhicule ne signale de position en direct pour le moment',
+  'fleet_live_map_tap_to_place': 'Touchez la carte pour placer le centre de la géozone',
+  'fleet_live_map_add_geofence': 'Ajouter une géozone',
+  'fleet_live_map_new_geofence': 'Nouvelle géozone',
+  'fleet_live_map_geofence_name': 'Nom de la zone',
+  'fleet_live_map_geofence_radius': 'Rayon',
+  'fleet_live_map_create': 'Créer',
+  'fleet_live_map_alerts_title': 'Alertes de géozone',
+  'fleet_live_map_no_alerts': 'Aucune alerte',
+
   // ============================================================
   // RAPPORTS
   // ============================================================

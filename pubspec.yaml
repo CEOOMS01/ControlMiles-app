@@ -62,6 +62,18 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   flutter_timezone: ^5.1.0
 
+  # --- Fleet Phase 5: live map (OpenStreetMap tiles -- no API key/billing
+  # account needed, unlike google_maps_flutter, which would have required
+  # an external Google Cloud credential from the user before this could
+  # even run) ---
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  # Was already present transitively (via flutter_test etc.) but declaring
+  # it directly since fleet_live_map_screen.dart imports it for firstOrNull
+  # -- relying on an undeclared transitive resolution isn't guaranteed by
+  # the pub version solver.
+  collection: ^1.19.0
+
 # ============================================================
 # DEV DEPENDENCIES
 # ============================================================

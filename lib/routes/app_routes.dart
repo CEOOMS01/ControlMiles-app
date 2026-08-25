@@ -24,6 +24,7 @@ class AppRoutes {
   static const String createOrganization = '/create-organization';
   static const String fleetDashboard = '/fleet-dashboard';
   static const String fleetRoster = '/fleet-roster';
+  static const String fleetLiveMap = '/fleet-live-map';
   // Fleet Phase 3: no dedicated fleetDriverHome route -- a fleet_driver
   // lands on `dashboard`, the SAME screen Gig uses. See
   // VehicleService.getActiveOrAssignedVehicle: the only real difference is
@@ -96,6 +97,7 @@ class AppRoutes {
         createOrganization,
         fleetDashboard,
         fleetRoster,
+        fleetLiveMap,
         pendingInvite,
         home,
         dashboard,
@@ -247,6 +249,7 @@ class AppRoutes {
       case createOrganization: return 'Create Organization';
       case fleetDashboard: return 'Fleet Dashboard';
       case fleetRoster: return 'Fleet Roster';
+      case fleetLiveMap: return 'Fleet Live Map';
       case pendingInvite: return 'Pending Invite';
 
       case tracking: return 'Tracking';

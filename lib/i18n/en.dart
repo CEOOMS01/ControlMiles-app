@@ -470,6 +470,18 @@ const Map<String, String> enTexts = {
   'inspection_result_pass': 'Inspection passed -- no defects found',
   'inspection_result_fail': 'Inspection submitted -- defects reported to your fleet manager',
 
+  // Fleet Phase 5 -- live map / geofencing
+  'fleet_live_map_title': 'Live map',
+  'fleet_live_map_no_vehicles': 'No vehicles reporting a live position yet',
+  'fleet_live_map_tap_to_place': 'Tap the map to place the geofence center',
+  'fleet_live_map_add_geofence': 'Add geofence',
+  'fleet_live_map_new_geofence': 'New geofence',
+  'fleet_live_map_geofence_name': 'Zone name',
+  'fleet_live_map_geofence_radius': 'Radius',
+  'fleet_live_map_create': 'Create',
+  'fleet_live_map_alerts_title': 'Geofence alerts',
+  'fleet_live_map_no_alerts': 'No alerts',
+
   // ============================================================
   // REPORT EXTENSIONS
   // ============================================================
