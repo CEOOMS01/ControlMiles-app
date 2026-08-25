@@ -29,7 +29,13 @@ class AuthService {
   // nombre real. Ahora login_screen.dart pide el nombre en el formulario
   // de registro y lo manda acá -- se quita el fallback fabricado, ya no
   // hace falta.
-  Future<void> signUp(String email, String password, {String? firstName}) async {
+  // BUG FIX (pedido explícito): el registro solo pedía first_name --
+  // last_name/full_name existen en public.profiles desde antes (los usa
+  // profile_screen.dart al editar, y reports_screen.dart los lee para el
+  // nombre legal en el PDF), pero nunca se poblaban al registrarse, solo
+  // si el usuario después visitaba Profile y los llenaba a mano. Ahora se
+  // piden los dos en el mismo formulario de registro.
+  Future<void> signUp(String email, String password, {String? firstName, String? lastName}) async {
     try {
       await _supabase.auth.signUp(
         email: email,
@@ -38,6 +44,7 @@ class AuthService {
         // cree el perfil con el nombre correcto desde el segundo 1.
         data: {
           'first_name': firstName ?? '',
+          'last_name': lastName ?? '',
         },
       );
     } on AuthException catch (e) {

@@ -24,6 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
   // fabricaba uno con el prefijo del email, y ese valor basura terminaba
   // en public.profiles.first_name (fuente del saludo del Dashboard).
   final _firstNameController = TextEditingController();
+  // BUG FIX (pedido explícito): last_name/full_name existen en
+  // public.profiles desde antes -- profile_screen.dart ya los edita y
+  // reports_screen.dart ya los lee para el nombre legal del PDF -- pero el
+  // registro nunca los pedía, así que se quedaban vacíos hasta que el
+  // usuario visitara Profile a mano. Se piden los dos ahora, mismo
+  // patrón/labels que profile_screen.dart (tr('name') + tr('last_name')).
+  final _lastNameController = TextEditingController();
   final _authService = AuthService();
 
   bool _isLoading = false;
@@ -35,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
@@ -52,8 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // BUG FIX (pedido explícito): antes no se validaba nombre porque no
     // existía el campo -- ahora el signup lo requiere, mismo mensaje de
-    // validación que ya usa el resto del formulario.
-    if (!_isLoginMode && _firstNameController.text.trim().isEmpty) {
+    // validación que ya usa el resto del formulario. Apellido ahora exigido
+    // igual que el nombre -- mismo motivo (full_name para reportes/PDF).
+    if (!_isLoginMode &&
+        (_firstNameController.text.trim().isEmpty ||
+            _lastNameController.text.trim().isEmpty)) {
       _showError(appState.tr('field_required'));
       return;
     }
@@ -68,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
           email,
           password,
           firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
         );
       }
 
@@ -277,6 +289,26 @@ class _LoginScreenState extends State<LoginScreen> {
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
               labelText: appState.tr('name'),
+              prefixIcon: const Icon(Icons.person_outline_rounded),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _lastNameController,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: appState.tr('last_name'),
               prefixIcon: const Icon(Icons.person_outline_rounded),
               filled: true,
               fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
