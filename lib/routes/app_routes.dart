@@ -24,7 +24,10 @@ class AppRoutes {
   static const String createOrganization = '/create-organization';
   static const String fleetDashboard = '/fleet-dashboard';
   static const String fleetRoster = '/fleet-roster';
-  static const String fleetDriverHome = '/fleet-driver-home';
+  // Fleet Phase 3: no dedicated fleetDriverHome route -- a fleet_driver
+  // lands on `dashboard`, the SAME screen Gig uses. See
+  // VehicleService.getActiveOrAssignedVehicle: the only real difference is
+  // which vehicle that screen resolves, not a separate screen/flow.
   static const String pendingInvite = '/pending-invite';
 
   // ============================================================
@@ -93,7 +96,6 @@ class AppRoutes {
         createOrganization,
         fleetDashboard,
         fleetRoster,
-        fleetDriverHome,
         pendingInvite,
         home,
         dashboard,
@@ -132,7 +134,6 @@ class AppRoutes {
     home,
     dashboard,
     fleetDashboard,
-    fleetDriverHome,
   ];
 
   static const List<String> fleetSetupRoutes = [
@@ -246,7 +247,6 @@ class AppRoutes {
       case createOrganization: return 'Create Organization';
       case fleetDashboard: return 'Fleet Dashboard';
       case fleetRoster: return 'Fleet Roster';
-      case fleetDriverHome: return 'Fleet Driver Home';
       case pendingInvite: return 'Pending Invite';
 
       case tracking: return 'Tracking';
@@ -333,14 +333,18 @@ class AppRoutes {
     bool hasPendingInvites = false,
     bool accountTypeChosen = true,
     bool isFleetAdmin = false,
-    bool isFleetDriver = false,
   }) {
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
     if (hasPendingInvites) return pendingInvite;
     if (!accountTypeChosen) return accountType;
     if (isFleetAdmin) return fleetDashboard;
-    if (isFleetDriver) return fleetDriverHome;
+    // Fleet Phase 3: fleet_driver uses the SAME dashboard route as Gig --
+    // DashboardScreen/TrackingController/VehicleService resolve the right
+    // vehicle (assigned vs owned) internally instead of this routing
+    // decision forking into a second, parallel screen (that screen,
+    // FleetDriverHomeScreen, existed briefly in Phase 2 and was deleted
+    // once this worked).
     return dashboard;
   }
 

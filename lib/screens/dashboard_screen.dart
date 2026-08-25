@@ -344,7 +344,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       // "activo" (vehicles.is_active/is_primary existían en la DB pero
       // nadie los leía ni escribía). Ahora usa el flag real, gestionado
       // desde Profile vía VehicleService.
-      final vehicle = await _vehicleService.getActiveVehicle(user.id);
+      //
+      // Fleet Phase 3: para un fleet_driver, "el vehículo activo" es el que
+      // su admin le asignó, no uno propio -- getActiveOrAssignedVehicle()
+      // es el único punto de esta rama (ver su comentario en
+      // VehicleService), el mismo que usa tracking_controller.dart al
+      // arrancar un viaje.
+      final appState = context.read<AppState>();
+      final vehicle = await _vehicleService.getActiveOrAssignedVehicle(
+        user.id,
+        organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
+      );
       if (!mounted) return;
       setState(() {
         _activeVehicle = vehicle;
@@ -979,10 +989,20 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
 
+    // Fleet Phase 3: a fleet_driver's vehicle comes from their admin
+    // (assigned_driver_id), not from AppRoutes.vehicle (VehicleScreen is
+    // owner_user_id CRUD -- a driver can't add/edit/delete an org vehicle
+    // there, so sending them to it on tap would be a dead end). No new
+    // "fleet vehicle detail" screen is built this pass -- the card is
+    // simply non-interactive for a fleet driver, and its empty state
+    // explains WHY there's nothing to tap instead of inviting an action
+    // that doesn't apply to them.
+    final isFleetDriver = appState.isFleetDriver;
+
     if (_activeVehicle == null) {
       return InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: _goToVehicleProfile,
+        onTap: isFleetDriver ? null : _goToVehicleProfile,
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -997,18 +1017,20 @@ class _DashboardScreenState extends State<DashboardScreen>
               Divider(height: 1, color: borderColor),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(appState.tr('add_vehicle_prompt') ??
-                          appState.tr('add_vehicle')),
-                    ),
-                    TextButton(
-                      onPressed: _goToVehicleProfile,
-                      child: Text(appState.tr('add_vehicle').toUpperCase()),
-                    ),
-                  ],
-                ),
+                child: isFleetDriver
+                    ? Text(appState.tr('fleet_no_vehicle_assigned'))
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: Text(appState.tr('add_vehicle_prompt') ??
+                                appState.tr('add_vehicle')),
+                          ),
+                          TextButton(
+                            onPressed: _goToVehicleProfile,
+                            child: Text(appState.tr('add_vehicle').toUpperCase()),
+                          ),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -1018,7 +1040,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: _goToVehicleProfile,
+      onTap: isFleetDriver ? null : _goToVehicleProfile,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -1052,8 +1074,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           fontSize: 15, fontWeight: FontWeight.w900),
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded,
-                      color: Color(0xFF94A3B8)),
+                  if (!isFleetDriver)
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Color(0xFF94A3B8)),
                 ],
               ),
             ),

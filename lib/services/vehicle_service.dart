@@ -54,6 +54,33 @@ class VehicleService {
     return list.isNotEmpty ? Vehicle.fromMap(list.first) : null;
   }
 
+  /// Fleet Phase 3: único punto de la decisión "qué vehículo usa este
+  /// usuario para trackear ahora mismo" -- dashboard_screen.dart y
+  /// tracking_controller.dart llaman ESTE método en vez de reimplementar
+  /// la rama Gig/Fleet cada uno por su cuenta (exactamente el tipo de
+  /// duplicidad de flujo que ya causó el bug de splash_page.dart en la
+  /// Fase 2). organizationId != null (perfil fleet_driver) -> el vehículo
+  /// asignado (assigned_driver_id), sin importar is_active (ese flag es
+  /// un concepto puramente Gig -- un driver de flota no "cambia" entre
+  /// autos propios, tiene el que su admin le asignó). organizationId ==
+  /// null (Gig) -> el comportamiento existente de getActiveVehicle().
+  Future<Vehicle?> getActiveOrAssignedVehicle(
+    String userId, {
+    String? organizationId,
+  }) async {
+    if (organizationId != null) {
+      final data = await _supabase
+          .from('vehicles')
+          .select()
+          .eq('assigned_driver_id', userId)
+          .eq('organization_id', organizationId)
+          .eq('is_archived', false)
+          .maybeSingle();
+      return data != null ? Vehicle.fromMap(data) : null;
+    }
+    return getActiveVehicle(userId);
+  }
+
   /// Lanza Exception con mensaje en español listo para mostrar en un
   /// SnackBar — mismo patrón usado en odometer_capture_service.dart.
   void _validate({

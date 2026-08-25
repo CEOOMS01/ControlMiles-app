@@ -92,7 +92,6 @@ class _WelcomePageState extends State<WelcomePage> {
         hasPendingInvites: appState.hasPendingInvites,
         accountTypeChosen: appState.accountTypeChosen,
         isFleetAdmin: appState.isFleetAdmin,
-        isFleetDriver: appState.isFleetDriver,
       );
       Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {

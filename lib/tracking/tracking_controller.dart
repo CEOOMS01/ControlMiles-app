@@ -101,6 +101,15 @@ class TrackingController {
     required BuildContext context,
     required String gigApp,
     String? irsPurpose,
+    // Fleet Phase 3: null for a Gig trip. When the caller is a fleet_driver,
+    // this is AppState.defaultOrgId -- written onto sessions/session_sections
+    // so sessions_select/sections_select RLS (is_org_member(organization_id),
+    // built in Phase 1) actually has something to match against. Before this,
+    // NOTHING ever wrote organization_id on a real trip -- the org-visibility
+    // policy existed but a fleet admin would never have seen a single driver
+    // trip through it, since the column was always null regardless of who
+    // was driving.
+    String? organizationId,
   }) async {
     if (currentState != TrackingState.idle) return;
 
@@ -117,13 +126,19 @@ class TrackingController {
       // en verdad se estaba grabando. Se adjunta acá, en el único punto
       // real de creación de sesión. Si el usuario no tiene vehículo activo,
       // el viaje arranca igual con vehicle_id en null (no bloqueante).
-      final activeVehicle = await VehicleService().getActiveVehicle(user.id);
+      //
+      // Fleet Phase 3: getActiveOrAssignedVehicle() es el único punto de la
+      // rama Gig/Fleet para "qué vehículo" -- ver su comentario en
+      // VehicleService antes de reimplementar esta decisión en otro lado.
+      final activeVehicle = await VehicleService()
+          .getActiveOrAssignedVehicle(user.id, organizationId: organizationId);
 
       // Crear sesión principal
       await Supabase.instance.client.from('sessions').insert({
         "id": sessionId,
         "user_id": user.id,
         "vehicle_id": activeVehicle?.id,
+        "organization_id": organizationId,
         "start_time": DateTime.now().toUtc().toIso8601String(),
         "session_status": "active",
         "is_closed": false,
@@ -155,6 +170,7 @@ class TrackingController {
         sessionId: sessionId,
         gigApp: gigApp,
         irsPurpose: irsPurpose,
+        organizationId: organizationId,
       );
 
       await BackgroundGpsService.startTracking();
@@ -182,6 +198,7 @@ class TrackingController {
     required String sessionId,
     required String gigApp,
     String? irsPurpose,
+    String? organizationId,
   }) async {
     // NOTA: switchSection() ya NO llama a startNewSection() — usa el RPC
     // atómico switch_gig_app_section() directamente (ver comentario en
@@ -207,6 +224,7 @@ class TrackingController {
             'id': sectionId,
             'session_id': sessionId,
             'user_id': user.id,
+            'organization_id': organizationId,
             'gig_app': gigApp,
             'irs_purpose': (gigApp == 'custom') ? irsPurpose : null,
             'section_status': 'active',

@@ -79,6 +79,10 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             context: context,
             gigApp: gigApp,
             irsPurpose: gigApp == 'custom' ? widget.selectedIrsPurpose : null,
+            // Fleet Phase 3: null for Gig -- see the param's own doc comment
+            // in tracking_controller.dart for why this needs to be threaded
+            // through at all (RLS visibility for fleet admins).
+            organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {
             _pulseController.repeat();

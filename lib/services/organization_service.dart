@@ -132,15 +132,4 @@ class OrganizationService {
     return List<Map<String, dynamic>>.from(data).map(Vehicle.fromMap).toList();
   }
 
-  /// El vehículo asignado a ESTE driver específicamente -- lo que
-  /// FleetDriverHomeScreen muestra en vez de un selector manual.
-  Future<Vehicle?> getAssignedVehicle(String driverUserId) async {
-    final data = await _supabase
-        .from('vehicles')
-        .select()
-        .eq('assigned_driver_id', driverUserId)
-        .eq('is_archived', false)
-        .maybeSingle();
-    return data != null ? Vehicle.fromMap(data) : null;
-  }
 }
