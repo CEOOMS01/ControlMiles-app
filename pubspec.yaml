@@ -61,6 +61,11 @@ dependencies:
   # --- Local notifications (recordatorio de viaje olvidado + resumen semanal) ---
   flutter_local_notifications: ^19.5.0
   flutter_timezone: ^5.1.0
+  # notification_service.dart imports timezone directly (TZDateTime/
+  # getLocation/setLocalLocation) but only ever had it as a transitive dep
+  # of flutter_local_notifications -- declaring it directly, pinned to
+  # match the version already forced below in dependency_overrides.
+  timezone: ^0.11.0
 
   # --- Fleet Phase 5: live map (OpenStreetMap tiles -- no API key/billing
   # account needed, unlike google_maps_flutter, which would have required
@@ -110,7 +115,6 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/icons/
 
 # ============================================================
 # APP ICON CONFIGURATION

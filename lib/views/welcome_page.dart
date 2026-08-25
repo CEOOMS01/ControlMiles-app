@@ -148,7 +148,7 @@ class _WelcomePageState extends State<WelcomePage> {
                   Image.asset(
                     'assets/images/logo_olympus.png',
                     height: 70,
-                    errorBuilder: (_, __, ___) => Icon(Icons.shield_rounded, size: 60, color: Theme.of(context).colorScheme.primary),
+                    errorBuilder: (_, _, _) => Icon(Icons.shield_rounded, size: 60, color: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(height: 10),
                   Text(

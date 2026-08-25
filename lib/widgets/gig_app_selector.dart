@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
-import '../tracking/tracking_controller.dart';
 
 class GigAppSelector extends StatelessWidget {
   final String? selectedGigApp;
@@ -83,11 +82,11 @@ class GigAppSelector extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  appState.tr('active_activity')?.toUpperCase() ?? 'ACTIVE ACTIVITY',
+                  appState.tr('active_activity').toUpperCase(),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -95,11 +94,11 @@ class GigAppSelector extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.15),
+                      color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      appState.tr('tracking_active')?.toUpperCase() ?? 'TRACKING ACTIVE',
+                      appState.tr('tracking_active').toUpperCase(),
                       style: const TextStyle(
                         fontSize: 9,
                         color: Colors.green,
@@ -159,8 +158,7 @@ class GigAppSelector extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          appState.tr('resume_to_switch_app') ??
-                              'Resume tracking to switch activity',
+                          appState.tr('resume_to_switch_app'),
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -182,7 +180,7 @@ class GigAppSelector extends StatelessWidget {
                     color: isActive
                         ? baseColor
                         : isSelected
-                            ? baseColor.withOpacity(0.85)
+                            ? baseColor.withValues(alpha: 0.85)
                             : (isDark ? const Color(0xFF1E293B) : Colors.grey.shade100),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
@@ -196,7 +194,7 @@ class GigAppSelector extends StatelessWidget {
                     boxShadow: isActive
                         ? [
                             BoxShadow(
-                              color: baseColor.withOpacity(0.5),
+                              color: baseColor.withValues(alpha: 0.5),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             )
@@ -213,7 +211,7 @@ class GigAppSelector extends StatelessWidget {
                           size: 32,
                           color: (isActive || isSelected)
                               ? Colors.white
-                              : (isDark ? Colors.white70 : baseColor.withOpacity(0.6)),
+                              : (isDark ? Colors.white70 : baseColor.withValues(alpha: 0.6)),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -299,7 +297,7 @@ class GigAppSelector extends StatelessWidget {
             ),
           ),
           Text(
-            appState.tr('select_trip_purpose') ?? 'Select Trip Purpose',
+            appState.tr('select_trip_purpose'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -308,11 +306,11 @@ class GigAppSelector extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            appState.tr('irs_deduction_note') ?? 'For IRS tax deduction purposes',
+            appState.tr('irs_deduction_note'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 24),
@@ -327,7 +325,7 @@ class GigAppSelector extends StatelessWidget {
                   size: 24,
                 ),
                 title: Text(
-                  appState.tr(cat['labelKey'] as String) ?? cat['labelKey'] as String,
+                  appState.tr(cat['labelKey'] as String),
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     color: theme.textTheme.bodyLarge?.color,
@@ -346,7 +344,7 @@ class GigAppSelector extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                appState.tr('cancel') ?? 'Cancel',
+                appState.tr('cancel'),
                 style: const TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.bold,

@@ -4,7 +4,6 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -39,7 +38,6 @@ class TrackingController {
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
-  static int _gpTicksProcessed = 0;
 
   static double _totalSectionMiles = 0.0;
   static double _totalSessionMiles = 0.0;
@@ -99,7 +97,6 @@ class TrackingController {
     currentState = TrackingState.idle;
     _totalSectionMiles = 0.0;
     _totalSessionMiles = 0.0;
-    _gpTicksProcessed = 0;
     _runSegmentStartedAt = null;
     AntifraudEngine.reset();
     LocalStorageService.clearAllCheckpoint();
@@ -164,6 +161,19 @@ class TrackingController {
       });
 
       activeSessionId = sessionId;
+
+      // BUG FIX: context llega como parámetro desde el caller (un widget
+      // State) y ya pasó por dos await reales (getActiveOrAssignedVehicle +
+      // el insert de sessions) antes de este punto -- el widget dueño de
+      // ese context pudo haberse desmontado mientras tanto. context.mounted
+      // (extension disponible en cualquier BuildContext desde Flutter 3.7,
+      // no solo en State) es el guard correcto acá, ya que este método
+      // estático no tiene su propio `mounted`.
+      if (!context.mounted) {
+        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        _resetState();
+        return;
+      }
 
       // Captura obligatoria de odómetro inicial
       final result = await Navigator.push(
@@ -657,7 +667,6 @@ class TrackingController {
       if (miles > 0.0012) {
         _totalSectionMiles += miles;
         _totalSessionMiles += miles;
-        _gpTicksProcessed++;
 
         activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
 

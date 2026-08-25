@@ -111,6 +111,7 @@ const Map<String, String> ptTexts = {
   'statistics': 'Estatísticas',
   'summary': 'Resumo',
   'total_miles': 'Total de milhas',
+  'last_30_days': 'Últimos 30 dias',
   'total_trips': 'Total de viagens',
   'average_speed': 'Velocidade média',
   'RECENT_TRIPS': 'VIAGENS RECENTES',

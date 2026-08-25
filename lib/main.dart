@@ -63,7 +63,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: supabaseUrl,
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dWp3bWNmdHljbWRheGVzZHlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTA1MjUsImV4cCI6MjA5MTE4NjUyNX0.hdkU3aFdjJzoKPFjLoBSlSA0aq2zrpF2O6wwmz1dfVA',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dWp3bWNmdHljbWRheGVzZHlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTA1MjUsImV4cCI6MjA5MTE4NjUyNX0.hdkU3aFdjJzoKPFjLoBSlSA0aq2zrpF2O6wwmz1dfVA',
     authOptions: FlutterAuthClientOptions(
       localStorage: SecureSupabaseLocalStorage(
         persistSessionKey: persistSessionKey,

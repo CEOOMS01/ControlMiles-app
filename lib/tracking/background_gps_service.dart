@@ -28,10 +28,10 @@ class BackgroundGpsService {
       final location = event.event as bg.Location;
       final coords = location.coords;
 
-      final safeSpeed = (coords.speed ?? 0.0) < 0 ? 0.0 : (coords.speed ?? 0.0);
+      final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
       bool isMock = false;
       try {
-        isMock = location.mock ?? false;
+        isMock = location.mock;
       } catch (_) {}
 
       // Procesar ubicación incluso en modo headless
@@ -39,7 +39,7 @@ class BackgroundGpsService {
         latitude: coords.latitude,
         longitude: coords.longitude,
         speed: safeSpeed,
-        accuracy: coords.accuracy ?? 0.0,
+        accuracy: coords.accuracy,
         timestamp: DateTime.parse(location.timestamp),
         isMock: isMock,
       );
@@ -130,18 +130,18 @@ class BackgroundGpsService {
       bg.BackgroundGeolocation.onLocation(
         (bg.Location location) async {
           final coords = location.coords;
-          final safeSpeed = (coords.speed ?? 0.0) < 0 ? 0.0 : (coords.speed ?? 0.0);
+          final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
 
           bool isMock = false;
           try {
-            isMock = location.mock ?? false;
+            isMock = location.mock;
           } catch (_) {}
 
           await TrackingController.processGpsTick(
             latitude: coords.latitude,
             longitude: coords.longitude,
             speed: safeSpeed,
-            accuracy: coords.accuracy ?? 0.0,
+            accuracy: coords.accuracy,
             timestamp: DateTime.parse(location.timestamp),
             isMock: isMock,
           );

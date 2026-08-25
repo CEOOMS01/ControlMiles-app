@@ -132,8 +132,7 @@ class _VehicleScreenState extends State<VehicleScreen>
   String _friendlyVehicleError(Object e, AppState appState) {
     final raw = e.toString();
     if (raw.contains('cambiar de vehículo activo mientras tienes un viaje en curso')) {
-      return appState.tr('vehicle_switch_blocked_active_session') ??
-          'You can\'t change your active vehicle while a trip is in progress.';
+      return appState.tr('vehicle_switch_blocked_active_session');
     }
     return raw.replaceFirst('Exception: ', '');
   }
@@ -459,7 +458,7 @@ class _VehicleScreenState extends State<VehicleScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withOpacity(0.15),
+                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text('ACTIVO',
@@ -504,7 +503,7 @@ class _VehicleScreenState extends State<VehicleScreen>
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedMake,
+                  initialValue: _selectedMake,
                   decoration: InputDecoration(labelText: appState.tr('make')),
                   hint: const Text('Ej: Toyota, Nissan'),
                   isExpanded: true,
@@ -616,7 +615,7 @@ class _VehicleScreenState extends State<VehicleScreen>
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: DropdownButtonFormField<String>(
-        value: _selectedVehicleForMaintenance?.id,
+        initialValue: _selectedVehicleForMaintenance?.id,
         decoration: InputDecoration(
           labelText: appState.tr('select_vehicle'),
           border: const OutlineInputBorder(),
@@ -643,7 +642,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF475569).withOpacity(0.12),
+          backgroundColor: const Color(0xFF475569).withValues(alpha: 0.12),
           child: Icon(meta.icon, color: const Color(0xFF475569), size: 20),
         ),
         title: Text(appState.tr(meta.labelKey), style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -683,7 +682,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       child: Column(
         children: [
           DropdownButtonFormField<String>(
-            value: _recordType,
+            initialValue: _recordType,
             decoration: InputDecoration(labelText: appState.tr('maintenance_type')),
             isExpanded: true,
             items: MaintenanceType.all

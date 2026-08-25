@@ -111,6 +111,7 @@ const Map<String, String> frTexts = {
   'statistics': 'Statistiques',
   'summary': 'Résumé',
   'total_miles': 'Total des miles',
+  'last_30_days': '30 derniers jours',
   'total_trips': 'Total des trajets',
   'average_speed': 'Vitesse moyenne',
   'RECENT_TRIPS': 'TRAJETS RÉCENTS',

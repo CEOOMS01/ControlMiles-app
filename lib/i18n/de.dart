@@ -110,6 +110,7 @@ const Map<String, String> deTexts = {
   'statistics': 'Statistiken',
   'summary': 'Zusammenfassung',
   'total_miles': 'Gesamte Meilen',
+  'last_30_days': 'Letzte 30 Tage',
   'total_trips': 'Gesamte Fahrten',
   'average_speed': 'Durchschnittsgeschwindigkeit',
   'RECENT_TRIPS': 'LETZTE FAHRTEN',

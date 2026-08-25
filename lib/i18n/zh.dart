@@ -111,6 +111,7 @@ const Map<String, String> zhTexts = {
   'statistics': '统计数据',
   'summary': '摘要',
   'total_miles': '总里程',
+  'last_30_days': '过去30天',
   'total_trips': '总行程',
   'average_speed': '平均速度',
   'RECENT_TRIPS': '最近行程',

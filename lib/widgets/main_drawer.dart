@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
@@ -135,7 +134,7 @@ class MainDrawer extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -246,7 +245,7 @@ class MainDrawer extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(appState.tr('logout')),
-        content: Text(appState.tr('logout_confirmation') ?? '¿Estás seguro de que deseas cerrar sesión?'), 
+        content: Text(appState.tr('logout_confirmation')), 
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

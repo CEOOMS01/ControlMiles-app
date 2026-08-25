@@ -4,8 +4,7 @@
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../models/session_section.dart';
-import 'package:flutter/foundation.dart';   
+import 'package:flutter/foundation.dart';
 
 class LocalStorageService {
   static const String _prefix = 'controlmiles_';

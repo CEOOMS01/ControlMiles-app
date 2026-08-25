@@ -51,12 +51,12 @@ class _CloudStatusWidgetState extends State<CloudStatusWidget> with SingleTicker
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: widget.isOnline ? Colors.blue.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+          color: widget.isOnline ? Colors.blue.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: (widget.isOnline ? Colors.blue : Colors.red).withOpacity(0.08),
+            color: (widget.isOnline ? Colors.blue : Colors.red).withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 6),
           )
@@ -122,7 +122,7 @@ class _CloudStatusWidgetState extends State<CloudStatusWidget> with SingleTicker
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (widget.isOnline ? Colors.blue : Colors.red).withOpacity(0.1),
+        color: (widget.isOnline ? Colors.blue : Colors.red).withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -147,7 +147,7 @@ class _CloudStatusWidgetState extends State<CloudStatusWidget> with SingleTicker
           style: TextStyle(
             fontSize: 10,
             letterSpacing: 0.5,
-            color: color.withOpacity(0.9),
+            color: color.withValues(alpha: 0.9),
             fontWeight: FontWeight.w800,
           ),
         ),

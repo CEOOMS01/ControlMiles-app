@@ -125,7 +125,7 @@ class _MileageDeductionBadgeState extends State<MileageDeductionBadge> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.10),
+            color: Colors.blue.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.blue),
           ),

@@ -244,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           width: 2,
         ),
         boxShadow: isSelected
-            ? [BoxShadow(color: primary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))]
+            ? [BoxShadow(color: primary.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))]
             : [],
       ),
       child: ListTile(
@@ -273,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
           _buildToggleSetting(
             icon: Icons.straighten_rounded,
-            title: appState.tr('metric_system') ?? 'Metric System', // Llave validada
+            title: appState.tr('metric_system'), // Llave validada
             value: appState.useMetricSystem,
             onChanged: (v) => appState.setUseMetricSystem(v),
           ),
@@ -296,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         trailing: Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeColor: Theme.of(context).colorScheme.primary,
+          activeThumbColor: Theme.of(context).colorScheme.primary,
         ),
       ),
     );

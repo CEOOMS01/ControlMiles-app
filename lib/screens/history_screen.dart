@@ -290,14 +290,66 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     children: [
                       Icon(Icons.history_rounded, size: 48, color: labelCol),
                       const SizedBox(height: 12),
-                      Text(appState.tr('no_data') ?? 'No hay historial', style: TextStyle(color: labelCol, fontSize: 15)),
+                      Text(appState.tr('no_data'), style: TextStyle(color: labelCol, fontSize: 15)),
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                  itemCount: _sessions.length,
-                  itemBuilder: (context, index) {
+              : Column(
+                  children: [
+                    // BUG FIX: _totalMiles/_totalDurationSeconds/_firstStart/
+                    // _lastEnd (30-day accumulators, kept in sync even on
+                    // delete -- see _loadHistory/the delete handler) were
+                    // computed and maintained but never actually rendered
+                    // anywhere (flutter analyze: unused_field on all 4).
+                    // This is real, already-correct data that just never
+                    // got a UI -- adding the summary rather than deleting
+                    // the state that was carefully kept accurate.
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderCol),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_month_rounded, size: 18, color: labelCol),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  appState.tr('last_30_days'),
+                                  style: TextStyle(fontSize: 12, color: labelCol, fontWeight: FontWeight.w600),
+                                ),
+                                if (_firstStart != null && _lastEnd != null)
+                                  Text(
+                                    '${DateFormat('MMM d').format(_firstStart!.toLocal())} - ${DateFormat('MMM d').format(_lastEnd!.toLocal())}',
+                                    style: TextStyle(fontSize: 10.5, color: labelCol),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${_totalMiles.toStringAsFixed(1)} mi',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            _formatDuration(_totalDurationSeconds),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                        itemCount: _sessions.length,
+                        itemBuilder: (context, index) {
                     final session = _sessions[index];
                     final sections = _sections[session.id] ?? [];
                     final isExpanded = _expandedSessions[session.id] ?? false;
@@ -337,7 +389,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             color: cardBg,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: borderCol),
-                            boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                            boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                           ),
                           child: Column(
                             children: [
@@ -354,7 +406,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           Container(
                                             width: 40,
                                             height: 40,
-                                            decoration: BoxDecoration(color: const Color(0xFF475569).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                                            decoration: BoxDecoration(color: const Color(0xFF475569).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                                             child: const Icon(Icons.route_rounded, color: Color(0xFF475569), size: 20),
                                           ),
                                           const SizedBox(width: 12),
@@ -405,7 +457,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         padding: const EdgeInsets.only(left: 4, bottom: 8),
                                         child: Text('SECTIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: labelCol)),
                                       ),
-                                      ...sections.map((section) => _buildSectionRow(section, appState, isDark)).toList(),
+                                      ...sections.map((section) => _buildSectionRow(section, appState, isDark)),
                                     ],
                                   ),
                                 ),
@@ -417,6 +469,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     );
                   },
                 ),
+              ),
+            ],
+          ),
     );
   }
 
@@ -452,9 +507,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: appColor.withOpacity(0.06),
+        color: appColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: appColor.withOpacity(0.2)),
+        border: Border.all(color: appColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,7 +519,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(color: appColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: appColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
                 child: Icon(app.icon, color: appColor, size: 17),
               ),
               const SizedBox(width: 10),
@@ -499,7 +554,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ? Icons.note_add_rounded
                         : Icons.sticky_note_2_rounded,
                     size: 13,
-                    color: appColor.withOpacity(0.7),
+                    color: appColor.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 5),
                   Expanded(
@@ -512,7 +567,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         fontStyle: (section.notes ?? '').isEmpty
                             ? FontStyle.italic
                             : FontStyle.normal,
-                        color: appColor.withOpacity(0.8),
+                        color: appColor.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -528,7 +583,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildSectionStat(String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

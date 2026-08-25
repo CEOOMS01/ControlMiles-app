@@ -11,7 +11,6 @@
 // DEPENDENCY (pubspec.yaml):
 //   google_mlkit_text_recognition: ^0.11.0
 
-import 'dart:typed_data';
 import 'dart:ui' show Size;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';

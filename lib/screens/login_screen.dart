@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showError(appState.tr('field_required') ?? 'Todos los campos son obligatorios');
+      _showError(appState.tr('field_required'));
       return;
     }
 
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // existía el campo -- ahora el signup lo requiere, mismo mensaje de
     // validación que ya usa el resto del formulario.
     if (!_isLoginMode && _firstNameController.text.trim().isEmpty) {
-      _showError(appState.tr('field_required') ?? 'Todos los campos son obligatorios');
+      _showError(appState.tr('field_required'));
       return;
     }
 
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
-        _showError(appState.tr('auth_error') ?? 'Error de autenticación');
+        _showError(appState.tr('auth_error'));
         return;
       }
 
@@ -132,12 +132,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String _getErrorMessage(String error, AppState appState) {
     if (error.contains('Invalid login credentials') || error.contains('Invalid credentials')) {
-      return appState.tr('invalid_credentials') ?? 'Credenciales inválidas';
+      return appState.tr('invalid_credentials');
     }
     if (error.contains('Email already registered') || error.contains('already exists')) {
-      return appState.tr('email_already_exists') ?? 'Este email ya está registrado';
+      return appState.tr('email_already_exists');
     }
-    return '${appState.tr('error') ?? 'Error'}: ${error.split(' ').take(6).join(' ')}';
+    return '${appState.tr('error')}: ${error.split(' ').take(6).join(' ')}';
   }
 
   void _showError(String message) {
@@ -232,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Image.asset(
             'assets/images/logo_controlmiles.png',
             height: 140,
-            errorBuilder: (_, __, ___) => Icon(
+            errorBuilder: (_, _, _) => Icon(
               Icons.shield_rounded,
               size: 100,
               color: Theme.of(context).colorScheme.primary,
@@ -251,8 +251,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         Text(
           _isLoginMode
-              ? (appState.tr('sign_in') ?? 'INICIAR SESIÓN').toUpperCase()
-              : (appState.tr('sign_up') ?? 'REGISTRARSE').toUpperCase(),
+              ? (appState.tr('sign_in')).toUpperCase()
+              : (appState.tr('sign_up')).toUpperCase(),
           style: TextStyle(
             color: isDark ? Colors.white70 : const Color(0xFF94A3B8),
             fontSize: 12,
@@ -356,8 +356,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
             : Text(
                 _isLoginMode
-                    ? (appState.tr('sign_in') ?? 'INICIAR SESIÓN').toUpperCase()
-                    : (appState.tr('sign_up') ?? 'REGISTRARSE').toUpperCase(),
+                    ? (appState.tr('sign_in')).toUpperCase()
+                    : (appState.tr('sign_up')).toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -397,8 +397,8 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(
           _isLoginMode
-              ? (appState.tr('signup') ?? 'Crear cuenta')
-              : (appState.tr('sign_in') ?? 'Iniciar sesión'),
+              ? (appState.tr('signup'))
+              : (appState.tr('sign_in')),
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
             fontSize: 13,
@@ -414,11 +414,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Text(
-          appState.tr('Olympus Mont Systems LLC') ?? 'Olympus Mont Systems LLC',
+          appState.tr('Olympus Mont Systems LLC'),
           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
         ),
         Text(
-          appState.tr('data_protected_footer') ?? 'Your data is protected',
+          appState.tr('data_protected_footer'),
           style: const TextStyle(fontSize: 10, color: Colors.grey),
         ),
       ],

@@ -543,7 +543,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4))
               ],
@@ -558,7 +558,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E).withOpacity(0.1),
+                    color: const Color(0xFF22C55E).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.verified_rounded,
@@ -596,10 +596,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: const Color(0xFF3B82F6).withOpacity(0.3)),
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '$totalDisp $unitLabel',
@@ -685,14 +685,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ? appState.tr('kilometer_short')
         : appState.tr('mile_short');
 
-    final durMin = section.effectiveDurationSeconds ~/ 60;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: appColor.withOpacity(0.08),
+        color: appColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: appColor.withOpacity(0.3)),
+        border: Border.all(color: appColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -706,10 +704,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   color: appColor)),
           const SizedBox(width: 6),
           Text(
-            '$secDisp $secUnit · ${durMin}m',
+            '$secDisp $secUnit · ${_formatSectionDuration(section)}',
             style: TextStyle(
                 fontSize: 10,
-                color: appColor.withOpacity(0.75),
+                color: appColor.withValues(alpha: 0.75),
                 fontWeight: FontWeight.w500),
           ),
         ],

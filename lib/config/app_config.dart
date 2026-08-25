@@ -158,7 +158,7 @@ class AppConfig {
 
     final safeName = sanitizeFileName(fileName);
 
-    return "${folderPrefix}${userId}/vehicle_$vehicleId/section_$sectionId/$safeName";
+    return "$folderPrefix$userId/vehicle_$vehicleId/section_$sectionId/$safeName";
   }
 
 }

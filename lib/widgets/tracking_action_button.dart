@@ -63,8 +63,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            appState.tr('select_an_activity_before_starting_tracking') ??
-                'Selecciona una actividad primero',
+            appState.tr('select_an_activity_before_starting_tracking'),
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -101,8 +100,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(appState.tr('pause_failed') ??
-                    'Could not pause, still tracking'),
+                content: Text(appState.tr('pause_failed')),
                 backgroundColor: Colors.red,
               ),
             );
@@ -118,8 +116,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(appState.tr('resume_failed') ??
-                    'Could not resume tracking'),
+                content: Text(appState.tr('resume_failed')),
                 backgroundColor: Colors.red,
               ),
             );
@@ -158,8 +155,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              appState.tr('odometer_required_to_end') ??
-                  'Se requiere odómetro para finalizar',
+              appState.tr('odometer_required_to_end'),
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -180,8 +176,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(appState.tr('end_trip_failed') ??
-                'Could not end the trip, still tracking'),
+            content: Text(appState.tr('end_trip_failed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -207,7 +202,6 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     final state = TrackingController.currentState;
     final isRunning = state == TrackingState.running;
     final isIdle = state == TrackingState.idle;
-    final isPaused = state == TrackingState.paused;
 
     // Sincronizar animación
     if (isRunning && !_pulseController.isAnimating) {
@@ -242,7 +236,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: _getButtonColor(state)
-                                  .withOpacity(0.6 - _pulseController.value * 0.4),
+                                  .withValues(alpha: 0.6 - _pulseController.value * 0.4),
                               width: 4,
                             ),
                           ),
@@ -258,7 +252,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: _getButtonColor(state).withOpacity(0.4),
+                          color: _getButtonColor(state).withValues(alpha: 0.4),
                           blurRadius: 25,
                           offset: const Offset(0, 10),
                         ),
@@ -301,7 +295,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
                   border: Border.all(color: Colors.red.shade200, width: 2.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.12),
+                      color: Colors.red.withValues(alpha: 0.12),
                       blurRadius: 12,
                       offset: const Offset(0, 5),
                     ),
@@ -313,7 +307,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
                     Icon(Icons.stop, color: Colors.red.shade700, size: 26),
                     const SizedBox(height: 4),
                     Text(
-                      appState.tr('end')?.toUpperCase() ?? 'END',
+                      appState.tr('end').toUpperCase(),
                       style: TextStyle(
                         color: Colors.red.shade700,
                         fontSize: 10,
@@ -343,8 +337,8 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
   }
 
   String _getLabel(AppState appState, TrackingState state) {
-    if (state == TrackingState.running) return appState.tr('pause')?.toUpperCase() ?? 'PAUSE';
-    if (state == TrackingState.paused) return appState.tr('resume')?.toUpperCase() ?? 'RESUME';
-    return appState.tr('start')?.toUpperCase() ?? 'START';
+    if (state == TrackingState.running) return appState.tr('pause').toUpperCase();
+    if (state == TrackingState.paused) return appState.tr('resume').toUpperCase();
+    return appState.tr('start').toUpperCase();
   }
 }

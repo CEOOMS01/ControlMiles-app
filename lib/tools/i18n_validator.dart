@@ -1,3 +1,9 @@
+// ignore_for_file: avoid_print
+// Standalone CLI script (dart run lib/tools/i18n_validator.dart), never
+// part of the app's runtime -- print() to stdout is the entire point here,
+// not something to swap for debugPrint (a Flutter-widget-tree debugging
+// tool with truncation behavior that doesn't fit a CLI script).
+
 import '../i18n/en.dart';
 import '../i18n/es.dart';
 import '../i18n/fr.dart';

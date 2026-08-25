@@ -90,8 +90,6 @@ class SessionSection {
     }
 
     final sectionStatus = map['section_status'] ?? 'active';
-    final isPaused = sectionStatus == 'paused';
-    final isClosed = sectionStatus == 'closed' || sectionStatus == 'switched';
 
     return SessionSection(
       id: map['id'] ?? '',

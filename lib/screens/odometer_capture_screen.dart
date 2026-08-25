@@ -22,7 +22,6 @@ import 'package:provider/provider.dart';
 
 
 
-import '../i18n/app_texts.dart';      // AppLanguage
 
 import '../logic/app_state.dart';      // AppState
 
@@ -687,7 +686,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
               border: _showTorchButton && !_torchOn 
 
-                ? Border.all(color: const Color(0xFFFFD600).withOpacity(0.8), width: 1.5) 
+                ? Border.all(color: const Color(0xFFFFD600).withValues(alpha: 0.8), width: 1.5) 
 
                 : null,
 
@@ -749,11 +748,11 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
                 decoration: BoxDecoration(
 
-                  color: Colors.black.withOpacity(0.72),
+                  color: Colors.black.withValues(alpha: 0.72),
 
                   borderRadius: BorderRadius.circular(20),
 
-                  border: Border.all(color: const Color(0xFFFFD600).withOpacity(0.7)),
+                  border: Border.all(color: const Color(0xFFFFD600).withValues(alpha: 0.7)),
 
                 ),
 
@@ -857,8 +856,12 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
   // no tenía forma de corregirlo. Ahora siempre es editable.
   Widget _buildOdometerField(AppState appState) {
 
-    const bool isEditable = true;
-
+    // BUG FIX (odómetro no editable, ver comentario arriba): el campo
+    // siempre es editable ahora -- isEditable existía como una constante
+    // `true` con varios ternarios `isEditable ? X : Y` cuya rama Y nunca
+    // se alcanzaba (flutter analyze los marcaba como dead_code). Simplificado
+    // a los valores directos en vez de mantener un ternario que nunca
+    // toma la otra rama.
     final bool isAutoFilled = _ocrLocked && !_ocrFailed;
 
 
@@ -907,7 +910,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
           focusNode: _odometerFocus,
 
-          readOnly: !isEditable,
+          readOnly: false,
 
           // BUG FIX: sin esto, escribir a mano no reconstruía la pantalla,
           // así que el botón de captura (que depende de si el campo tiene
@@ -920,7 +923,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
           style: TextStyle(
 
-            color: isAutoFilled ? const Color(0xFF00E5A0) : isEditable ? Colors.white : Colors.white38,
+            color: isAutoFilled ? const Color(0xFF00E5A0) : Colors.white,
 
             fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 4,
 
@@ -938,7 +941,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
             filled: true,
 
-            fillColor: isEditable ? Colors.black.withOpacity(0.65) : Colors.black.withOpacity(0.40),
+            fillColor: Colors.black.withValues(alpha: 0.65),
 
             enabledBorder: OutlineInputBorder(
 
@@ -946,9 +949,9 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
               borderSide: BorderSide(
 
-                color: isAutoFilled ? const Color(0xFF00E5A0) : isEditable ? Colors.orange : Colors.white12,
+                color: isAutoFilled ? const Color(0xFF00E5A0) : Colors.orange,
 
-                width: isAutoFilled || isEditable ? 2.0 : 1.0,
+                width: 2.0,
 
               ),
 
@@ -958,11 +961,11 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
               borderRadius: BorderRadius.circular(14),
 
-              borderSide: BorderSide(color: isEditable ? Colors.orange : const Color(0xFF00E5A0), width: 2.0),
+              borderSide: BorderSide(color: Colors.orange, width: 2.0),
 
             ),
 
-            suffixIcon: !isEditable && !_ocrLocked ? null : Icon(isEditable ? Icons.edit : Icons.lock_outline, size: 18, color: isEditable ? Colors.orange : Colors.white24),
+            suffixIcon: const Icon(Icons.edit, size: 18, color: Colors.orange),
 
           ),
 
@@ -1104,7 +1107,7 @@ class _ScanOverlayPainter extends CustomPainter {
 
 
 
-    final scrimPaint = Paint()..color = Colors.black.withOpacity(0.55);
+    final scrimPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
 
     final fullPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
@@ -1148,7 +1151,7 @@ class _ScanOverlayPainter extends CustomPainter {
 
       final scanPaint = Paint()
 
-        ..shader = LinearGradient(colors: [Colors.transparent, Colors.white.withOpacity(0.6), Colors.transparent]).createShader(r)
+        ..shader = LinearGradient(colors: [Colors.transparent, Colors.white.withValues(alpha: 0.6), Colors.transparent]).createShader(r)
 
         ..strokeWidth = 1.5..style = PaintingStyle.stroke;
 
@@ -1192,11 +1195,11 @@ class _StatusChip extends StatelessWidget {
 
       decoration: BoxDecoration(
 
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
 
         borderRadius: BorderRadius.circular(20),
 
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
 
       ),
 

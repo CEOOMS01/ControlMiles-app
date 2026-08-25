@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -42,7 +41,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   double liveMiles = 0.0;
   String _displayTime = "00:00:00";
-  DateTime? _startTime;
 
   String? _selectedGigApp;
   // BUG FIX (irs_purpose nunca se guardaba): GigAppSelector ya soportaba un
@@ -69,7 +67,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   List<Map<String, dynamic>> _recentSessions = [];
   Map<String, List<Map<String, dynamic>>> _recentSections = {};
   bool _historyLoading = true;
-  Duration _pausedSectionDuration = Duration.zero;
 
   // ── NUEVO: card Summary (total del día) ──
   // BUG FIX (pedido explícito, batch de 4 bugs): NO reusa _recentSessions
@@ -113,7 +110,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
 
     if (active != null) {
-      _startTime = active.startTime;
       _displayTime = _formatDuration(TrackingController.elapsedSectionDuration);
     } else {
       _displayTime = '00:00:00';
@@ -182,8 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            appState.tr('switch_activity_failed') ??
-                'Could not switch activity, still tracking the previous one',
+            appState.tr('switch_activity_failed'),
           ),
           backgroundColor: Colors.red.shade700,
         ),
@@ -541,7 +536,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: borderColor),
                 boxShadow: isDark ? [] : [
-                  BoxShadow(color: Colors.black.withOpacity(0.04),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
@@ -627,10 +622,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: appColor.withOpacity(0.08),
+                              color: appColor.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: appColor.withOpacity(0.3)),
+                                  color: appColor.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -651,7 +646,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   '${secMiles.toStringAsFixed(1)} mi · ${secDur}m',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: appColor.withOpacity(0.75),
+                                    color: appColor.withValues(alpha: 0.75),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -694,7 +689,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4)),
               ],
@@ -920,7 +915,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -1024,8 +1019,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     : Row(
                         children: [
                           Expanded(
-                            child: Text(appState.tr('add_vehicle_prompt') ??
-                                appState.tr('add_vehicle')),
+                            child: Text(appState.tr('add_vehicle_prompt')),
                           ),
                           TextButton(
                             onPressed: _goToVehicleProfile,
