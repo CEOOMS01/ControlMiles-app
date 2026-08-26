@@ -436,6 +436,12 @@ const Map<String, String> esTexts = {
   'claim_driver_slot_button': 'Unirme a la flota',
   'claim_driver_slot_skip': 'No tengo un código -- continuar como conductor individual',
 
+  // Account mode switcher (Settings)
+  'account_mode_title': 'Modo de cuenta',
+  'account_mode_gig': 'Individual (Gig)',
+  'account_mode_fleet_admin': 'Administrador de flota',
+  'account_mode_fleet_driver': 'Conductor de flota',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '¿Cómo vas a usar ControlMiles?',
   'account_type_subtitle': 'Esta elección decide cómo funciona tu cuenta. Elige la opción que te corresponda.',

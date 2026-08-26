@@ -7,6 +7,7 @@ import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import '../services/organization_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,7 +23,43 @@ class SettingsScreen extends StatefulWidget {
 // fuente de verdad y la que a su vez conecta con NotificationService.
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
+  final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
+  bool _isSwitchingMode = false;
+
+  // Explicit user requirement: switch between Gig/Fleet Admin/Fleet
+  // Driver on the same account, persisting -- for testing, and for a
+  // real hybrid user (owns a fleet, also drives personally). The RPC
+  // validates real membership; a mode this account doesn't qualify for
+  // (e.g. Fleet Admin with no organization owned) surfaces its own
+  // clear error instead of silently doing nothing.
+  Future<void> _switchMode(AppState appState, String mode) async {
+    if (_isSwitchingMode || appState.accountType == mode) return;
+    setState(() => _isSwitchingMode = true);
+    try {
+      await _organizationService.switchAccountMode(mode);
+      await appState.refreshAccountType();
+      if (!mounted) return;
+
+      final target = switch (mode) {
+        'fleet_admin' => AppRoutes.fleetDashboard,
+        'fleet_driver' => AppRoutes.driverOperations,
+        _ => AppRoutes.dashboard,
+      };
+      Navigator.pushNamedAndRemoveUntil(context, target, (route) => false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSwitchingMode = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +87,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSectionHeader(appState, 'language', isDark),
           _buildLanguageSection(appState, isDark),
+
+          _buildSectionHeader(appState, 'account_mode_title', isDark),
+          _buildAccountModeSection(appState, isDark),
 
           _buildSectionHeader(appState, 'preferences', isDark),
           _buildPreferencesSection(appState, isDark),
@@ -255,6 +295,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
         )),
         trailing: isSelected ? Icon(Icons.check_circle, color: primary) : null,
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildAccountModeSection(AppState appState, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          _buildModeOption(
+            appState: appState,
+            isDark: isDark,
+            icon: Icons.person_rounded,
+            label: appState.tr('account_mode_gig'),
+            mode: 'gig',
+          ),
+          const SizedBox(height: 10),
+          _buildModeOption(
+            appState: appState,
+            isDark: isDark,
+            icon: Icons.local_shipping_rounded,
+            label: appState.tr('account_mode_fleet_admin'),
+            mode: 'fleet_admin',
+          ),
+          const SizedBox(height: 10),
+          _buildModeOption(
+            appState: appState,
+            isDark: isDark,
+            icon: Icons.badge_rounded,
+            label: appState.tr('account_mode_fleet_driver'),
+            mode: 'fleet_driver',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeOption({
+    required AppState appState,
+    required bool isDark,
+    required IconData icon,
+    required String label,
+    required String mode,
+  }) {
+    final isSelected = appState.accountType == mode;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+
+    return Material(
+      color: cardColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _isSwitchingMode ? null : () => _switchMode(appState, mode),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isSelected ? primary : borderColor, width: isSelected ? 2 : 1),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? primary : textColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                    color: isSelected ? primary : textColor,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle, color: primary)
+              else if (_isSwitchingMode)
+                const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+            ],
+          ),
+        ),
       ),
     );
   }

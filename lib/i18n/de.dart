@@ -346,6 +346,12 @@ const Map<String, String> deTexts = {
   'claim_driver_slot_button': 'Flotte beitreten',
   'claim_driver_slot_skip': 'Ich habe keinen Code -- als Einzelfahrer fortfahren',
 
+  // Account mode switcher (Settings)
+  'account_mode_title': 'Kontomodus',
+  'account_mode_gig': 'Einzelfahrer (Gig)',
+  'account_mode_fleet_admin': 'Flottenadministrator',
+  'account_mode_fleet_driver': 'Flottenfahrer',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',
   'account_type_subtitle': 'Diese Wahl bestimmt, wie Ihr Konto funktioniert. Wählen Sie die passende Option.',

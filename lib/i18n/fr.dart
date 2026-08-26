@@ -354,6 +354,11 @@ const Map<String, String> frTexts = {
   'claim_driver_slot_button': 'Rejoindre la flotte',
   'claim_driver_slot_skip': 'Je n\'ai pas de code -- continuer en tant que chauffeur indépendant',
 
+  'account_mode_title': 'Mode de compte',
+  'account_mode_gig': 'Individuel (Gig)',
+  'account_mode_fleet_admin': 'Administrateur de flotte',
+  'account_mode_fleet_driver': 'Chauffeur de flotte',
+
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',

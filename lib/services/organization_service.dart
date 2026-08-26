@@ -144,6 +144,16 @@ class OrganizationService {
   /// default_org_id server-side en un solo statement -- el caller debe
   /// refrescar AppState.fetchUserProfile() después, mismo patrón que
   /// createOrganization()/respondToInvite().
+  /// Switches the caller's own account_type between 'gig'/'fleet_admin'/
+  /// 'fleet_driver' -- explicit user requirement for testing (and a real
+  /// capability for a hybrid user who both owns a fleet and drives
+  /// personally). The RPC validates real membership server-side; it
+  /// throws a clear message if the target mode doesn't apply to this
+  /// account (e.g. 'fleet_admin' for someone who owns no organization).
+  Future<void> switchAccountMode(String mode) async {
+    await _supabase.rpc('switch_account_mode', params: {'p_mode': mode});
+  }
+
   Future<String> claimDriverSlot(String claimCode) async {
     final result = await _supabase.rpc(
       'claim_driver_slot',

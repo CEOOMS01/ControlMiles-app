@@ -346,6 +346,12 @@ const Map<String, String> zhTexts = {
   'claim_driver_slot_button': '加入车队',
   'claim_driver_slot_skip': '我没有代码——以个人司机身份继续',
 
+  // Account mode switcher (Settings)
+  'account_mode_title': '账户模式',
+  'account_mode_gig': '个人（兼职）',
+  'account_mode_fleet_admin': '车队管理员',
+  'account_mode_fleet_driver': '车队司机',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',
   'account_type_subtitle': '此选择决定您账户的运作方式。请选择适合您的选项。',

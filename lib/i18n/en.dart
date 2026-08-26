@@ -436,6 +436,14 @@ const Map<String, String> enTexts = {
   'claim_driver_slot_button': 'Join fleet',
   'claim_driver_slot_skip': 'I don\'t have a code -- continue as an individual driver',
 
+  // Account mode switcher (Settings) -- explicit user requirement: a
+  // hybrid account can move between Gig/Fleet Admin/Fleet Driver at
+  // will, for testing and for real hybrid use.
+  'account_mode_title': 'Account mode',
+  'account_mode_gig': 'Individual (Gig)',
+  'account_mode_fleet_admin': 'Fleet Admin',
+  'account_mode_fleet_driver': 'Fleet Driver',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',
   'account_type_subtitle': 'This choice decides how your account works. Pick the option that fits you.',

@@ -346,6 +346,12 @@ const Map<String, String> ptTexts = {
   'claim_driver_slot_button': 'Entrar na frota',
   'claim_driver_slot_skip': 'Não tenho um código -- continuar como motorista individual',
 
+  // Account mode switcher (Settings)
+  'account_mode_title': 'Modo de conta',
+  'account_mode_gig': 'Individual (Gig)',
+  'account_mode_fleet_admin': 'Administrador de frota',
+  'account_mode_fleet_driver': 'Motorista de frota',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',
   'account_type_subtitle': 'Essa escolha define como sua conta funciona. Selecione a opção que combina com você.',
