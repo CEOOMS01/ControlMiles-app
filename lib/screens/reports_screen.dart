@@ -485,7 +485,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           icon:  const Icon(Icons.picture_as_pdf_rounded, size: 18),
           label: Text(appState.tr('generate_global_pdf').toUpperCase()),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: Colors.red.shade700,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
@@ -558,11 +558,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E).withValues(alpha: 0.1),
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.verified_rounded,
-                      size: 18, color: Color(0xFF22C55E)),
+                      size: 18, color: Color(0xFF3B82F6)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

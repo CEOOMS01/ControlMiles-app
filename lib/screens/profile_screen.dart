@@ -46,13 +46,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void _loadUserProfile() {
+  // BUG FIX (pedido explícito, "el nombre aparenta no estar conectado a
+  // nada"): esta pantalla llenaba el formulario desde
+  // user.userMetadata (auth.users.raw_user_meta_data) -- una copia
+  // separada del nombre, escrita una sola vez en el registro y nunca
+  // sincronizada de vuelta. AppState/el saludo del Dashboard/reports leen
+  // de public.profiles.first_name en cambio (la fuente real desde el
+  // fix del saludo). Las dos podían quedar desincronizadas sin que nada lo
+  // avisara -- exactamente lo que pasó (metadata tenía "CEO" de una prueba
+  // vieja, profiles ya tenía el nombre real). Ahora esta pantalla lee de
+  // profiles directamente, la misma fuente que el resto de la app ya usa.
+  Future<void> _loadUserProfile() async {
     final user = _authService.currentUser;
-    if (user != null) {
-      final metadata = user.userMetadata ?? {};
-      _nameController.text = metadata['first_name'] ?? '';
-      _lastNameController.text = metadata['last_name'] ?? '';
-      _emailController.text = user.email ?? '';
+    if (user == null) return;
+
+    try {
+      final data = await _supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+      setState(() {
+        _nameController.text = (data?['first_name'] as String?) ?? '';
+        _lastNameController.text = (data?['last_name'] as String?) ?? '';
+        _emailController.text = user.email ?? '';
+      });
+    } catch (e) {
+      debugPrint('[ProfileScreen] Failed to load profile: $e');
+      if (mounted) {
+        setState(() => _emailController.text = user.email ?? '');
+      }
     }
   }
 
