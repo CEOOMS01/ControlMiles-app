@@ -481,6 +481,16 @@ const Map<String, String> enTexts = {
   'fleet_live_map_alerts_title': 'Geofence alerts',
   'fleet_live_map_no_alerts': 'No alerts',
 
+  // Fleet Phase 6 -- IFTA state mileage (piece 1: miles per state, not a
+  // fileable IFTA return -- see ifta_service.dart's own comment)
+  'ifta_state_mileage_title': 'State mileage',
+  'ifta_pick_range': 'Pick date range',
+  'ifta_all_vehicles': 'All vehicles',
+  'ifta_total_miles': 'Total miles',
+  'ifta_no_org': 'No organization found for this account.',
+  'ifta_no_mileage': 'No mileage recorded for this range',
+  'ifta_disclaimer': 'Miles per state, computed from GPS breadcrumbs. This is not a fileable IFTA return -- fuel gallons per jurisdiction are needed for the actual tax calculation and are not tracked in this app.',
+
   // ============================================================
   // REPORT EXTENSIONS
   // ============================================================

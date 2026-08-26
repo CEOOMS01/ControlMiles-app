@@ -391,6 +391,16 @@ const Map<String, String> ptTexts = {
   'fleet_live_map_alerts_title': 'Alertas de geocerca',
   'fleet_live_map_no_alerts': 'Sem alertas',
 
+  // Fleet Fase 6 -- milhas por estado IFTA (peça 1: só milhas, não é uma
+  // declaração IFTA apresentável -- ver ifta_service.dart)
+  'ifta_state_mileage_title': 'Milhas por estado',
+  'ifta_pick_range': 'Escolher período',
+  'ifta_all_vehicles': 'Todos os veículos',
+  'ifta_total_miles': 'Milhas totais',
+  'ifta_no_org': 'Nenhuma organização encontrada para esta conta.',
+  'ifta_no_mileage': 'Nenhuma milhagem registrada para este período',
+  'ifta_disclaimer': 'Milhas por estado, calculadas a partir do rastro GPS. Isto não é uma declaração IFTA apresentável -- o cálculo real do imposto precisa de galões de combustível por jurisdição, que este app não rastreia.',
+
   // ============================================================
   // RELATÓRIOS
   // ============================================================

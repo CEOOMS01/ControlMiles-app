@@ -391,6 +391,16 @@ const Map<String, String> deTexts = {
   'fleet_live_map_alerts_title': 'Geozone-Warnungen',
   'fleet_live_map_no_alerts': 'Keine Warnungen',
 
+  // Fleet Phase 6 -- IFTA-Meilen pro Bundesstaat (Teil 1: nur Meilen, keine
+  // einreichbare IFTA-Erklärung -- siehe ifta_service.dart)
+  'ifta_state_mileage_title': 'Meilen pro Bundesstaat',
+  'ifta_pick_range': 'Zeitraum wählen',
+  'ifta_all_vehicles': 'Alle Fahrzeuge',
+  'ifta_total_miles': 'Gesamtmeilen',
+  'ifta_no_org': 'Keine Organisation für dieses Konto gefunden.',
+  'ifta_no_mileage': 'Keine Meilen für diesen Zeitraum erfasst',
+  'ifta_disclaimer': 'Meilen pro Bundesstaat, berechnet aus der GPS-Spur. Dies ist keine einreichbare IFTA-Erklärung -- die tatsächliche Steuerberechnung benötigt Kraftstoffgallonen pro Zuständigkeitsbereich, die diese App nicht erfasst.',
+
   // ============================================================
   // BERICHTE
   // ============================================================

@@ -38,6 +38,7 @@ class TrackingController {
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
+  static DateTime _lastBreadcrumbTime = DateTime.now();
 
   static double _totalSectionMiles = 0.0;
   static double _totalSessionMiles = 0.0;
@@ -1046,6 +1047,35 @@ class TrackingController {
         });
       } catch (e) {
         _logError('LIVE_LOCATION_SYNC_ERROR', e.toString());
+      }
+    }
+
+    // Fleet Phase 6 (IFTA piece 1): continuous GPS trail for the trip.
+    // Fleet-only, same boundary as live-location -- a Gig driver's personal
+    // trips have no IFTA/state-mileage reporting need. Throttled looser
+    // than live-location (60s, not 15s) -- state-mileage attribution
+    // doesn't need the same freshness a live map does, and this halves
+    // write volume against what's already the busiest table this app
+    // writes to. Failures are swallowed for the same reason as the
+    // live-location block above: not trip-critical, must never interrupt
+    // mileage tracking itself.
+    if (activeOrganizationId != null &&
+        activeVehicleId != null &&
+        now.difference(_lastBreadcrumbTime).inSeconds >= 60) {
+      _lastBreadcrumbTime = now;
+      try {
+        await Supabase.instance.client.from('session_gps_breadcrumbs').insert({
+          'session_id': activeSessionId,
+          'section_id': activeSection!.id,
+          'organization_id': activeOrganizationId,
+          'vehicle_id': activeVehicleId,
+          'user_id': Supabase.instance.client.auth.currentUser!.id,
+          'latitude': latitude,
+          'longitude': longitude,
+          'recorded_at': now.toIso8601String(),
+        });
+      } catch (e) {
+        _logError('BREADCRUMB_SYNC_ERROR', e.toString());
       }
     }
   }

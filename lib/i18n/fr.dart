@@ -399,6 +399,16 @@ const Map<String, String> frTexts = {
   'fleet_live_map_alerts_title': 'Alertes de géozone',
   'fleet_live_map_no_alerts': 'Aucune alerte',
 
+  // Fleet Phase 6 -- kilométrage IFTA par État (pièce 1 : miles seulement,
+  // pas une déclaration IFTA déposable -- voir ifta_service.dart)
+  'ifta_state_mileage_title': 'Kilométrage par État',
+  'ifta_pick_range': 'Choisir la période',
+  'ifta_all_vehicles': 'Tous les véhicules',
+  'ifta_total_miles': 'Total des miles',
+  'ifta_no_org': 'Aucune organisation trouvée pour ce compte.',
+  'ifta_no_mileage': 'Aucun kilométrage enregistré pour cette période',
+  'ifta_disclaimer': 'Miles par État, calculés à partir du tracé GPS. Ce n\'est pas une déclaration IFTA déposable -- le calcul réel de la taxe nécessite les gallons de carburant par juridiction, non suivis dans cette application.',
+
   // ============================================================
   // RAPPORTS
   // ============================================================

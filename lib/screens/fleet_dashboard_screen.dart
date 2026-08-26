@@ -108,6 +108,11 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
             onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetLiveMap),
           ),
           IconButton(
+            icon: Icon(Icons.public_rounded, color: subTextColor),
+            tooltip: appState.tr('ifta_state_mileage_title'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetStateMileage),
+          ),
+          IconButton(
             icon: Icon(Icons.groups_rounded, color: subTextColor),
             tooltip: appState.tr('driver_management'),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetRoster),

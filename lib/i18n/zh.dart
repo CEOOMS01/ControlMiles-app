@@ -391,6 +391,16 @@ const Map<String, String> zhTexts = {
   'fleet_live_map_alerts_title': '地理围栏警报',
   'fleet_live_map_no_alerts': '暂无警报',
 
+  // Fleet 第6阶段 -- IFTA 各州里程（第1部分：仅里程，不是可提交的 IFTA 报告 --
+  // 见 ifta_service.dart 的说明）
+  'ifta_state_mileage_title': '各州里程',
+  'ifta_pick_range': '选择日期范围',
+  'ifta_all_vehicles': '所有车辆',
+  'ifta_total_miles': '总里程',
+  'ifta_no_org': '未找到此账户的组织。',
+  'ifta_no_mileage': '此范围内没有里程记录',
+  'ifta_disclaimer': '各州里程，根据GPS轨迹计算。这不是可提交的IFTA报告 -- 实际税额计算需要各辖区的燃油加仑数，本应用不追踪该数据。',
+
   // ============================================================
   // 报告
   // ============================================================
