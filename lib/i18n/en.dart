@@ -444,6 +444,10 @@ const Map<String, String> enTexts = {
   'account_mode_fleet_admin': 'Fleet Admin',
   'account_mode_fleet_driver': 'Fleet Driver',
 
+  // DVIR gating (roadmap gap closed): shown when a driver tries to start
+  // tracking without a passing, same-day pre-trip inspection on record.
+  'dvir_required_before_start': 'Complete today\'s pre-trip inspection before starting a trip.',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',
   'account_type_subtitle': 'This choice decides how your account works. Pick the option that fits you.',

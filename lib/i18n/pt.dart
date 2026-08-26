@@ -352,6 +352,8 @@ const Map<String, String> ptTexts = {
   'account_mode_fleet_admin': 'Administrador de frota',
   'account_mode_fleet_driver': 'Motorista de frota',
 
+  'dvir_required_before_start': 'Conclua a inspeção pré-viagem de hoje antes de iniciar.',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',
   'account_type_subtitle': 'Essa escolha define como sua conta funciona. Selecione a opção que combina com você.',

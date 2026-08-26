@@ -352,6 +352,8 @@ const Map<String, String> deTexts = {
   'account_mode_fleet_admin': 'Flottenadministrator',
   'account_mode_fleet_driver': 'Flottenfahrer',
 
+  'dvir_required_before_start': 'Schließe die heutige Vorfahrtkontrolle ab, bevor du startest.',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',
   'account_type_subtitle': 'Diese Wahl bestimmt, wie Ihr Konto funktioniert. Wählen Sie die passende Option.',

@@ -102,6 +102,25 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
     );
   }
 
+  // Roadmap gap closed (pedido explícito, "de mas dificil a mas facil"):
+  // v1 recorded inspections but never actually gated trip start on them
+  // (see vehicle_inspection.dart's own comment). Requires today's latest
+  // inspection for THIS vehicle to be a passing pre-trip check --
+  // post-trip or a stale prior day's pass don't count, matching real DVIR
+  // practice (a fresh pre-trip check each day/vehicle change).
+  Future<bool> _canStartTrip() async {
+    final inspection = _latestInspection;
+    if (inspection == null) return false;
+    if (inspection.inspectionType != 'pre_trip') return false;
+    if (!inspection.isPass) return false;
+
+    final today = DateTime.now();
+    final submitted = inspection.createdAt.toLocal();
+    return submitted.year == today.year &&
+        submitted.month == today.month &&
+        submitted.day == today.day;
+  }
+
   void _reportIncident(AppState appState) {
     final orgId = appState.defaultOrgId;
     if (orgId == null) return;
@@ -251,6 +270,8 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
                       // that decision, not ask it via a different UI).
                       selectedGigApp: 'custom',
                       selectedIrsPurpose: 'business',
+                      canStart: _canStartTrip,
+                      cannotStartMessage: appState.tr('dvir_required_before_start'),
                       onTripStarted: () => setState(() => _tripIsActive = true),
                       onTripEnded: () {
                         setState(() => _tripIsActive = false);

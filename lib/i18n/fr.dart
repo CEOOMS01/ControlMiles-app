@@ -359,6 +359,8 @@ const Map<String, String> frTexts = {
   'account_mode_fleet_admin': 'Administrateur de flotte',
   'account_mode_fleet_driver': 'Chauffeur de flotte',
 
+  'dvir_required_before_start': 'Terminez l\'inspection avant trajet du jour avant de démarrer.',
+
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',

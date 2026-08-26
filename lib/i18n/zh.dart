@@ -352,6 +352,8 @@ const Map<String, String> zhTexts = {
   'account_mode_fleet_admin': '车队管理员',
   'account_mode_fleet_driver': '车队司机',
 
+  'dvir_required_before_start': '开始行程前，请完成今天的行前检查。',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',
   'account_type_subtitle': '此选择决定您账户的运作方式。请选择适合您的选项。',

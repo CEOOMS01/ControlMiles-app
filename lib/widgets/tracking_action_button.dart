@@ -29,12 +29,25 @@ class TrackingActionButton extends StatefulWidget {
   // above, just for the opposite transition.
   final VoidCallback? onTripStarted;
 
+  // Roadmap gap closed (pedido explícito): a failed or missing DVIR
+  // inspection should block tracking from starting -- v1 deliberately
+  // left this unenforced (see driver_operations_screen.dart's own
+  // comment on the pre-trip checklist card). Optional and Gig-only-safe
+  // by construction: DashboardScreen (Gig) never passes this, so `idle`
+  // there behaves exactly as before -- no DVIR concept applies to a
+  // personal vehicle. When provided and it resolves false, `_message`
+  // is shown instead of starting.
+  final Future<bool> Function()? canStart;
+  final String? cannotStartMessage;
+
   const TrackingActionButton({
     super.key,
     required this.selectedGigApp,
     this.selectedIrsPurpose,
     this.onTripEnded,
     this.onTripStarted,
+    this.canStart,
+    this.cannotStartMessage,
   });
 
   @override
@@ -81,6 +94,25 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     try {
       switch (currentState) {
         case TrackingState.idle:
+          if (widget.canStart != null) {
+            final allowed = await widget.canStart!();
+            if (!allowed) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      widget.cannotStartMessage ??
+                          appState.tr('dvir_required_before_start'),
+                    ),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+              return;
+            }
+            if (!mounted) return;
+          }
           await TrackingController.startTripFlow(
             context: context,
             gigApp: gigApp,
