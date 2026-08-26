@@ -5,11 +5,18 @@
 // position (written by update_vehicle_location, throttled to ~15s per
 // active fleet trip -- see tracking_controller.dart's _smartSync) plus
 // geofence circles for whichever vehicle is selected, and lets the admin
-// draw a new geofence by tapping the map. Refreshes on a plain polling
-// timer (not Supabase Realtime) -- simplest thing that works for v1, a
-// live map that's ~15-20s stale is still useful and this avoids standing
-// up a new subscription/channel pattern this codebase doesn't use anywhere
-// else yet.
+// draw a new geofence by tapping the map.
+//
+// BUG FIX / roadmap gap closed (pedido explícito, hardest-to-easiest pass):
+// originally refreshed on a plain 20s polling timer -- the roadmap this
+// screen was built against explicitly called for "a realtime channel, not
+// just polling". Replaced with a real Supabase Realtime subscription
+// (postgres_changes on vehicles UPDATE + vehicle_geofence_alerts INSERT,
+// both filtered to this org) -- position updates now arrive over the
+// websocket the moment update_vehicle_location writes them, not up to 20s
+// later. One REST fetch still happens on open (_load(initial: true)) to
+// populate the initial state; Realtime only pushes CHANGES going forward,
+// it doesn't replace an initial snapshot read.
 
 import 'dart:async';
 
@@ -18,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../models/vehicle.dart';
@@ -43,19 +51,67 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
   Vehicle? _selectedVehicle;
   bool _isLoading = true;
   bool _isPlacingGeofence = false;
-  Timer? _refreshTimer;
+  RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
-    _load(initial: true);
-    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) => _load(initial: false));
+    _load(initial: true).then((_) {
+      if (!mounted) return;
+      final orgId = context.read<AppState>().defaultOrgId;
+      if (orgId != null) _subscribeRealtime(orgId);
+    });
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    if (_channel != null) Supabase.instance.client.removeChannel(_channel!);
     super.dispose();
+  }
+
+  void _subscribeRealtime(String orgId) {
+    _channel = Supabase.instance.client
+        .channel('fleet-live-map-$orgId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'vehicles',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'organization_id',
+            value: orgId,
+          ),
+          callback: _onVehicleRealtimeUpdate,
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'vehicle_geofence_alerts',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'organization_id',
+            value: orgId,
+          ),
+          callback: _onGeofenceAlertRealtimeInsert,
+        )
+        .subscribe();
+  }
+
+  void _onVehicleRealtimeUpdate(PostgresChangePayload payload) {
+    if (!mounted) return;
+    final updated = Vehicle.fromMap(payload.newRecord);
+
+    setState(() {
+      final index = _vehicles.indexWhere((v) => v.id == updated.id);
+      if (index != -1) _vehicles[index] = updated;
+      if (_selectedVehicle?.id == updated.id) _selectedVehicle = updated;
+    });
+  }
+
+  void _onGeofenceAlertRealtimeInsert(PostgresChangePayload payload) {
+    if (!mounted) return;
+    final alert = GeofenceAlert.fromMap(payload.newRecord);
+    setState(() => _recentAlerts = [alert, ..._recentAlerts].take(30).toList());
   }
 
   Future<void> _load({required bool initial}) async {
