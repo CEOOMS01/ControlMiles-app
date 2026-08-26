@@ -119,3 +119,47 @@ class GigAppCatalog {
     );
   }
 }
+
+// BUG FIX (pedido explícito): irs_purpose se guarda correctamente en la DB
+// desde hace semanas (gig_app_selector.dart ya lo captura, tracking_
+// controller.dart ya lo persiste) pero NADA lo mostraba después -- ni
+// history_screen.dart, ni reports_screen.dart, ni el PDF de report_service.
+// dart lo leían nunca. Un viaje "Custom" sin su propósito visible no sirve
+// para validar la deducción ante una autoridad, que es exactamente para lo
+// que existe este campo. Fuente única de verdad para el mapeo id -> label,
+// mismo criterio que GigAppCatalog arriba (antes esto habría terminado
+// duplicado a mano en 3 archivos).
+class IrsPurposeCatalog {
+  IrsPurposeCatalog._();
+
+  // id -> clave i18n (para UI en pantalla, localizada). Mismos ids que ya
+  // usa gig_app_selector.dart's categories list -- no reinventar acá.
+  static const Map<String, String> _labelKeys = {
+    'business': 'business_purpose',
+    'work': 'work_commute',
+    'medical': 'medical',
+    'moving': 'moving',
+    'charitable': 'charitable',
+    'education': 'education_study',
+    'personal': 'personal_other',
+  };
+
+  // id -> texto plano en inglés (para el PDF, que ya es 100% inglés
+  // hardcodeado sin importar el idioma de la app -- mismo criterio que
+  // "VERIFIED" y los demás textos fijos de report_service.dart).
+  static const Map<String, String> _plainLabels = {
+    'business': 'Business',
+    'work': 'Work Commute',
+    'medical': 'Medical',
+    'moving': 'Moving',
+    'charitable': 'Charitable',
+    'education': 'Education',
+    'personal': 'Personal',
+  };
+
+  static String? labelKeyFor(String? purposeId) =>
+      (purposeId == null || purposeId.isEmpty) ? null : _labelKeys[purposeId];
+
+  static String plainLabelFor(String? purposeId) =>
+      (purposeId == null || purposeId.isEmpty) ? '' : (_plainLabels[purposeId] ?? purposeId);
+}

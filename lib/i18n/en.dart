@@ -178,7 +178,7 @@ const Map<String, String> enTexts = {
   // TRIP PURPOSES & IRS.
   // ============================================================
    'select_trip_purpose': 'Select Trip Purpose',
-   'irs_deduction_note': 'For IRS tax deduction purposes',
+   'irs_deduction_note': 'For deduction purposes -- not guaranteed by this app',
    'business_purpose': 'Business',
    'work_commute': 'Work Commute',
    'medical': 'Medical',

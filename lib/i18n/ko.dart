@@ -97,7 +97,7 @@ const Map<String, String> koTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': '운행 목적 선택',
-  'irs_deduction_note': 'IRS 세금 공제용',
+  'irs_deduction_note': '공제 목적용 -- 본 앱이 이를 보장하지 않습니다',
   'business_purpose': '비즈니스 / 업무',
   'work_commute': '출퇴근',
   'medical': '의료 / 병원',

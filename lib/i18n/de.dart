@@ -266,7 +266,7 @@ const Map<String, String> deTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'Zweck der Reise auswählen',
-  'irs_deduction_note': 'Für IRS-Steuerabzugszwecke',
+  'irs_deduction_note': 'Für Abzugszwecke -- keine Garantie durch diese App',
   'business_purpose': 'Geschäftlich',
   'work_commute': 'Arbeitsweg',
   'medical': 'Medizinisch',

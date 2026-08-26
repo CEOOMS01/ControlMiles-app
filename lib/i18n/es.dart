@@ -178,7 +178,7 @@ const Map<String, String> esTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'Seleccione el propósito del viaje',
-  'irs_deduction_note': 'Para fines de deducción de impuestos del IRS',
+  'irs_deduction_note': 'Para fines de deducción -- no garantizado por esta app',
   'business_purpose': 'Negocios',
   'work_commute': 'Trayecto al trabajo',
   'medical': 'Médico',

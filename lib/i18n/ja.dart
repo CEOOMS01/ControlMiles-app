@@ -122,7 +122,7 @@ const Map<String, String> jaTexts = {
   // TRIP PURPOSES & IRS (JAPANESE - 日本語)
   // ============================================================
   'select_trip_purpose': '走行目的を選択',
-  'irs_deduction_note': 'IRS（内国歳入庁）の所得控除用',
+  'irs_deduction_note': '控除目的用 -- 本アプリによる保証はありません',
   'business_purpose': 'ビジネス / 業務',
   'work_commute': '通勤',
   'medical': '医療 / 通院',

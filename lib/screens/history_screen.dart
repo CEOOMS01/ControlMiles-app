@@ -527,7 +527,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(app.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: appColor)),
+                    // BUG FIX (pedido explícito): irs_purpose se guardaba
+                    // pero nunca se mostraba acá -- un viaje "Custom/Truck"
+                    // sin su propósito visible no sirve para validar la
+                    // deducción ante una autoridad, que es justo para lo que
+                    // existe este campo.
+                    Text(
+                      IrsPurposeCatalog.labelKeyFor(section.irsPurpose) != null
+                          ? '${app.name} · ${appState.tr(IrsPurposeCatalog.labelKeyFor(section.irsPurpose)!)}'
+                          : app.name,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: appColor),
+                    ),
                     Text(DateFormat('hh:mm a').format(section.startTime), style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : const Color(0xFF64748B))),
                   ],
                 ),

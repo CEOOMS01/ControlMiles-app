@@ -122,7 +122,7 @@ const Map<String, String> hiTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'यात्रा का उद्देश्य चुनें',
-  'irs_deduction_note': 'IRS कर कटौती के उद्देश्यों के लिए',
+  'irs_deduction_note': 'कटौती के उद्देश्यों के लिए -- यह ऐप इसकी गारंटी नहीं देता',
   'business_purpose': 'व्यवसाय',
   'work_commute': 'काम पर जाना',
   'medical': 'चिकित्सा',

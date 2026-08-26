@@ -124,7 +124,7 @@ const Map<String, String> arTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'اختر الغرض من الرحلة',
-    'irs_deduction_note': 'لأغراض الخصم الضريبي (IRS)',
+    'irs_deduction_note': 'لأغراض الخصم -- هذا التطبيق لا يضمن ذلك',
   'business_purpose': 'عمل / تجارة',
   'work_commute': 'التنقل للعمل',
   'medical': 'طبي',

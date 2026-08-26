@@ -123,7 +123,7 @@ const Map<String, String> zhTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': '选择行程目的',
-  'irs_deduction_note': '用于 IRS 税收抵免',
+  'irs_deduction_note': '用于抵扣目的 -- 本应用不作任何担保',
   'business_purpose': '商务 / 业务',
   'work_commute': '上下班通勤',
   'medical': '医疗',

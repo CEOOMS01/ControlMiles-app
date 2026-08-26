@@ -697,11 +697,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           Icon(meta.icon, size: 13, color: appColor),
           const SizedBox(width: 5),
-          Text(meta.name,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: appColor)),
+          // BUG FIX (pedido explícito): mismo gap que history_screen.dart --
+          // irs_purpose se guardaba pero nunca aparecía en el reporte.
+          Text(
+            IrsPurposeCatalog.labelKeyFor(section.irsPurpose) != null
+                ? '${meta.name} · ${appState.tr(IrsPurposeCatalog.labelKeyFor(section.irsPurpose)!)}'
+                : meta.name,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: appColor),
+          ),
           const SizedBox(width: 6),
           Text(
             '$secDisp $secUnit · ${_formatSectionDuration(section)}',

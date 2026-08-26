@@ -124,7 +124,7 @@ const Map<String, String> frTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'Sélectionnez le but du voyage',
-  'irs_deduction_note': 'Pour les déductions fiscales de l\'IRS',
+  'irs_deduction_note': 'À des fins de déduction -- non garanti par cette application',
   'business_purpose': 'Affaires',
   'work_commute': 'Trajet travail',
   'medical': 'Médical',

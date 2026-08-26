@@ -123,7 +123,7 @@ const Map<String, String> ptTexts = {
   // TRIP PURPOSES & IRS
   // ============================================================
   'select_trip_purpose': 'Selecione o objetivo da viagem',
-  'irs_deduction_note': 'Para fins de dedução de impostos do IRS',
+  'irs_deduction_note': 'Para fins de dedução -- não garantido por este app',
   'business_purpose': 'Negócios',
   'work_commute': 'Deslocamento de trabalho',
   'medical': 'Médico',

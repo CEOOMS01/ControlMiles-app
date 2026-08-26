@@ -27,6 +27,7 @@ import 'package:intl/intl.dart';
 import '../data/irs_rates.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
+import '../models/gig_app.dart';
 
 class ReportService {
   ReportService._();
@@ -273,7 +274,19 @@ class ReportService {
 
     final rows = sessions.map((session) {
       final secs = sectionsBySession[session.id] ?? [];
-      final apps = secs.map((s) => s.gigApp.toUpperCase()).toSet().join(' / ');
+      // BUG FIX (pedido explícito): irs_purpose se guardaba correctamente
+      // pero nunca aparecía en el PDF -- un tramo "Custom" mostraba solo
+      // "CUSTOM" sin decir para qué (negocio/mudanza/personal/etc.), justo
+      // el dato que una autoridad necesitaría para validar la deducción.
+      // Dos tramos "custom" del mismo viaje con propósitos distintos
+      // (ej. un switch de negocio a personal) se listan por separado, no
+      // se colapsan en un solo "CUSTOM".
+      final apps = secs.map((s) {
+        final purposeLabel = IrsPurposeCatalog.plainLabelFor(s.irsPurpose);
+        return purposeLabel.isEmpty
+            ? s.gigApp.toUpperCase()
+            : '${s.gigApp.toUpperCase()} ($purposeLabel)';
+      }).toSet().join(' / ');
       final dateStr = session.startTime != null
           ? dateFmt.format(session.startTime!.toLocal())
           : '--';
