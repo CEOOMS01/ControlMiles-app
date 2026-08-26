@@ -402,6 +402,22 @@ const Map<String, String> frTexts = {
   'inspection_result_pass': 'Inspection réussie -- aucun défaut trouvé',
   'inspection_result_fail': 'Inspection envoyée -- défauts signalés à votre gestionnaire de flotte',
 
+  'driver_ops_title': 'Trajet du jour',
+  'driver_ops_checklist_required': 'Complétez la liste de contrôle avant de démarrer',
+  'driver_ops_live_location': 'Position en direct',
+  'waiting_for_gps': 'En attente du GPS…',
+  'report_incident_button': 'Signaler un incident',
+  'report_incident_title': 'Signaler un incident',
+  'report_incident_category_label': 'Que s\'est-il passé ?',
+  'incident_category_breakdown': 'Panne du véhicule',
+  'incident_category_accident': 'Accident',
+  'incident_category_delay': 'Retard',
+  'incident_category_other': 'Autre',
+  'report_incident_description_label': 'Décrivez ce qui s\'est passé',
+  'report_incident_description_hint': 'ex. Pneu crevé sur l\'I-95, arrêté en sécurité',
+  'report_incident_submit': 'Envoyer le signalement',
+  'report_incident_success': 'Incident signalé à votre administrateur de flotte',
+
   // Fleet Phase 5 -- carte en direct / géorepérage
   'fleet_live_map_title': 'Carte en direct',
   'fleet_live_map_no_vehicles': 'Aucun véhicule ne signale de position en direct pour le moment',

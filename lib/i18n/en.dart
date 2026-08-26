@@ -486,6 +486,25 @@ const Map<String, String> enTexts = {
   'inspection_result_pass': 'Inspection passed -- no defects found',
   'inspection_result_fail': 'Inspection submitted -- defects reported to your fleet manager',
 
+  // Driver Operations screen (dedicated fleet_driver home) + mid-trip
+  // incident reporting -- distinct from the DVIR checklist's own defect
+  // notes, which only cover the pre/post-trip moment.
+  'driver_ops_title': 'Today\'s trip',
+  'driver_ops_checklist_required': 'Complete the pre-trip checklist before starting',
+  'driver_ops_live_location': 'Live location',
+  'waiting_for_gps': 'Waiting for GPS…',
+  'report_incident_button': 'Report incident',
+  'report_incident_title': 'Report an incident',
+  'report_incident_category_label': 'What happened?',
+  'incident_category_breakdown': 'Vehicle breakdown',
+  'incident_category_accident': 'Accident',
+  'incident_category_delay': 'Delay',
+  'incident_category_other': 'Other',
+  'report_incident_description_label': 'Describe what happened',
+  'report_incident_description_hint': 'e.g. Flat tire on I-95, pulled over safely',
+  'report_incident_submit': 'Submit report',
+  'report_incident_success': 'Incident reported to your fleet admin',
+
   // Fleet Phase 5 -- live map / geofencing
   'fleet_live_map_title': 'Live map',
   'fleet_live_map_no_vehicles': 'No vehicles reporting a live position yet',

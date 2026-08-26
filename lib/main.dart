@@ -37,6 +37,7 @@ import 'screens/role_chooser_screen.dart';
 import 'screens/account_type_screen.dart';
 import 'screens/create_organization_screen.dart';
 import 'screens/claim_driver_slot_screen.dart';
+import 'screens/driver_operations_screen.dart';
 import 'screens/fleet_dashboard_screen.dart';
 import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
@@ -206,6 +207,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.accountType: (_) => const AccountTypeScreen(),
         AppRoutes.createOrganization: (_) => const CreateOrganizationScreen(),
         AppRoutes.claimDriverSlot: (_) => const ClaimDriverSlotScreen(),
+        AppRoutes.driverOperations: (_) => const DriverOperationsScreen(),
         AppRoutes.fleetDashboard: (_) => const FleetDashboardScreen(),
         AppRoutes.fleetRoster: (_) => const FleetRosterScreen(),
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),

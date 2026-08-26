@@ -36,10 +36,14 @@ class AppRoutes {
   static const String fleetRoster = '/fleet-roster';
   static const String fleetLiveMap = '/fleet-live-map';
   static const String fleetStateMileage = '/fleet-state-mileage';
-  // Fleet Phase 3: no dedicated fleetDriverHome route -- a fleet_driver
-  // lands on `dashboard`, the SAME screen Gig uses. See
-  // VehicleService.getActiveOrAssignedVehicle: the only real difference is
-  // which vehicle that screen resolves, not a separate screen/flow.
+  // REVERSES the Fleet Phase 3 decision documented right above this line
+  // in git history (fleet_driver reusing `dashboard`) -- explicit user
+  // requirement for a genuinely restricted driver-ops flow: pre-trip
+  // checklist, tracking, mid-trip incident reports, live self-map, and
+  // nothing else. See DriverOperationsScreen's own header comment for
+  // the full reasoning on why this is a deliberate divergence, not an
+  // accidental duplication of the earlier decision's mistake.
+  static const String driverOperations = '/driver-operations';
   static const String pendingInvite = '/pending-invite';
 
   // ============================================================
@@ -108,6 +112,7 @@ class AppRoutes {
         accountType,
         createOrganization,
         claimDriverSlot,
+        driverOperations,
         fleetDashboard,
         fleetRoster,
         fleetLiveMap,
@@ -151,6 +156,7 @@ class AppRoutes {
     home,
     dashboard,
     fleetDashboard,
+    driverOperations,
   ];
 
   static const List<String> fleetSetupRoutes = [
@@ -269,6 +275,7 @@ class AppRoutes {
       case fleetRoster: return 'Fleet Roster';
       case fleetLiveMap: return 'Fleet Live Map';
       case fleetStateMileage: return 'Fleet State Mileage';
+      case driverOperations: return 'Driver Operations';
       case pendingInvite: return 'Pending Invite';
 
       case tracking: return 'Tracking';
@@ -360,6 +367,13 @@ class AppRoutes {
     // pass this -- the check below only ever matters when !isAuthenticated,
     // which only happens from splash_page.dart's cold-start call.
     bool hasSeenRoleChooser = true,
+    // REVERSES the Fleet Phase 3 note this replaced (fleet_driver used to
+    // share `dashboard` with Gig -- see DriverOperationsScreen's own
+    // header comment for why that changed). Default false, not true,
+    // unlike isFleetAdmin -- a caller that forgets to pass this should
+    // fail toward the existing Gig dashboard, not toward a driver-only
+    // screen that assumes an assigned fleet vehicle exists.
+    bool isFleetDriver = false,
   }) {
     if (!isAuthenticated && !hasSeenRoleChooser) return roleChooser;
     if (!isAuthenticated) return login;
@@ -367,12 +381,7 @@ class AppRoutes {
     if (hasPendingInvites) return pendingInvite;
     if (!accountTypeChosen) return accountType;
     if (isFleetAdmin) return fleetDashboard;
-    // Fleet Phase 3: fleet_driver uses the SAME dashboard route as Gig --
-    // DashboardScreen/TrackingController/VehicleService resolve the right
-    // vehicle (assigned vs owned) internally instead of this routing
-    // decision forking into a second, parallel screen (that screen,
-    // FleetDriverHomeScreen, existed briefly in Phase 2 and was deleted
-    // once this worked).
+    if (isFleetDriver) return driverOperations;
     return dashboard;
   }
 

@@ -8,6 +8,10 @@
 
 class Vehicle {
   final String id;
+  // CM-T#### -- added to the DB this same session (web admin panel work),
+  // auto-generated on insert, null for any vehicle created before that
+  // migration until it's touched again.
+  final String? displayId;
   final String ownerUserId;
   final String make;
   final String model;
@@ -33,6 +37,7 @@ class Vehicle {
 
   const Vehicle({
     required this.id,
+    this.displayId,
     required this.ownerUserId,
     required this.make,
     required this.model,
@@ -64,6 +69,7 @@ class Vehicle {
   factory Vehicle.fromMap(Map<String, dynamic> map) {
     return Vehicle(
       id: map['id'] as String,
+      displayId: map['display_id'] as String?,
       ownerUserId: map['owner_user_id'] as String? ?? '',
       make: map['make'] as String? ?? '',
       model: map['model'] as String? ?? '',

@@ -23,11 +23,18 @@ class TrackingActionButton extends StatefulWidget {
   // justo después de que stopTracking() confirme el cierre.
   final VoidCallback? onTripEnded;
 
+  // DriverOperationsScreen needs to know the moment tracking actually
+  // starts (running, not just "the button was tapped") to reveal the
+  // live map + incident-report button -- same reasoning as onTripEnded
+  // above, just for the opposite transition.
+  final VoidCallback? onTripStarted;
+
   const TrackingActionButton({
     super.key,
     required this.selectedGigApp,
     this.selectedIrsPurpose,
     this.onTripEnded,
+    this.onTripStarted,
   });
 
   @override
@@ -85,6 +92,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {
             _pulseController.repeat();
+            widget.onTripStarted?.call();
           }
           break;
 

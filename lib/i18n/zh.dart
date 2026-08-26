@@ -396,6 +396,22 @@ const Map<String, String> zhTexts = {
   'inspection_result_pass': '检查通过 -- 未发现故障',
   'inspection_result_fail': '检查已提交 -- 故障已报告给车队经理',
 
+  'driver_ops_title': '今日行程',
+  'driver_ops_checklist_required': '开始前请完成出车前检查表',
+  'driver_ops_live_location': '实时位置',
+  'waiting_for_gps': '正在等待GPS信号…',
+  'report_incident_button': '报告突发情况',
+  'report_incident_title': '报告突发情况',
+  'report_incident_category_label': '发生了什么？',
+  'incident_category_breakdown': '车辆故障',
+  'incident_category_accident': '事故',
+  'incident_category_delay': '延误',
+  'incident_category_other': '其他',
+  'report_incident_description_label': '描述发生的情况',
+  'report_incident_description_hint': '例如：在I-95上爆胎，已安全靠边停车',
+  'report_incident_submit': '提交报告',
+  'report_incident_success': '突发情况已报告给您的车队管理员',
+
   // Fleet 第5阶段 -- 实时地图 / 地理围栏
   'fleet_live_map_title': '实时地图',
   'fleet_live_map_no_vehicles': '暂无车辆报告实时位置',

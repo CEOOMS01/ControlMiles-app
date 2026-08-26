@@ -486,6 +486,22 @@ const Map<String, String> esTexts = {
   'inspection_result_pass': 'Inspección aprobada -- sin defectos encontrados',
   'inspection_result_fail': 'Inspección enviada -- defectos reportados a tu gerente de flotilla',
 
+  'driver_ops_title': 'Viaje de hoy',
+  'driver_ops_checklist_required': 'Completa el checklist antes de arrancar',
+  'driver_ops_live_location': 'Ubicación en vivo',
+  'waiting_for_gps': 'Esperando señal GPS…',
+  'report_incident_button': 'Reportar imprevisto',
+  'report_incident_title': 'Reportar un imprevisto',
+  'report_incident_category_label': '¿Qué pasó?',
+  'incident_category_breakdown': 'Avería del vehículo',
+  'incident_category_accident': 'Accidente',
+  'incident_category_delay': 'Retraso',
+  'incident_category_other': 'Otro',
+  'report_incident_description_label': 'Describe lo que pasó',
+  'report_incident_description_hint': 'ej. Llanta ponchada en la I-95, me orillé con seguridad',
+  'report_incident_submit': 'Enviar reporte',
+  'report_incident_success': 'Imprevisto reportado a tu administrador de flota',
+
   // Fleet Fase 5 -- mapa en vivo / geocercas
   'fleet_live_map_title': 'Mapa en vivo',
   'fleet_live_map_no_vehicles': 'Ningún vehículo está reportando posición en vivo todavía',

@@ -35,6 +35,15 @@ class TrackingController {
   static String? activeVehicleId;
   static String? activeOrganizationId;
 
+  // Driver's own live position, for DriverOperationsScreen's real-time
+  // self-map -- fed from the SAME antifraud-validated GPS ticks already
+  // driving the trip (see processGpsTick below), not a second independent
+  // location listener. A plain record instead of latlong2's LatLng so this
+  // core tracking file doesn't need a map-package dependency just to hold
+  // two doubles.
+  static final ValueNotifier<({double lat, double lng})?> livePosition =
+      ValueNotifier(null);
+
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
@@ -99,6 +108,7 @@ class TrackingController {
     _totalSectionMiles = 0.0;
     _totalSessionMiles = 0.0;
     _runSegmentStartedAt = null;
+    livePosition.value = null;
     AntifraudEngine.reset();
     LocalStorageService.clearAllCheckpoint();
   }
@@ -635,6 +645,11 @@ class TrackingController {
       _logDebug('GPS_TICK_REJECTED', '${result.reason} (score: ${result.drivingSignatureScore})');
       return;
     }
+
+    // Real-time self-map (DriverOperationsScreen) -- only fed with ticks
+    // that already passed the antifraud check above, same trust boundary
+    // as everything else this file writes.
+    livePosition.value = (lat: latitude, lng: longitude);
 
     // BUG FIX: start_latitude/start_longitude nunca se guardaban en ningún
     // punto del código vivo (quedaban null en el 100% de las secciones

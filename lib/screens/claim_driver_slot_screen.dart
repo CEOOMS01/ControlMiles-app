@@ -59,7 +59,10 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
       await appState.clearPendingIntendedRole();
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      // Fleet_driver now lands on its own dedicated operations screen,
+      // not the shared `dashboard` -- see DriverOperationsScreen's header
+      // comment for why (this reverses the earlier Phase 3 decision).
+      Navigator.pushReplacementNamed(context, AppRoutes.driverOperations);
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));

@@ -55,6 +55,7 @@ class _PendingInviteScreenState extends State<PendingInviteScreen> {
         hasPendingInvites: false,
         accountTypeChosen: true,
         isFleetAdmin: appState.isFleetAdmin,
+        isFleetDriver: appState.isFleetDriver,
       );
       Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {

@@ -142,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
         hasPendingInvites: appState.hasPendingInvites,
         accountTypeChosen: appState.accountTypeChosen,
         isFleetAdmin: appState.isFleetAdmin,
+        isFleetDriver: appState.isFleetDriver,
       );
       Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {

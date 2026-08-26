@@ -396,6 +396,22 @@ const Map<String, String> deTexts = {
   'inspection_result_pass': 'Prüfung bestanden -- keine Mängel gefunden',
   'inspection_result_fail': 'Prüfung gesendet -- Mängel an deinen Flottenmanager gemeldet',
 
+  'driver_ops_title': 'Heutige Fahrt',
+  'driver_ops_checklist_required': 'Checkliste vor dem Start abschließen',
+  'driver_ops_live_location': 'Live-Standort',
+  'waiting_for_gps': 'Warte auf GPS…',
+  'report_incident_button': 'Vorfall melden',
+  'report_incident_title': 'Einen Vorfall melden',
+  'report_incident_category_label': 'Was ist passiert?',
+  'incident_category_breakdown': 'Fahrzeugpanne',
+  'incident_category_accident': 'Unfall',
+  'incident_category_delay': 'Verspätung',
+  'incident_category_other': 'Sonstiges',
+  'report_incident_description_label': 'Beschreiben Sie, was passiert ist',
+  'report_incident_description_hint': 'z.B. Reifenpanne auf der I-95, sicher angehalten',
+  'report_incident_submit': 'Meldung senden',
+  'report_incident_success': 'Vorfall an Ihren Flottenadministrator gemeldet',
+
   // Fleet Phase 5 -- Live-Karte / Geofencing
   'fleet_live_map_title': 'Live-Karte',
   'fleet_live_map_no_vehicles': 'Noch kein Fahrzeug meldet eine Live-Position',
