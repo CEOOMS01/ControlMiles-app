@@ -132,4 +132,30 @@ class OrganizationService {
     return List<Map<String, dynamic>>.from(data).map(Vehicle.fromMap).toList();
   }
 
+  /// Reclama un fleet_driver_slots creado por un admin (dashboard web,
+  /// Roster -> "Add driver (no account yet)") usando el código de un solo
+  /// uso que el admin le compartió. La RPC misma devuelve success:false +
+  /// un mensaje (nunca lanza excepción) para distinguir un rechazo
+  /// esperado (código inválido, ya usado, demasiados intentos) de un error
+  /// real -- este wrapper lo convierte en una excepción normal para que el
+  /// try/catch de ClaimDriverSlotScreen no necesite plumbing nuevo.
+  ///
+  /// La RPC ya promovió profiles.account_type a 'fleet_driver' y
+  /// default_org_id server-side en un solo statement -- el caller debe
+  /// refrescar AppState.fetchUserProfile() después, mismo patrón que
+  /// createOrganization()/respondToInvite().
+  Future<String> claimDriverSlot(String claimCode) async {
+    final result = await _supabase.rpc(
+      'claim_driver_slot',
+      params: {'p_claim_code': claimCode},
+    );
+    final rows = result as List;
+    final row = rows.isNotEmpty ? Map<String, dynamic>.from(rows.first as Map) : null;
+
+    if (row == null || row['success'] != true) {
+      throw Exception(row?['message'] as String? ?? 'Invalid code');
+    }
+    return row['organization_name'] as String? ?? '';
+  }
+
 }

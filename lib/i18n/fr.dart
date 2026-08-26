@@ -339,6 +339,21 @@ const Map<String, String> frTexts = {
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Comment allez-vous utiliser ControlMiles ?',
+  'role_chooser_title': 'Qu\'est-ce qui vous amène à ControlMiles ?',
+  'role_chooser_subtitle': 'Choisissez ce qui vous correspond. Cela configure votre compte dès le départ.',
+  'role_gig_title': 'Chauffeur d\'app gig',
+  'role_gig_desc': 'Suivez votre propre kilométrage pour Uber, DoorDash et plus.',
+  'role_fleet_driver_title': 'Chauffeur de flotte',
+  'role_fleet_driver_desc': 'Votre administrateur de flotte vous a donné un code ? Rejoignez votre équipe.',
+  'role_fleet_admin_title': 'Administrateur de flotte',
+  'role_fleet_admin_desc': 'Gérez les chauffeurs, véhicules et rapports de votre flotte.',
+  'role_chooser_have_account': 'Vous avez déjà un compte ? Connectez-vous',
+  'claim_driver_slot_title': 'Rejoignez votre flotte',
+  'claim_driver_slot_subtitle': 'Entrez le code partagé par votre administrateur de flotte.',
+  'claim_driver_slot_code_label': 'Code d\'accès',
+  'claim_driver_slot_button': 'Rejoindre la flotte',
+  'claim_driver_slot_skip': 'Je n\'ai pas de code -- continuer en tant que chauffeur indépendant',
+
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',

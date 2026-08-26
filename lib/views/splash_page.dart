@@ -57,6 +57,7 @@ class _SplashPageState extends State<SplashPage> {
         hasPendingInvites: appState.hasPendingInvites,
         accountTypeChosen: appState.accountTypeChosen,
         isFleetAdmin: appState.isFleetAdmin,
+        hasSeenRoleChooser: appState.hasSeenRoleChooser,
       );
 
       Navigator.pushReplacementNamed(context, targetRoute);

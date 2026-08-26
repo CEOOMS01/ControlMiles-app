@@ -82,6 +82,34 @@ class _WelcomePageState extends State<WelcomePage> {
       await appState.fetchPendingInvites();
 
       if (!mounted) return;
+
+      // Role-chooser fast path: a user who already picked a role on
+      // RoleChooserScreen (before signup) shouldn't be asked the same
+      // Gig/Fleet question again via AccountTypeScreen. A real pending
+      // invite still wins over this -- someone might have been invited to
+      // a DIFFERENT fleet while finishing permissions setup, and that
+      // takes priority regardless of what they picked upfront.
+      final pendingRole = appState.pendingIntendedRole;
+      if (pendingRole != null && !appState.accountTypeChosen && !appState.hasPendingInvites) {
+        if (pendingRole == 'fleet_admin') {
+          await appState.clearPendingIntendedRole();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, AppRoutes.createOrganization);
+          return;
+        }
+        if (pendingRole == 'fleet_driver') {
+          await appState.clearPendingIntendedRole();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, AppRoutes.claimDriverSlot);
+          return;
+        }
+        // 'gig' -- no extra screen needed, just mark the choice made and
+        // fall through to the normal routing below (resolves to dashboard).
+        await appState.completeAccountTypeChoice();
+        await appState.clearPendingIntendedRole();
+        if (!mounted) return;
+      }
+
       // Fleet Phase 2: same centralized routing decision as
       // login_screen.dart/splash_page.dart -- a first-time user might
       // already have a pending fleet invite waiting (sent while they were

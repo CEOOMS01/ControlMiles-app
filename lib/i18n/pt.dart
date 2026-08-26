@@ -329,6 +329,23 @@ const Map<String, String> ptTexts = {
   'driver_management': 'Gestão de motoristas',
   'company_account': 'Conta da empresa',
 
+  // First-launch role chooser (before login/signup, shown once per device)
+  // + the driver-slot claim screen it can lead to.
+  'role_chooser_title': 'O que te traz ao ControlMiles?',
+  'role_chooser_subtitle': 'Escolha o que combina com você. Isso configura sua conta desde o início.',
+  'role_gig_title': 'Motorista de app gig',
+  'role_gig_desc': 'Registre sua própria quilometragem para Uber, DoorDash e mais.',
+  'role_fleet_driver_title': 'Motorista de frota',
+  'role_fleet_driver_desc': 'Seu administrador de frota te deu um código? Junte-se à sua equipe.',
+  'role_fleet_admin_title': 'Administrador de frota',
+  'role_fleet_admin_desc': 'Gerencie motoristas, veículos e relatórios da sua frota.',
+  'role_chooser_have_account': 'Já tem uma conta? Entrar',
+  'claim_driver_slot_title': 'Junte-se à sua frota',
+  'claim_driver_slot_subtitle': 'Digite o código que seu administrador de frota compartilhou.',
+  'claim_driver_slot_code_label': 'Código de acesso',
+  'claim_driver_slot_button': 'Entrar na frota',
+  'claim_driver_slot_skip': 'Não tenho um código -- continuar como motorista individual',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',
   'account_type_subtitle': 'Essa escolha define como sua conta funciona. Selecione a opção que combina com você.',

@@ -33,8 +33,10 @@ import 'screens/profile_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/vehicle_screen.dart';
+import 'screens/role_chooser_screen.dart';
 import 'screens/account_type_screen.dart';
 import 'screens/create_organization_screen.dart';
+import 'screens/claim_driver_slot_screen.dart';
 import 'screens/fleet_dashboard_screen.dart';
 import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
@@ -190,7 +192,11 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (_) => const SplashPage(),
-        AppRoutes.login: (_) => const LoginScreen(),
+        AppRoutes.roleChooser: (_) => const RoleChooserScreen(),
+        AppRoutes.login: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as bool?;
+          return LoginScreen(startInSignupMode: args ?? false);
+        },
         AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
         AppRoutes.resetPassword: (context) {
           final email = ModalRoute.of(context)!.settings.arguments as String? ?? '';
@@ -199,6 +205,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.welcome: (_) => const WelcomePage(),
         AppRoutes.accountType: (_) => const AccountTypeScreen(),
         AppRoutes.createOrganization: (_) => const CreateOrganizationScreen(),
+        AppRoutes.claimDriverSlot: (_) => const ClaimDriverSlotScreen(),
         AppRoutes.fleetDashboard: (_) => const FleetDashboardScreen(),
         AppRoutes.fleetRoster: (_) => const FleetRosterScreen(),
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),

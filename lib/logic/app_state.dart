@@ -63,6 +63,21 @@ class AppState extends ChangeNotifier {
   bool _accountTypeChosen = false;
 
   // ============================================================
+  // FIRST-LAUNCH ROLE CHOOSER (Gig App Driver / Fleet Driver / Fleet
+  // Admin) -- shown once per DEVICE, before any account exists, so this
+  // can only live in SharedPreferences, never user_onboarding. Deliberately
+  // NOT removed in clearAll() (device-level, survives logout -- same
+  // category as dark_mode/lang/unit_system). pendingIntendedRole IS a
+  // per-signup-session value though: cleared once welcome_page.dart
+  // consumes it, and on sign-out.
+  // ============================================================
+  bool _hasSeenRoleChooser = false;
+  String? _pendingIntendedRole; // 'gig' | 'fleet_driver' | 'fleet_admin'
+
+  bool get hasSeenRoleChooser => _hasSeenRoleChooser;
+  String? get pendingIntendedRole => _pendingIntendedRole;
+
+  // ============================================================
   // GETTERS
   // ============================================================
   AppLanguage get currentLanguage => _currentLanguage;
@@ -318,6 +333,45 @@ class AppState extends ChangeNotifier {
   }
 
   // ============================================================
+  // FIRST-LAUNCH ROLE CHOOSER
+  // ============================================================
+
+  /// Called when a new user picks a card on RoleChooserScreen. Marks the
+  /// chooser seen (never shown again on this device) and remembers which
+  /// destination signup should skip ahead to once welcome/permissions is
+  /// done -- see WelcomePage._completeOnboarding.
+  Future<void> chooseIntendedRole(String role) async {
+    _hasSeenRoleChooser = true;
+    _pendingIntendedRole = role;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('controlmiles_has_seen_role_chooser', true);
+    await prefs.setString('controlmiles_pending_intended_role', role);
+  }
+
+  /// "Already have an account? Sign in" on RoleChooserScreen -- marks the
+  /// chooser seen without setting an intended role, so a returning user
+  /// reinstalling on a new device just goes to normal LoginScreen from
+  /// here on, never a role picker.
+  Future<void> skipRoleChooser() async {
+    _hasSeenRoleChooser = true;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('controlmiles_has_seen_role_chooser', true);
+  }
+
+  Future<void> clearPendingIntendedRole() async {
+    if (_pendingIntendedRole == null) return;
+    _pendingIntendedRole = null;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('controlmiles_pending_intended_role');
+  }
+
+  // ============================================================
   // TRADUCCIÓN
   // ============================================================
   String tr(String key) {
@@ -360,6 +414,10 @@ class AppState extends ChangeNotifier {
       _defaultOrgId = prefs.getString('controlmiles_default_org_id');
       _accountTypeChosen = prefs.getBool('controlmiles_account_type_chosen') ?? false;
 
+      // First-launch role chooser (device-level, see clearAll())
+      _hasSeenRoleChooser = prefs.getBool('controlmiles_has_seen_role_chooser') ?? false;
+      _pendingIntendedRole = prefs.getString('controlmiles_pending_intended_role');
+
     } catch (e) {
       debugPrint('[AppState] Error loading preferences: $e');
     }
@@ -377,6 +435,9 @@ class AppState extends ChangeNotifier {
     _defaultOrgId = null;
     _accountTypeChosen = false;
     _pendingInvites = [];
+    // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
+    // logout (see the field's own doc comment above).
+    _pendingIntendedRole = null;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('controlmiles_user_display_id');
@@ -385,6 +446,7 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_account_type');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
+    await prefs.remove('controlmiles_pending_intended_role');
 
     notifyListeners();
   }

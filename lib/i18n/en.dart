@@ -419,6 +419,23 @@ const Map<String, String> enTexts = {
   'driver_management': 'Driver management',
   'company_account': 'Company account',
 
+  // First-launch role chooser (before login/signup, shown once per device)
+  // + the driver-slot claim screen it can lead to.
+  'role_chooser_title': 'What brings you to ControlMiles?',
+  'role_chooser_subtitle': 'Pick what fits you. This sets up your account from the start.',
+  'role_gig_title': 'Gig App Driver',
+  'role_gig_desc': 'Track your own mileage for Uber, DoorDash, and more.',
+  'role_fleet_driver_title': 'Fleet Driver',
+  'role_fleet_driver_desc': 'Your fleet admin gave you a code? Join your team.',
+  'role_fleet_admin_title': 'Fleet Admin',
+  'role_fleet_admin_desc': 'Manage drivers, vehicles, and reports for your fleet.',
+  'role_chooser_have_account': 'Already have an account? Sign in',
+  'claim_driver_slot_title': 'Join your fleet',
+  'claim_driver_slot_subtitle': 'Enter the code your fleet admin shared with you.',
+  'claim_driver_slot_code_label': 'Claim code',
+  'claim_driver_slot_button': 'Join fleet',
+  'claim_driver_slot_skip': 'I don\'t have a code -- continue as an individual driver',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',
   'account_type_subtitle': 'This choice decides how your account works. Pick the option that fits you.',

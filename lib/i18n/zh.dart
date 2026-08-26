@@ -329,6 +329,23 @@ const Map<String, String> zhTexts = {
   'driver_management': '司机管理',
   'company_account': '公司账号',
 
+  // First-launch role chooser (before login/signup, shown once per device)
+  // + the driver-slot claim screen it can lead to.
+  'role_chooser_title': '是什么把您带到 ControlMiles？',
+  'role_chooser_subtitle': '选择适合您的选项。这将从一开始就设置好您的账户。',
+  'role_gig_title': '兼职应用司机',
+  'role_gig_desc': '为 Uber、DoorDash 等记录您自己的里程。',
+  'role_fleet_driver_title': '车队司机',
+  'role_fleet_driver_desc': '您的车队管理员给了您一个代码？加入您的团队。',
+  'role_fleet_admin_title': '车队管理员',
+  'role_fleet_admin_desc': '管理您车队的司机、车辆和报告。',
+  'role_chooser_have_account': '已有账户？登录',
+  'claim_driver_slot_title': '加入您的车队',
+  'claim_driver_slot_subtitle': '输入车队管理员分享给您的代码。',
+  'claim_driver_slot_code_label': '加入代码',
+  'claim_driver_slot_button': '加入车队',
+  'claim_driver_slot_skip': '我没有代码——以个人司机身份继续',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',
   'account_type_subtitle': '此选择决定您账户的运作方式。请选择适合您的选项。',

@@ -16,12 +16,22 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String splash = '/splash';
   static const String welcome = '/welcome'; // Nueva ruta de bienvenida y permisos
+  // Primera pantalla que ve un dispositivo nuevo, antes de login/signup --
+  // Gig App Driver / Fleet Driver / Fleet Admin. Se muestra una sola vez
+  // por dispositivo (AppState.hasSeenRoleChooser, SharedPreferences, NO se
+  // limpia en clearAll() -- sobrevive logout, mismo criterio que dark_mode/
+  // lang/unit_system). Ver AppRoutes.getInitialRoute().
+  static const String roleChooser = '/role-chooser';
 
   // ============================================================
   // FLEET MODULE -- ControlMiles Gig / ControlMiles Fleet
   // ============================================================
   static const String accountType = '/account-type';
   static const String createOrganization = '/create-organization';
+  // Reached only when the caller picked "Fleet Driver" on roleChooser --
+  // claims a fleet_driver_slots row (admin-created, CM-D####) via a
+  // one-time code. See ClaimDriverSlotScreen / claim_driver_slot RPC.
+  static const String claimDriverSlot = '/claim-driver-slot';
   static const String fleetDashboard = '/fleet-dashboard';
   static const String fleetRoster = '/fleet-roster';
   static const String fleetLiveMap = '/fleet-live-map';
@@ -94,8 +104,10 @@ class AppRoutes {
         resetPassword,
         splash,
         welcome,
+        roleChooser,
         accountType,
         createOrganization,
+        claimDriverSlot,
         fleetDashboard,
         fleetRoster,
         fleetLiveMap,
@@ -132,6 +144,7 @@ class AppRoutes {
     resetPassword,
     splash,
     welcome,
+    roleChooser,
   ];
 
   static const List<String> mainRoutes = [
@@ -143,6 +156,7 @@ class AppRoutes {
   static const List<String> fleetSetupRoutes = [
     accountType,
     createOrganization,
+    claimDriverSlot,
     pendingInvite,
   ];
 
@@ -244,11 +258,13 @@ class AppRoutes {
       case resetPassword: return 'Reset Password';
       case splash: return 'Splash Screen';
       case welcome: return 'Welcome & Permissions';
+      case roleChooser: return 'Role Chooser';
 
       case home: return 'Home';
       case dashboard: return 'Dashboard';
       case accountType: return 'Account Type';
       case createOrganization: return 'Create Organization';
+      case claimDriverSlot: return 'Claim Driver Slot';
       case fleetDashboard: return 'Fleet Dashboard';
       case fleetRoster: return 'Fleet Roster';
       case fleetLiveMap: return 'Fleet Live Map';
@@ -339,7 +355,13 @@ class AppRoutes {
     bool hasPendingInvites = false,
     bool accountTypeChosen = true,
     bool isFleetAdmin = false,
+    // Default true so the two call sites that are always already
+    // authenticated (login_screen.dart, welcome_page.dart) never need to
+    // pass this -- the check below only ever matters when !isAuthenticated,
+    // which only happens from splash_page.dart's cold-start call.
+    bool hasSeenRoleChooser = true,
   }) {
+    if (!isAuthenticated && !hasSeenRoleChooser) return roleChooser;
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
     if (hasPendingInvites) return pendingInvite;
@@ -357,6 +379,7 @@ class AppRoutes {
   static List<String> get breadcrumbExcluded => [
         splash,
         welcome,
+        roleChooser,
         login,
         register,
         notFound,

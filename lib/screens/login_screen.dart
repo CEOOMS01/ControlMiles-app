@@ -11,7 +11,12 @@ import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';   // ← Importante: Necesario para AppLanguage
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  // Set by RoleChooserScreen so a brand-new user lands directly on the
+  // signup form instead of needing an extra tap on "Sign up" -- the
+  // chooser already told us their intent.
+  final bool startInSignupMode;
+
+  const LoginScreen({super.key, this.startInSignupMode = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -34,8 +39,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
 
   bool _isLoading = false;
-  bool _isLoginMode = true;
+  late bool _isLoginMode;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoginMode = !widget.startInSignupMode;
+  }
 
   @override
   void dispose() {
