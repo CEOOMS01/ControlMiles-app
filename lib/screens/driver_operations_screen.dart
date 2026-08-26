@@ -22,11 +22,14 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../models/vehicle.dart';
+import '../models/vehicle_inspection.dart';
 import '../services/vehicle_service.dart';
+import '../services/inspection_service.dart';
 import '../tracking/tracking_controller.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import 'vehicle_inspection_screen.dart';
+import 'inspection_detail_screen.dart';
 import 'report_incident_sheet.dart';
 import 'driver_settings_sheet.dart';
 
@@ -39,7 +42,9 @@ class DriverOperationsScreen extends StatefulWidget {
 
 class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
   final _vehicleService = VehicleService();
+  final _inspectionService = InspectionService();
   Vehicle? _vehicle;
+  VehicleInspection? _latestInspection;
   bool _isLoadingVehicle = true;
   bool _tripIsActive = false;
 
@@ -60,9 +65,17 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
       organizationId: appState.defaultOrgId,
     );
 
+    // Read-only ("modo lectura del lado del conductor" -- explicit user
+    // requirement): the last inspection on record for this vehicle,
+    // theirs or a previous driver's. RLS alone decides what this can
+    // ever return -- see vehicle_inspections_select_assigned_vehicle_latest.
+    final latestInspection =
+        vehicle != null ? await _inspectionService.getLatestForVehicle(vehicle.id) : null;
+
     if (mounted) {
       setState(() {
         _vehicle = vehicle;
+        _latestInspection = latestInspection;
         _isLoadingVehicle = false;
       });
     }
@@ -72,6 +85,20 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => VehicleInspectionScreen(vehicle: vehicle)),
+    );
+    _loadVehicle();
+  }
+
+  void _viewLatestInspection() {
+    if (_latestInspection == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InspectionDetailScreen(
+          inspection: _latestInspection!,
+          vehicleName: _vehicle?.displayName ?? '',
+        ),
+      ),
     );
   }
 
@@ -170,6 +197,50 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
                         style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                       ),
                     ),
+                  if (_latestInspection != null) ...[
+                    const SizedBox(height: 10),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: _viewLatestInspection,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _latestInspection!.isPass
+                                ? borderColor
+                                : Colors.red.shade200,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _latestInspection!.isPass
+                                  ? Icons.check_circle_rounded
+                                  : Icons.error_rounded,
+                              size: 18,
+                              color: _latestInspection!.isPass
+                                  ? Colors.green.shade600
+                                  : Colors.red.shade600,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                appState.tr(
+                                  _latestInspection!.isPass
+                                      ? 'inspection_result_pass'
+                                      : 'inspection_result_fail',
+                                ),
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: textColor),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: subTextColor, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 28),
                   Center(
                     child: TrackingActionButton(

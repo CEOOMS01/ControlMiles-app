@@ -379,9 +379,24 @@ class AppRoutes {
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
     if (hasPendingInvites) return pendingInvite;
-    if (!accountTypeChosen) return accountType;
+    // BUG FIX (found live, real account): account_type/default_org_id are
+    // set atomically server-side by create_organization/claim_driver_slot,
+    // but accountTypeChosen used to only ever get set by a SEPARATE
+    // client-side call AFTER the RPC returned -- if the app closed/lost
+    // network between those two steps, an account could end up with a
+    // real fleet_admin/fleet_driver status and a real org, yet
+    // accountTypeChosen still false. That silently routed a fleet admin
+    // with two real organizations back to the Gig/Fleet choice screen,
+    // whose Fleet card has no "you already have one" check and just
+    // offers to create another. The RPCs now set accountTypeChosen
+    // atomically too (real root-cause fix), but this check is reordered
+    // as well, on purpose: isFleetAdmin/isFleetDriver are a STRONGER
+    // signal than the separate boolean (they mean account_type itself is
+    // already resolved), so they win regardless of whether that flag
+    // ever desyncs again for some other reason.
     if (isFleetAdmin) return fleetDashboard;
     if (isFleetDriver) return driverOperations;
+    if (!accountTypeChosen) return accountType;
     return dashboard;
   }
 

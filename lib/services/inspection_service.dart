@@ -70,4 +70,17 @@ class InspectionService {
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(data).map(VehicleInspection.fromMap).toList();
   }
+
+  /// Read-only view for the driver's own screen -- explicit user
+  /// requirement: a driver should see the vehicle's most recent
+  /// inspection (theirs or a previous driver's), locked, never editable.
+  /// This is a pure read: RLS (vehicle_inspections_select_own /
+  /// _assigned_vehicle_latest) is what actually enforces "own full
+  /// history + latest-for-assigned-vehicle, never another driver's
+  /// older entries" -- this method just takes the first (already
+  /// newest-first) row RLS lets through.
+  Future<VehicleInspection?> getLatestForVehicle(String vehicleId) async {
+    final list = await listInspections(vehicleId);
+    return list.isEmpty ? null : list.first;
+  }
 }
