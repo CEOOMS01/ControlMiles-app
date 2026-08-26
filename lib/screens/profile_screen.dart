@@ -83,10 +83,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // así que editar el nombre acá nunca llegaba a la tabla de donde
       // AppState/el saludo del Dashboard leen. Se escribe directo acá
       // también, misma tabla, mismo campo.
+      //
+      // BUG FIX (real, encontrado al arreglar el saludo del Dashboard):
+      // full_name es una columna GENERATED ALWAYS AS (...) STORED en
+      // Postgres (calculada sola a partir de first_name/last_name) -- este
+      // UPDATE explícito a full_name SIEMPRE fallaba ("column full_name can
+      // only be updated to DEFAULT"), rompiendo el guardado de perfil
+      // completo, no solo el nombre. Se quita del payload; Postgres la
+      // recalcula solo.
       await _supabase.from('profiles').update({
         'first_name': firstName,
         'last_name': lastName,
-        'full_name': '$firstName $lastName'.trim(),
       }).eq('id', user.id);
 
       // Refresca el caché en memoria de AppState (mismo patrón que ya se

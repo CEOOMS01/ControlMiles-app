@@ -13,9 +13,19 @@ class MainDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
    final appState = context.watch<AppState>();
+   // BUG FIX (pedido explícito): este drawer nunca leyó Theme.of(context)
+   // en ningún lado -- fondo/texto quedaban fijos en colores de modo claro
+   // sin importar appState.isDarkMode. Mismo patrón isDark ya usado en
+   // dashboard_screen.dart/history_screen.dart/etc.
+   final isDark = Theme.of(context).brightness == Brightness.dark;
+   final bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+   final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+   final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+   final dividerColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+   final chevronColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1);
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       child: Column(
         children: [
           Expanded(
@@ -26,13 +36,15 @@ class MainDrawer extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 // --- Sección: Navegación Principal ---
-                _buildSectionLabel(appState, 'navigation'), 
+                _buildSectionLabel(appState, 'navigation', labelColor),
                 _buildMenuItem(
                   context: context,
                   appState: appState,
                   icon: Icons.dashboard_rounded,
                   labelKey: 'dashboard',
                   route: AppRoutes.dashboard,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
                 _buildMenuItem(
                   context: context,
@@ -40,6 +52,8 @@ class MainDrawer extends StatelessWidget {
                   icon: Icons.history_rounded,
                   labelKey: 'history',
                   route: AppRoutes.history,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
                 _buildMenuItem(
                   context: context,
@@ -47,6 +61,8 @@ class MainDrawer extends StatelessWidget {
                   icon: Icons.assessment_rounded,
                   labelKey: 'reports',
                   route: AppRoutes.reports,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
                 // BUG FIX (pedido explícito): gestión de vehículo se separó
                 // de Settings — pantalla propia debajo de Reports.
@@ -56,20 +72,29 @@ class MainDrawer extends StatelessWidget {
                   icon: Icons.directions_car_rounded,
                   labelKey: 'vehicle',
                   route: AppRoutes.vehicle,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
 
-                const Divider(indent: 20, endIndent: 20, height: 20),
+                Divider(indent: 20, endIndent: 20, height: 20, color: dividerColor),
 
                 // --- Sección: Preferencias ---
-                _buildSectionHeader(appState, 'settings'),
-                _buildLanguageSelector(context, appState),
-                
+                _buildSectionHeader(appState, 'settings', labelColor),
+                _buildLanguageSelector(context, appState, textColor, chevronColor),
+
+                // BUG FIX (pedido explícito): botón dedicado para alternar
+                // modo oscuro directo desde el sidebar, sin tener que entrar
+                // a Settings.
+                _buildDarkModeToggle(context, appState, textColor),
+
                 _buildMenuItem(
                   context: context,
                   appState: appState,
                   icon: Icons.settings_rounded,
                   labelKey: 'settings',
                   route: AppRoutes.settings,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
                 _buildMenuItem(
                   context: context,
@@ -77,15 +102,17 @@ class MainDrawer extends StatelessWidget {
                   icon: Icons.person_rounded,
                   labelKey: 'profile',
                   route: AppRoutes.profile,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
                 ),
 
-                const Divider(indent: 20, endIndent: 20, height: 20),
+                Divider(indent: 20, endIndent: 20, height: 20, color: dividerColor),
                 _buildLogoutButton(context, appState),
               ],
             ),
           ),
 
-          _buildFooter(appState),
+          _buildFooter(appState, isDark, dividerColor),
         ],
       ),
     );
@@ -152,30 +179,30 @@ class MainDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionLabel(AppState appState, String labelKey) {
+  Widget _buildSectionLabel(AppState appState, String labelKey, Color labelColor) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         appState.tr(labelKey).toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w900,
-          color: Color(0xFF94A3B8),
+          color: labelColor,
           letterSpacing: 1.0,
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(AppState appState, String labelKey) {
+  Widget _buildSectionHeader(AppState appState, String labelKey, Color labelColor) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         appState.tr(labelKey).toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w900,
-          color: Color(0xFF94A3B8),
+          color: labelColor,
           letterSpacing: 1.0,
         ),
       ),
@@ -188,32 +215,34 @@ class MainDrawer extends StatelessWidget {
     required IconData icon,
     required String labelKey,
     required String route,
+    required Color textColor,
+    required Color chevronColor,
   }) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
       title: Text(
         appState.tr(labelKey),
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1E293B),
+          color: textColor,
         ),
       ),
       onTap: () {
-        Navigator.pop(context); 
+        Navigator.pop(context);
         Navigator.pushNamed(context, route);
       },
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFFCBD5E1)),
+      trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
     );
   }
 
-  Widget _buildLanguageSelector(BuildContext context, AppState appState) {
+  Widget _buildLanguageSelector(BuildContext context, AppState appState, Color textColor, Color chevronColor) {
     return ListTile(
       leading: Icon(Icons.language, color: Theme.of(context).colorScheme.primary, size: 22),
       title: Text(
         appState.tr('language'),
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1E293B),
+          color: textColor,
         ),
       ),
       subtitle: Text(
@@ -224,7 +253,26 @@ class MainDrawer extends StatelessWidget {
         Navigator.pop(context);
         Navigator.pushNamed(context, AppRoutes.settings);
       },
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFFCBD5E1)),
+      trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
+    );
+  }
+
+  Widget _buildDarkModeToggle(BuildContext context, AppState appState, Color textColor) {
+    return ListTile(
+      leading: Icon(
+        appState.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+        color: Theme.of(context).colorScheme.primary,
+        size: 22,
+      ),
+      title: Text(
+        appState.tr('dark_mode'),
+        style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+      ),
+      trailing: Switch.adaptive(
+        value: appState.isDarkMode,
+        onChanged: (_) => appState.toggleDarkMode(),
+        activeThumbColor: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 
@@ -276,22 +324,25 @@ class MainDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(AppState appState) {
+  Widget _buildFooter(AppState appState, bool isDark, Color dividerColor) {
+    final mutedColor = isDark ? Colors.white38 : Colors.grey;
+    final faintColor = isDark ? Colors.white24 : Colors.grey[400];
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: dividerColor))),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("v1.0.0 Stable", style: TextStyle(color: Colors.grey, fontSize: 10)),
-              Text(appState.tr('company').toUpperCase(), style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              Text("v1.0.0 Stable", style: TextStyle(color: mutedColor, fontSize: 10)),
+              Text(appState.tr('company').toUpperCase(),
+                  style: TextStyle(color: mutedColor, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
             ],
           ),
           const SizedBox(height: 8),
-          Text('${appState.tr('copyright')} 2026 Olympus Mont Systems LLC', style: TextStyle(color: Colors.grey[400], fontSize: 9)),
+          Text('${appState.tr('copyright')} 2026 Olympus Mont Systems LLC', style: TextStyle(color: faintColor, fontSize: 9)),
         ],
       ),
     );

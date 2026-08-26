@@ -27,32 +27,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    // BUG FIX (pedido explícito): este screen completo estaba hardcodeado
+    // en modo claro (ver el comentario que quedó documentando esto como
+    // pendiente en _buildLanguageOption más abajo) -- ahora sí lee
+    // Theme.of(context).brightness, mismo patrón isDark que el resto de la
+    // app (dashboard_screen.dart/history_screen.dart/main_drawer.dart).
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           appState.tr('settings').toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),
         children: [
-          _buildSectionHeader(appState, 'language'),
-          _buildLanguageSection(appState),
+          _buildSectionHeader(appState, 'language', isDark),
+          _buildLanguageSection(appState, isDark),
 
-          _buildSectionHeader(appState, 'preferences'),
-          _buildPreferencesSection(appState),
+          _buildSectionHeader(appState, 'preferences', isDark),
+          _buildPreferencesSection(appState, isDark),
 
-          _buildSectionHeader(appState, 'about_app'),
-          _buildAboutSection(appState),
+          _buildSectionHeader(appState, 'about_app', isDark),
+          _buildAboutSection(appState, isDark),
 
-          _buildSectionHeader(appState, 'danger_zone'),
-          _buildDangerZoneSection(appState),
+          _buildSectionHeader(appState, 'danger_zone', isDark),
+          _buildDangerZoneSection(appState, isDark),
         ],
       ),
     );
@@ -64,14 +70,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // index.ts y AuthService.deleteAccount(). El cliente nunca borra
   // auth.users directo (no tiene la service role key).
   // ════════════════════════════════════════════════════════════
-  Widget _buildDangerZoneSection(AppState appState) {
+  Widget _buildDangerZoneSection(AppState appState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.shade100),
+          border: Border.all(color: isDark ? Colors.red.shade900 : Colors.red.shade100),
         ),
         child: ListTile(
           leading: _isDeletingAccount
@@ -176,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // COMPONENTES UI - SECCIONES Y CABECERAS
   // ============================================================
 
-  Widget _buildSectionHeader(AppState appState, String labelKey) {
+  Widget _buildSectionHeader(AppState appState, String labelKey, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
       child: Column(
@@ -184,10 +190,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(
             appState.tr(labelKey).toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF94A3B8),
+              color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
               letterSpacing: 1,
             ),
           ),
@@ -198,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildLanguageSection(AppState appState) {
+  Widget _buildLanguageSection(AppState appState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -207,6 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return _buildLanguageOption(
             language: lang,
             isSelected: isSelected,
+            isDark: isDark,
             onTap: () {
               appState.setLanguage(lang);
               _showChangeConfirmation(context, appState, lang);
@@ -220,27 +227,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildLanguageOption({
     required AppLanguage language,
     required bool isSelected,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
     final primary = Theme.of(context).colorScheme.primary;
-    // BUG FIX (pedido explícito, cuadros invisibles en modo día): el borde
-    // sin seleccionar estaba en grey.shade100, casi idéntico al fondo del
-    // scaffold (#F8FAFC) -- ahora usa el mismo token de borde que el resto
-    // de la app (#E2E8F0). NO se toca el fondo (se queda Colors.white
-    // hardcodeado, igual que el resto de este archivo) -- este screen
-    // completo no tiene soporte de modo oscuro (Scaffold, AppBar y todas
-    // las demás secciones usan colores fijos sin isDark en ningún otro
-    // lado). Meterle dark mode a un solo widget acá crearía una tarjeta
-    // oscura flotando sobre un fondo claro fijo, peor que el bug original.
-    // Si quieres modo oscuro real en Settings, es un fix aparte que toca
-    // todo el archivo, no solo este widget.
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? primary : const Color(0xFFE2E8F0),
+          color: isSelected ? primary : borderColor,
           width: 2,
         ),
         boxShadow: isSelected
@@ -251,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Text(language.flag, style: const TextStyle(fontSize: 22)),
         title: Text(language.label, style: TextStyle(
           fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-          color: isSelected ? primary : const Color(0xFF1E293B),
+          color: isSelected ? primary : textColor,
         )),
         trailing: isSelected ? Icon(Icons.check_circle, color: primary) : null,
         onTap: onTap,
@@ -259,7 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPreferencesSection(AppState appState) {
+  Widget _buildPreferencesSection(AppState appState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -268,6 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.notifications_active_outlined,
             title: appState.tr('notifications'),
             value: appState.notificationsEnabled,
+            isDark: isDark,
             onChanged: (v) => appState.setNotificationsEnabled(v),
           ),
           const SizedBox(height: 10),
@@ -275,6 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.straighten_rounded,
             title: appState.tr('metric_system'), // Llave validada
             value: appState.useMetricSystem,
+            isDark: isDark,
             onChanged: (v) => appState.setUseMetricSystem(v),
           ),
         ],
@@ -286,13 +288,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required IconData icon,
     required String title,
     required bool value,
+    required bool isDark,
     required Function(bool) onChanged,
   }) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: ListTile(
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E293B))),
         trailing: Switch.adaptive(
           value: value,
           onChanged: onChanged,
@@ -302,32 +308,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildAboutSection(AppState appState) {
+  Widget _buildAboutSection(AppState appState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
-            _buildAboutRow(appState.tr('app_version'), 'v1.0.0 Stable'),
-            const Divider(height: 32),
-            _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC'),
+            _buildAboutRow(appState.tr('app_version'), 'v1.0.0 Stable', isDark),
+            Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
+            _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC', isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAboutRow(String label, String value) {
+  Widget _buildAboutRow(String label, String value, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        Text(value, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+        Text(value, style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B), fontSize: 13)),
       ],
     );
   }
