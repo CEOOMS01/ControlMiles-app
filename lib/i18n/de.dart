@@ -575,6 +575,7 @@ const Map<String, String> deTexts = {
   'delete_account_success': 'Konto gelöscht',
   'delete_account_type_to_confirm': 'Geben Sie DELETE ein, um zu bestätigen',
   'delete_account_word': 'DELETE',
+  'trip_sealed_badge': 'Versiegelt',
   'delete_trip': 'Fahrt löschen',
   'delete_trip_confirm_body': 'Dies entfernt die Fahrt und alle erfassten Kilometer dauerhaft aus ControlMiles, einschließlich des Prüfprotokolls. Dies kann nicht rückgängig gemacht werden, und die Fahrt zählt nicht mehr für Ihre Berichte oder die IRS-Abzugsschätzung.',
   'delete_trip_confirm_title': 'Diese Fahrt dauerhaft löschen?',

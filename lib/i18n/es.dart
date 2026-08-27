@@ -145,6 +145,7 @@ const Map<String, String> esTexts = {
   'add_note': 'Agregar nota',
   'edit_note': 'Editar nota',
   'note_saved_success': 'Nota guardada',
+  'trip_sealed_badge': 'Sellado',
   'delete_trip': 'Eliminar viaje',
   'delete_trip_confirm_title': '¿Eliminar este viaje de forma permanente?',
   'delete_trip_confirm_body': 'Esto eliminará el viaje y todas sus millas registradas de ControlMiles de forma permanente, incluyendo su registro de auditoría. No se puede deshacer y el viaje dejará de contar en tus reportes y en el estimado de deducción del IRS.',

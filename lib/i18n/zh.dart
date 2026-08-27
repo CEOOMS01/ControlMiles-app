@@ -575,6 +575,7 @@ const Map<String, String> zhTexts = {
   'delete_account_success': '账户已删除',
   'delete_account_type_to_confirm': '输入 DELETE 以确认',
   'delete_account_word': 'DELETE',
+  'trip_sealed_badge': '已封存',
   'delete_trip': '删除行程',
   'delete_trip_confirm_body': '这将从 ControlMiles 中永久删除该行程及其所有已记录的里程，包括其审计记录。此操作无法撤销，该行程也将不再计入您的报告或 IRS 抵扣估算。',
   'delete_trip_confirm_title': '永久删除此行程？',

@@ -573,6 +573,7 @@ const Map<String, String> frTexts = {
   'delete_account_success': 'Compte supprimé',
   'delete_account_type_to_confirm': 'Tapez DELETE pour confirmer',
   'delete_account_word': 'DELETE',
+  'trip_sealed_badge': 'Scellé',
   'delete_trip': 'Supprimer le trajet',
   'delete_trip_confirm_body': 'Cela supprimera définitivement le trajet et tous ses kilomètres enregistrés de ControlMiles, y compris son enregistrement d\'audit. Cette action est irréversible et le trajet ne comptera plus dans vos rapports ni dans l\'estimation de déduction IRS.',
   'delete_trip_confirm_title': 'Supprimer définitivement ce trajet ?',

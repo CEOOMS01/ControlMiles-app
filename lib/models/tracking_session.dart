@@ -12,6 +12,11 @@ class TrackingSession {
   final String? sessionHash;
   final bool isClosed;
   final String? dateKey;
+  // CGC Core governance sealing (see cgc_governance_service.dart): set
+  // once /governance/decision returns a real decision_id for this trip's
+  // antifraud verdict -- an independent, cryptographically-sealed proof
+  // this codebase's own client-side hash chain can't provide by itself.
+  final String? cgcDecisionId;
 
   TrackingSession({
     required this.id,
@@ -24,6 +29,7 @@ class TrackingSession {
     this.sessionHash,
     required this.isClosed,
     this.dateKey,
+    this.cgcDecisionId,
   });
 
   /// Crea una sesión vacía para inicialización de UI
@@ -76,6 +82,7 @@ class TrackingSession {
       sessionHash: map['session_hash'],
       isClosed: map['is_closed'] ?? false,
       dateKey: map['date_key'],
+      cgcDecisionId: map['cgc_decision_id'],
     );
   }
 
@@ -91,6 +98,7 @@ class TrackingSession {
       'session_hash': sessionHash,
       'is_closed': isClosed,
       'date_key': dateKey,
+      'cgc_decision_id': cgcDecisionId,
     };
   }
 
@@ -111,6 +119,7 @@ class TrackingSession {
     String? sessionHash,
     bool? isClosed,
     String? dateKey,
+    String? cgcDecisionId,
   }) {
     return TrackingSession(
       id: id,
@@ -123,6 +132,7 @@ class TrackingSession {
       sessionHash: sessionHash ?? this.sessionHash,
       isClosed: isClosed ?? this.isClosed,
       dateKey: dateKey ?? this.dateKey,
+      cgcDecisionId: cgcDecisionId ?? this.cgcDecisionId,
     );
   }
 

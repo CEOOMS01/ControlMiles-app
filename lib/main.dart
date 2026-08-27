@@ -1,6 +1,9 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/main.dart - PRODUCTION READY (ASSEMBLY POINT + DARK MODE)
 
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +12,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
 import 'services/secure_supabase_storage.dart';
+import 'services/cgc_monitor_service.dart';
 
 // Rutas, Estado e Internacionalización
 import 'routes/app_routes.dart';
@@ -53,6 +57,26 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // CGC Core crash monitoring (see cgc_monitor_service.dart): both hooks
+  // wired as early as possible, before Supabase/anything else that could
+  // itself throw during boot. FlutterError.onError still calls
+  // presentError so errors keep showing in debug console/red-screen as
+  // before -- this only ADDS forwarding, doesn't replace existing
+  // behavior. PlatformDispatcher.onError catches uncaught async errors
+  // outside Flutter's own framework zone (the current recommended
+  // replacement for wrapping runApp in runZonedGuarded).
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    CgcMonitorService.reportError(
+      message: details.exceptionAsString(),
+      stack: details.stack?.toString(),
+    );
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    CgcMonitorService.reportError(message: error.toString(), stack: stack.toString());
+    return true;
+  };
 
   // Inicializar Supabase
   //

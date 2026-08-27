@@ -472,6 +472,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           _buildInfoChip(icon: Icons.timer_outlined, label: _formatDuration(session.effectiveDurationSeconds ?? 0), isDark: isDark),
                                           const SizedBox(width: 8),
                                           _buildInfoChip(icon: Icons.apps_rounded, label: '${sections.length} section${sections.length != 1 ? 's' : ''}', isDark: isDark),
+                                          if (session.cgcDecisionId != null) ...[
+                                            const SizedBox(width: 8),
+                                            _buildInfoChip(icon: Icons.verified_user_outlined, label: appState.tr('trip_sealed_badge'), isDark: isDark),
+                                          ],
                                         ],
                                       ),
                                     ],

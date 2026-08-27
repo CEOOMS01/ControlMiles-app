@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/session_section.dart';
 import '../services/audit_service.dart';
+import '../services/cgc_governance_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../services/notification_service.dart';
@@ -53,6 +54,15 @@ class TrackingController {
 
   static double _totalSectionMiles = 0.0;
   static double _totalSessionMiles = 0.0;
+
+  // CGC Core governance sealing (see cgc_governance_service.dart): cheap
+  // per-trip aggregates of the antifraud engine's own per-tick verdicts,
+  // sent as diagnostic signal alongside the trip's mileage when the trip
+  // is sealed at stopTracking(). Same static-field-reset-in-_resetState
+  // pattern as _totalSessionMiles above, not a new architecture.
+  static int _totalGpsTicks = 0;
+  static int _rejectedGpsTicks = 0;
+  static double _minDrivingSignatureScore = 1.0;
 
   // BUG FIX #2 (pausa no sobrevive reinicio): el diseño anterior
   // (_pauseStartedAt + _accumulatedPausedSeconds, un contador que solo
@@ -109,6 +119,9 @@ class TrackingController {
     currentState = TrackingState.idle;
     _totalSectionMiles = 0.0;
     _totalSessionMiles = 0.0;
+    _totalGpsTicks = 0;
+    _rejectedGpsTicks = 0;
+    _minDrivingSignatureScore = 1.0;
     _runSegmentStartedAt = null;
     livePosition.value = null;
     AntifraudEngine.reset();
@@ -608,6 +621,18 @@ class TrackingController {
         'total_duration_seconds': sessionDurationSeconds,
       }).eq('id', activeSessionId!);
 
+      // CGC Core governance sealing (see cgc_governance_service.dart):
+      // captured BEFORE _resetState() zeroes these, fired in the
+      // background (not awaited) -- sealing is evidentiary, done
+      // best-effort after the fact, and must never delay the trip-close
+      // UX the way a synchronous call to a Vercel cold start could.
+      CgcGovernanceService.sealTrip(
+        sessionId: activeSessionId!,
+        totalGpsTicks: _totalGpsTicks,
+        rejectedGpsTicks: _rejectedGpsTicks,
+        minDrivingSignatureScore: _minDrivingSignatureScore,
+      );
+
       _resetState();
 
       // Efecto secundario best-effort: la sesión ya quedó cerrada arriba.
@@ -660,10 +685,20 @@ class TrackingController {
       isMock: isMock,
     );
 
+    // CGC Core governance sealing aggregates (see cgc_governance_service.dart):
+    // counted for every tick, accepted or rejected -- a rejected tick's own
+    // score (e.g. 0.5 for low GPS precision, 0.0 for a mock location) is
+    // real diagnostic signal too, not noise to discard.
+    _totalGpsTicks++;
+    if (result.drivingSignatureScore < _minDrivingSignatureScore) {
+      _minDrivingSignatureScore = result.drivingSignatureScore;
+    }
+
     if (!result.isValid) {
       // Antes un punto rechazado desaparecía sin dejar rastro (ni log de
       // debug). Esto solo ayuda a diagnosticar en desarrollo — no escribe
       // en la DB ni en el audit log, para no llenarlo de ruido.
+      _rejectedGpsTicks++;
       _logDebug('GPS_TICK_REJECTED', '${result.reason} (score: ${result.drivingSignatureScore})');
       return;
     }

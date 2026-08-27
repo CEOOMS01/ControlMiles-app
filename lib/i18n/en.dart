@@ -145,6 +145,7 @@ const Map<String, String> enTexts = {
   'add_note': 'Add note',
   'edit_note': 'Edit note',
   'note_saved_success': 'Note saved',
+  'trip_sealed_badge': 'Sealed',
   'delete_trip': 'Delete trip',
   'delete_trip_confirm_title': 'Delete this trip permanently?',
   'delete_trip_confirm_body': 'This will permanently remove the trip and all its tracked miles from ControlMiles, including its audit record. This cannot be undone and the trip will no longer count toward your reports or IRS deduction estimate.',

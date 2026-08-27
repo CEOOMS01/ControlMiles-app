@@ -575,6 +575,7 @@ const Map<String, String> ptTexts = {
   'delete_account_success': 'Conta excluída',
   'delete_account_type_to_confirm': 'Digite DELETE para confirmar',
   'delete_account_word': 'DELETE',
+  'trip_sealed_badge': 'Selado',
   'delete_trip': 'Excluir viagem',
   'delete_trip_confirm_body': 'Isso removerá permanentemente a viagem e todas as milhas registradas do ControlMiles, incluindo seu registro de auditoria. Isso não pode ser desfeito e a viagem não contará mais para seus relatórios ou estimativa de dedução do IRS.',
   'delete_trip_confirm_title': 'Excluir esta viagem permanentemente?',
