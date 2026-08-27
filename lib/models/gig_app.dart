@@ -89,6 +89,29 @@ class GigAppCatalog {
       icon: Icons.route_rounded,
       color: Color(0xFF00A3AD),
     ),
+    // Explicit user request (2026-08-27): 3 platforms ControlMiles had
+    // no coverage for at all, manual selection included -- added here
+    // first (gig_app_packages' catalog only maps a package to an id
+    // that already exists in THIS list; a package-only entry with no
+    // matching GigApp would fall back to the generic icon/raw-id name).
+    GigApp(
+      id: 'veho',
+      name: 'Veho',
+      icon: Icons.local_post_office_rounded,
+      color: Color(0xFF7C3AED),
+    ),
+    GigApp(
+      id: 'jitsu',
+      name: 'Jitsu',
+      icon: Icons.local_mall_rounded,
+      color: Color(0xFF0EA5E9),
+    ),
+    GigApp(
+      id: 'walmart_spark',
+      name: 'Spark Driver',
+      icon: Icons.bolt_rounded,
+      color: Color(0xFFFFC220),
+    ),
     // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
     // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)
     // vs. gris pizarra #475569 en Dashboard/Reports/Historial. Se unificó
