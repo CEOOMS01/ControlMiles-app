@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
-import '../utils/permission_recovery_service.dart';
+import '../tracking/auto_trip_detection_service.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
@@ -249,13 +249,12 @@ class MainDrawer extends StatelessWidget {
 
     final turningOn = !appState.autoDetectEnabled;
     if (turningOn) {
-      final hasPermissions = await PermissionRecoveryService.hasCriticalPermissions();
-      if (!hasPermissions) {
-        if (context.mounted) await PermissionRecoveryService.showRecoveryDialog(context);
-        return;
-      }
+      // requestEnable owns the whole activation flow now (permission
+      // check + shift-start odometer capture + actually arming).
+      await AutoTripDetectionService.requestEnable(context, appState);
+    } else {
+      await appState.setAutoDetectEnabled(false);
     }
-    await appState.setAutoDetectEnabled(turningOn);
   }
 
   Widget _buildSectionLabel(AppState appState, String labelKey, Color labelColor) {

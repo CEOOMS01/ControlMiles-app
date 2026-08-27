@@ -69,6 +69,12 @@ class _AutoTripPromptScreenState extends State<AutoTripPromptScreen> {
       context: context,
       gigApp: _selectedGigApp!,
       irsPurpose: _selectedGigApp == 'custom' ? _selectedIrsPurpose : null,
+      // Carries forward the shift-start reading captured when auto-detect
+      // was turned on, instead of asking for the odometer again on every
+      // detected trip -- falls back to the normal per-trip camera screen
+      // on its own if that cache is somehow empty (e.g. cleared mid-shift
+      // some other way), see TrackingController.startTripFlow itself.
+      useAutoDetectOdometer: true,
     );
 
     // startTripFlow navigates internally (odometer capture) and only

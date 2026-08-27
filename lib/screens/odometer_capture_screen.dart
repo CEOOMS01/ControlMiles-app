@@ -61,7 +61,12 @@ Future<void> initializeCameras() async {
 
 class OdometerCaptureScreen extends StatefulWidget {
 
-  final String sessionId;
+  // null = standalone capture (premium auto-detect, explicit user
+  // requirement: odometer captured once when auto-detect is turned ON,
+  // before any real trip/session exists yet -- see
+  // OdometerCaptureService.processEvidence's own comment on why the
+  // sessions/audit_events writes are skipped in that case).
+  final String? sessionId;
 
   final bool isStart;
 
@@ -71,7 +76,7 @@ class OdometerCaptureScreen extends StatefulWidget {
 
     super.key,
 
-    required this.sessionId,
+    this.sessionId,
 
     required this.isStart,
 

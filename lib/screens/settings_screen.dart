@@ -10,7 +10,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/organization_service.dart';
 import '../services/gig_app_detection_service.dart';
-import '../utils/permission_recovery_service.dart';
+import '../tracking/auto_trip_detection_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -268,13 +268,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
     try {
       if (value) {
-        final hasPermissions = await PermissionRecoveryService.hasCriticalPermissions();
-        if (!hasPermissions) {
-          if (mounted) await PermissionRecoveryService.showRecoveryDialog(context);
-          return;
-        }
+        // requestEnable owns the whole activation flow now (permission
+        // check + shift-start odometer capture + actually arming) --
+        // explicit user requirement, see AutoTripDetectionService's own
+        // comment on why activation captures odometer instead of asking
+        // again on every detected trip.
+        await AutoTripDetectionService.requestEnable(context, appState);
+      } else {
+        await appState.setAutoDetectEnabled(false);
       }
-      await appState.setAutoDetectEnabled(value);
     } finally {
       if (mounted) setState(() => _isTogglingAutoDetect = false);
     }

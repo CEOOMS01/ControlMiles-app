@@ -12,9 +12,11 @@ import '../services/audit_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../services/notification_service.dart';
+import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
 import 'background_gps_service.dart';
+import 'auto_trip_detection_service.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -129,6 +131,13 @@ class TrackingController {
     // trip through it, since the column was always null regardless of who
     // was driving.
     String? organizationId,
+    // Premium auto-detect (explicit user requirement): when true AND a
+    // shift-start odometer reading was already captured at activation
+    // time, skip OdometerCaptureScreen entirely and carry that reading
+    // forward onto this session instead. Manual trips (Dashboard's Start
+    // button) never pass this -- they always keep the existing per-trip
+    // capture, even if auto-detect happens to be armed at the same time.
+    bool useAutoDetectOdometer = false,
   }) async {
     if (currentState != TrackingState.idle) return;
 
@@ -186,21 +195,34 @@ class TrackingController {
         return;
       }
 
-      // Captura obligatoria de odómetro inicial
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OdometerCaptureScreen(
-            sessionId: sessionId,
-            isStart: true,
+      final cachedOdometer = AutoTripDetectionService.instance;
+      if (useAutoDetectOdometer && cachedOdometer.hasShiftStartOdometer) {
+        // No camera screen this time -- the shift-start reading was
+        // already captured for real when auto-detect was turned on, just
+        // carried forward onto THIS session (own honest audit event, see
+        // OdometerCaptureService.applyCarriedForwardStartOdometer).
+        await OdometerCaptureService().applyCarriedForwardStartOdometer(
+          sessionId: sessionId,
+          odometerValue: cachedOdometer.shiftStartOdometerValue!,
+          odometerImageUrl: cachedOdometer.shiftStartOdometerImageUrl!,
+        );
+      } else {
+        // Captura obligatoria de odómetro inicial
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OdometerCaptureScreen(
+              sessionId: sessionId,
+              isStart: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      if (result == null || result['success'] != true) {
-        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
-        _resetState();
-        return;
+        if (result == null || result['success'] != true) {
+          await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+          _resetState();
+          return;
+        }
       }
 
       // Iniciar primera sección
