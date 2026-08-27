@@ -416,6 +416,8 @@ const Map<String, String> enTexts = {
   'trial_expired': 'Trial expired',
   'subscription_active': 'Subscription active',
   'subscription_required': 'Subscription required',
+  'premium_plan_description': 'Unlock Automatic Detection and other premium features.',
+  'subscriptions_not_configured': 'Subscriptions are not available yet.',
 
   // ============================================================
   // FLEET
@@ -473,7 +475,7 @@ const Map<String, String> enTexts = {
   'auto_detect_toggle_subtitle': 'Detects when you start driving and prompts you to confirm the odometer right away.',
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Premium feature',
-  'premium_feature_locked_body': 'Automatic trip detection is a premium add-on. Contact support to enable it on your account.',
+  'premium_feature_locked_body': 'Automatic trip detection is a premium add-on. Upgrade to enable it on your account.',
   'auto_detect_intro_title': 'Automatic Detection',
   'auto_detect_intro_body': 'When you open a supported gig app, ControlMiles starts tracking your trip automatically -- no need to tap Start. You\'ll capture your odometer once, right now; every trip detected after that carries the same reading forward. You can turn this off anytime.',
   'auto_detect_apps_title_on': 'Auto-Detection On',

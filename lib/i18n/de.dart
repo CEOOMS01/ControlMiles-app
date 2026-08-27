@@ -325,6 +325,8 @@ const Map<String, String> deTexts = {
   'trial_expired': 'Testphase abgelaufen',
   'subscription_active': 'Abonnement aktiv',
   'subscription_required': 'Abonnement erforderlich',
+  'premium_plan_description': 'Schalte die automatische Erkennung und weitere Premium-Funktionen frei.',
+  'subscriptions_not_configured': 'Abonnements sind noch nicht verfügbar.',
 
   // ============================================================
   // FLOTTE
@@ -376,7 +378,7 @@ const Map<String, String> deTexts = {
   'auto_detect_toggle_subtitle': 'Erkennt, wenn du losfährst, und bittet dich sofort, den Kilometerstand zu bestätigen.',
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Premium-Funktion',
-  'premium_feature_locked_body': 'Die automatische Fahrterkennung ist ein Premium-Zusatz. Kontaktiere den Support, um sie für dein Konto zu aktivieren.',
+  'premium_feature_locked_body': 'Die automatische Fahrterkennung ist ein Premium-Zusatz. Upgrade dein Konto, um sie zu aktivieren.',
   'auto_detect_intro_title': 'Automatische Erkennung',
   'auto_detect_intro_body': 'Wenn du eine unterstützte Gig-App öffnest, beginnt ControlMiles automatisch mit dem Tracking deiner Fahrt -- kein Tippen auf Start nötig. Du erfasst deinen Kilometerstand jetzt einmal; jede danach erkannte Fahrt übernimmt denselben Wert. Du kannst dies jederzeit ausschalten.',
   'auto_detect_apps_title_on': 'Automatische Erkennung An',

@@ -37,6 +37,7 @@ import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/subscription_screen.dart';
 import 'screens/vehicle_screen.dart';
 import 'screens/role_chooser_screen.dart';
 import 'screens/account_type_screen.dart';
@@ -252,6 +253,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.reports: (_) => const ReportsScreen(),
         AppRoutes.history: (_) => const HistoryScreen(),
         AppRoutes.settings: (_) => const SettingsScreen(),
+        AppRoutes.subscription: (_) => const SubscriptionScreen(),
         AppRoutes.vehicle: (_) => const VehicleScreen(),
         AppRoutes.odometerCapture: (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;

@@ -325,6 +325,8 @@ const Map<String, String> zhTexts = {
   'trial_expired': '试用期已过期',
   'subscription_active': '订阅已激活',
   'subscription_required': '需要订阅',
+  'premium_plan_description': '解锁自动检测和其他高级功能。',
+  'subscriptions_not_configured': '订阅功能尚未开放。',
 
   // ============================================================
   // 车队
@@ -376,7 +378,7 @@ const Map<String, String> zhTexts = {
   'auto_detect_toggle_subtitle': '检测到您开始驾驶时，会立即提示您确认里程表读数。',
   'premium_badge': '高级版',
   'premium_feature_locked_title': '高级功能',
-  'premium_feature_locked_body': '自动行程检测是高级附加功能。请联系客服为您的账户启用此功能。',
+  'premium_feature_locked_body': '自动行程检测是高级附加功能。升级即可为您的账户启用此功能。',
   'auto_detect_intro_title': '自动检测',
   'auto_detect_intro_body': '当您打开受支持的兼职应用时，ControlMiles 会自动开始追踪您的行程——无需点击开始。您现在只需拍摄一次里程表；此后检测到的每次行程都会沿用这个读数。您可以随时关闭此功能。',
   'auto_detect_apps_title_on': '自动检测已开启',

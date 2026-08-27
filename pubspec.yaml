@@ -58,6 +58,10 @@ dependencies:
   # --- Connectivity (offline buffer sync check) ---
   connectivity_plus: ^7.0.0
 
+  # --- Subscriptions (Stripe Checkout/Portal, opened externally -- no
+  # card entry ever happens inside this app, see subscription_screen.dart) ---
+  url_launcher: ^6.3.1
+
   # --- Local notifications (recordatorio de viaje olvidado + resumen semanal) ---
   flutter_local_notifications: ^19.5.0
   flutter_timezone: ^5.1.0

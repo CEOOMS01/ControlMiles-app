@@ -40,6 +40,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logic/app_state.dart';
+import '../routes/app_routes.dart';
 import '../tracking/auto_trip_detection_service.dart';
 
 class AutoDetectAppsButton extends StatefulWidget {
@@ -76,7 +77,18 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(appState.tr('ok')),
+              child: Text(appState.tr('cancel')),
+            ),
+            // Real Stripe subscription flow now exists (see
+            // subscription_screen.dart) -- this used to be an OK-only
+            // dead end ("contact support"), now it goes straight to the
+            // real self-serve upgrade path.
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, AppRoutes.subscription);
+              },
+              child: Text(appState.tr('upgrade_plan')),
             ),
           ],
         ),

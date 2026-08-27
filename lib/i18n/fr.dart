@@ -333,6 +333,8 @@ const Map<String, String> frTexts = {
   'trial_expired': 'Essai expiré',
   'subscription_active': 'Abonnement actif',
   'subscription_required': 'Abonnement requis',
+  'premium_plan_description': 'Débloquez la Détection Automatique et d\'autres fonctionnalités premium.',
+  'subscriptions_not_configured': 'Les abonnements ne sont pas encore disponibles.',
 
   // ============================================================
   // FLOTTE
@@ -383,7 +385,7 @@ const Map<String, String> frTexts = {
   'auto_detect_toggle_subtitle': 'Détecte quand vous commencez à conduire et vous demande de confirmer le compteur immédiatement.',
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Fonctionnalité premium',
-  'premium_feature_locked_body': 'La détection automatique des trajets est un module premium. Contactez le support pour l\'activer sur votre compte.',
+  'premium_feature_locked_body': 'La détection automatique des trajets est un module premium. Passez à un forfait supérieur pour l\'activer sur votre compte.',
   'auto_detect_intro_title': 'Détection Automatique',
   'auto_detect_intro_body': 'Lorsque vous ouvrez une application gig prise en charge, ControlMiles commence à suivre votre trajet automatiquement -- pas besoin d\'appuyer sur Démarrer. Vous capturez votre compteur une seule fois, maintenant; chaque trajet détecté ensuite reprend cette même lecture. Vous pouvez désactiver ceci à tout moment.',
   'auto_detect_apps_title_on': 'Détection Automatique Activée',

@@ -905,6 +905,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           ),
           const SizedBox(height: 10),
           _buildLegalLinkRow(
+            icon: Icons.workspace_premium_outlined,
+            label: appState.tr('subscription'),
+            isDark: isDark,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
+          ),
+          const SizedBox(height: 10),
+          _buildLegalLinkRow(
             icon: Icons.privacy_tip_outlined,
             label: appState.tr('privacy_policy'),
             isDark: isDark,

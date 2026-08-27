@@ -325,6 +325,8 @@ const Map<String, String> ptTexts = {
   'trial_expired': 'Teste expirado',
   'subscription_active': 'Assinatura ativa',
   'subscription_required': 'Assinatura necessária',
+  'premium_plan_description': 'Desbloqueie a Detecção Automática e outros recursos premium.',
+  'subscriptions_not_configured': 'As assinaturas ainda não estão disponíveis.',
 
   // ============================================================
   // FROTA
@@ -376,7 +378,7 @@ const Map<String, String> ptTexts = {
   'auto_detect_toggle_subtitle': 'Detecta quando você começa a dirigir e pede para confirmar o odômetro na hora.',
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Recurso premium',
-  'premium_feature_locked_body': 'A detecção automática de viagens é um complemento premium. Entre em contato com o suporte para ativá-la na sua conta.',
+  'premium_feature_locked_body': 'A detecção automática de viagens é um complemento premium. Faça upgrade para ativá-la na sua conta.',
   'auto_detect_intro_title': 'Detecção Automática',
   'auto_detect_intro_body': 'Quando você abrir um app gig compatível, o ControlMiles vai começar a rastrear sua viagem automaticamente -- sem precisar tocar em Start. Você vai capturar seu odômetro uma única vez, agora; cada viagem detectada depois disso usa essa mesma leitura. Você pode desativar isso quando quiser.',
   'auto_detect_apps_title_on': 'Detecção Automática Ativa',

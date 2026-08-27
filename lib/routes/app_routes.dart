@@ -74,6 +74,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String settings = '/settings';
   static const String preferences = '/preferences';
+  static const String subscription = '/subscription';
   // BUG FIX (pedido explícito): gestión de vehículo se separó de Profile —
   // pantalla propia con "Mi Vehículo" + "Mantenimiento".
   static const String vehicle = '/vehicle';
@@ -131,6 +132,7 @@ class AppRoutes {
         profile,
         settings,
         preferences,
+        subscription,
         vehicle,
         help,
         about,
@@ -184,6 +186,7 @@ class AppRoutes {
     profile,
     settings,
     preferences,
+    subscription,
     vehicle,
   ];
 
@@ -290,6 +293,7 @@ class AppRoutes {
 
       case profile: return 'Profile';
       case settings: return 'Settings';
+      case subscription: return 'Subscription';
       case preferences: return 'Preferences';
       case vehicle: return 'Vehicle';
 
