@@ -25,16 +25,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
   String? _progressMessage;
 
   // BUG FIX (pedido explícito): el rango por defecto al abrir Reports pasa
-  // de "últimos 30 días" a "últimos 3 meses". Se recalcula respecto a
-  // DateTime.now() cada vez que se crea la pantalla, igual que el rolling
-  // window de History — no es una fecha fija guardada. El selector de
-  // fechas manual (icono de calendario en el AppBar, más abajo en build())
-  // NO se ve afectado por este cambio: sigue permitiendo elegir cualquier
-  // rango desde 2024 hasta hoy, sin truncar el historial (que se conserva
-  // íntegro en la DB, sin borrado, para sustentar 3+ años de reportes ante
-  // el IRS).
+  // de "últimos 3 meses" a "últimos 12 meses" -- mismo motivo que el fix
+  // de History (365 días en vez de 30): con el nuevo divisor de mes, un
+  // rango de solo 3 meses casi nunca mostraba más de 2-3 secciones de mes
+  // agrupadas. Se recalcula respecto a DateTime.now() cada vez que se crea
+  // la pantalla, igual que el rolling window de History — no es una fecha
+  // fija guardada. El selector de fechas manual (icono de calendario en el
+  // AppBar, más abajo en build()) NO se ve afectado por este cambio: sigue
+  // permitiendo elegir cualquier rango desde 2024 hasta hoy, sin truncar
+  // el historial (que se conserva íntegro en la DB, sin borrado, para
+  // sustentar 3+ años de reportes ante el IRS).
   DateTimeRange _dateRange = DateTimeRange(
-    start: _subtractMonths(DateTime.now(), 3),
+    start: _subtractMonths(DateTime.now(), 12),
     end:   DateTime.now(),
   );
 
@@ -388,10 +390,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => _buildSessionCard(
-                      appState, _sessions[i], isDark, cardBg, border),
-                  childCount: _sessions.length,
+                delegate: SliverChildListDelegate(
+                  _buildGroupedSessionCards(appState, isDark, cardBg, border),
                 ),
               ),
             ),
@@ -520,6 +520,49 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ],
       ),
     );
+  }
+
+  // ── Sesiones agrupadas por mes (pedido explícito: "que se dividan las
+  // sesiones por mes, ejemplo agosto y todas sus sesiones") -- mismo
+  // criterio que history_screen.dart's month divider, adaptado a la
+  // SliverList plana de esta pantalla en vez de un ListView.builder.
+  List<Widget> _buildGroupedSessionCards(
+      AppState appState, bool isDark, Color cardBg, Color border) {
+    final items = <Widget>[];
+    String? previousMonth;
+
+    for (var i = 0; i < _sessions.length; i++) {
+      final session = _sessions[i];
+      final currentMonth = session.startTime != null
+          ? DateFormat('MMMM yyyy').format(session.startTime!.toLocal())
+          : null;
+
+      if (currentMonth != null && currentMonth != previousMonth) {
+        items.add(Padding(
+          padding: EdgeInsets.only(top: i == 0 ? 0 : 24, bottom: 10),
+          child: Row(
+            children: [
+              Text(
+                currentMonth.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.6,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Divider(color: border, thickness: 1.4)),
+            ],
+          ),
+        ));
+        previousMonth = currentMonth;
+      }
+
+      items.add(_buildSessionCard(appState, session, isDark, cardBg, border));
+    }
+
+    return items;
   }
 
   // ── Session card ───────────────────────────────────────────

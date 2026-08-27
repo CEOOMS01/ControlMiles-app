@@ -131,6 +131,7 @@ const Map<String, String> enTexts = {
   'summary': 'Summary',
   'total_miles': 'Total miles',
   'last_30_days': 'Last 30 days',
+  'last_12_months': 'Last 12 months',
   'total_trips': 'Total trips',
   'average_speed': 'Average speed',
   'RECENT_TRIPS': 'RECENT TRIPS',

@@ -131,6 +131,7 @@ const Map<String, String> esTexts = {
   'summary': 'Resumen',
   'total_miles': 'Total de millas',
   'last_30_days': 'Últimos 30 días',
+  'last_12_months': 'Últimos 12 meses',
   'total_trips': 'Total de viajes',
   'average_speed': 'Velocidad promedio',
   'RECENT_TRIPS': 'VIAJES RECIENTES',

@@ -111,6 +111,7 @@
         <package android:name="com.amazon.rabbit"/>
         <package android:name="com.amazon.flex.rabbit"/>
         <package android:name="com.roadie.drive.android.app"/>
+        <package android:name="com.shipt.shopper"/>
         <package android:name="com.yazam.empower.driver"/>
         <package android:name="com.vehotechnologies.Driver"/>
         <package android:name="com.axlehire.drive"/>

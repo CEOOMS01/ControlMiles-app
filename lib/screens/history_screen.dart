@@ -43,13 +43,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (userId == null) return;
 
       final now = DateTime.now().toUtc();
-      final last30Days = now.subtract(const Duration(days: 30)); // ← Cambiado a 30 días
+      // BUG FIX (pedido explícito): la ventana era de 30 días, lo que
+      // dejaba el nuevo divisor de mes mostrando prácticamente un solo
+      // mes casi siempre -- ahora cubre el año completo (365 días) para
+      // que History realmente pueda mostrar varios meses agrupados.
+      final last12Months = now.subtract(const Duration(days: 365));
 
       final data = await Supabase.instance.client
           .from('sessions')
           .select('*, session_sections(*)')
           .eq('user_id', userId)
-          .gte('start_time', last30Days.toIso8601String())
+          .gte('start_time', last12Months.toIso8601String())
           .order('start_time', ascending: false);
 
       final sessions = <TrackingSession>[];
@@ -322,7 +326,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  appState.tr('last_30_days'),
+                                  appState.tr('last_12_months'),
                                   style: TextStyle(fontSize: 12, color: labelCol, fontWeight: FontWeight.w600),
                                 ),
                                 if (_firstStart != null && _lastEnd != null)
@@ -354,6 +358,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     final sections = _sections[session.id] ?? [];
                     final isExpanded = _expandedSessions[session.id] ?? false;
 
+                    // ── DIVISOR DE MES (pedido explícito: agrupar por mes,
+                    // ej. "August", con todas sus sesiones debajo) ──
+                    final currentMonth = session.startTime != null
+                        ? DateFormat('MMMM yyyy').format(session.startTime!.toLocal())
+                        : '';
+                    final previousMonth = index > 0 && _sessions[index - 1].startTime != null
+                        ? DateFormat('MMMM yyyy').format(_sessions[index - 1].startTime!.toLocal())
+                        : '';
+                    final showMonthDivider = index == 0 || currentMonth != previousMonth;
+
                     // ── DIVISOR DIARIO ──
                     final currentDate = session.startTime != null
                         ? DateFormat('EEEE, MMMM d, yyyy').format(session.startTime!)
@@ -368,6 +382,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (showMonthDivider)
+                          Padding(
+                            padding: EdgeInsets.only(top: index == 0 ? 4 : 28, bottom: 10),
+                            child: Row(
+                              children: [
+                                Text(
+                                  currentMonth.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.6,
+                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(child: Divider(color: borderCol, thickness: 1.4)),
+                              ],
+                            ),
+                          ),
                         if (showDateDivider)
                           Padding(
                             padding: const EdgeInsets.only(top: 24, bottom: 8, left: 4),

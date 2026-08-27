@@ -89,6 +89,17 @@ class GigAppCatalog {
       icon: Icons.route_rounded,
       color: Color(0xFF00A3AD),
     ),
+    // Shipt's driver app is literally called "Shipt Shopper" -- a
+    // distinct platform from Instacart (whose own driver app package,
+    // com.instacart.shopper, already maps to 'instacart' above). Added
+    // same day as the veho/jitsu/walmart_spark batch below, caught
+    // separately by the user after that batch shipped.
+    GigApp(
+      id: 'shipt',
+      name: 'Shipt',
+      icon: Icons.local_grocery_store_rounded,
+      color: Color(0xFFD1121B),
+    ),
     // Explicit user request (2026-08-27): 3 platforms ControlMiles had
     // no coverage for at all, manual selection included -- added here
     // first (gig_app_packages' catalog only maps a package to an id
