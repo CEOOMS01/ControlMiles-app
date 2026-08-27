@@ -106,6 +106,7 @@ class AutoTripDetectionService {
   bool autoSwitchGigApp = false;
   String? midTripDetectedGigAppId;
   String? _dismissedMidTripAppId;
+  String? _lastPolledCurrentGigApp;
 
   // Shift-start odometer reading, captured once (real photo, real
   // evidence -- see OdometerCaptureService.processEvidence's standalone
@@ -143,6 +144,9 @@ class AutoTripDetectionService {
       _promptStuckTimer?.cancel();
       _promptStuckTimer = null;
       _promptActive = false;
+      _dismissedMidTripAppId = null;
+      midTripDetectedGigAppId = null;
+      _lastPolledCurrentGigApp = null;
       // Explicit user requirement: turning auto-detect off clears the
       // shift-start reading -- the next activation must capture a fresh
       // one, never silently reuse a stale one from an earlier session.
@@ -152,6 +156,14 @@ class AutoTripDetectionService {
     if (enabled) {
       await BackgroundGpsService.startTracking();
       if (GigAppDetectionService.instance.isSupported) {
+        // Pre-warm the package catalog NOW, while this call is guaranteed
+        // to be running from a real foreground user action (the Settings/
+        // drawer toggle) -- see GigAppDetectionService's own comment on
+        // why leaving this to the poll timer's first tick is fragile.
+        // Best-effort: if it fails here (rare -- would need a real outage
+        // right at this moment), the poll's own lazy retry is still the
+        // fallback, unchanged.
+        await GigAppDetectionService.instance.preloadCatalog();
         _pollTimer = Timer.periodic(
           _gigAppPollInterval,
           (_) => _pollForGigApp(),
@@ -276,6 +288,29 @@ class AutoTripDetectionService {
   /// first, which resets both guards).
   Future<void> _pollForMidTripSwitch() async {
     final currentGigApp = TrackingController.currentGigApp;
+
+    // Real bug found live (2026-08-27, "no lee Spark Driver/Shipt/Jitsu"):
+    // a dismissal only used to clear when the DETECTED app matched the
+    // CURRENTLY-tracked one -- but a driver moving app-to-app during a
+    // real shift (doordash->roadie->uber->doordash, all real auto-
+    // switches this session) changes currentGigApp on every switch
+    // WITHOUT ever detecting the OLD tracked app again, so that reset
+    // branch could go untouched for the rest of the trip. One old
+    // dismissal of e.g. Spark Driver, made while tracking DoorDash,
+    // silently suppressed it through every later switch to a totally
+    // different app -- confirmed via logs: detection correctly resolved
+    // 'walmart_spark' every poll, but switchSection() was never even
+    // attempted (no SWITCH_OK/SWITCH_ERROR ever logged), which only the
+    // `gigAppId == _dismissedMidTripAppId` early-return explains. Any
+    // real change in what's actively tracked -- this class's own auto-
+    // switch, a manual carousel switch, a confirmed suggestion -- means
+    // an old dismissal no longer applies to the new context.
+    if (_lastPolledCurrentGigApp != currentGigApp) {
+      _lastPolledCurrentGigApp = currentGigApp;
+      _dismissedMidTripAppId = null;
+      midTripDetectedGigAppId = null;
+    }
+
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
 
     if (gigAppId == null || gigAppId == currentGigApp) {

@@ -49,6 +49,13 @@ class GigAppDetectionService {
     } catch (_) {}
   }
 
+  /// Public entry point so callers can pre-warm the catalog at a moment
+  /// they know has real network access (see AutoTripDetectionService.
+  /// setEnabled/restoreFromPrefs) instead of leaving the first-ever fetch
+  /// to whenever the poll timer happens to tick -- see _ensureCatalogLoaded's
+  /// own comment for why that timing matters.
+  Future<void> preloadCatalog() => _ensureCatalogLoaded();
+
   Future<void> _ensureCatalogLoaded() async {
     if (_packageToGigAppId != null) return;
     try {
@@ -67,6 +74,22 @@ class GigAppDetectionService {
     } catch (e) {
       // Leave null so the NEXT call retries the fetch instead of caching
       // a permanent empty result from a transient network failure.
+      //
+      // Real bug found live (2026-08-27, "no lee Spark Driver/Shipt/
+      // Jitsu" on a fresh install): this only ever got called lazily,
+      // from inside detectActiveGigAppId() -- i.e. from the poll timer,
+      // which can just as easily tick for the FIRST time while
+      // ControlMiles is already backgrounded (confirmed via logcat: a
+      // real cascade of DNS FAIL/isBlocked=true right after the tick,
+      // matching Android's background network restrictions). If that
+      // first-ever fetch fails, every later poll retries it, but if the
+      // app stays backgrounded (the driver is still in the gig app --
+      // exactly when detection matters most), it can keep failing for
+      // the rest of that armed stint, with detection silently dead the
+      // whole time. Callers should prefer preloadCatalog() at a moment
+      // guaranteed to have real foreground network access (see
+      // AutoTripDetectionService.setEnabled/restoreFromPrefs) instead of
+      // relying on this lazy path succeeding eventually.
     }
   }
 
