@@ -221,14 +221,16 @@ class GigAppCatalog {
       icon: Icons.warehouse_rounded,
       color: Color(0xFFB8622E),
     ),
-    // "Courial" in the user's own request -- real platform is Curri
-    // (curri.com). Two real, currently-listed driver apps from the same
-    // official Curri developer account -- "Curri Driver" and "Curri
-    // Route Driver" -- both mapped to this one id, same reasoning as Curb.
+    // Courial (courial.com) -- corrected 2026-08-27: initially misread
+    // as "Curri" (curri.com), a real but entirely different company,
+    // before the user pointed to the actual courial.com site. Driver app
+    // is "Courial Partner" (live.courial.partner) -- distinct from
+    // com.courial.user, which is the customer-facing app, same
+    // driver-vs-customer split every other platform in this catalog has.
     GigApp(
-      id: 'curri',
-      name: 'Curri',
-      icon: Icons.construction_rounded,
+      id: 'courial',
+      name: 'Courial',
+      icon: Icons.miscellaneous_services_rounded,
       color: Color(0xFFBF5B2E),
     ),
     // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos

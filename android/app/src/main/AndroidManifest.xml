@@ -126,8 +126,7 @@
         <package android:name="com.deliverthat.driver"/>
         <package android:name="com.hopskipdrive.driver"/>
         <package android:name="co.goshare.driverapp"/>
-        <package android:name="com.Curri.Driver"/>
-        <package android:name="com.Curri.RouteDriver"/>
+        <package android:name="live.courial.partner"/>
     </queries>
 
 </manifest>
