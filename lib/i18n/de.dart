@@ -140,6 +140,7 @@ const Map<String, String> deTexts = {
   'privacy_security': 'Datenschutz & Sicherheit',
   'privacy_policy': 'Datenschutzrichtlinie',
   'terms_conditions': 'Allgemeine Geschäftsbedingungen',
+  'trademark_disclaimer_short': 'ControlMiles ist eine unabhängige App und steht in keiner Verbindung zu Uber, Lyft, DoorDash, Instacart, Amazon, Walmart, Shipt oder anderen in dieser App genannten Plattformen und wird von diesen nicht unterstützt oder gesponsert. Alle Marken gehören ihren jeweiligen Eigentümern.',
   'data_security': 'Datensicherheit',
   'security_audit': 'Sicherheitsaudit',
 

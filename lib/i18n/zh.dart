@@ -153,6 +153,7 @@ const Map<String, String> zhTexts = {
   'privacy_security': '隐私与安全',
   'privacy_policy': '隐私政策',
   'terms_conditions': '服务条款',
+  'trademark_disclaimer_short': 'ControlMiles 是一款独立应用程序,与 Uber、Lyft、DoorDash、Instacart、Amazon、Walmart、Shipt 及本应用中提及的任何其他平台均无关联,未获其认可或赞助。所有商标均归其各自所有者所有。',
   'data_security': '数据安全',
   'security_audit': '安全审计',
 

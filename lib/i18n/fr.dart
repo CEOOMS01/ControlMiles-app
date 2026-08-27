@@ -154,6 +154,7 @@ const Map<String, String> frTexts = {
   'privacy_security': 'Confidentialité et Sécurité',
   'privacy_policy': 'Politique de confidentialité',
   'terms_conditions': 'Conditions générales',
+  'trademark_disclaimer_short': 'ControlMiles est une application indépendante et n\'est affiliée à, approuvée par, ou parrainée par Uber, Lyft, DoorDash, Instacart, Amazon, Walmart, Shipt ou toute autre plateforme mentionnée dans cette application. Toutes les marques appartiennent à leurs propriétaires respectifs.',
   'data_security': 'Sécurité des données',
   'security_audit': 'Audit de sécurité',
 

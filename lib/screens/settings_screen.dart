@@ -11,6 +11,8 @@ import '../services/auth_service.dart';
 import '../services/organization_service.dart';
 import '../services/gig_app_detection_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
+import '../legal/legal_documents.dart';
+import 'legal_document_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -870,21 +872,97 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   }
 
   Widget _buildAboutSection(AppState appState, bool isDark) {
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            _buildAboutRow(appState.tr('app_version'), 'v1.0.0 Stable', isDark),
-            Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
-            _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC', isDark),
-          ],
-        ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                _buildAboutRow(appState.tr('app_version'), 'v1.0.0 Stable', isDark),
+                Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
+                _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC', isDark),
+                Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
+                // Explicit user request (legal risk mitigation, 2026-08-27):
+                // a short, always-visible non-affiliation disclaimer -- the
+                // full legal text lives in Privacy Policy/Terms below, but
+                // this is the one line that has to be visible WITHOUT a
+                // tap, since it's what separates "referring to a trademark"
+                // from "implying a partnership" under nominative fair use.
+                Text(
+                  appState.tr('trademark_disclaimer_short'),
+                  style: TextStyle(fontSize: 11.5, height: 1.4, color: subTextColor),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildLegalLinkRow(
+            icon: Icons.privacy_tip_outlined,
+            label: appState.tr('privacy_policy'),
+            isDark: isDark,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LegalDocumentScreen(
+                  titleKey: 'privacy_policy',
+                  body: privacyPolicyEn,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildLegalLinkRow(
+            icon: Icons.description_outlined,
+            label: appState.tr('terms_conditions'),
+            isDark: isDark,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LegalDocumentScreen(
+                  titleKey: 'terms_conditions',
+                  body: termsOfServiceEn,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // BUG FIX (pedido explícito, riesgo legal): privacy_policy/terms_conditions
+  // ya existían como claves i18n traducidas en los 11 idiomas -- pero
+  // ninguna pantalla las usaba nunca (grep confirmó cero call sites fuera
+  // de los archivos de i18n). No había Privacy Policy ni Terms of Service
+  // accesibles desde la app, pese a que ControlMiles pide permisos
+  // sensibles (ubicación en segundo plano, cámara, Usage Access). Estas
+  // dos filas cierran ese hueco.
+  Widget _buildLegalLinkRow({
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+        trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
+        onTap: onTap,
       ),
     );
   }
