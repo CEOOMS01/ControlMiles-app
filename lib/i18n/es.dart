@@ -20,6 +20,7 @@ const Map<String, String> esTexts = {
   'register': 'Registrarse',
   'signup': 'Crear cuenta',
   'logout': 'Cerrar sesión',
+  'logout_confirmation': '¿Estás seguro de que quieres cerrar sesión?',
   'forgot_password': '¿Olvidaste tu contraseña?',
   'reset_password': 'Restablecer contraseña',
   'auth_session_expired': 'Sesión de autenticación expirada',
@@ -326,7 +327,7 @@ const Map<String, String> esTexts = {
   // VALIDACIÓN
   // ============================================================
   'field_required': 'Este campo es obligatorio',
-  'data_protected_footer': 'Tus datos están protegidos',
+  'powered_by_footer': 'Desarrollado por',
   'invalid_email': 'Correo electrónico inválido',
   'password_too_short': 'La contraseña es demasiado corta',
   'passwords_do_not_match': 'Las contraseñas no coinciden',

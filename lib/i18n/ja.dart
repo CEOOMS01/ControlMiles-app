@@ -257,7 +257,7 @@ const Map<String, String> jaTexts = {
   // バリデーション
   // ============================================================
   'field_required': 'この項目は必須です',
-  'data_protected_footer': 'あなたのデータは保護されています',
+  'powered_by_footer': '提供元',
   'invalid_email': 'メールアドレスが無効です',
   'password_too_short': 'パスワードが短すぎます',
   'passwords_do_not_match': 'パスワードが一致しません',

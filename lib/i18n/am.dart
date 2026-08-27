@@ -244,7 +244,7 @@ const Map<String, String> amTexts = {
   // ማረጋገጫ
   // ============================================================
   'field_required': 'ይህ መስክ ያስፈልጋል',
-  'data_protected_footer': 'የእርስዎ ውሂብ ተጠብቆ ይገኛል',
+  'powered_by_footer': 'የተጎላበተው በ',
   'invalid_email': 'የተሳሳተ ኢሜይል አድራሻ',
   'password_too_short': 'የይለፍ ቃል በጣም አጭር ነው',
   'passwords_do_not_match': 'የይለፍ ቃሎች አይዛመዱም',

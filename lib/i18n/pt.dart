@@ -20,6 +20,7 @@ const Map<String, String> ptTexts = {
   'register': 'Cadastrar',
   'signup': 'Criar conta',
   'logout': 'Sair',
+  'logout_confirmation': 'Tem certeza de que deseja sair?',
   'forgot_password': 'Esqueceu a senha?',
   'reset_password': 'Redefinir senha',
   'auth_session_expired': 'Sessão de autenticação expirada',
@@ -264,7 +265,7 @@ const Map<String, String> ptTexts = {
   // VALIDAÇÃO
   // ============================================================
   'field_required': 'Este campo é obrigatório',
-  'data_protected_footer': 'Seus dados estão protegidos',
+  'powered_by_footer': 'Desenvolvido por',
   'invalid_email': 'Endereço de email inválido',
   'password_too_short': 'A senha é muito curta',
   'passwords_do_not_match': 'As senhas não coincidem',

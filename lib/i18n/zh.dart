@@ -20,6 +20,7 @@ const Map<String, String> zhTexts = {
   'register': '注册',
   'signup': '创建账号',
   'logout': '退出登录',
+  'logout_confirmation': '您确定要退出登录吗?',
   'forgot_password': '忘记密码？',
   'reset_password': '重置密码',
   'auth_session_expired': '认证会话已过期',
@@ -264,7 +265,7 @@ const Map<String, String> zhTexts = {
   // 验证
   // ============================================================
   'field_required': '此字段为必填项',
-  'data_protected_footer': '您的数据受到保护',
+  'powered_by_footer': '技术支持',
   'invalid_email': '邮箱地址无效',
   'password_too_short': '密码太短',
   'passwords_do_not_match': '两次输入的密码不一致',

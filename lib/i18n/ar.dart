@@ -266,7 +266,7 @@ const Map<String, String> arTexts = {
   // VALIDATION
   // ============================================================
   'field_required': 'هذا الحقل مطلوب',
-  'data_protected_footer': 'بياناتك محمية',
+  'powered_by_footer': 'بدعم من',
   'invalid_email': 'البريد الإلكتروني غير صحيح',
   'password_too_short': 'كلمة المرور قصيرة جداً',
   'passwords_do_not_match': 'كلمات المرور غير متطابقة',

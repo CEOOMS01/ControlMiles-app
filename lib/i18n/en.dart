@@ -20,6 +20,7 @@ const Map<String, String> enTexts = {
   'register': 'Register',
   'signup': 'Sign up',
   'logout': 'Logout',
+  'logout_confirmation': 'Are you sure you want to log out?',
   'forgot_password': 'Forgot password?',
   'reset_password': 'Reset password',
   'auth_session_expired': 'Authentication session expired',
@@ -326,7 +327,7 @@ const Map<String, String> enTexts = {
   // VALIDATION
   // ============================================================
   'field_required': 'This field is required',
-  'data_protected_footer': 'Your data is protected',
+  'powered_by_footer': 'Powered by',
   'invalid_email': 'Invalid email address',
   'password_too_short': 'Password is too short',
   'passwords_do_not_match': 'Passwords do not match',

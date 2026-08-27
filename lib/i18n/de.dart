@@ -20,6 +20,7 @@ const Map<String, String> deTexts = {
   'register': 'Registrieren',
   'signup': 'Konto erstellen',
   'logout': 'Abmelden',
+  'logout_confirmation': 'Möchtest du dich wirklich abmelden?',
   'forgot_password': 'Passwort vergessen?',
   'reset_password': 'Passwort zurücksetzen',
   'auth_session_expired': 'Authentifizierungssitzung abgelaufen',
@@ -251,7 +252,7 @@ const Map<String, String> deTexts = {
   // VALIDIERUNG
   // ============================================================
   'field_required': 'Dieses Feld ist erforderlich',
-  'data_protected_footer': 'Ihre Daten sind geschützt',
+  'powered_by_footer': 'Bereitgestellt von',
   'invalid_email': 'Ungültige E-Mail-Adresse',
   'password_too_short': 'Passwort ist zu kurz',
   'passwords_do_not_match': 'Passwörter stimmen nicht überein',

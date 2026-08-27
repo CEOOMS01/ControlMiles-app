@@ -258,7 +258,7 @@ const Map<String, String> koTexts = {
   // 유효성 검사
   // ============================================================
   'field_required': '이 항목은 필수입니다',
-  'data_protected_footer': '귀하의 데이터는 보호됩니다',
+  'powered_by_footer': '제공',
   'invalid_email': '유효하지 않은 이메일 주소',
   'password_too_short': '비밀번호가 너무 짧습니다',
   'passwords_do_not_match': '비밀번호가 일치하지 않습니다',

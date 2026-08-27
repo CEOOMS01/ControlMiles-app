@@ -202,28 +202,43 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildHeader(appState, isDark),
-                    const SizedBox(height: 40),
-                    _buildForm(appState, isDark),
-                    if (!_isLoginMode) ...[
-                      const SizedBox(height: 16),
-                      _buildAgeTermsCheckbox(appState, isDark),
-                    ],
-                    if (_isLoginMode) _buildForgotPasswordLink(appState),
-                    const SizedBox(height: 24),
-                    _buildLoginButton(appState),
-                    _buildToggleMode(appState),
-                    const SizedBox(height: 60),
-                    _buildFooter(appState),
-                  ],
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildHeader(appState, isDark),
+                          const SizedBox(height: 40),
+                          _buildForm(appState, isDark),
+                          const SizedBox(height: 20),
+                          if (!_isLoginMode) ...[
+                            _buildAgeTermsCheckbox(appState, isDark),
+                            const SizedBox(height: 8),
+                          ],
+                          if (_isLoginMode) _buildForgotPasswordLink(appState),
+                          const SizedBox(height: 32),
+                          _buildLoginButton(appState),
+                          _buildToggleMode(appState),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                // Explicit user request: pinned to the actual bottom of the
+                // screen, not just wherever the scrollable form content
+                // happened to end -- was previously inline in the same
+                // scrollable/centered Column above, which on a tall screen
+                // left it floating mid-page instead of anchored at the
+                // bottom.
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildFooter(appState),
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -545,7 +560,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
         ),
         Text(
-          appState.tr('data_protected_footer'),
+          appState.tr('powered_by_footer'),
           style: const TextStyle(fontSize: 10, color: Colors.grey),
         ),
       ],

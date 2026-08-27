@@ -258,7 +258,7 @@ const Map<String, String> hiTexts = {
   // वैलिडेशन
   // ============================================================
   'field_required': 'यह फ़ील्ड आवश्यक है',
-  'data_protected_footer': 'आपका डेटा सुरक्षित है',
+  'powered_by_footer': 'द्वारा संचालित',
   'invalid_email': 'अमान्य ईमेल पता',
   'password_too_short': 'पासवर्ड बहुत छोटा है',
   'passwords_do_not_match': 'पासवर्ड मेल नहीं खाते',

@@ -20,6 +20,7 @@ const Map<String, String> frTexts = {
   'register': 'S\'inscrire',
   'signup': 'Créer un compte',
   'logout': 'Déconnexion',
+  'logout_confirmation': 'Êtes-vous sûr de vouloir vous déconnecter ?',
   'forgot_password': 'Mot de passe oublié ?',
   'reset_password': 'Réinitialiser le mot de passe',
   'auth_session_expired': 'Session d\'authentification expirée',
@@ -272,7 +273,7 @@ const Map<String, String> frTexts = {
   // VALIDATION
   // ============================================================
   'field_required': 'Ce champ est obligatoire',
-  'data_protected_footer': 'Vos données sont protégées',
+  'powered_by_footer': 'Propulsé par',
   'invalid_email': 'Adresse email invalide',
   'password_too_short': 'Le mot de passe est trop court',
   'passwords_do_not_match': 'Les mots de passe ne correspondent pas',
