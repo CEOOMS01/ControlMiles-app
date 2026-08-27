@@ -3,11 +3,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
-import '../tracking/auto_trip_detection_service.dart';
 import '../screens/odometer_capture_screen.dart';
 
 class TrackingActionButton extends StatefulWidget {
@@ -59,13 +57,6 @@ class TrackingActionButton extends StatefulWidget {
 class _TrackingActionButtonState extends State<TrackingActionButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
-
-  // Explicit user request (2026-08-27): the drawer's own quick-toggle for
-  // this exact same auto-detect state was removed in favor of this one --
-  // one control for the same function, not two. First-ever tap shows a
-  // real explanation (odometer-once, then automatic from there) before
-  // the normal activation flow (permission + odometer capture) runs.
-  static const String _autoDetectIntroSeenKey = 'controlmiles_auto_detect_intro_seen';
 
   @override
   void initState() {
@@ -245,63 +236,6 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     if (mounted) setState(() {});
   }
 
-  // Premium-only, matches the same autoDetectEnabled/premiumEntitled state
-  // Settings already exposes -- this is just a more discoverable entry
-  // point, sitting right where the driver already looks to start a trip.
-  Future<void> _handleAutoDetectToggle(AppState appState) async {
-    if (!appState.premiumEntitled) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('premium_feature_locked_title')),
-          content: Text(appState.tr('premium_feature_locked_body')),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('ok'))),
-          ],
-        ),
-      );
-      return;
-    }
-
-    if (appState.autoDetectEnabled) {
-      await appState.setAutoDetectEnabled(false);
-      if (mounted) setState(() {});
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final introSeen = prefs.getBool(_autoDetectIntroSeenKey) ?? false;
-
-    if (!introSeen) {
-      if (!mounted) return;
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('auto_detect_intro_title')),
-          content: Text(appState.tr('auto_detect_intro_body')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(appState.tr('cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(appState.tr('continue')),
-            ),
-          ],
-        ),
-      );
-      await prefs.setBool(_autoDetectIntroSeenKey, true);
-      if (proceed != true || !mounted) return;
-    }
-
-    if (!mounted) return;
-    // requestEnable owns the whole activation flow (permission check +
-    // shift-start odometer capture + actually arming).
-    await AutoTripDetectionService.requestEnable(context, appState);
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -316,25 +250,12 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       _pulseController.stop();
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AnimatedSize(
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Explicit user request (2026-08-27): a more discoverable
-          // entry point for auto-detect, right next to Start instead of
-          // buried in Settings/the drawer -- only shown at idle, since
-          // once a trip is running the mode is already committed for
-          // that trip (per-trip Settings toggle still covers changing
-          // it for the NEXT one).
-          if (isIdle) ...[
-            _buildAutoDetectToggle(appState, isDark),
-            const SizedBox(width: 20),
-          ],
-
           // Botón principal
           GestureDetector(
             onTap: () => _handlePress(appState),
@@ -439,44 +360,6 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildAutoDetectToggle(AppState appState, bool isDark) {
-    final isAuto = appState.autoDetectEnabled;
-    final locked = !appState.premiumEntitled;
-    final primary = Theme.of(context).colorScheme.primary;
-
-    return Tooltip(
-      message: appState.tr(isAuto ? 'auto_detect_toggle_title' : 'carousel_manual_mode'),
-      child: GestureDetector(
-        onTap: () => _handleAutoDetectToggle(appState),
-        child: Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: isAuto
-                ? primary.withValues(alpha: 0.15)
-                : (isDark ? const Color(0xFF1E293B) : Colors.grey.shade100),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isAuto
-                  ? primary
-                  : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-              width: 2,
-            ),
-          ),
-          child: Icon(
-            locked
-                ? Icons.lock_outline_rounded
-                : (isAuto ? Icons.auto_awesome_rounded : Icons.touch_app_rounded),
-            color: locked
-                ? (isDark ? Colors.white38 : Colors.grey.shade500)
-                : (isAuto ? primary : (isDark ? Colors.white70 : Colors.grey.shade600)),
-            size: 26,
-          ),
-        ),
       ),
     );
   }

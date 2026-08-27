@@ -20,6 +20,7 @@ import '../widgets/main_drawer.dart';
 import '../widgets/mileage_deduction_badge.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
+import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
 import '../utils/permission_recovery_service.dart';
 
@@ -1059,6 +1060,18 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
 
               const SizedBox(height: 30),
+
+              // Explicit user request (2026-08-27): a more discoverable
+              // entry point for auto-detect, right where the carousel/
+              // status card already lives -- replaces the small circular
+              // toggle that used to live in TrackingActionButton. Only
+              // shown at idle (Gig-only, same scope the drawer's removed
+              // version had) -- once running, the mode is already
+              // committed for that trip.
+              if (appState.isGig && TrackingController.currentState == TrackingState.idle) ...[
+                const AutoDetectAppsButton(),
+                const SizedBox(height: 20),
+              ],
 
               // Explicit user request: the carousel must NEVER reappear
               // while auto-detect is armed, in ANY trip state -- it was
