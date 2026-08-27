@@ -9,6 +9,7 @@ import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/organization_service.dart';
+import '../utils/permission_recovery_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -27,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
   bool _isSwitchingMode = false;
+  bool _isTogglingAutoDetect = false;
 
   // Explicit user requirement (mobile Settings, fleet_admin only): show
   // the org's name and let its owner/admin rename or delete it. Rename
@@ -225,6 +227,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Premium Gig feature: automatic trip detection. onboarding
+  // (welcome_page.dart) already requests locationAlways +
+  // activityRecognition for every user -- the plugin's own motion
+  // detection needs both -- but a user can still revoke either later
+  // from system settings, so this re-checks before actually arming.
+  Future<void> _handleAutoDetectToggle(AppState appState, bool value) async {
+    if (_isTogglingAutoDetect) return;
+    setState(() => _isTogglingAutoDetect = true);
+
+    try {
+      if (value) {
+        final hasPermissions = await PermissionRecoveryService.hasCriticalPermissions();
+        if (!hasPermissions) {
+          if (mounted) await PermissionRecoveryService.showRecoveryDialog(context);
+          return;
+        }
+      }
+      await appState.setAutoDetectEnabled(value);
+    } finally {
+      if (mounted) setState(() => _isTogglingAutoDetect = false);
+    }
+  }
+
+  void _showPremiumLockedDialog(AppState appState) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('premium_feature_locked_title')),
+        content: Text(appState.tr('premium_feature_locked_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(appState.tr('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -258,6 +299,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (appState.isFleetAdmin && (_isLoadingOrg || _organization != null)) ...[
             _buildSectionHeader(appState, 'organization_section_title', isDark),
             _buildOrganizationSection(appState, isDark),
+          ],
+
+          if (appState.isGig) ...[
+            _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
+            _buildAutoDetectSection(appState, isDark),
           ],
 
           _buildSectionHeader(appState, 'preferences', isDark),
@@ -609,6 +655,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAutoDetectSection(AppState appState, bool isDark) {
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final locked = !appState.premiumEntitled;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ListTile(
+          leading: Icon(Icons.auto_awesome_rounded, color: locked ? subTextColor : primary),
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  appState.tr('auto_detect_toggle_title'),
+                  style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+                ),
+              ),
+              if (locked) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    appState.tr('premium_badge'),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: primary, letterSpacing: 0.5),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          subtitle: Text(
+            appState.tr('auto_detect_toggle_subtitle'),
+            style: TextStyle(fontSize: 12, color: subTextColor),
+          ),
+          trailing: locked
+              ? Icon(Icons.lock_outline_rounded, color: subTextColor)
+              : (_isTogglingAutoDetect
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Switch.adaptive(
+                      value: appState.autoDetectEnabled,
+                      onChanged: (v) => _handleAutoDetectToggle(appState, v),
+                      activeThumbColor: primary,
+                    )),
+          onTap: locked ? () => _showPremiumLockedDialog(appState) : null,
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../i18n/app_texts.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
 import '../models/organization.dart';
+import '../tracking/auto_trip_detection_service.dart';
 
 class AppState extends ChangeNotifier {
 
@@ -25,6 +26,13 @@ class AppState extends ChangeNotifier {
   // persistida bajo la misma clave que ya usaba SettingsScreen (sin
   // migración necesaria).
   bool _notificationsEnabled = true;
+  // Premium Gig feature (explicit user requirement): automatic trip
+  // detection. Device-level like notificationsEnabled/darkMode -- the
+  // background listening service either runs on THIS device or doesn't,
+  // it's not account state. Actually gating whether it can be turned on
+  // at all is premiumEntitled (server-verified, see profiles.premium_entitled)
+  // -- this flag only tracks whether the user has chosen to turn it on.
+  bool _autoDetectEnabled = false;
   bool _isInitialized = false;
   String? _currentSessionId;
 
@@ -47,6 +55,11 @@ class AppState extends ChangeNotifier {
   // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
   String _accountType = 'gig';
   String? _defaultOrgId;
+  // Gates paid Gig features (starting with automatic trip detection) --
+  // enforcement-only, no payment processing wired yet (see
+  // multi_org_entitled's own migration for the same pattern). Granting
+  // it today is a manual/support action.
+  bool _premiumEntitled = false;
   // Deliberately NOT cached to SharedPreferences like accountType/etc --
   // invites can arrive or get withdrawn at any time, so a stale disk copy
   // risks showing an already-handled invite (or hiding a brand new one).
@@ -84,6 +97,7 @@ class AppState extends ChangeNotifier {
   bool get useMetricSystem => _useMetricSystem;
   bool get isDarkMode => _isDarkMode;                    // ← Nuevo
   bool get notificationsEnabled => _notificationsEnabled;
+  bool get autoDetectEnabled => _autoDetectEnabled;
   bool get isInitialized => _isInitialized;
   String? get currentSessionId => _currentSessionId;
   String? get userDisplayId => _userDisplayId;
@@ -91,6 +105,7 @@ class AppState extends ChangeNotifier {
   bool get permissionsCompleted => _permissionsCompleted;
   String get accountType => _accountType;
   String? get defaultOrgId => _defaultOrgId;
+  bool get premiumEntitled => _premiumEntitled;
   bool get accountTypeChosen => _accountTypeChosen;
   bool get isGig => _accountType == 'gig';
   bool get isFleetAdmin => _accountType == 'fleet_admin';
@@ -132,7 +147,7 @@ class AppState extends ChangeNotifier {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('display_id, first_name, account_type, default_org_id')
+          .select('display_id, first_name, account_type, default_org_id, premium_entitled')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -140,16 +155,19 @@ class AppState extends ChangeNotifier {
       final String? newFirstName = data?['first_name'] as String?;
       final String newAccountType = data?['account_type'] as String? ?? 'gig';
       final String? newDefaultOrgId = data?['default_org_id'] as String?;
+      final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
       final bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||
-          _defaultOrgId != newDefaultOrgId;
+          _defaultOrgId != newDefaultOrgId ||
+          _premiumEntitled != newPremiumEntitled;
 
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
         _accountType = newAccountType;
         _defaultOrgId = newDefaultOrgId;
+        _premiumEntitled = newPremiumEntitled;
 
         final prefs = await SharedPreferences.getInstance();
         if (_userDisplayId != null) {
@@ -163,6 +181,7 @@ class AppState extends ChangeNotifier {
           await prefs.remove('controlmiles_first_name');
         }
         await prefs.setString('controlmiles_account_type', _accountType);
+        await prefs.setBool('controlmiles_premium_entitled', _premiumEntitled);
         if (_defaultOrgId != null) {
           await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
         } else {
@@ -286,6 +305,25 @@ class AppState extends ChangeNotifier {
   }
 
   // ============================================================
+  // DETECCIÓN AUTOMÁTICA DE VIAJES (premium, Gig-only)
+  // ============================================================
+  /// Caller is responsible for checking premiumEntitled/isGig before ever
+  /// calling this with value=true -- this setter itself doesn't re-check
+  /// entitlement, same division of responsibility as the rest of this
+  /// class (UI reads the flags, this just persists a choice).
+  Future<void> setAutoDetectEnabled(bool value) async {
+    if (_autoDetectEnabled == value) return;
+
+    _autoDetectEnabled = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('controlmiles_auto_detect_enabled', value);
+
+    await AutoTripDetectionService.instance.setEnabled(value);
+  }
+
+  // ============================================================
   // IDIOMA
   // ============================================================
   Future<void> setLanguage(AppLanguage language) async {
@@ -400,6 +438,9 @@ class AppState extends ChangeNotifier {
       // Notificaciones (misma clave que ya usaba SettingsScreen)
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
 
+      // Detección automática de viajes (premium, Gig-only)
+      _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
+
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
 
@@ -412,6 +453,7 @@ class AppState extends ChangeNotifier {
       // Fleet module
       _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
       _defaultOrgId = prefs.getString('controlmiles_default_org_id');
+      _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _accountTypeChosen = prefs.getBool('controlmiles_account_type_chosen') ?? false;
 
       // First-launch role chooser (device-level, see clearAll())
@@ -433,7 +475,14 @@ class AppState extends ChangeNotifier {
     _permissionsCompleted = false;
     _accountType = 'gig';
     _defaultOrgId = null;
+    _premiumEntitled = false;
     _accountTypeChosen = false;
+    // A different account on this same device shouldn't inherit the
+    // previous account's premium auto-detect choice, and the listening
+    // service must stop -- it has no idle account to attribute a
+    // detected trip to once signed out.
+    _autoDetectEnabled = false;
+    await AutoTripDetectionService.instance.setEnabled(false);
     _pendingInvites = [];
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
     // logout (see the field's own doc comment above).
@@ -444,6 +493,8 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_first_name');
     await prefs.remove('controlmiles_permissions_completed');
     await prefs.remove('controlmiles_account_type');
+    await prefs.remove('controlmiles_premium_entitled');
+    await prefs.remove('controlmiles_auto_detect_enabled');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

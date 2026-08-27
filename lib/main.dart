@@ -18,6 +18,7 @@ import 'theme/app_colors.dart';
 
 // Servicios de Hardware y Fondo
 import 'tracking/background_gps_service.dart';
+import 'tracking/auto_trip_detection_service.dart';
 import 'services/notification_service.dart';
 
 // Screens & Views
@@ -43,6 +44,7 @@ import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
 import 'screens/fleet_state_mileage_screen.dart';
 import 'screens/pending_invite_screen.dart';
+import 'screens/auto_trip_prompt_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
 // toca la notificación de resumen semanal, sin depender de un BuildContext
@@ -92,6 +94,15 @@ Future<void> main() async {
     debugPrint('[Main] NotificationService initialized successfully');
   } catch (e) {
     debugPrint('[Main] Warning: NotificationService failed to initialize: $e');
+  }
+
+  // Premium auto-detect: re-arm the motion-listening service on cold
+  // start if the user already had it on -- mirrors NotificationService's
+  // own re-scheduling of the weekly reminder above.
+  try {
+    await AutoTripDetectionService.instance.restoreFromPrefs();
+  } catch (e) {
+    debugPrint('[Main] Warning: AutoTripDetectionService restore failed: $e');
   }
 
   // Inyectar el Estado Global
@@ -213,6 +224,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
         AppRoutes.fleetStateMileage: (_) => const FleetStateMileageScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
+        AppRoutes.autoTripPrompt: (_) => const AutoTripPromptScreen(),
         AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.reports: (_) => const ReportsScreen(),

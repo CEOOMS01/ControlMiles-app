@@ -372,6 +372,17 @@ const Map<String, String> frTexts = {
   'org_delete_type_to_confirm': 'Tapez le nom de l\'organisation pour confirmer',
   'org_deleted_success': 'Organisation supprimée',
 
+  'automatic_tracking_section': 'Suivi automatique',
+  'auto_detect_toggle_title': 'Détection automatique des trajets',
+  'auto_detect_toggle_subtitle': 'Détecte quand vous commencez à conduire et vous demande de confirmer le compteur immédiatement.',
+  'premium_badge': 'PREMIUM',
+  'premium_feature_locked_title': 'Fonctionnalité premium',
+  'premium_feature_locked_body': 'La détection automatique des trajets est un module premium. Contactez le support pour l\'activer sur votre compte.',
+  'auto_trip_prompt_title': 'Trajet détecté',
+  'auto_trip_prompt_body': 'Nous avons détecté que vous avez commencé à vous déplacer. Choisissez l\'application et confirmez maintenant pour enregistrer le compteur de ce trajet.',
+  'auto_trip_prompt_confirm': 'Confirmer et démarrer',
+  'auto_trip_prompt_dismiss': 'Ce n\'est pas un trajet professionnel',
+
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',

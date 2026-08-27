@@ -365,6 +365,17 @@ const Map<String, String> ptTexts = {
   'org_delete_type_to_confirm': 'Digite o nome da organização para confirmar',
   'org_deleted_success': 'Organização excluída',
 
+  'automatic_tracking_section': 'Rastreamento automático',
+  'auto_detect_toggle_title': 'Detecção automática de viagens',
+  'auto_detect_toggle_subtitle': 'Detecta quando você começa a dirigir e pede para confirmar o odômetro na hora.',
+  'premium_badge': 'PREMIUM',
+  'premium_feature_locked_title': 'Recurso premium',
+  'premium_feature_locked_body': 'A detecção automática de viagens é um complemento premium. Entre em contato com o suporte para ativá-la na sua conta.',
+  'auto_trip_prompt_title': 'Viagem detectada',
+  'auto_trip_prompt_body': 'Detectamos que você começou a se mover. Escolha o app e confirme agora para registrar o odômetro desta viagem.',
+  'auto_trip_prompt_confirm': 'Confirmar e iniciar',
+  'auto_trip_prompt_dismiss': 'Não é uma viagem de trabalho',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',
   'account_type_subtitle': 'Essa escolha define como sua conta funciona. Selecione a opção que combina com você.',

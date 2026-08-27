@@ -460,6 +460,18 @@ const Map<String, String> enTexts = {
   'org_delete_type_to_confirm': 'Type the organization name to confirm',
   'org_deleted_success': 'Organization deleted',
 
+  // Automatic trip detection (premium Gig feature).
+  'automatic_tracking_section': 'Automatic Tracking',
+  'auto_detect_toggle_title': 'Automatic trip detection',
+  'auto_detect_toggle_subtitle': 'Detects when you start driving and prompts you to confirm the odometer right away.',
+  'premium_badge': 'PREMIUM',
+  'premium_feature_locked_title': 'Premium feature',
+  'premium_feature_locked_body': 'Automatic trip detection is a premium add-on. Contact support to enable it on your account.',
+  'auto_trip_prompt_title': 'Trip detected',
+  'auto_trip_prompt_body': 'We detected you started moving. Pick the app and confirm now to log the odometer for this trip.',
+  'auto_trip_prompt_confirm': 'Confirm and start',
+  'auto_trip_prompt_dismiss': 'Not a work trip',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',
   'account_type_subtitle': 'This choice decides how your account works. Pick the option that fits you.',

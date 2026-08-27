@@ -59,6 +59,10 @@ class AppRoutes {
   static const String trackingActive = '/tracking-active';
   static const String tripDetails = '/trip-details';
   static const String odometerCapture = '/odometer-capture';
+  // Premium Gig feature: shown when AutoTripDetectionService detects
+  // motion with no active trip -- confirm + odometer entry stays
+  // mandatory even for an auto-detected trip, explicit user requirement.
+  static const String autoTripPrompt = '/auto-trip-prompt';
 
   // ============================================================
   // RUTAS DE HISTORIAL Y REPORTES
@@ -124,6 +128,7 @@ class AppRoutes {
         trackingActive,
         tripDetails,
         odometerCapture,
+        autoTripPrompt,
         history,
         reports,
         tripHistory,
@@ -171,6 +176,7 @@ class AppRoutes {
     trackingActive,
     tripDetails,
     odometerCapture,
+    autoTripPrompt,
   ];
 
   static const List<String> historyRoutes = [
@@ -282,6 +288,7 @@ class AppRoutes {
       case trackingActive: return 'Tracking Active';
       case tripDetails: return 'Trip Details';
       case odometerCapture: return 'Odometer Capture';
+      case autoTripPrompt: return 'Auto Trip Prompt';
 
       case history: return 'History';
       case reports: return 'Reports';

@@ -365,6 +365,17 @@ const Map<String, String> zhTexts = {
   'org_delete_type_to_confirm': '输入组织名称以确认',
   'org_deleted_success': '组织已删除',
 
+  'automatic_tracking_section': '自动追踪',
+  'auto_detect_toggle_title': '自动行程检测',
+  'auto_detect_toggle_subtitle': '检测到您开始驾驶时，会立即提示您确认里程表读数。',
+  'premium_badge': '高级版',
+  'premium_feature_locked_title': '高级功能',
+  'premium_feature_locked_body': '自动行程检测是高级附加功能。请联系客服为您的账户启用此功能。',
+  'auto_trip_prompt_title': '检测到行程',
+  'auto_trip_prompt_body': '我们检测到您开始移动。请选择应用并立即确认，以记录此次行程的里程表读数。',
+  'auto_trip_prompt_confirm': '确认并开始',
+  'auto_trip_prompt_dismiss': '不是工作行程',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',
   'account_type_subtitle': '此选择决定您账户的运作方式。请选择适合您的选项。',

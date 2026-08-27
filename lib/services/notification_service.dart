@@ -36,6 +36,12 @@ class NotificationService {
   // nunca hay duplicados sin necesidad de llevar un registro aparte.
   static const int _forgottenTripNotificationId = 1001;
   static const int _weeklySummaryNotificationId = 1002;
+  static const int _autoTripDetectedNotificationId = 1003;
+
+  static const String _urgentChannelId = 'controlmiles_auto_trip';
+  static const String _urgentChannelName = 'Viaje detectado';
+  static const String _urgentChannelDescription =
+      'Alerta inmediata cuando se detecta movimiento (detección automática premium)';
 
   static const String _channelId = 'controlmiles_reminders';
   static const String _channelName = 'Recordatorios';
@@ -104,10 +110,22 @@ class NotificationService {
       importance: Importance.defaultImportance,
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    // Separate channel, Importance.max -- Android channel importance is
+    // fixed at creation and can't be changed later, and the reminder
+    // channel above is deliberately low-key (defaultImportance). This
+    // one needs to actually interrupt the user, since the whole point is
+    // "confirm the odometer reading right now."
+    const urgentChannel = AndroidNotificationChannel(
+      _urgentChannelId,
+      _urgentChannelName,
+      description: _urgentChannelDescription,
+      importance: Importance.max,
+    );
+
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(channel);
+    await androidPlugin?.createNotificationChannel(urgentChannel);
   }
 
   Future<void> _requestPermissions() async {
@@ -130,6 +148,12 @@ class NotificationService {
     if (response.id == _weeklySummaryNotificationId) {
       final nav = navigatorKey?.currentState;
       nav?.pushNamed(AppRoutes.reports);
+    } else if (response.id == _autoTripDetectedNotificationId) {
+      // App was backgrounded/terminated when motion was detected --
+      // AutoTripDetectionService already tried a direct push if a
+      // navigator existed, but that would have been a no-op with the
+      // app not in front. This is the real entry point in that case.
+      navigatorKey?.currentState?.pushNamed(AppRoutes.autoTripPrompt);
     }
     // La de "viaje olvidado" no navega a ningún lado en particular — el
     // usuario ya ve el estado de tracking apenas abre la app en Dashboard.
@@ -249,5 +273,44 @@ class NotificationService {
 
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
+  }
+
+  // ============================================================
+  // DETECCIÓN AUTOMÁTICA DE VIAJES (premium)
+  // ============================================================
+  /// Immediate (.show(), not scheduled) and high-priority on purpose --
+  /// this is the user's explicit requirement that odometer entry stays
+  /// mandatory "en ese mismo momento" even for an auto-detected trip, so
+  /// it needs to actually interrupt, not sit quietly in the tray like
+  /// the reminder notifications above. Deliberately bypasses
+  /// notifications_enabled/_isEnabledInPrefs() -- that toggle is about
+  /// optional reminders, not this premium feature's own core mechanism;
+  /// AutoTripDetectionService is only ever armed when the user
+  /// separately turned auto-detect on.
+  Future<void> showAutoTripDetectedNotification() async {
+    if (!_initialized) return;
+
+    await _plugin.show(
+      _autoTripDetectedNotificationId,
+      'Viaje detectado',
+      'Toca para confirmar y registrar el odómetro ahora.',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _urgentChannelId,
+          _urgentChannelName,
+          channelDescription: _urgentChannelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          fullScreenIntent: true,
+          category: AndroidNotificationCategory.navigation,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+      ),
+    );
+  }
+
+  Future<void> cancelAutoTripDetectedNotification() async {
+    await _plugin.cancel(_autoTripDetectedNotificationId);
   }
 }

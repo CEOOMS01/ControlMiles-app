@@ -365,6 +365,17 @@ const Map<String, String> deTexts = {
   'org_delete_type_to_confirm': 'Gib den Namen der Organisation zur Bestätigung ein',
   'org_deleted_success': 'Organisation gelöscht',
 
+  'automatic_tracking_section': 'Automatisches Tracking',
+  'auto_detect_toggle_title': 'Automatische Fahrterkennung',
+  'auto_detect_toggle_subtitle': 'Erkennt, wenn du losfährst, und bittet dich sofort, den Kilometerstand zu bestätigen.',
+  'premium_badge': 'PREMIUM',
+  'premium_feature_locked_title': 'Premium-Funktion',
+  'premium_feature_locked_body': 'Die automatische Fahrterkennung ist ein Premium-Zusatz. Kontaktiere den Support, um sie für dein Konto zu aktivieren.',
+  'auto_trip_prompt_title': 'Fahrt erkannt',
+  'auto_trip_prompt_body': 'Wir haben erkannt, dass du dich bewegst. Wähle die App und bestätige jetzt, um den Kilometerstand für diese Fahrt zu erfassen.',
+  'auto_trip_prompt_confirm': 'Bestätigen und starten',
+  'auto_trip_prompt_dismiss': 'Keine Arbeitsfahrt',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',
   'account_type_subtitle': 'Diese Wahl bestimmt, wie Ihr Konto funktioniert. Wählen Sie die passende Option.',

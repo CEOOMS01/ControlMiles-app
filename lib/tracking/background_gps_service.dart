@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
 import 'tracking_controller.dart';
+import 'auto_trip_detection_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/notification_service.dart';
 
 class BackgroundGpsService {
   static final BackgroundGpsService _instance = BackgroundGpsService._internal();
@@ -47,6 +49,25 @@ class BackgroundGpsService {
     else if (event.name == bg.Event.TERMINATE) {
       // Guardar checkpoint al terminar la app
       await _saveTerminateCheckpoint();
+    }
+    else if (event.name == bg.Event.MOTIONCHANGE) {
+      // Premium auto-detect, headless path: this fresh isolate has none
+      // of AutoTripDetectionService's in-memory state (armed/prompt
+      // guards), so the decision here is intentionally minimal --
+      // headless-safe reads only (SharedPreferences + the local trip
+      // checkpoint), and firing the notification is the ONLY action.
+      // No session is ever created from here; the user tapping the
+      // notification opens the full app, where the real confirmation
+      // flow runs with real state.
+      final location = event.event as bg.Location;
+      if (location.isMoving) {
+        final shouldNotify =
+            await AutoTripDetectionService.shouldNotifyForHeadlessMotion();
+        if (shouldNotify) {
+          await NotificationService.instance.init();
+          await NotificationService.instance.showAutoTripDetectedNotification();
+        }
+      }
     }
   }
 
@@ -150,6 +171,15 @@ class BackgroundGpsService {
           debugPrint('[GPS ERROR] ${error.code} - ${error.message}');
         },
       );
+
+      // Premium auto-detect (foreground/background, app process alive):
+      // registered unconditionally, same as onLocation above -- the
+      // single gate for whether this matters right now lives inside
+      // AutoTripDetectionService.handleMotionChange itself (armed?
+      // already mid-trip?), not here.
+      bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
+        AutoTripDetectionService.instance.handleMotionChange(location.isMoving);
+      });
 
       _isInitialized = true;
       debugPrint('[BackgroundGpsService] Initialized successfully (Optimized)');
