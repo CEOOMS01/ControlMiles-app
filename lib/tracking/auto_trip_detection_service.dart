@@ -64,6 +64,23 @@ class AutoTripDetectionService {
   bool _armed = false;
   bool _promptActive = false;
   Timer? _pollTimer;
+  Timer? _promptStuckTimer;
+
+  // Real bug found live (2026-08-27, "solo detecta 1 o 2 apps y no
+  // vuelve a hacerlo"): _promptActive was only ever cleared by
+  // AutoTripPromptScreen.dispose() -- fine when the app is foregrounded
+  // at detection time, but _promptForTrip's OWN comment says the normal
+  // case is backgrounded (driver's looking at the gig app, not
+  // ControlMiles), where only a notification fires and no screen is
+  // ever created. If that specific notification is swiped away, buried,
+  // or just never tapped -- entirely plausible mid-drive -- _promptActive
+  // stayed true forever, and EVERY future poll's `if (_promptActive)
+  // return` silently killed detection for the rest of the process's
+  // life, matching the report exactly. This timeout is a pure safety
+  // net: the fast paths (dispose()/clearPrompt() from a real
+  // confirm/dismiss) still fire immediately and cancel this first --
+  // it only ever fires if nothing else cleared the guard in time.
+  static const Duration _promptStuckTimeout = Duration(minutes: 3);
 
   // Ambient "what's currently detected" status, for DashboardScreen's
   // status card (replaces the manual GigAppSelector carousel while idle
@@ -121,6 +138,11 @@ class AutoTripDetectionService {
     _pollTimer = null;
     if (!enabled) {
       lastDetectedGigAppId = null;
+      // Don't carry a stale prompt guard into the NEXT activation --
+      // same reasoning as the shift-odometer clear right below.
+      _promptStuckTimer?.cancel();
+      _promptStuckTimer = null;
+      _promptActive = false;
       // Explicit user requirement: turning auto-detect off clears the
       // shift-start reading -- the next activation must capture a fresh
       // one, never silently reuse a stale one from an earlier session.
@@ -325,6 +347,10 @@ class AutoTripDetectionService {
   Future<void> _promptForTrip({String? detectedGigAppId}) async {
     if (_promptActive) return;
     _promptActive = true;
+    _promptStuckTimer?.cancel();
+    _promptStuckTimer = Timer(_promptStuckTimeout, () {
+      _promptActive = false;
+    });
 
     await NotificationService.instance.showAutoTripDetectedNotification(
       detectedGigAppId: detectedGigAppId,
@@ -343,6 +369,8 @@ class AutoTripDetectionService {
   /// dismissed either way -- clears the in-flight guard and cancels the
   /// notification so it doesn't linger in the tray.
   Future<void> clearPrompt() async {
+    _promptStuckTimer?.cancel();
+    _promptStuckTimer = null;
     _promptActive = false;
     await NotificationService.instance.cancelAutoTripDetectedNotification();
   }
