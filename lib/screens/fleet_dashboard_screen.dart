@@ -118,6 +118,18 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
             onPressed: () => Navigator.pushNamed(context, AppRoutes.fleetRoster),
           ),
           IconButton(
+            // Real gap closed (explicit user report): fleet_admin had no
+            // entry point at all into SettingsScreen -- Gig reaches it via
+            // MainDrawer, DriverOperationsScreen has its own restricted
+            // sheet, but this screen had neither, so an admin could never
+            // reach the account-mode switcher to go into Gig mode. Routes
+            // to the FULL SettingsScreen (same access Gig gets), not the
+            // driver's language/dark-mode-only sheet.
+            icon: Icon(Icons.settings_outlined, color: subTextColor),
+            tooltip: appState.tr('settings'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
+          ),
+          IconButton(
             icon: Icon(Icons.logout_rounded, color: subTextColor),
             onPressed: () => _logout(appState),
           ),
