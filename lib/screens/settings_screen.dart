@@ -886,7 +886,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             ),
             child: Column(
               children: [
-                _buildAboutRow(appState.tr('app_version'), 'v1.0.0 Stable', isDark),
+                _buildAboutRow(appState.tr('app_version'), 'v2.0.1', isDark),
                 Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
                 _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC', isDark),
                 Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),

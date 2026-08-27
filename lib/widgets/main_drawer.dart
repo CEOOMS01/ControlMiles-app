@@ -414,13 +414,13 @@ class MainDrawer extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("v1.0.0 Stable", style: TextStyle(color: mutedColor, fontSize: 10)),
-              Text(appState.tr('company').toUpperCase(),
+              Text("v2.0.1", style: TextStyle(color: mutedColor, fontSize: 10)),
+              Text(appState.tr('app_version').toUpperCase(),
                   style: TextStyle(color: mutedColor, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
             ],
           ),
           const SizedBox(height: 8),
-          Text('${appState.tr('copyright')} 2026 Olympus Mont Systems LLC', style: TextStyle(color: faintColor, fontSize: 9)),
+          Text('${appState.tr('copyright')} 2026 ControlMiles', style: TextStyle(color: faintColor, fontSize: 9)),
         ],
       ),
     );
