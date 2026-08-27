@@ -383,6 +383,14 @@ const Map<String, String> zhTexts = {
   'auto_detect_status_listening_subtitle': '正在等待你打开一个工作应用……',
   'auto_detect_status_found_label': '已检测到：',
   'auto_detect_status_found_subtitle': '一旦你开始驾驶，我们会请你确认。',
+  'auto_trip_notification_tap_hint': '点击立即确认并记录里程表读数。',
+  'forgotten_trip_notification_title': '你的行程仍在进行中',
+  'forgotten_trip_notification_body': '忘记结束行程了吗？打开 ControlMiles 暂停或结束。',
+  'weekly_summary_notification_title': '你的每周摘要已就绪',
+  'weekly_summary_notification_body': '查看本周记录的里程数。',
+  'recent_trips_title': '最近行程',
+  'see_all_label': '查看全部',
+  'no_trips_yet': '暂无行程',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',

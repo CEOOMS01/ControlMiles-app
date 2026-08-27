@@ -479,6 +479,14 @@ const Map<String, String> enTexts = {
   'auto_detect_status_listening_subtitle': 'Listening for a gig app to open...',
   'auto_detect_status_found_label': 'Detected:',
   'auto_detect_status_found_subtitle': 'We\'ll ask you to confirm once you start driving.',
+  'auto_trip_notification_tap_hint': 'Tap to confirm and log the odometer now.',
+  'forgotten_trip_notification_title': 'Your trip is still active',
+  'forgotten_trip_notification_body': 'Did you forget to end it? Check ControlMiles to pause or finish.',
+  'weekly_summary_notification_title': 'Your weekly summary is ready',
+  'weekly_summary_notification_body': 'Check how many miles you logged this week.',
+  'recent_trips_title': 'Recent trips',
+  'see_all_label': 'See all',
+  'no_trips_yet': 'No trips yet',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',

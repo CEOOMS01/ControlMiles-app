@@ -473,6 +473,14 @@ const Map<String, String> esTexts = {
   'auto_detect_status_listening_subtitle': 'Esperando a que abras una app de trabajo...',
   'auto_detect_status_found_label': 'Detectado:',
   'auto_detect_status_found_subtitle': 'Te pediremos confirmar en cuanto empieces a manejar.',
+  'auto_trip_notification_tap_hint': 'Toca para confirmar y registrar el odómetro ahora.',
+  'forgotten_trip_notification_title': 'Tu viaje sigue activo',
+  'forgotten_trip_notification_body': '¿Olvidaste terminarlo? Revisa ControlMiles para pausar o finalizar.',
+  'weekly_summary_notification_title': 'Tu resumen semanal está listo',
+  'weekly_summary_notification_body': 'Revisa cuántas millas registraste esta semana en ControlMiles.',
+  'recent_trips_title': 'Viajes recientes',
+  'see_all_label': 'Ver todos',
+  'no_trips_yet': 'Aún no hay viajes',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '¿Cómo vas a usar ControlMiles?',

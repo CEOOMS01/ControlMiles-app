@@ -274,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _infoRow(appState.tr('name'), "${_nameController.text} ${_lastNameController.text}".trim(), isDark),
             const Divider(height: 24),
-            _infoRow('Email', _emailController.text, isDark),
+            _infoRow(appState.tr('email'), _emailController.text, isDark),
           ],
         ),
       ),
@@ -310,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
           TextField(controller: _lastNameController, decoration: InputDecoration(labelText: appState.tr('last_name'))),
           const SizedBox(height: 12),
-          TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email')),
+          TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: appState.tr('email'))),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,

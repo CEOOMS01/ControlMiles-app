@@ -22,6 +22,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../routes/app_routes.dart';
 import '../models/gig_app.dart';
+import '../i18n/app_texts.dart';
 
 class NotificationService {
   NotificationService._internal();
@@ -170,6 +171,21 @@ class NotificationService {
     return prefs.getBool('notifications_enabled') ?? true;
   }
 
+  // BUG FIX (pedido explícito, encontrado en vivo -- notificaciones
+  // aparecían en español con la app en inglés): las 3 notificaciones de
+  // este servicio tenían su texto hardcodeado en español directamente en
+  // .zonedSchedule()/.show(). Este servicio no tiene BuildContext/AppState
+  // (corre en background/headless), así que lee el idioma guardado
+  // directo de SharedPreferences -- misma clave que AppState.loadFromPrefs()
+  // usa ('controlmiles_lang') -- y resuelve el texto vía AppTexts.get(),
+  // el mismo lookup estático que odometer_capture_service.dart ya usa por
+  // la misma razón (sin BuildContext disponible ahí tampoco).
+  Future<String> _tr(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('controlmiles_lang') ?? 'en';
+    return AppTexts.get(key, langCode);
+  }
+
   // ============================================================
   // ENABLE / DISABLE (llamado desde AppState.setNotificationsEnabled)
   // ============================================================
@@ -202,11 +218,13 @@ class NotificationService {
     if (!await _isEnabledInPrefs()) return;
 
     final scheduledDate = tz.TZDateTime.now(tz.local).add(threshold);
+    final title = await _tr('forgotten_trip_notification_title');
+    final body = await _tr('forgotten_trip_notification_body');
 
     await _plugin.zonedSchedule(
       _forgottenTripNotificationId,
-      'Tu viaje sigue activo',
-      '¿Olvidaste terminarlo? Revisa ControlMiles para pausar o finalizar.',
+      title,
+      body,
       scheduledDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -241,11 +259,13 @@ class NotificationService {
     if (!await _isEnabledInPrefs()) return;
 
     final scheduledDate = _nextInstanceOfSundayEightPm();
+    final title = await _tr('weekly_summary_notification_title');
+    final body = await _tr('weekly_summary_notification_body');
 
     await _plugin.zonedSchedule(
       _weeklySummaryNotificationId,
-      'Tu resumen semanal está listo',
-      'Revisa cuántas millas registraste esta semana en ControlMiles.',
+      title,
+      body,
       scheduledDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -296,13 +316,15 @@ class NotificationService {
   Future<void> showAutoTripDetectedNotification({String? detectedGigAppId}) async {
     if (!_initialized) return;
 
+    final title = await _tr('auto_trip_prompt_title');
+    final tapHint = await _tr('auto_trip_notification_tap_hint');
     final body = detectedGigAppId != null
-        ? 'Detectamos ${GigAppCatalog.byId(detectedGigAppId).name} activo. Toca para confirmar y registrar el odómetro ahora.'
-        : 'Toca para confirmar y registrar el odómetro ahora.';
+        ? '${await _tr('auto_detect_status_found_label')} ${GigAppCatalog.byId(detectedGigAppId).name}. $tapHint'
+        : tapHint;
 
     await _plugin.show(
       _autoTripDetectedNotificationId,
-      'Viaje detectado',
+      title,
       body,
       const NotificationDetails(
         android: AndroidNotificationDetails(

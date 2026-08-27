@@ -383,6 +383,14 @@ const Map<String, String> deTexts = {
   'auto_detect_status_listening_subtitle': 'Wartet darauf, dass du eine Arbeits-App öffnest...',
   'auto_detect_status_found_label': 'Erkannt:',
   'auto_detect_status_found_subtitle': 'Wir bitten dich um Bestätigung, sobald du losfährst.',
+  'auto_trip_notification_tap_hint': 'Tippen, um jetzt zu bestätigen und den Kilometerstand zu erfassen.',
+  'forgotten_trip_notification_title': 'Deine Fahrt ist noch aktiv',
+  'forgotten_trip_notification_body': 'Hast du vergessen, sie zu beenden? Öffne ControlMiles, um sie zu pausieren oder abzuschließen.',
+  'weekly_summary_notification_title': 'Deine Wochenübersicht ist bereit',
+  'weekly_summary_notification_body': 'Sieh nach, wie viele Meilen du diese Woche erfasst hast.',
+  'recent_trips_title': 'Letzte Fahrten',
+  'see_all_label': 'Alle anzeigen',
+  'no_trips_yet': 'Noch keine Fahrten',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',

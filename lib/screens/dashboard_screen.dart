@@ -505,7 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'RECENT TRIPS',
+                appState.tr('recent_trips_title').toUpperCase(),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
@@ -517,7 +517,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/history'),
                   child: Text(
-                    'SEE ALL →',
+                    '${appState.tr('see_all_label').toUpperCase()} →',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
@@ -553,7 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Icon(Icons.history_rounded, size: 32, color: labelColor),
                 const SizedBox(height: 8),
                 Text(
-                  'No trips yet',
+                  appState.tr('no_trips_yet'),
                   style: TextStyle(fontSize: 13, color: labelColor, fontWeight: FontWeight.w600),
                 ),
               ],
