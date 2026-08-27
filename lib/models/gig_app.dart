@@ -38,18 +38,26 @@ class GigAppCatalog {
     color: Color(0xFF475569),
   );
 
+  // Colores (2026-08-27, pedido explícito -- mitigación legal): antes cada
+  // color era literalmente el hex oficial de marca de cada plataforma. Se
+  // corrieron todos un paso en tono/luminosidad -- reconocibles como "el
+  // mismo color" pero ya no un match 1:1 con la guía de marca de cada
+  // compañía, reduciendo el riesgo de que un mismatch de "trade dress"
+  // (nombre + color de marca exacto + sin disclaimer) se sume al análisis
+  // de nominative fair use. Ver [[project_controlmiles]] / la revisión de
+  // riesgo legal de esta misma fecha.
   static const List<GigApp> all = [
     GigApp(
       id: 'uber',
       name: 'Uber',
       icon: Icons.directions_car_rounded,
-      color: Color(0xFF1E1E1E),
+      color: Color(0xFF2B2B33),
     ),
     GigApp(
       id: 'lyft',
       name: 'Lyft',
       icon: Icons.electric_car_rounded,
-      color: Color(0xFFFF00BF),
+      color: Color(0xFFE0399F),
     ),
     // Empower pasó de teal (0xFF00A3AD) a azul navy — ese teal que dejó
     // libre se lo lleva el ícono nuevo de Roadie.
@@ -57,37 +65,37 @@ class GigAppCatalog {
       id: 'empower',
       name: 'Empower',
       icon: Icons.person_pin_circle_rounded,
-      color: Color(0xFF1E3A8A),
+      color: Color(0xFF2C4A96),
     ),
     GigApp(
       id: 'amazon',
       name: 'Amazon Flex',
       icon: Icons.inventory_2_rounded,
-      color: Color(0xFFFF9900),
+      color: Color(0xFFE8890A),
     ),
     GigApp(
       id: 'uber_eats',
       name: 'Uber Eats',
       icon: Icons.restaurant_rounded,
-      color: Color(0xFF06C167),
+      color: Color(0xFF1CA85E),
     ),
     GigApp(
       id: 'doordash',
       name: 'DoorDash',
       icon: Icons.fastfood_rounded,
-      color: Color(0xFFFF3008),
+      color: Color(0xFFE0421F),
     ),
     GigApp(
       id: 'instacart',
       name: 'Instacart',
       icon: Icons.shopping_basket_rounded,
-      color: Color(0xFF43B02A),
+      color: Color(0xFF4C9E3A),
     ),
     GigApp(
       id: 'roadie',
       name: 'Roadie',
       icon: Icons.route_rounded,
-      color: Color(0xFF00A3AD),
+      color: Color(0xFF1C97A0),
     ),
     // Shipt's driver app is literally called "Shipt Shopper" -- a
     // distinct platform from Instacart (whose own driver app package,
@@ -98,7 +106,7 @@ class GigAppCatalog {
       id: 'shipt',
       name: 'Shipt',
       icon: Icons.local_grocery_store_rounded,
-      color: Color(0xFFD1121B),
+      color: Color(0xFFB82830),
     ),
     // Explicit user request (2026-08-27): 3 platforms ControlMiles had
     // no coverage for at all, manual selection included -- added here
@@ -109,19 +117,19 @@ class GigAppCatalog {
       id: 'veho',
       name: 'Veho',
       icon: Icons.local_post_office_rounded,
-      color: Color(0xFF7C3AED),
+      color: Color(0xFF7048C4),
     ),
     GigApp(
       id: 'jitsu',
       name: 'Jitsu',
       icon: Icons.local_mall_rounded,
-      color: Color(0xFF0EA5E9),
+      color: Color(0xFF1E93C7),
     ),
     GigApp(
       id: 'walmart_spark',
       name: 'Spark Driver',
       icon: Icons.bolt_rounded,
-      color: Color(0xFFFFC220),
+      color: Color(0xFFE8B22E),
     ),
     // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
     // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)

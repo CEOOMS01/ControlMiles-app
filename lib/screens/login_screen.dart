@@ -1,6 +1,7 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/screens/login_screen.dart - PRODUCTION READY + DARK MODE READY
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,8 @@ import '../services/auth_service.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';   // ← Importante: Necesario para AppLanguage
+import '../legal/legal_documents.dart';
+import 'legal_document_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   // Set by RoleChooserScreen so a brand-new user lands directly on the
@@ -41,6 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   late bool _isLoginMode;
   bool _obscurePassword = true;
+  // Explicit user requirement (legal risk mitigation, 2026-08-27): the
+  // Terms of Service already state a minimum age of 18, but nothing
+  // enforced it -- researched how real competitor mileage apps (MileIQ,
+  // TripLog, Everlance) handle this before building: none of them
+  // collect an actual date of birth, all use a self-attestation checkbox
+  // instead. Same pattern here, combined with explicit ToS/Privacy
+  // agreement in one checkbox rather than two separate ones.
+  bool _agreedToTerms = false;
 
   @override
   void initState() {
@@ -77,6 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
         (_firstNameController.text.trim().isEmpty ||
             _lastNameController.text.trim().isEmpty)) {
       _showError(appState.tr('field_required'));
+      return;
+    }
+
+    if (!_isLoginMode && !_agreedToTerms) {
+      _showError(appState.tr('age_terms_required_error'));
       return;
     }
 
@@ -195,6 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     _buildHeader(appState, isDark),
                     const SizedBox(height: 40),
                     _buildForm(appState, isDark),
+                    if (!_isLoginMode) ...[
+                      const SizedBox(height: 16),
+                      _buildAgeTermsCheckbox(appState, isDark),
+                    ],
                     if (_isLoginMode) _buildForgotPasswordLink(appState),
                     const SizedBox(height: 24),
                     _buildLoginButton(appState),
@@ -377,6 +397,69 @@ class _LoginScreenState extends State<LoginScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ====================== AGE + TERMS CHECKBOX ======================
+  // Explicit user requirement (legal risk mitigation, 2026-08-27):
+  // required before signup, combines the 18+ self-attestation the Terms
+  // already state with actual agreement to the Terms/Privacy Policy --
+  // neither existed as an enforced step before this.
+  Widget _buildAgeTermsCheckbox(AppState appState, bool isDark) {
+    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final linkColor = Theme.of(context).colorScheme.primary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: _agreedToTerms,
+          onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 12.5, height: 1.4, color: textColor),
+                children: [
+                  TextSpan(text: '${appState.tr('age_terms_checkbox_prefix')} '),
+                  TextSpan(
+                    text: appState.tr('terms_conditions'),
+                    style: TextStyle(color: linkColor, fontWeight: FontWeight.w700),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LegalDocumentScreen(
+                                titleKey: 'terms_conditions',
+                                body: termsOfServiceEn,
+                              ),
+                            ),
+                          ),
+                  ),
+                  TextSpan(text: ' ${appState.tr('age_terms_checkbox_and')} '),
+                  TextSpan(
+                    text: appState.tr('privacy_policy'),
+                    style: TextStyle(color: linkColor, fontWeight: FontWeight.w700),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LegalDocumentScreen(
+                                titleKey: 'privacy_policy',
+                                body: privacyPolicyEn,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
             ),
           ),
         ),
