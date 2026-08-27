@@ -1,39 +1,52 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/tracking/auto_trip_detection_service.dart
 //
-// Premium Gig feature (explicit user requirement). Two independent
-// triggers:
+// Premium Gig feature (explicit user requirement).
 //
-// 1. PRIMARY -- gig app detected in the foreground (Android only, via
-//    GigAppDetectionService/UsageStatsManager), polled periodically
-//    while armed. Explicit user correction from the original
-//    movement-based design: "en principio eso era lo que queria... no
-//    por movimiento" -- opening Uber/DoorDash/etc is what should
-//    trigger a trip, not raw device motion.
-// 2. FALLBACK -- flutter_background_geolocation's own motion-detection
-//    (onMotionChange). Kept because iOS has no gig-app-foreground API
-//    at all, and because a driver may start moving without the gig app
-//    open yet (e.g. driving TO the pickup zone before going online).
+// PRIMARY (and, as of 2026-08-28, ONLY) trigger: gig app detected in the
+// foreground (Android only, via GigAppDetectionService/
+// UsageStatsManager), polled periodically while armed. Explicit user
+// correction from the original movement-based design: "en principio eso
+// era lo que queria... no por movimiento" -- opening Uber/DoorDash/etc
+// is what should trigger a trip, not raw device motion.
 //
 // REVISED 2026-08-27, explicit user request ("elimina el preguntar en
 // gig app"): a trip whose gig app was identified with real confidence
-// (trigger 1) now starts SILENTLY, no confirmation screen -- see
-// _autoStartTrip. The odometer-mandatory requirement from the original
-// design is still fully honored: it's satisfied once, for real, at
-// activation time (requestEnable's own camera capture), and every
-// auto-started trip afterward carries that same reading forward
-// (TrackingController.startTripFlow's useAutoDetectOdometer path) --
-// asking the driver to additionally tap "confirm" before every single
-// detected trip no longer served that evidentiary purpose, it was pure
-// friction. Only an informational notification fires afterward, same
-// pattern already used for mid-trip auto-switch.
+// now starts SILENTLY, no confirmation screen -- see _autoStartTrip. The
+// odometer-mandatory requirement from the original design is still
+// fully honored: it's satisfied once, for real, at activation time
+// (requestEnable's own camera capture), and every auto-started trip
+// afterward carries that same reading forward (TrackingController.
+// startTripFlow's useAutoDetectOdometer path) -- asking the driver to
+// additionally tap "confirm" before every single detected trip no
+// longer served that evidentiary purpose, it was pure friction. Only an
+// informational notification fires afterward, same pattern already used
+// for mid-trip auto-switch.
 //
-// Trigger 2 (motion-only, no specific app identified) is DIFFERENT --
-// there's nothing to auto-select, so _promptForUnknownTrip still shows
-// the real confirmation screen (AutoTripPromptScreen) for that one
-// case. A real "give up after N minutes with no gig-app match"
-// fallback for that path is explicitly deferred to a later phase, not
-// built here.
+// REVISED AGAIN 2026-08-28, explicit user request ("aun continua trip
+// detected, confirm and start... elimina ese módulo"): the motion-only
+// fallback (flutter_background_geolocation's onMotionChange, kept
+// because iOS has no gig-app-foreground API and because a driver may
+// start moving before opening the gig app) used to fall back to the
+// EXACT confirmation screen the user had just asked to remove above --
+// there was no specific app to auto-select in that case, so a real
+// prompt seemed structurally necessary. Real-world report: this path
+// fired for a genuine Android user (GoShare, one of this session's own
+// newly-added platforms) -- motion detection can legitimately win a
+// race against the 30s gig-app poll (a driver starts moving before that
+// poll has caught up to which app they opened), surfacing the exact
+// "Trip detected -- tap to confirm" flow that was supposed to be gone.
+// Rather than trying to close that race, the whole motion-triggered
+// prompt path is removed: AutoTripPromptScreen deleted, the route
+// deleted, the notification that led into it deleted. Motion detection
+// alone no longer starts or prompts for anything -- see
+// handleMotionChange below, now only responsible for restarting the
+// background service when the driver goes stationary again (unrelated
+// plumbing, not prompt-related). In practice this means auto-detect's
+// real, working trigger is Android gig-app detection only; the iOS/
+// unknown-app case has no auto-start path anymore, since there's no way
+// to silently pick a gig app that was never identified, and confirming
+// it is exactly what was asked to be removed.
 //
 // v1 scope, disclosed: only trip START is automatic. Ending a trip
 // still uses the existing manual End button -- auto-ending wasn't part
@@ -48,11 +61,9 @@ import 'background_gps_service.dart';
 import 'tracking_controller.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
-import '../services/local_storage_service.dart';
 import '../services/notification_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../utils/permission_recovery_service.dart';
-import '../routes/app_routes.dart';
 
 class AutoTripDetectionService {
   AutoTripDetectionService._internal();
@@ -76,19 +87,15 @@ class AutoTripDetectionService {
   Timer? _promptStuckTimer;
 
   // Real bug found live (2026-08-27, "solo detecta 1 o 2 apps y no
-  // vuelve a hacerlo"): _promptActive was only ever cleared by
-  // AutoTripPromptScreen.dispose() -- fine when the app is foregrounded
-  // at detection time, but _promptForTrip's OWN comment says the normal
-  // case is backgrounded (driver's looking at the gig app, not
-  // ControlMiles), where only a notification fires and no screen is
-  // ever created. If that specific notification is swiped away, buried,
-  // or just never tapped -- entirely plausible mid-drive -- _promptActive
-  // stayed true forever, and EVERY future poll's `if (_promptActive)
-  // return` silently killed detection for the rest of the process's
-  // life, matching the report exactly. This timeout is a pure safety
-  // net: the fast paths (dispose()/clearPrompt() from a real
-  // confirm/dismiss) still fire immediately and cancel this first --
-  // it only ever fires if nothing else cleared the guard in time.
+  // vuelve a hacerlo"): _promptActive guards _autoStartTrip below against
+  // re-triggering while a start is already in flight, but nothing
+  // guaranteed it always got cleared -- if the guard stuck true, EVERY
+  // future poll's `if (_promptActive) return` silently killed detection
+  // for the rest of the process's life, matching the report exactly.
+  // This timeout is a pure safety net: the fast path (_autoStartTrip
+  // itself clearing the guard once it's done) still fires immediately
+  // and cancels this first -- it only ever fires if nothing else cleared
+  // the guard in time.
   static const Duration _promptStuckTimeout = Duration(minutes: 3);
 
   // Ambient "what's currently detected" status, for DashboardScreen's
@@ -369,23 +376,25 @@ class AutoTripDetectionService {
 
   /// Registered once from BackgroundGpsService.initialize()'s
   /// onMotionChange listener -- fires on EVERY stationary<->moving
-  /// transition regardless of armed state, so this method is the single
-  /// gate deciding whether it matters right now. Secondary/fallback
-  /// trigger -- see the file header for why this stays even though
-  /// gig-app detection is now primary.
+  /// transition regardless of armed state. REVISED 2026-08-28 (explicit
+  /// user request, see file header): motion alone no longer starts or
+  /// prompts for a trip -- it used to fall back to a confirmation
+  /// screen the user asked to remove entirely, and that fallback could
+  /// win a real race against the gig-app poll (confirmed live: a
+  /// genuine driver report using GoShare). This method now only
+  /// restarts the background service when the driver goes stationary
+  /// again, so auto-detect stays armed for the next real gig-app
+  /// detection instead of silently going deaf -- unrelated plumbing,
+  /// not a trip trigger.
   Future<void> handleMotionChange(bool isMoving) async {
     if (!_armed) return;
     if (TrackingController.currentState != TrackingState.idle) return;
+    if (isMoving) return;
 
-    if (!isMoving) {
-      // The plugin can auto-stop itself once stationary again (its own
-      // stopTimeout behavior) -- restart so we stay armed for the NEXT
-      // trip instead of silently going deaf after the first one.
-      await BackgroundGpsService.startTracking();
-      return;
-    }
-
-    await _promptForUnknownTrip();
+    // The plugin can auto-stop itself once stationary again (its own
+    // stopTimeout behavior) -- restart so we stay armed for the NEXT
+    // trip instead of silently going deaf after the first one.
+    await BackgroundGpsService.startTracking();
   }
 
   /// Explicit user request (2026-08-27): once a specific gig app is
@@ -434,60 +443,4 @@ class AutoTripDetectionService {
     }
   }
 
-  /// Motion-only fallback (iOS, or Android without Usage Access granted)
-  /// -- there's no specific gig app identified here, so SOME
-  /// confirmation is still structurally necessary; nothing to
-  /// auto-select. Deferred, per explicit user request: a real "give up
-  /// after N minutes with no gig-app match" behavior for this path --
-  /// not built here, later phase.
-  Future<void> _promptForUnknownTrip() async {
-    if (_promptActive) return;
-    _promptActive = true;
-    _promptStuckTimer?.cancel();
-    _promptStuckTimer = Timer(_promptStuckTimeout, () {
-      _promptActive = false;
-    });
-
-    await NotificationService.instance.showAutoTripDetectedNotification();
-
-    // Only push directly if the app is actually foregrounded with a live
-    // navigator -- if backgrounded/terminated, the notification alone is
-    // the prompt; tapping it is what brings the app forward.
-    final nav = NotificationService.instance.navigatorKey?.currentState;
-    if (nav != null) {
-      await nav.pushNamed(AppRoutes.autoTripPrompt);
-    }
-  }
-
-  /// Called by AutoTripPromptScreen when it closes, confirmed or
-  /// dismissed either way -- clears the in-flight guard and cancels the
-  /// notification so it doesn't linger in the tray.
-  Future<void> clearPrompt() async {
-    _promptStuckTimer?.cancel();
-    _promptStuckTimer = null;
-    _promptActive = false;
-    await NotificationService.instance.cancelAutoTripDetectedNotification();
-  }
-
-  // ============================================================
-  // HEADLESS PATH (app terminated/backgrounded, fresh isolate -- none
-  // of this class's in-memory state above exists here)
-  // ============================================================
-  /// Headless-safe: reads SharedPreferences + the local trip checkpoint
-  /// directly, same discipline BackgroundGpsService's own terminate
-  /// checkpoint already follows for this exact isolate-freshness
-  /// problem. Only decides whether to fire the notification -- no
-  /// session is ever created from a headless isolate, that only happens
-  /// once the user taps through into the full app. Gig-app polling
-  /// itself doesn't run headless (Dart Timers don't survive a fresh
-  /// headless isolate) -- motion-change is the only trigger available
-  /// while the app process itself isn't resident.
-  static Future<bool> shouldNotifyForHeadlessMotion() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_enabledPrefKey) ?? false;
-    if (!enabled) return false;
-
-    final hasActiveTrip = await LocalStorageService.hasActiveTrip();
-    return !hasActiveTrip;
-  }
 }

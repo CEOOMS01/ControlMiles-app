@@ -8,7 +8,6 @@ import 'package:flutter_background_geolocation/flutter_background_geolocation.da
 import 'tracking_controller.dart';
 import 'auto_trip_detection_service.dart';
 import '../services/local_storage_service.dart';
-import '../services/notification_service.dart';
 
 class BackgroundGpsService {
   static final BackgroundGpsService _instance = BackgroundGpsService._internal();
@@ -50,25 +49,11 @@ class BackgroundGpsService {
       // Guardar checkpoint al terminar la app
       await _saveTerminateCheckpoint();
     }
-    else if (event.name == bg.Event.MOTIONCHANGE) {
-      // Premium auto-detect, headless path: this fresh isolate has none
-      // of AutoTripDetectionService's in-memory state (armed/prompt
-      // guards), so the decision here is intentionally minimal --
-      // headless-safe reads only (SharedPreferences + the local trip
-      // checkpoint), and firing the notification is the ONLY action.
-      // No session is ever created from here; the user tapping the
-      // notification opens the full app, where the real confirmation
-      // flow runs with real state.
-      final location = event.event as bg.Location;
-      if (location.isMoving) {
-        final shouldNotify =
-            await AutoTripDetectionService.shouldNotifyForHeadlessMotion();
-        if (shouldNotify) {
-          await NotificationService.instance.init();
-          await NotificationService.instance.showAutoTripDetectedNotification();
-        }
-      }
-    }
+    // 2026-08-28: the headless MOTIONCHANGE branch used to fire a "Trip
+    // detected -- tap to confirm" notification. Removed entirely -- motion
+    // alone no longer prompts anywhere in the app (see
+    // AutoTripDetectionService.handleMotionChange), so there is nothing
+    // headless-safe left for this event to do.
   }
 
   // Helper para guardar checkpoint en caso de terminación

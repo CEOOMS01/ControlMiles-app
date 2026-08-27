@@ -44,7 +44,6 @@ import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
 import 'screens/fleet_state_mileage_screen.dart';
 import 'screens/pending_invite_screen.dart';
-import 'screens/auto_trip_prompt_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
 // toca la notificación de resumen semanal, sin depender de un BuildContext
@@ -224,7 +223,6 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
         AppRoutes.fleetStateMileage: (_) => const FleetStateMileageScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
-        AppRoutes.autoTripPrompt: (_) => const AutoTripPromptScreen(),
         AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.reports: (_) => const ReportsScreen(),
