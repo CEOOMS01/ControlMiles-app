@@ -39,6 +39,7 @@ class NotificationService {
   static const int _forgottenTripNotificationId = 1001;
   static const int _weeklySummaryNotificationId = 1002;
   static const int _autoTripDetectedNotificationId = 1003;
+  static const int _midTripSwitchNotificationId = 1004;
 
   static const String _urgentChannelId = 'controlmiles_auto_trip';
   static const String _urgentChannelName = 'Viaje detectado';
@@ -345,5 +346,70 @@ class NotificationService {
 
   Future<void> cancelAutoTripDetectedNotification() async {
     await _plugin.cancel(_autoTripDetectedNotificationId);
+  }
+
+  // ============================================================
+  // CAMBIO DE APP GIG A MITAD DE VIAJE (premium)
+  // ============================================================
+  /// "Ask" mode (AppState.autoSwitchGigApp == false, the default) --
+  /// informational, not urgent like showAutoTripDetectedNotification:
+  /// ending/starting a trip needs the odometer confirmed right now,
+  /// but switching which gig app an already-running trip is tracking
+  /// under doesn't need that same urgency. Tapping just opens the app --
+  /// the actual switch/dismiss action lives on DashboardScreen's status
+  /// card (AutoTripDetectionService.confirmMidTripSwitch/
+  /// dismissMidTripSwitch), not on the notification itself.
+  Future<void> showMidTripSwitchSuggestedNotification({required String gigAppId}) async {
+    if (!_initialized) return;
+
+    final title = await _tr('mid_trip_switch_suggested_title');
+    final appName = GigAppCatalog.byId(gigAppId).name;
+    final bodyPrefix = await _tr('mid_trip_switch_suggested_body');
+    final body = '$bodyPrefix $appName';
+
+    await _plugin.show(
+      _midTripSwitchNotificationId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(),
+        macOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  /// "Auto" mode (AppState.autoSwitchGigApp == true) -- the switch
+  /// already happened by the time this fires, purely informational.
+  Future<void> showMidTripAutoSwitchedNotification({required String gigAppId}) async {
+    if (!_initialized) return;
+
+    final title = await _tr('mid_trip_auto_switched_title');
+    final appName = GigAppCatalog.byId(gigAppId).name;
+    final bodyPrefix = await _tr('mid_trip_auto_switched_body');
+    final body = '$bodyPrefix $appName.';
+
+    await _plugin.show(
+      _midTripSwitchNotificationId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(),
+        macOS: DarwinNotificationDetails(),
+      ),
+    );
   }
 }

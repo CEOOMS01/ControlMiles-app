@@ -235,6 +235,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   // TrackingController.currentGigApp/isPaused are already read through
   // a few lines above this call site.
   Widget _buildAutoDetectStatusCard(AppState appState, bool isDark) {
+    final trackingState = TrackingController.currentState;
+    if (trackingState == TrackingState.idle) {
+      return _buildAutoDetectIdleCard(appState, isDark);
+    }
+    return _buildAutoDetectTrackingCard(appState, isDark, isPaused: trackingState == TrackingState.paused);
+  }
+
+  Widget _buildAutoDetectIdleCard(AppState appState, bool isDark) {
     final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
     final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
@@ -283,6 +291,86 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ],
       ),
+    );
+  }
+
+  // Explicit user follow-up request: the carousel's OTHER job -- mid-trip
+  // app switching -- is now also auto-detect's responsibility while
+  // armed, so this replaces it here too instead of handing back to
+  // GigAppSelector. Two states: quietly showing what's currently
+  // tracking, or (a different app was detected) a tappable suggestion to
+  // switch -- confirmMidTripSwitch/dismissMidTripSwitch are the same
+  // actions AppState.autoSwitchGigApp's "ask" mode surfaces via
+  // notification when the app isn't foregrounded.
+  Widget _buildAutoDetectTrackingCard(AppState appState, bool isDark, {required bool isPaused}) {
+    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final primary = Theme.of(context).colorScheme.primary;
+
+    final currentApp = TrackingController.currentGigApp != null
+        ? GigAppCatalog.byId(TrackingController.currentGigApp!)
+        : null;
+    final suggestedId = isPaused ? null : AutoTripDetectionService.instance.midTripDetectedGigAppId;
+    final suggestedApp = suggestedId != null ? GigAppCatalog.byId(suggestedId) : null;
+    final accent = suggestedApp?.color ?? currentApp?.color ?? primary;
+
+    final card = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: suggestedApp != null ? accent : borderColor, width: suggestedApp != null ? 2 : 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), shape: BoxShape.circle),
+            child: Icon(suggestedApp?.icon ?? currentApp?.icon ?? Icons.auto_awesome_rounded, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  suggestedApp != null
+                      ? '${appState.tr('auto_detect_status_found_label')} ${suggestedApp.name}'
+                      : '${appState.tr('auto_detect_tracking_with_label')} ${currentApp?.name ?? ''}',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: textColor),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  suggestedApp != null
+                      ? appState.tr('auto_detect_tap_to_switch')
+                      : appState.tr(isPaused ? 'auto_detect_tracking_paused_subtitle' : 'auto_detect_tracking_subtitle'),
+                  style: TextStyle(fontSize: 12, color: subTextColor),
+                ),
+              ],
+            ),
+          ),
+          if (suggestedApp != null)
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: subTextColor, size: 20),
+              tooltip: appState.tr('cancel'),
+              onPressed: () => setState(() => AutoTripDetectionService.instance.dismissMidTripSwitch()),
+            ),
+        ],
+      ),
+    );
+
+    if (suggestedApp == null) return card;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () async {
+        await AutoTripDetectionService.instance.confirmMidTripSwitch();
+        if (mounted) setState(() {});
+      },
+      child: card,
     );
   }
 
@@ -945,15 +1033,16 @@ class _DashboardScreenState extends State<DashboardScreen>
 
               const SizedBox(height: 30),
 
-              // Explicit user request: showing the manual carousel AND
-              // automatic detection side by side was inconsistent, since
-              // idle + auto-detect armed is the exact same job the
-              // carousel does (deciding which app the next trip is for).
-              // Once a trip actually exists (running/paused), the
-              // carousel comes back for its other job -- switching apps
-              // mid-trip -- which auto-detect doesn't touch (v1 scope is
-              // start-only).
-              (appState.autoDetectEnabled && TrackingController.currentState == TrackingState.idle)
+              // Explicit user request: the carousel must NEVER reappear
+              // while auto-detect is armed, in ANY trip state -- it was
+              // flagged as inconsistent that it came back once a
+              // detected trip started tracking. Auto-detect now owns
+              // gig-app selection for the whole trip lifecycle (start AND
+              // mid-trip switching, see AutoTripDetectionService's own
+              // _pollForMidTripSwitch), so the status card stays up
+              // throughout instead of handing back to the manual
+              // carousel.
+              appState.autoDetectEnabled
                   ? _buildAutoDetectStatusCard(appState, isDark)
                   : GigAppSelector(
                       selectedGigApp: _selectedGigApp,
