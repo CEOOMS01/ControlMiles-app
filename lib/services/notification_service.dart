@@ -51,6 +51,23 @@ class NotificationService {
   static const String _channelDescription =
       'Recordatorios de viaje activo y resumen semanal de millas';
 
+  // Real gap found live (2026-08-27, explicit user request: "el banner
+  // sí se ve dentro de la app, quiero que se vea fuera de ella"): the
+  // mid-trip auto-switch CONFIRMATION was on the low-key _channelId
+  // (Importance.defaultImportance), which on Android sits quietly in
+  // the notification tray -- exactly wrong for this, since the driver
+  // is by definition using a DIFFERENT app (the one just auto-detected)
+  // when it fires, not looking at ControlMiles. Needs its own channel:
+  // Importance.high is the real minimum Android requires for a
+  // heads-up (peeking) notification that pops over whatever app is in
+  // front -- deliberately NOT importance.max/fullScreenIntent like the
+  // urgent trip-start channel, since this is purely informational (the
+  // switch already happened), not "stop and confirm something now."
+  static const String _switchConfirmChannelId = 'controlmiles_switch_confirm';
+  static const String _switchConfirmChannelName = 'Cambio de app confirmado';
+  static const String _switchConfirmChannelDescription =
+      'Aviso visible cuando la detección automática cambia de app gig durante un viaje';
+
   // Referencia opcional al GlobalKey<NavigatorState> de MaterialApp, seteada
   // desde main.dart — permite que tocar la notificación de resumen semanal
   // abra Reports directamente en vez de solo abrir la app en la pantalla
@@ -125,10 +142,18 @@ class NotificationService {
       importance: Importance.max,
     );
 
+    const switchConfirmChannel = AndroidNotificationChannel(
+      _switchConfirmChannelId,
+      _switchConfirmChannelName,
+      description: _switchConfirmChannelDescription,
+      importance: Importance.high,
+    );
+
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
     await androidPlugin?.createNotificationChannel(urgentChannel);
+    await androidPlugin?.createNotificationChannel(switchConfirmChannel);
   }
 
   Future<void> _requestPermissions() async {
@@ -401,14 +426,14 @@ class NotificationService {
       body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+          _switchConfirmChannelId,
+          _switchConfirmChannelName,
+          channelDescription: _switchConfirmChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
       ),
     );
   }

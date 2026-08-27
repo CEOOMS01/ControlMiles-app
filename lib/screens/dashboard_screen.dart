@@ -101,13 +101,38 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _syncTrackingUiState() {
   final state = TrackingController.currentState;
   final active = TrackingController.activeSection;
+  final newGigApp = TrackingController.currentGigApp;
+
+  // Real gap found (pedido explícito: confirmación visible en tiempo
+  // real del switch detectado): AutoTripDetectionService's mid-trip
+  // auto-switch (_pollForMidTripSwitch, autoSwitchGigApp mode) calls
+  // TrackingController.switchSection() directly, bypassing
+  // _handleAppSelection entirely -- the only place that already shows
+  // the "X ⇄ Y SWITCHED" banner for a MANUAL carousel tap. A driver
+  // looking at the app when an auto-switch happens only ever saw the
+  // Android system notification (easy to miss/dismiss) or the status
+  // card silently updating with no flash. This catches any
+  // currentGigApp change this screen didn't cause itself -- a manual
+  // tap already updates _selectedGigApp synchronously in
+  // _handleAppSelection, so by the next 1s tick they already match;
+  // only an EXTERNAL change (an auto-switch) differs here -- and shows
+  // the exact same banner, reused as-is rather than inventing new UI.
+  final autoSwitchDetected = newGigApp != null &&
+      _selectedGigApp != null &&
+      newGigApp != _selectedGigApp;
 
   setState(() {
     trackingActive = state == TrackingState.running;
     liveMiles = TrackingController.activeDistance;
 
-    if (TrackingController.currentGigApp != null) {
-      _selectedGigApp = TrackingController.currentGigApp;
+    if (autoSwitchDetected) {
+      _switchingFrom    = _selectedGigApp;
+      _switchingTo      = newGigApp;
+      _showSwitchBanner = true;
+    }
+
+    if (newGigApp != null) {
+      _selectedGigApp = newGigApp;
     }
 
     if (active != null) {
@@ -117,6 +142,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       liveMiles = 0.0;
     }
   });
+
+  if (autoSwitchDetected) _armSwitchBannerTimer();
 }
 
   // BUG FIX (irs_purpose): único punto que maneja selección de gig app,
