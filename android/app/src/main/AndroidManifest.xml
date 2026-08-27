@@ -116,6 +116,18 @@
         <package android:name="com.vehotechnologies.Driver"/>
         <package android:name="com.axlehire.drive"/>
         <package android:name="com.walmart.sparkdriver"/>
+        <package android:name="com.grubhub.driver"/>
+        <package android:name="com.gopuff.godrive2.live"/>
+        <package android:name="com.verifone.curb.driver"/>
+        <package android:name="com.curb.one"/>
+        <package android:name="com.pointpickup.partner"/>
+        <package android:name="com.skipcart.app.mobile.prod"/>
+        <package android:name="com.dispatchit"/>
+        <package android:name="com.deliverthat.driver"/>
+        <package android:name="com.hopskipdrive.driver"/>
+        <package android:name="co.goshare.driverapp"/>
+        <package android:name="com.Curri.Driver"/>
+        <package android:name="com.Curri.RouteDriver"/>
     </queries>
 
 </manifest>

@@ -131,6 +131,106 @@ class GigAppCatalog {
       icon: Icons.bolt_rounded,
       color: Color(0xFFE8B22E),
     ),
+    // Explicit user request (2026-08-27), 12 more platforms researched via
+    // WebSearch against real Play Store listings (never guessed) --
+    // package names mirrored into gig_app_packages, see that migration's
+    // own comment for per-app verification notes. Two of these (Wingz,
+    // Alto) have NO verified Android package -- Wingz's driver app isn't
+    // distributed via Google Play at all (confirmed via Wingz's own help
+    // docs), and Alto's drivers are W-2 employees with no confirmed public
+    // driver-specific APK, only a passenger-app package that would be the
+    // wrong thing to detect against. Both still get a manual-selection
+    // entry here; neither gets a gig_app_packages row, so auto-detect
+    // simply never resolves to them (matches this catalog's own contract:
+    // a package-only entry needs a matching id here, but an id here
+    // doesn't require a package there).
+    GigApp(
+      id: 'grubhub',
+      name: 'Grubhub',
+      icon: Icons.lunch_dining_rounded,
+      color: Color(0xFFD93B2E),
+    ),
+    GigApp(
+      id: 'gopuff',
+      name: 'Gopuff',
+      icon: Icons.local_convenience_store_rounded,
+      color: Color(0xFFB8D93A),
+    ),
+    // Curb has two real, currently-listed driver apps from the same
+    // developer (Curb Mobility, LLC) -- "Curb Driver" and the newer
+    // "Curb One" -- both mapped to this one id in gig_app_packages
+    // rather than guessing which is "the" real one, same pattern already
+    // used for Amazon Flex's two packages.
+    GigApp(
+      id: 'curb',
+      name: 'Curb',
+      icon: Icons.local_taxi_rounded,
+      color: Color(0xFFD9A62E),
+    ),
+    GigApp(
+      id: 'point_pickup',
+      name: 'Point Pickup',
+      icon: Icons.shopping_bag_rounded,
+      color: Color(0xFF3B7BAD),
+    ),
+    GigApp(
+      id: 'skipcart',
+      name: 'Skipcart',
+      icon: Icons.shopping_cart_rounded,
+      color: Color(0xFF3F9142),
+    ),
+    // Real brand name is "Dispatch" (dispatchit.com); Play Store package
+    // is literally com.dispatchit -- verified against the actual listing,
+    // not the many unrelated "dispatch"-named logistics-SaaS apps that
+    // also turned up in search.
+    GigApp(
+      id: 'dispatch',
+      name: 'Dispatch',
+      icon: Icons.delivery_dining_rounded,
+      color: Color(0xFF3D5A99),
+    ),
+    GigApp(
+      id: 'deliverthat',
+      name: 'DeliverThat',
+      icon: Icons.restaurant_menu_rounded,
+      color: Color(0xFFC2703D),
+    ),
+    // No verified Android package -- see the batch comment above.
+    GigApp(
+      id: 'wingz',
+      name: 'Wingz',
+      icon: Icons.flight_takeoff_rounded,
+      color: Color(0xFF5B6FA8),
+    ),
+    GigApp(
+      id: 'hopskipdrive',
+      name: 'HopSkipDrive',
+      icon: Icons.school_rounded,
+      color: Color(0xFF2E9E8F),
+    ),
+    // No verified Android package -- see the batch comment above.
+    GigApp(
+      id: 'alto',
+      name: 'Alto',
+      icon: Icons.directions_car_filled_rounded,
+      color: Color(0xFF6B4FA0),
+    ),
+    GigApp(
+      id: 'goshare',
+      name: 'GoShare',
+      icon: Icons.warehouse_rounded,
+      color: Color(0xFFB8622E),
+    ),
+    // "Courial" in the user's own request -- real platform is Curri
+    // (curri.com). Two real, currently-listed driver apps from the same
+    // official Curri developer account -- "Curri Driver" and "Curri
+    // Route Driver" -- both mapped to this one id, same reasoning as Curb.
+    GigApp(
+      id: 'curri',
+      name: 'Curri',
+      icon: Icons.construction_rounded,
+      color: Color(0xFFBF5B2E),
+    ),
     // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
     // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)
     // vs. gris pizarra #475569 en Dashboard/Reports/Historial. Se unificó
