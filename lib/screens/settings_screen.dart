@@ -911,9 +911,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const LegalDocumentScreen(
+                builder: (_) => LegalDocumentScreen(
                   titleKey: 'privacy_policy',
-                  body: privacyPolicyEn,
+                  // Explicit user request (2026-08-28): Fleet accounts see
+                  // the organization/company-framed version -- the
+                  // individual version doesn't cover an admin's own
+                  // obligations around driver data, which is the
+                  // relationship that's actually live once isFleetAccount
+                  // is true.
+                  body: appState.isFleetAccount ? privacyPolicyFleetEn : privacyPolicyEn,
                 ),
               ),
             ),
@@ -926,9 +932,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const LegalDocumentScreen(
+                builder: (_) => LegalDocumentScreen(
                   titleKey: 'terms_conditions',
-                  body: termsOfServiceEn,
+                  body: appState.isFleetAccount ? termsOfServiceFleetEn : termsOfServiceEn,
                 ),
               ),
             ),
