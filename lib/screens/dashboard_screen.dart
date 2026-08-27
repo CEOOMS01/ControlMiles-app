@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../tracking/tracking_controller.dart';
+import '../tracking/auto_trip_detection_service.dart';
 import '../models/gig_app.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_inspection.dart';
@@ -222,6 +223,65 @@ class _DashboardScreenState extends State<DashboardScreen>
                 style: TextStyle(color: Color(0xFF4ADE80), fontSize: 10, fontWeight: FontWeight.w900)),
           ],
         ),
+      ),
+    );
+  }
+
+  // Replaces the GigAppSelector carousel while idle + auto-detect is
+  // armed (see the call site's own comment). Reads
+  // AutoTripDetectionService's lastDetectedGigAppId directly -- no
+  // ValueListenableBuilder needed, this screen already rebuilds every
+  // second via _uiTimer/_syncTrackingUiState, the same existing cadence
+  // TrackingController.currentGigApp/isPaused are already read through
+  // a few lines above this call site.
+  Widget _buildAutoDetectStatusCard(AppState appState, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final primary = Theme.of(context).colorScheme.primary;
+
+    final detectedId = AutoTripDetectionService.instance.lastDetectedGigAppId;
+    final detectedApp = detectedId != null ? GigAppCatalog.byId(detectedId) : null;
+    final accent = detectedApp?.color ?? primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: detectedApp != null ? accent : borderColor, width: detectedApp != null ? 2 : 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), shape: BoxShape.circle),
+            child: Icon(detectedApp?.icon ?? Icons.auto_awesome_rounded, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  detectedApp != null
+                      ? '${appState.tr('auto_detect_status_found_label')} ${detectedApp.name}'
+                      : appState.tr('auto_detect_status_listening'),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: textColor),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detectedApp != null
+                      ? appState.tr('auto_detect_status_found_subtitle')
+                      : appState.tr('auto_detect_status_listening_subtitle'),
+                  style: TextStyle(fontSize: 12, color: subTextColor),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -885,14 +945,24 @@ class _DashboardScreenState extends State<DashboardScreen>
 
               const SizedBox(height: 30),
 
-              GigAppSelector(
-                selectedGigApp: _selectedGigApp,
-                activeGigApp: TrackingController.currentGigApp,
-                isPaused: TrackingController.isPaused,
-                onAppSelected: (appId) => _handleAppSelection(appId),
-                onCustomSelected: (appId, irsPurpose) =>
-                    _handleAppSelection(appId, irsPurpose: irsPurpose),
-              ),
+              // Explicit user request: showing the manual carousel AND
+              // automatic detection side by side was inconsistent, since
+              // idle + auto-detect armed is the exact same job the
+              // carousel does (deciding which app the next trip is for).
+              // Once a trip actually exists (running/paused), the
+              // carousel comes back for its other job -- switching apps
+              // mid-trip -- which auto-detect doesn't touch (v1 scope is
+              // start-only).
+              (appState.autoDetectEnabled && TrackingController.currentState == TrackingState.idle)
+                  ? _buildAutoDetectStatusCard(appState, isDark)
+                  : GigAppSelector(
+                      selectedGigApp: _selectedGigApp,
+                      activeGigApp: TrackingController.currentGigApp,
+                      isPaused: TrackingController.isPaused,
+                      onAppSelected: (appId) => _handleAppSelection(appId),
+                      onCustomSelected: (appId, irsPurpose) =>
+                          _handleAppSelection(appId, irsPurpose: irsPurpose),
+                    ),
 
               const SizedBox(height: 30),
 

@@ -47,7 +47,7 @@ const Map<String, String> frTexts = {
   // ============================================================
   // NAVIGATION
   // ============================================================
-  'dashboard': 'Tableau de bord',
+  'dashboard': 'Accueil',
   'home': 'Accueil',
   'profile': 'Profil',
   'settings': 'Paramètres',
@@ -385,6 +385,11 @@ const Map<String, String> frTexts = {
   'gig_app_detection_title': 'Détection d\'application active',
   'gig_app_detection_subtitle_granted': 'Suggérera l\'application automatiquement quand vous l\'ouvrez',
   'gig_app_detection_subtitle_not_granted': 'Appuyez pour autoriser l\'accès à l\'utilisation et suggérer l\'application automatiquement',
+  'carousel_manual_mode': 'Sélection manuelle',
+  'auto_detect_status_listening': 'Détection Automatique',
+  'auto_detect_status_listening_subtitle': 'En attente de l\'ouverture d\'une application de travail...',
+  'auto_detect_status_found_label': 'Détecté :',
+  'auto_detect_status_found_subtitle': 'Nous vous demanderons de confirmer dès que vous commencerez à conduire.',
 
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',

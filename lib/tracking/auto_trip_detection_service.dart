@@ -58,6 +58,17 @@ class AutoTripDetectionService {
   bool _promptActive = false;
   Timer? _pollTimer;
 
+  // Ambient "what's currently detected" status, for DashboardScreen's
+  // status card (replaces the manual GigAppSelector carousel while idle
+  // + armed, per explicit user request -- showing both was inconsistent
+  // once auto-detect actually does the same job the carousel did). Set
+  // by the SAME 30s poll that already exists for triggering the prompt
+  // -- deliberately not a separate/faster poll, to keep the battery cost
+  // exactly what it already was. DashboardScreen already rebuilds every
+  // second on its own existing UI timer, so a plain field (not a
+  // ValueNotifier) is enough -- no new listener plumbing needed.
+  String? lastDetectedGigAppId;
+
   bool get isArmed => _armed;
 
   /// Called from AppState.setAutoDetectEnabled -- turns the always-on
@@ -71,6 +82,7 @@ class AutoTripDetectionService {
     _armed = enabled;
     _pollTimer?.cancel();
     _pollTimer = null;
+    if (!enabled) lastDetectedGigAppId = null;
 
     if (enabled) {
       await BackgroundGpsService.startTracking();
@@ -98,9 +110,16 @@ class AutoTripDetectionService {
 
   Future<void> _pollForGigApp() async {
     if (!_armed || _promptActive) return;
-    if (TrackingController.currentState != TrackingState.idle) return;
+    if (TrackingController.currentState != TrackingState.idle) {
+      // A trip is already running/paused -- the status card isn't shown
+      // in that state (the carousel resumes its normal mid-trip-switch
+      // job there), so there's nothing useful to reflect right now.
+      lastDetectedGigAppId = null;
+      return;
+    }
 
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
+    lastDetectedGigAppId = gigAppId;
     if (gigAppId != null) {
       await _promptForTrip(detectedGigAppId: gigAppId);
     }

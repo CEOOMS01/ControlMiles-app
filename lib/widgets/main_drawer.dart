@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
+import '../utils/permission_recovery_service.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
@@ -32,7 +33,7 @@ class MainDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildHeader(appState),
+                _buildHeader(context, appState),
                 const SizedBox(height: 8),
 
                 // --- Sección: Navegación Principal ---
@@ -118,7 +119,7 @@ class MainDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(AppState appState) {
+  Widget _buildHeader(BuildContext context, AppState appState) {
     // FIX 1: userEmail eliminado — ya no se declara ni se usa
 
     return Container(
@@ -137,46 +138,124 @@ class MainDrawer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(
-            'assets/images/logo_controlmiles.png', 
-            height: 55,
-            errorBuilder: (context, error, stackTrace) => const Icon(
-              Icons.local_shipping_rounded,
-              color: Colors.white,
-              size: 42,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            appState.tr('app_name'), 
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-            ),
+          // Explicit user request: wordmark moved next to the logo
+          // (was stacked below it) -- a single horizontal lockup instead
+          // of two separate lines.
+          Row(
+            children: [
+              Image.asset(
+                'assets/images/logo_controlmiles.png',
+                height: 40,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.local_shipping_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  appState.tr('app_name'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
           ),
           // FIX 2: Text(userEmail) eliminado — línea de email removida
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              "ID: ${appState.userDisplayId ?? '---'}",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+          const SizedBox(height: 16),
+          // Explicit user request: the auto-detect mode toggle sits at
+          // the far right of this row, opposite the user's ID badge --
+          // same premium/auto-detect state as Settings, just reachable
+          // without leaving the drawer.
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "ID: ${appState.userDisplayId ?? '---'}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              if (appState.isGig) _buildAutoDetectHeaderToggle(context, appState),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  // Premium Gig feature, quick-access shortcut for the same
+  // autoDetectEnabled/premiumEntitled state Settings already exposes --
+  // strategically placed in the drawer header instead of buried in
+  // Settings, per explicit user request. Manual mode still means "pick
+  // the app from the GigAppSelector carousel before starting" -- this
+  // only switches whether the automatic listening service is armed.
+  Widget _buildAutoDetectHeaderToggle(BuildContext context, AppState appState) {
+    final isAuto = appState.autoDetectEnabled;
+    final locked = !appState.premiumEntitled;
+
+    return Tooltip(
+      message: appState.tr(isAuto ? 'auto_detect_toggle_title' : 'carousel_manual_mode'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(100),
+        onTap: () => _handleHeaderAutoDetectTap(context, appState),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isAuto ? Colors.white.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            locked
+                ? Icons.lock_outline_rounded
+                : (isAuto ? Icons.auto_awesome_rounded : Icons.touch_app_rounded),
+            color: Colors.white,
+            size: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleHeaderAutoDetectTap(BuildContext context, AppState appState) async {
+    if (!appState.premiumEntitled) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(appState.tr('premium_feature_locked_title')),
+          content: Text(appState.tr('premium_feature_locked_body')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('ok'))),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final turningOn = !appState.autoDetectEnabled;
+    if (turningOn) {
+      final hasPermissions = await PermissionRecoveryService.hasCriticalPermissions();
+      if (!hasPermissions) {
+        if (context.mounted) await PermissionRecoveryService.showRecoveryDialog(context);
+        return;
+      }
+    }
+    await appState.setAutoDetectEnabled(turningOn);
   }
 
   Widget _buildSectionLabel(AppState appState, String labelKey, Color labelColor) {

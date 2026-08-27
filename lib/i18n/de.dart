@@ -46,7 +46,7 @@ const Map<String, String> deTexts = {
   // ============================================================
   // NAVIGATION
   // ============================================================
-  'dashboard': 'Dashboard',
+  'dashboard': 'Start',
   'home': 'Startseite',
   'profile': 'Profil',
   'settings': 'Einstellungen',
@@ -378,6 +378,11 @@ const Map<String, String> deTexts = {
   'gig_app_detection_title': 'Erkennung aktiver App',
   'gig_app_detection_subtitle_granted': 'Schlägt die App automatisch vor, wenn du sie öffnest',
   'gig_app_detection_subtitle_not_granted': 'Tippen, um Nutzungszugriff zu gewähren und die App automatisch vorzuschlagen',
+  'carousel_manual_mode': 'Manuelle Auswahl',
+  'auto_detect_status_listening': 'Automatische Erkennung',
+  'auto_detect_status_listening_subtitle': 'Wartet darauf, dass du eine Arbeits-App öffnest...',
+  'auto_detect_status_found_label': 'Erkannt:',
+  'auto_detect_status_found_subtitle': 'Wir bitten dich um Bestätigung, sobald du losfährst.',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',

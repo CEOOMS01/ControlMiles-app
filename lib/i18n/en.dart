@@ -54,7 +54,7 @@ const Map<String, String> enTexts = {
   // ============================================================
   // NAVIGATION
   // ============================================================
-  'dashboard': 'Dashboard',
+  'dashboard': 'Home',
   'home': 'Home',
   'profile': 'Profile',
   'settings': 'Settings',
@@ -474,6 +474,11 @@ const Map<String, String> enTexts = {
   'gig_app_detection_title': 'Active app detection',
   'gig_app_detection_subtitle_granted': 'Will suggest the app automatically when you open it',
   'gig_app_detection_subtitle_not_granted': 'Tap to grant usage access and suggest the app automatically',
+  'carousel_manual_mode': 'Manual selection',
+  'auto_detect_status_listening': 'Automatic Detection',
+  'auto_detect_status_listening_subtitle': 'Listening for a gig app to open...',
+  'auto_detect_status_found_label': 'Detected:',
+  'auto_detect_status_found_subtitle': 'We\'ll ask you to confirm once you start driving.',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',

@@ -47,7 +47,7 @@ const Map<String, String> zhTexts = {
   // ============================================================
   // 导航
   // ============================================================
-  'dashboard': '仪表盘',
+  'dashboard': '首页',
   'home': '首页',
   'profile': '个人资料',
   'settings': '设置',
@@ -378,6 +378,11 @@ const Map<String, String> zhTexts = {
   'gig_app_detection_title': '活跃应用检测',
   'gig_app_detection_subtitle_granted': '打开应用时将自动建议',
   'gig_app_detection_subtitle_not_granted': '点击以授予使用情况访问权限并自动建议应用',
+  'carousel_manual_mode': '手动选择',
+  'auto_detect_status_listening': '自动检测',
+  'auto_detect_status_listening_subtitle': '正在等待你打开一个工作应用……',
+  'auto_detect_status_found_label': '已检测到：',
+  'auto_detect_status_found_subtitle': '一旦你开始驾驶，我们会请你确认。',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',

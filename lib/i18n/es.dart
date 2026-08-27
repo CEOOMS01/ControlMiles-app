@@ -54,7 +54,7 @@ const Map<String, String> esTexts = {
   // ============================================================
   // NAVEGACIÓN
   // ============================================================
-  'dashboard': 'Panel principal',
+  'dashboard': 'Inicio',
   'home': 'Inicio',
   'profile': 'Perfil',
   'settings': 'Ajustes',
@@ -468,6 +468,11 @@ const Map<String, String> esTexts = {
   'gig_app_detection_title': 'Detección de app activa',
   'gig_app_detection_subtitle_granted': 'Sugerirá la app automáticamente cuando la abras',
   'gig_app_detection_subtitle_not_granted': 'Toca para otorgar acceso de uso y sugerir la app automáticamente',
+  'carousel_manual_mode': 'Selección manual',
+  'auto_detect_status_listening': 'Detección Automática',
+  'auto_detect_status_listening_subtitle': 'Esperando a que abras una app de trabajo...',
+  'auto_detect_status_found_label': 'Detectado:',
+  'auto_detect_status_found_subtitle': 'Te pediremos confirmar en cuanto empieces a manejar.',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '¿Cómo vas a usar ControlMiles?',
