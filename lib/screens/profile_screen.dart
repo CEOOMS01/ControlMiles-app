@@ -12,7 +12,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
-import '../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -194,11 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildUnitSelector(appState, isDark),
             const SizedBox(height: 12),
             _buildDarkModeSwitch(appState, isDark),
-
-            const SizedBox(height: 40),
-            _buildLogoutButton(context, appState),
             const SizedBox(height: 30),
-            _buildVersionInfo(appState),
           ],
         ),
       ),
@@ -336,50 +331,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ====================== SETTINGS ======================
+  // BUG FIX (pedido explícito, "use metric system" hardcoded): esta
+  // pantalla usaba 3 claves i18n que nunca existieron en NINGÚN idioma
+  // (use_metric_system/metric_unit_desc/imperial_unit_desc) -- grep
+  // confirmó cero definiciones en lib/i18n/*.dart. AppTexts.getText()
+  // devuelve la clave cruda cuando falta, así que todo usuario, en todo
+  // idioma, veía el nombre de la clave en pantalla. Settings ya tiene el
+  // mismo toggle correctamente traducido (metric_system, sin subtítulo)
+  // -- se reusa esa clave en vez de inventar traducciones nuevas para
+  // claves que nunca debieron duplicar esa función.
   Widget _buildUnitSelector(AppState appState, bool isDark) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SwitchListTile(
-        title: Text(appState.tr('use_metric_system'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(appState.tr(appState.useMetricSystem ? 'metric_unit_desc' : 'imperial_unit_desc')),
+        title: Text(appState.tr('metric_system'), style: const TextStyle(fontWeight: FontWeight.bold)),
         value: appState.useMetricSystem,
         onChanged: (value) => appState.setUseMetricSystem(value),
         secondary: const Icon(Icons.straighten_rounded),
-      ),
-    );
-  }
-
-  // ====================== LOGOUT ======================
-  Widget _buildLogoutButton(BuildContext context, AppState appState) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.red, 
-            side: const BorderSide(color: Colors.red),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-          ),
-          onPressed: () async {
-            // BUG FIX (pedido explícito): antes llamaba
-            // _authService.signOut() directo, sin try/catch -- si esa
-            // llamada de red fallaba, la excepción quedaba sin manejar y
-            // la navegación a Login nunca se ejecutaba (la app parecía
-            // "colgada"). También nunca limpiaba AppState.userDisplayId,
-            // causando que el próximo login con otra cuenta mostrara el
-            // ID de esta. signOutAndClear() nunca lanza y siempre limpia.
-            await appState.signOutAndClear();
-            if (context.mounted) {
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-            }
-          },
-          icon: const Icon(Icons.logout),
-          label: Text(appState.tr('logout')),
-        ),
       ),
     );
   }
@@ -395,13 +365,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildVersionInfo(AppState appState) {
-    return Column(
-      children: [
-        Text("${appState.tr('app_name')} v1.0.0", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(height: 4),
-        Text("${appState.tr('copyright')} 2026 Olympus Mont Systems LLC", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-      ],
-    );
-  }
 }
