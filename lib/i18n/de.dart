@@ -354,6 +354,17 @@ const Map<String, String> deTexts = {
 
   'dvir_required_before_start': 'Schließe die heutige Vorfahrtkontrolle ab, bevor du startest.',
 
+  'organization_section_title': 'Organisation',
+  'org_rename_hint': 'Tippen zum Umbenennen',
+  'org_rename_title': 'Organisation umbenennen',
+  'org_name_label': 'Name der Organisation',
+  'org_renamed_success': 'Organisation umbenannt',
+  'org_delete_button': 'Organisation löschen',
+  'org_delete_confirm_title': 'Diese Organisation löschen?',
+  'org_delete_confirm_body': 'Dies löscht die Organisation, ihre Fahrzeuge, das Team, Routen, Inspektionen und Wartungsprotokolle dauerhaft. Fahrer behalten ihre eigene Fahrthistorie, verlieren aber ihre Flottenzuweisung. Dies kann nicht rückgängig gemacht werden.',
+  'org_delete_type_to_confirm': 'Gib den Namen der Organisation zur Bestätigung ein',
+  'org_deleted_success': 'Organisation gelöscht',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',
   'account_type_subtitle': 'Diese Wahl bestimmt, wie Ihr Konto funktioniert. Wählen Sie die passende Option.',

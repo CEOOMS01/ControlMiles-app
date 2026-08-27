@@ -361,6 +361,17 @@ const Map<String, String> frTexts = {
 
   'dvir_required_before_start': 'Terminez l\'inspection avant trajet du jour avant de démarrer.',
 
+  'organization_section_title': 'Organisation',
+  'org_rename_hint': 'Touchez pour renommer',
+  'org_rename_title': 'Renommer l\'organisation',
+  'org_name_label': 'Nom de l\'organisation',
+  'org_renamed_success': 'Organisation renommée',
+  'org_delete_button': 'Supprimer l\'organisation',
+  'org_delete_confirm_title': 'Supprimer cette organisation ?',
+  'org_delete_confirm_body': 'Cela supprime définitivement l\'organisation, ses véhicules, son effectif, ses itinéraires, ses inspections et ses registres d\'entretien. Les chauffeurs conservent leur propre historique de trajets, mais perdent leur affectation de flotte. Cette action est irréversible.',
+  'org_delete_type_to_confirm': 'Tapez le nom de l\'organisation pour confirmer',
+  'org_deleted_success': 'Organisation supprimée',
+
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',
   'account_type_gig_desc': 'Suivez vos propres kilomètres pour des applications comme Uber, Lyft ou DoorDash.',

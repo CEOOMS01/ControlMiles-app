@@ -354,6 +354,17 @@ const Map<String, String> zhTexts = {
 
   'dvir_required_before_start': '开始行程前，请完成今天的行前检查。',
 
+  'organization_section_title': '组织',
+  'org_rename_hint': '点击以重命名',
+  'org_rename_title': '重命名组织',
+  'org_name_label': '组织名称',
+  'org_renamed_success': '组织已重命名',
+  'org_delete_button': '删除组织',
+  'org_delete_confirm_title': '删除此组织？',
+  'org_delete_confirm_body': '此操作将永久删除该组织及其车辆、名册、路线、检查记录和维护记录。司机会保留自己的行程记录，但会失去车队分配。此操作无法撤销。',
+  'org_delete_type_to_confirm': '输入组织名称以确认',
+  'org_deleted_success': '组织已删除',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',
   'account_type_subtitle': '此选择决定您账户的运作方式。请选择适合您的选项。',

@@ -154,6 +154,35 @@ class OrganizationService {
     await _supabase.rpc('switch_account_mode', params: {'p_mode': mode});
   }
 
+  /// Renombra la organización -- organizations_update_admin (RLS) ya
+  /// permite esto a cualquier owner/admin, mismo mecanismo que el
+  /// formulario de rename en el dashboard web (rename-org-form.tsx). El
+  /// nombre es explícitamente el único campo libre de editar; User IDs,
+  /// vehicle IDs, millas y rutas cerradas quedan bloqueados a nivel de DB
+  /// (ver las migraciones de inmutabilidad), no solo ocultos en la UI.
+  Future<void> renameOrganization(String organizationId, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('Organization name cannot be empty');
+    }
+    await _supabase.from('organizations').update({'name': trimmed}).eq('id', organizationId);
+  }
+
+  /// Elimina la organización por completo -- SOLO el owner puede, la RPC
+  /// lo verifica server-side (nunca confía en lo que la UI ya restringió).
+  /// Ve delete_organization (SECURITY DEFINER) para el porqué esto no es
+  /// un DELETE directo desde el cliente: 6 tablas child tienen NO ACTION
+  /// en organization_id (fallarían con un error de FK crudo), y las que
+  /// sí cascadean (vehicles/organization_members/routes/
+  /// fleet_driver_slots) dejarían a cada miembro con account_type
+  /// todavía apuntando a un rol de flota mientras su default_org_id
+  /// queda NULL -- la RPC resetea eso primero, atómicamente, antes de
+  /// borrar nada. La evidencia de millas del driver (sessions/reports)
+  /// sobrevive a propósito, solo pierde su vínculo con la flota.
+  Future<void> deleteOrganization(String organizationId) async {
+    await _supabase.rpc('delete_organization', params: {'p_org_id': organizationId});
+  }
+
   Future<String> claimDriverSlot(String claimCode) async {
     final result = await _supabase.rpc(
       'claim_driver_slot',

@@ -354,6 +354,17 @@ const Map<String, String> ptTexts = {
 
   'dvir_required_before_start': 'Conclua a inspeção pré-viagem de hoje antes de iniciar.',
 
+  'organization_section_title': 'Organização',
+  'org_rename_hint': 'Toque para renomear',
+  'org_rename_title': 'Renomear organização',
+  'org_name_label': 'Nome da organização',
+  'org_renamed_success': 'Organização renomeada',
+  'org_delete_button': 'Excluir organização',
+  'org_delete_confirm_title': 'Excluir esta organização?',
+  'org_delete_confirm_body': 'Isso exclui permanentemente a organização, seus veículos, equipe, rotas, inspeções e registros de manutenção. Os motoristas mantêm seu próprio histórico de viagens, mas perdem sua atribuição de frota. Isso não pode ser desfeito.',
+  'org_delete_type_to_confirm': 'Digite o nome da organização para confirmar',
+  'org_deleted_success': 'Organização excluída',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',
   'account_type_subtitle': 'Essa escolha define como sua conta funciona. Selecione a opção que combina com você.',

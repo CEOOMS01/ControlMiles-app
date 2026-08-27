@@ -448,6 +448,18 @@ const Map<String, String> enTexts = {
   // tracking without a passing, same-day pre-trip inspection on record.
   'dvir_required_before_start': 'Complete today\'s pre-trip inspection before starting a trip.',
 
+  // Organization rename/delete (mobile Settings, fleet_admin only).
+  'organization_section_title': 'Organization',
+  'org_rename_hint': 'Tap to rename',
+  'org_rename_title': 'Rename organization',
+  'org_name_label': 'Organization name',
+  'org_renamed_success': 'Organization renamed',
+  'org_delete_button': 'Delete organization',
+  'org_delete_confirm_title': 'Delete this organization?',
+  'org_delete_confirm_body': 'This permanently deletes the organization, its vehicles, roster, routes, inspections, and maintenance records. Drivers keep their own trip history, but lose their fleet assignment. This cannot be undone.',
+  'org_delete_type_to_confirm': 'Type the organization name to confirm',
+  'org_deleted_success': 'Organization deleted',
+
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'How will you use ControlMiles?',
   'account_type_subtitle': 'This choice decides how your account works. Pick the option that fits you.',

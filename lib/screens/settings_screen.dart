@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
+import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/organization_service.dart';
@@ -26,6 +27,169 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
   bool _isSwitchingMode = false;
+
+  // Explicit user requirement (mobile Settings, fleet_admin only): show
+  // the org's name and let its owner/admin rename or delete it. Rename
+  // ports the same web capability (organizations_update_admin RLS);
+  // delete is new -- routes through delete_organization (SECURITY
+  // DEFINER RPC), never a raw client DELETE, since 6 child tables have
+  // NO ACTION on organization_id and a raw DELETE would either fail
+  // outright or, for an org without those rows, silently cascade through
+  // vehicles/members/routes while leaving every member's account_type
+  // desynced. See organization_service.dart's own comment.
+  Organization? _organization;
+  bool _isLoadingOrg = false;
+  bool _isRenamingOrg = false;
+  bool _isDeletingOrg = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final appState = context.read<AppState>();
+    if (appState.isFleetAdmin) {
+      _loadOrganization(appState);
+    }
+  }
+
+  Future<void> _loadOrganization(AppState appState) async {
+    final orgId = appState.defaultOrgId;
+    if (orgId == null) return;
+    setState(() => _isLoadingOrg = true);
+    try {
+      final org = await _organizationService.getOrganization(orgId);
+      if (mounted) setState(() => _organization = org);
+    } finally {
+      if (mounted) setState(() => _isLoadingOrg = false);
+    }
+  }
+
+  Future<void> _showRenameOrgDialog(AppState appState) async {
+    final controller = TextEditingController(text: _organization?.name ?? '');
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('org_rename_title')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            labelText: appState.tr('org_name_label'),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(appState.tr('save')),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || newName == null || newName.isEmpty || newName == _organization?.name) return;
+    final orgId = appState.defaultOrgId;
+    if (orgId == null) return;
+
+    setState(() => _isRenamingOrg = true);
+    try {
+      await _organizationService.renameOrganization(orgId, newName);
+      await _loadOrganization(appState);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appState.tr('org_renamed_success'))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${appState.tr('error')}: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRenamingOrg = false);
+    }
+  }
+
+  void _showDeleteOrgDialog(AppState appState) {
+    final controller = TextEditingController();
+    final orgName = _organization?.name ?? '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final canConfirm = orgName.isNotEmpty && controller.text.trim() == orgName;
+          return AlertDialog(
+            title: Text(appState.tr('org_delete_confirm_title')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(appState.tr('org_delete_confirm_body')),
+                const SizedBox(height: 16),
+                Text(
+                  '${appState.tr('org_delete_type_to_confirm')} ($orgName)',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  onChanged: (_) => setDialogState(() {}),
+                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(appState.tr('cancel')),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+                onPressed: canConfirm
+                    ? () {
+                        Navigator.pop(ctx);
+                        _deleteOrganization(appState);
+                      }
+                    : null,
+                child: Text(appState.tr('org_delete_button')),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteOrganization(AppState appState) async {
+    final orgId = appState.defaultOrgId;
+    if (orgId == null) return;
+
+    setState(() => _isDeletingOrg = true);
+    try {
+      await _organizationService.deleteOrganization(orgId);
+      await appState.refreshAccountType();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appState.tr('org_deleted_success'))),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (route) => false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeletingOrg = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${appState.tr('error')}: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
 
   // Explicit user requirement: switch between Gig/Fleet Admin/Fleet
   // Driver on the same account, persisting -- for testing, and for a
@@ -90,6 +254,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _buildSectionHeader(appState, 'account_mode_title', isDark),
           _buildAccountModeSection(appState, isDark),
+
+          if (appState.isFleetAdmin && (_isLoadingOrg || _organization != null)) ...[
+            _buildSectionHeader(appState, 'organization_section_title', isDark),
+            _buildOrganizationSection(appState, isDark),
+          ],
 
           _buildSectionHeader(appState, 'preferences', isDark),
           _buildPreferencesSection(appState, isDark),
@@ -377,6 +546,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOrganizationSection(AppState appState, bool isDark) {
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+
+    if (_isLoadingOrg) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_organization == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.local_shipping_rounded, color: Theme.of(context).colorScheme.primary),
+              title: Text(
+                _organization!.name,
+                style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
+              ),
+              subtitle: Text(appState.tr('org_rename_hint'), style: TextStyle(fontSize: 12, color: subTextColor)),
+              trailing: _isRenamingOrg
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(Icons.edit_rounded, color: subTextColor),
+              onTap: _isRenamingOrg ? null : () => _showRenameOrgDialog(appState),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? Colors.red.shade900 : Colors.red.shade100),
+            ),
+            child: ListTile(
+              leading: _isDeletingOrg
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
+                  : const Icon(Icons.delete_forever_rounded, color: Colors.red),
+              title: Text(
+                appState.tr('org_delete_button'),
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              onTap: _isDeletingOrg ? null : () => _showDeleteOrgDialog(appState),
+            ),
+          ),
+        ],
       ),
     );
   }
