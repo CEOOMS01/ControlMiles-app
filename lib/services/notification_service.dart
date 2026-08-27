@@ -21,6 +21,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../routes/app_routes.dart';
+import '../models/gig_app.dart';
 
 class NotificationService {
   NotificationService._internal();
@@ -149,11 +150,16 @@ class NotificationService {
       final nav = navigatorKey?.currentState;
       nav?.pushNamed(AppRoutes.reports);
     } else if (response.id == _autoTripDetectedNotificationId) {
-      // App was backgrounded/terminated when motion was detected --
+      // App was backgrounded/terminated when the trip was detected --
       // AutoTripDetectionService already tried a direct push if a
       // navigator existed, but that would have been a no-op with the
       // app not in front. This is the real entry point in that case.
-      navigatorKey?.currentState?.pushNamed(AppRoutes.autoTripPrompt);
+      // payload carries the detected gig_app_id (or null), same
+      // argument shape AutoTripDetectionService's own direct push uses.
+      navigatorKey?.currentState?.pushNamed(
+        AppRoutes.autoTripPrompt,
+        arguments: response.payload,
+      );
     }
     // La de "viaje olvidado" no navega a ningún lado en particular — el
     // usuario ya ve el estado de tracking apenas abre la app en Dashboard.
@@ -287,13 +293,17 @@ class NotificationService {
   /// optional reminders, not this premium feature's own core mechanism;
   /// AutoTripDetectionService is only ever armed when the user
   /// separately turned auto-detect on.
-  Future<void> showAutoTripDetectedNotification() async {
+  Future<void> showAutoTripDetectedNotification({String? detectedGigAppId}) async {
     if (!_initialized) return;
+
+    final body = detectedGigAppId != null
+        ? 'Detectamos ${GigAppCatalog.byId(detectedGigAppId).name} activo. Toca para confirmar y registrar el odómetro ahora.'
+        : 'Toca para confirmar y registrar el odómetro ahora.';
 
     await _plugin.show(
       _autoTripDetectedNotificationId,
       'Viaje detectado',
-      'Toca para confirmar y registrar el odómetro ahora.',
+      body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           _urgentChannelId,
@@ -307,6 +317,7 @@ class NotificationService {
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
       ),
+      payload: detectedGigAppId,
     );
   }
 

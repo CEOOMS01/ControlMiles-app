@@ -9,6 +9,7 @@ import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/organization_service.dart';
+import '../services/gig_app_detection_service.dart';
 import '../utils/permission_recovery_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -23,12 +24,36 @@ class SettingsScreen extends StatefulWidget {
 // app lo leía. Ahora sigue el mismo patrón que el toggle de sistema métrico
 // (unas líneas abajo): lee y escribe a través de AppState, que es la única
 // fuente de verdad y la que a su vez conecta con NotificationService.
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
   final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
   bool _isSwitchingMode = false;
   bool _isTogglingAutoDetect = false;
+  // Usage Access is a "special access" permission granted from system
+  // Settings, not a runtime dialog -- WidgetsBindingObserver re-checks
+  // it on resume, since that's the only reliable moment to notice the
+  // user just came back from granting it there.
+  bool _hasUsageAccess = false;
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        GigAppDetectionService.instance.isSupported) {
+      _refreshUsageAccessStatus();
+    }
+  }
+
+  Future<void> _refreshUsageAccessStatus() async {
+    final granted = await GigAppDetectionService.instance.hasUsageAccess();
+    if (mounted) setState(() => _hasUsageAccess = granted);
+  }
 
   // Explicit user requirement (mobile Settings, fleet_admin only): show
   // the org's name and let its owner/admin rename or delete it. Rename
@@ -47,6 +72,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (GigAppDetectionService.instance.isSupported) {
+      _refreshUsageAccessStatus();
+    }
+
     final appState = context.read<AppState>();
     if (appState.isFleetAdmin) {
       _loadOrganization(appState);
@@ -666,54 +696,97 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final locked = !appState.premiumEntitled;
     final primary = Theme.of(context).colorScheme.primary;
 
+    final showUsageAccessRow = !locked &&
+        appState.autoDetectEnabled &&
+        GigAppDetectionService.instance.isSupported;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ListTile(
-          leading: Icon(Icons.auto_awesome_rounded, color: locked ? subTextColor : primary),
-          title: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  appState.tr('auto_detect_toggle_title'),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.auto_awesome_rounded, color: locked ? subTextColor : primary),
+              title: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      appState.tr('auto_detect_toggle_title'),
+                      style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+                    ),
+                  ),
+                  if (locked) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        appState.tr('premium_badge'),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: primary, letterSpacing: 0.5),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              subtitle: Text(
+                appState.tr('auto_detect_toggle_subtitle'),
+                style: TextStyle(fontSize: 12, color: subTextColor),
+              ),
+              trailing: locked
+                  ? Icon(Icons.lock_outline_rounded, color: subTextColor)
+                  : (_isTogglingAutoDetect
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Switch.adaptive(
+                          value: appState.autoDetectEnabled,
+                          onChanged: (v) => _handleAutoDetectToggle(appState, v),
+                          activeThumbColor: primary,
+                        )),
+              onTap: locked ? () => _showPremiumLockedDialog(appState) : null,
+            ),
+          ),
+          // Real primary trigger, per explicit user correction ("no por
+          // movimiento"): gig-app-foreground detection needs its OWN
+          // special-access permission (Settings.ACTION_USAGE_ACCESS_SETTINGS,
+          // no runtime dialog exists for it) -- surfaced here, separate
+          // from the toggle above, since motion-detection alone still
+          // works as a fallback without it.
+          if (showUsageAccessRow) ...[
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  _hasUsageAccess ? Icons.check_circle_rounded : Icons.apps_rounded,
+                  color: _hasUsageAccess ? Colors.green.shade600 : subTextColor,
+                ),
+                title: Text(
+                  appState.tr('gig_app_detection_title'),
                   style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
                 ),
-              ),
-              if (locked) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    appState.tr('premium_badge'),
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: primary, letterSpacing: 0.5),
-                  ),
+                subtitle: Text(
+                  appState.tr(_hasUsageAccess
+                      ? 'gig_app_detection_subtitle_granted'
+                      : 'gig_app_detection_subtitle_not_granted'),
+                  style: TextStyle(fontSize: 12, color: subTextColor),
                 ),
-              ],
-            ],
-          ),
-          subtitle: Text(
-            appState.tr('auto_detect_toggle_subtitle'),
-            style: TextStyle(fontSize: 12, color: subTextColor),
-          ),
-          trailing: locked
-              ? Icon(Icons.lock_outline_rounded, color: subTextColor)
-              : (_isTogglingAutoDetect
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Switch.adaptive(
-                      value: appState.autoDetectEnabled,
-                      onChanged: (v) => _handleAutoDetectToggle(appState, v),
-                      activeThumbColor: primary,
-                    )),
-          onTap: locked ? () => _showPremiumLockedDialog(appState) : null,
-        ),
+                trailing: _hasUsageAccess ? null : Icon(Icons.chevron_right_rounded, color: subTextColor),
+                onTap: _hasUsageAccess
+                    ? null
+                    : () => GigAppDetectionService.instance.openUsageAccessSettings(),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

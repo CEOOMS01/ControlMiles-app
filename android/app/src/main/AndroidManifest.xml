@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ===================================================== -->
     <!-- PERMISSIONS -->
@@ -32,6 +33,17 @@
          requiere SCHEDULE_EXACT_ALARM ni review especial de Play Store —
          ninguno de los dos es time-critical. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Gig app detection (premium auto-detect, Android only): a
+         "special access" permission, never a runtime dialog. The user
+         must grant it manually from Settings (see
+         MainActivity.openUsageAccessSettings). tools:ignore is required
+         because Google Play statically flags PACKAGE_USAGE_STATS as a
+         protected/sensitive permission; ignored deliberately since this
+         is exactly the declared, disclosed use case. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- ===================================================== -->
     <!-- APPLICATION -->
@@ -85,6 +97,19 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+
+        <!-- Gig app detection: Android 11+ filters package visibility by
+             default (QUERY_ALL_PACKAGES is restricted on Play Store), so
+             only the specific packages this feature actually checks are
+             declared here, matching the verified catalog in the
+             gig_app_packages DB table, not a request for blanket
+             visibility into everything installed. -->
+        <package android:name="com.ubercab.driver"/>
+        <package android:name="com.lyft.android.driver"/>
+        <package android:name="com.doordash.driverapp"/>
+        <package android:name="com.instacart.shopper"/>
+        <package android:name="com.amazon.rabbit"/>
+        <package android:name="com.amazon.flex.rabbit"/>
     </queries>
 
 </manifest>

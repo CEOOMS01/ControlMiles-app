@@ -375,6 +375,9 @@ const Map<String, String> zhTexts = {
   'auto_trip_prompt_body': '我们检测到您开始移动。请选择应用并立即确认，以记录此次行程的里程表读数。',
   'auto_trip_prompt_confirm': '确认并开始',
   'auto_trip_prompt_dismiss': '不是工作行程',
+  'gig_app_detection_title': '活跃应用检测',
+  'gig_app_detection_subtitle_granted': '打开应用时将自动建议',
+  'gig_app_detection_subtitle_not_granted': '点击以授予使用情况访问权限并自动建议应用',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': '您将如何使用 ControlMiles？',

@@ -382,6 +382,9 @@ const Map<String, String> frTexts = {
   'auto_trip_prompt_body': 'Nous avons détecté que vous avez commencé à vous déplacer. Choisissez l\'application et confirmez maintenant pour enregistrer le compteur de ce trajet.',
   'auto_trip_prompt_confirm': 'Confirmer et démarrer',
   'auto_trip_prompt_dismiss': 'Ce n\'est pas un trajet professionnel',
+  'gig_app_detection_title': 'Détection d\'application active',
+  'gig_app_detection_subtitle_granted': 'Suggérera l\'application automatiquement quand vous l\'ouvrez',
+  'gig_app_detection_subtitle_not_granted': 'Appuyez pour autoriser l\'accès à l\'utilisation et suggérer l\'application automatiquement',
 
   'account_type_subtitle': 'Ce choix détermine le fonctionnement de votre compte. Sélectionnez l\'option qui vous correspond.',
   'account_type_gig_title': 'ControlMiles Individuel',

@@ -375,6 +375,9 @@ const Map<String, String> deTexts = {
   'auto_trip_prompt_body': 'Wir haben erkannt, dass du dich bewegst. Wähle die App und bestätige jetzt, um den Kilometerstand für diese Fahrt zu erfassen.',
   'auto_trip_prompt_confirm': 'Bestätigen und starten',
   'auto_trip_prompt_dismiss': 'Keine Arbeitsfahrt',
+  'gig_app_detection_title': 'Erkennung aktiver App',
+  'gig_app_detection_subtitle_granted': 'Schlägt die App automatisch vor, wenn du sie öffnest',
+  'gig_app_detection_subtitle_not_granted': 'Tippen, um Nutzungszugriff zu gewähren und die App automatisch vorzuschlagen',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Wie werden Sie ControlMiles nutzen?',

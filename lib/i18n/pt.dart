@@ -375,6 +375,9 @@ const Map<String, String> ptTexts = {
   'auto_trip_prompt_body': 'Detectamos que você começou a se mover. Escolha o app e confirme agora para registrar o odômetro desta viagem.',
   'auto_trip_prompt_confirm': 'Confirmar e iniciar',
   'auto_trip_prompt_dismiss': 'Não é uma viagem de trabalho',
+  'gig_app_detection_title': 'Detecção de app ativo',
+  'gig_app_detection_subtitle_granted': 'Sugerirá o app automaticamente quando você o abrir',
+  'gig_app_detection_subtitle_not_granted': 'Toque para conceder acesso de uso e sugerir o app automaticamente',
 
   // Fleet Phase 1: account-type choice + create-fleet screens
   'account_type_title': 'Como você vai usar o ControlMiles?',

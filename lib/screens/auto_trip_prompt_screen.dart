@@ -28,6 +28,22 @@ class _AutoTripPromptScreenState extends State<AutoTripPromptScreen> {
   String? _selectedGigApp;
   String? _selectedIrsPurpose;
   bool _isStarting = false;
+  bool _prefilledFromArgs = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-selects the gig app AutoTripDetectionService already detected
+    // (foreground-app polling) -- still just a suggestion, the selector
+    // below stays fully editable, the user confirms either way.
+    if (!_prefilledFromArgs) {
+      _prefilledFromArgs = true;
+      final detectedGigAppId = ModalRoute.of(context)?.settings.arguments as String?;
+      if (detectedGigAppId != null && detectedGigAppId.isNotEmpty) {
+        _selectedGigApp = detectedGigAppId;
+      }
+    }
+  }
 
   @override
   void dispose() {
