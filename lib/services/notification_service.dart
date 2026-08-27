@@ -40,6 +40,7 @@ class NotificationService {
   static const int _weeklySummaryNotificationId = 1002;
   static const int _autoTripDetectedNotificationId = 1003;
   static const int _midTripSwitchNotificationId = 1004;
+  static const int _autoTripStartedNotificationId = 1005;
 
   static const String _urgentChannelId = 'controlmiles_auto_trip';
   static const String _urgentChannelName = 'Viaje detectado';
@@ -177,16 +178,15 @@ class NotificationService {
       final nav = navigatorKey?.currentState;
       nav?.pushNamed(AppRoutes.reports);
     } else if (response.id == _autoTripDetectedNotificationId) {
-      // App was backgrounded/terminated when the trip was detected --
-      // AutoTripDetectionService already tried a direct push if a
-      // navigator existed, but that would have been a no-op with the
-      // app not in front. This is the real entry point in that case.
-      // payload carries the detected gig_app_id (or null), same
-      // argument shape AutoTripDetectionService's own direct push uses.
-      navigatorKey?.currentState?.pushNamed(
-        AppRoutes.autoTripPrompt,
-        arguments: response.payload,
-      );
+      // Motion-only fallback only (see AutoTripDetectionService.
+      // _promptForUnknownTrip) -- a known-app detection now starts the
+      // trip silently and never reaches this notification ID at all
+      // (see _autoTripStartedNotificationId, purely informational, no
+      // special tap handling needed). App was backgrounded/terminated
+      // when this fired -- _promptForUnknownTrip already tried a direct
+      // push if a navigator existed, but that would have been a no-op
+      // with the app not in front. This is the real entry point then.
+      navigatorKey?.currentState?.pushNamed(AppRoutes.autoTripPrompt);
     }
     // La de "viaje olvidado" no navega a ningún lado en particular — el
     // usuario ya ve el estado de tracking apenas abre la app en Dashboard.
@@ -330,23 +330,23 @@ class NotificationService {
   // ============================================================
   // DETECCIÓN AUTOMÁTICA DE VIAJES (premium)
   // ============================================================
-  /// Immediate (.show(), not scheduled) and high-priority on purpose --
-  /// this is the user's explicit requirement that odometer entry stays
-  /// mandatory "en ese mismo momento" even for an auto-detected trip, so
-  /// it needs to actually interrupt, not sit quietly in the tray like
-  /// the reminder notifications above. Deliberately bypasses
-  /// notifications_enabled/_isEnabledInPrefs() -- that toggle is about
-  /// optional reminders, not this premium feature's own core mechanism;
-  /// AutoTripDetectionService is only ever armed when the user
-  /// separately turned auto-detect on.
-  Future<void> showAutoTripDetectedNotification({String? detectedGigAppId}) async {
+  /// Immediate (.show(), not scheduled) and high-priority on purpose.
+  /// Real scope narrowed 2026-08-27 (explicit user request, "elimina el
+  /// preguntar en gig app"): a trip whose gig app is identified with
+  /// real confidence now starts silently (see
+  /// showAutoTripStartedNotification below) -- this one only fires for
+  /// the motion-only fallback (no specific app known, see
+  /// AutoTripDetectionService._promptForUnknownTrip), where a real
+  /// confirmation screen is still structurally necessary. Deliberately
+  /// bypasses notifications_enabled/_isEnabledInPrefs() -- that toggle
+  /// is about optional reminders, not this premium feature's own core
+  /// mechanism; AutoTripDetectionService is only ever armed when the
+  /// user separately turned auto-detect on.
+  Future<void> showAutoTripDetectedNotification() async {
     if (!_initialized) return;
 
     final title = await _tr('auto_trip_prompt_title');
-    final tapHint = await _tr('auto_trip_notification_tap_hint');
-    final body = detectedGigAppId != null
-        ? '${await _tr('auto_detect_status_found_label')} ${GigAppCatalog.byId(detectedGigAppId).name}. $tapHint'
-        : tapHint;
+    final body = await _tr('auto_trip_notification_tap_hint');
 
     await _plugin.show(
       _autoTripDetectedNotificationId,
@@ -365,12 +365,42 @@ class NotificationService {
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
       ),
-      payload: detectedGigAppId,
     );
   }
 
   Future<void> cancelAutoTripDetectedNotification() async {
     await _plugin.cancel(_autoTripDetectedNotificationId);
+  }
+
+  /// A specific gig app was identified with real confidence and the
+  /// trip already started silently -- purely informational, matching
+  /// showMidTripAutoSwitchedNotification's pattern exactly (same
+  /// heads-up-capable channel, so it's actually visible while the
+  /// driver is in the gig app, not ControlMiles).
+  Future<void> showAutoTripStartedNotification({required String gigAppId}) async {
+    if (!_initialized) return;
+
+    final title = await _tr('auto_trip_started_title');
+    final appName = GigAppCatalog.byId(gigAppId).name;
+    final bodyPrefix = await _tr('auto_trip_started_body');
+    final body = '$bodyPrefix $appName.';
+
+    await _plugin.show(
+      _autoTripStartedNotificationId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _switchConfirmChannelId,
+          _switchConfirmChannelName,
+          channelDescription: _switchConfirmChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+      ),
+    );
   }
 
   // ============================================================
