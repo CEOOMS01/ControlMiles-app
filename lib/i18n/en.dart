@@ -484,6 +484,17 @@ const Map<String, String> enTexts = {
   'forgotten_trip_notification_body': 'Did you forget to end it? Check ControlMiles to pause or finish.',
   'weekly_summary_notification_title': 'Your weekly summary is ready',
   'weekly_summary_notification_body': 'Check how many miles you logged this week.',
+  // BUG FIX (found live, screenshotted on a real device -- the odometer
+  // capture screen, used on EVERY trip start/end, has shown these raw
+  // key names instead of real text since these 7 keys were referenced
+  // but never actually defined in any language file).
+  'torch_suggestion': 'Too dark? Tap for flashlight',
+  'ocr_unreadable_manual': 'Couldn\'t read it — enter manually',
+  'ocr_detected': 'Detected',
+  'ocr_scanning': 'Scanning...',
+  'ocr_auto_badge': 'Auto-detected',
+  'odometer_value': 'Odometer',
+  'ocr_confirm_capture': 'Confirm & capture',
   'recent_trips_title': 'Recent trips',
   'see_all_label': 'See all',
   'no_trips_yet': 'No trips yet',
