@@ -473,6 +473,8 @@ const Map<String, String> enTexts = {
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Premium feature',
   'premium_feature_locked_body': 'Automatic trip detection is a premium add-on. Contact support to enable it on your account.',
+  'auto_detect_intro_title': 'Automatic Detection',
+  'auto_detect_intro_body': 'When you open a supported gig app, ControlMiles starts tracking your trip automatically -- no need to tap Start. You\'ll capture your odometer once, right now; every trip detected after that carries the same reading forward. You can turn this off anytime.',
   'auto_trip_prompt_title': 'Trip detected',
   'auto_trip_prompt_body': 'We detected you started moving. Pick the app and confirm now to log the odometer for this trip.',
   'auto_trip_prompt_confirm': 'Confirm and start',

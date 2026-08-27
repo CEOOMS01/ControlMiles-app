@@ -384,6 +384,8 @@ const Map<String, String> frTexts = {
   'premium_badge': 'PREMIUM',
   'premium_feature_locked_title': 'Fonctionnalité premium',
   'premium_feature_locked_body': 'La détection automatique des trajets est un module premium. Contactez le support pour l\'activer sur votre compte.',
+  'auto_detect_intro_title': 'Détection Automatique',
+  'auto_detect_intro_body': 'Lorsque vous ouvrez une application gig prise en charge, ControlMiles commence à suivre votre trajet automatiquement -- pas besoin d\'appuyer sur Démarrer. Vous capturez votre compteur une seule fois, maintenant; chaque trajet détecté ensuite reprend cette même lecture. Vous pouvez désactiver ceci à tout moment.',
   'auto_trip_prompt_title': 'Trajet détecté',
   'auto_trip_prompt_body': 'Nous avons détecté que vous avez commencé à vous déplacer. Choisissez l\'application et confirmez maintenant pour enregistrer le compteur de ce trajet.',
   'auto_trip_prompt_confirm': 'Confirmer et démarrer',

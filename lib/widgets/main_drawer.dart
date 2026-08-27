@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
-import '../tracking/auto_trip_detection_service.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
@@ -168,10 +167,10 @@ class MainDrawer extends StatelessWidget {
           ),
           // FIX 2: Text(userEmail) eliminado — línea de email removida
           const SizedBox(height: 16),
-          // Explicit user request: the auto-detect mode toggle sits at
-          // the far right of this row, opposite the user's ID badge --
-          // same premium/auto-detect state as Settings, just reachable
-          // without leaving the drawer.
+          // BUG FIX (pedido explícito): el quick-toggle de auto-detect que
+          // vivía acá se movió al Dashboard, junto al botón Start -- tener
+          // los dos a la vez era un control duplicado para la misma
+          // función. Fila ahora solo con el badge de ID.
           Row(
             children: [
               Container(
@@ -190,8 +189,6 @@ class MainDrawer extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
-              if (appState.isGig) _buildAutoDetectHeaderToggle(context, appState),
             ],
           ),
         ],
@@ -199,63 +196,6 @@ class MainDrawer extends StatelessWidget {
     );
   }
 
-  // Premium Gig feature, quick-access shortcut for the same
-  // autoDetectEnabled/premiumEntitled state Settings already exposes --
-  // strategically placed in the drawer header instead of buried in
-  // Settings, per explicit user request. Manual mode still means "pick
-  // the app from the GigAppSelector carousel before starting" -- this
-  // only switches whether the automatic listening service is armed.
-  Widget _buildAutoDetectHeaderToggle(BuildContext context, AppState appState) {
-    final isAuto = appState.autoDetectEnabled;
-    final locked = !appState.premiumEntitled;
-
-    return Tooltip(
-      message: appState.tr(isAuto ? 'auto_detect_toggle_title' : 'carousel_manual_mode'),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(100),
-        onTap: () => _handleHeaderAutoDetectTap(context, appState),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isAuto ? Colors.white.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            locked
-                ? Icons.lock_outline_rounded
-                : (isAuto ? Icons.auto_awesome_rounded : Icons.touch_app_rounded),
-            color: Colors.white,
-            size: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleHeaderAutoDetectTap(BuildContext context, AppState appState) async {
-    if (!appState.premiumEntitled) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('premium_feature_locked_title')),
-          content: Text(appState.tr('premium_feature_locked_body')),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('ok'))),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final turningOn = !appState.autoDetectEnabled;
-    if (turningOn) {
-      // requestEnable owns the whole activation flow now (permission
-      // check + shift-start odometer capture + actually arming).
-      await AutoTripDetectionService.requestEnable(context, appState);
-    } else {
-      await appState.setAutoDetectEnabled(false);
-    }
-  }
 
   Widget _buildSectionLabel(AppState appState, String labelKey, Color labelColor) {
     return Padding(
