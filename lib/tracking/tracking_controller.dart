@@ -16,6 +16,7 @@ import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
+import 'driver_safety_monitor.dart';
 import 'background_gps_service.dart';
 import 'auto_trip_detection_service.dart';
 
@@ -125,6 +126,7 @@ class TrackingController {
     _runSegmentStartedAt = null;
     livePosition.value = null;
     AntifraudEngine.reset();
+    DriverSafetyMonitor.reset();
     LocalStorageService.clearAllCheckpoint();
   }
 
@@ -316,6 +318,7 @@ class TrackingController {
       // (ya viene así de la fila recién insertada).
       _runSegmentStartedAt = DateTime.now();
       AntifraudEngine.reset();
+      DriverSafetyMonitor.reset();
 
       await _saveLocalCheckpoint();
 
@@ -536,6 +539,7 @@ class TrackingController {
       _totalSectionMiles = 0.0;
       _runSegmentStartedAt = DateTime.now();
       AntifraudEngine.reset();
+      DriverSafetyMonitor.reset();
 
       await _saveLocalCheckpoint();
 
@@ -1148,6 +1152,37 @@ class TrackingController {
         });
       } catch (e) {
         _logError('BREADCRUMB_SYNC_ERROR', e.toString());
+      }
+    }
+
+    // Driver safety events (harsh braking / hard acceleration / speeding)
+    // -- see driver_safety_monitor.dart's own header comment for why this
+    // is a separate class from AntifraudEngine. Fleet-only, same gate as
+    // the two blocks above, but deliberately UNthrottled (unlike
+    // breadcrumbs/live-location) -- a harsh-braking episode needs
+    // per-tick evaluation, not a once-every-15-60s sample. _smartSync
+    // itself is only reached from processGpsTick after result.isValid
+    // already gated it (see processGpsTick's own early return), so no
+    // extra validity check is needed here.
+    if (activeOrganizationId != null && activeVehicleId != null) {
+      final safetyEvent = DriverSafetyMonitor.evaluate(speed: speed, timestamp: now);
+      if (safetyEvent != null) {
+        try {
+          await Supabase.instance.client.from('driver_safety_events').insert({
+            'organization_id': activeOrganizationId,
+            'vehicle_id': activeVehicleId,
+            'user_id': Supabase.instance.client.auth.currentUser!.id,
+            'session_id': activeSessionId,
+            'section_id': activeSection!.id,
+            'event_type': safetyEvent.type,
+            'speed_mps': safetyEvent.speedMps,
+            'latitude': latitude,
+            'longitude': longitude,
+            'recorded_at': now.toIso8601String(),
+          });
+        } catch (e) {
+          _logError('SAFETY_EVENT_SYNC_ERROR', e.toString());
+        }
       }
     }
   }
