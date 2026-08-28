@@ -343,6 +343,20 @@ const Map<String, String> esTexts = {
   'storage_permission': 'Permiso de almacenamiento',
   'grant_permission': 'Conceder permiso',
   'deny_permission': 'Denegar permiso',
+  'olympus_mont_systems': 'OLYMPUS MONT SYSTEMS',
+  'secure_audit_programs': 'SEGURO / AUDITORÍA / PROGRAMAS',
+  'permissions_description': 'ControlMiles necesita estos permisos para rastrear tus viajes y registrar evidencia de millaje precisa y defendible.',
+  'location_access': 'Acceso a ubicación',
+  'location_desc': 'Se usa para rastrear tus viajes y calcular el millaje automáticamente, incluso con la app en segundo plano.',
+  'camera': 'Cámara',
+  'camera_desc': 'Se usa para capturar la lectura del odómetro como evidencia de cada viaje.',
+  'motion_detection': 'Movimiento y actividad',
+  'motion_desc': 'Se usa para detectar cuándo empiezas y dejas de manejar.',
+  'notifications_desc': 'Se usa para recordarte viajes activos y enviarte resúmenes semanales de millaje.',
+  'accept_terms': 'He leído y acepto los Términos de Servicio y la Política de Privacidad.',
+  'permission_required': 'Permiso requerido',
+  'location_always_needed': 'ControlMiles necesita el acceso a ubicación "Permitir todo el tiempo" para seguir rastreando tu viaje incluso cuando la app no está abierta. Actívalo en Ajustes.',
+  'open_settings': 'Abrir Ajustes',
 
   // ============================================================
   // CARACTERÍSTICAS ESPECÍFICAS

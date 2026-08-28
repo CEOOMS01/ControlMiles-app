@@ -280,6 +280,20 @@ const Map<String, String> ptTexts = {
   'storage_permission': 'Permissão de armazenamento',
   'grant_permission': 'Conceder permissão',
   'deny_permission': 'Negar permissão',
+  'olympus_mont_systems': 'OLYMPUS MONT SYSTEMS',
+  'secure_audit_programs': 'SEGURANÇA / AUDITORIA / PROGRAMAS',
+  'permissions_description': 'O ControlMiles precisa dessas permissões para rastrear suas viagens e registrar evidências de quilometragem precisas e defensáveis.',
+  'location_access': 'Acesso à localização',
+  'location_desc': 'Usado para rastrear suas viagens e calcular a quilometragem automaticamente, mesmo com o app em segundo plano.',
+  'camera': 'Câmera',
+  'camera_desc': 'Usada para capturar a leitura do odômetro como evidência de cada viagem.',
+  'motion_detection': 'Movimento e atividade',
+  'motion_desc': 'Usado para detectar quando você começa e para de dirigir.',
+  'notifications_desc': 'Usadas para lembrar você de viagens ativas e enviar resumos semanais de quilometragem.',
+  'accept_terms': 'Li e aceito os Termos de Serviço e a Política de Privacidade.',
+  'permission_required': 'Permissão necessária',
+  'location_always_needed': 'O ControlMiles precisa do acesso à localização "Permitir o tempo todo" para continuar rastreando sua viagem mesmo quando o app não está aberto. Ative isso nas Configurações.',
+  'open_settings': 'Abrir Configurações',
 
   // ============================================================
   // RECURSOS ESPECÍFICOS

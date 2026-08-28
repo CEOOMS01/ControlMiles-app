@@ -30,6 +30,21 @@ class _WelcomePageState extends State<WelcomePage> {
     return await _requestAllPermissions();
   }
 
+  // REAL BUG FIX (2026-08-28, "página de permisos no está 100% funcional"):
+  // background location (locationAlways) is NOT a simple "tap Allow"
+  // permission on modern Android -- since Android 11, the standard runtime
+  // dialog often can't grant "Allow all the time" directly at all; the OS
+  // routes the user to Settings instead, and .request() can legitimately
+  // come back as plain `denied` (not `isPermanentlyDenied`) even on the
+  // very first attempt, with no dialog ever shown for it. The old code
+  // only ever opened Settings when isPermanentlyDenied was true -- on any
+  // device/OS version where that flag never gets set this way, the whole
+  // onboarding flow silently dead-ended: same generic orange snackbar
+  // every retry, no explanation, no path forward. Now ALWAYS offers the
+  // real recovery dialog (PermissionRecoveryService.showRecoveryDialog --
+  // explains exactly what's needed, has a working "Open Settings" button)
+  // whenever locationAlways specifically isn't granted, regardless of the
+  // permanently-denied flag.
   Future<bool> _requestAllPermissions() async {
     var status = await Permission.locationWhenInUse.request();
     if (!status.isGranted) {
@@ -39,7 +54,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
     status = await Permission.locationAlways.request();
     if (!status.isGranted) {
-      if (status.isPermanentlyDenied) await PermissionRecoveryService.openAppSettings();
+      if (mounted) await PermissionRecoveryService.showRecoveryDialog(context);
       return false;
     }
 

@@ -343,6 +343,30 @@ const Map<String, String> enTexts = {
   'storage_permission': 'Storage permission',
   'grant_permission': 'Grant permission',
   'deny_permission': 'Deny permission',
+  // BUG FIX (2026-08-28, "página de permisos no funcional, hardcodeada en
+  // inglés"): welcome_page.dart and permission_recovery_service.dart call
+  // appState.tr() with these exact keys, but none of them existed in ANY
+  // language file (not even English) -- AppTexts.getText() falls back to
+  // the raw key string when a key is missing, so every user, in every
+  // language including English, saw literal snake_case ("location_access",
+  // "camera_desc"...) on the app's very first onboarding screen instead of
+  // real text. i18n_validator never caught this because it only diffs
+  // non-English maps against the English one -- a key missing from ALL of
+  // them, including English, is invisible to it.
+  'olympus_mont_systems': 'OLYMPUS MONT SYSTEMS',
+  'secure_audit_programs': 'SECURE / AUDIT / PROGRAMS',
+  'permissions_description': 'ControlMiles needs these permissions to track your trips and log accurate, defensible mileage evidence.',
+  'location_access': 'Location Access',
+  'location_desc': 'Used to track your trips and calculate mileage automatically, including while the app is in the background.',
+  'camera': 'Camera',
+  'camera_desc': 'Used to capture your odometer reading as evidence for each trip.',
+  'motion_detection': 'Motion & Activity',
+  'motion_desc': 'Used to detect when you start and stop driving.',
+  'notifications_desc': 'Used to remind you about active trips and send you weekly mileage summaries.',
+  'accept_terms': 'I have read and accept the Terms of Service and Privacy Policy.',
+  'permission_required': 'Permission required',
+  'location_always_needed': 'ControlMiles needs "Allow all the time" location access to keep tracking your trip even when the app isn\'t open. Please enable it in Settings.',
+  'open_settings': 'Open Settings',
 
   // ============================================================
   // SPECIFIC FEATURES

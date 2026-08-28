@@ -288,6 +288,20 @@ const Map<String, String> frTexts = {
   'storage_permission': 'Permission de stockage',
   'grant_permission': 'Accorder la permission',
   'deny_permission': 'Refuser la permission',
+  'olympus_mont_systems': 'OLYMPUS MONT SYSTEMS',
+  'secure_audit_programs': 'SÉCURITÉ / AUDIT / PROGRAMMES',
+  'permissions_description': 'ControlMiles a besoin de ces permissions pour suivre vos trajets et enregistrer des preuves de kilométrage précises et défendables.',
+  'location_access': 'Accès à la localisation',
+  'location_desc': 'Utilisé pour suivre vos trajets et calculer le kilométrage automatiquement, même quand l\'application est en arrière-plan.',
+  'camera': 'Caméra',
+  'camera_desc': 'Utilisée pour capturer le relevé du compteur kilométrique comme preuve pour chaque trajet.',
+  'motion_detection': 'Mouvement et activité',
+  'motion_desc': 'Utilisé pour détecter quand vous commencez et arrêtez de conduire.',
+  'notifications_desc': 'Utilisées pour vous rappeler les trajets actifs et vous envoyer des résumés hebdomadaires de kilométrage.',
+  'accept_terms': 'J\'ai lu et j\'accepte les Conditions d\'utilisation et la Politique de confidentialité.',
+  'permission_required': 'Permission requise',
+  'location_always_needed': 'ControlMiles a besoin de l\'accès à la localisation "Toujours autoriser" pour continuer à suivre votre trajet même quand l\'application n\'est pas ouverte. Activez-le dans les Paramètres.',
+  'open_settings': 'Ouvrir les paramètres',
 
   // ============================================================
   // FONCTIONNALITÉS SPÉCIFIQUES

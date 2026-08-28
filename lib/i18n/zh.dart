@@ -280,6 +280,20 @@ const Map<String, String> zhTexts = {
   'storage_permission': '存储权限',
   'grant_permission': '授予权限',
   'deny_permission': '拒绝权限',
+  'olympus_mont_systems': 'OLYMPUS MONT SYSTEMS',
+  'secure_audit_programs': '安全 / 审计 / 项目',
+  'permissions_description': 'ControlMiles 需要这些权限来追踪您的行程，并记录准确、可靠的里程证据。',
+  'location_access': '位置访问',
+  'location_desc': '用于追踪您的行程并自动计算里程，即使应用在后台运行时也是如此。',
+  'camera': '相机',
+  'camera_desc': '用于拍摄里程表读数，作为每次行程的证据。',
+  'motion_detection': '运动与活动',
+  'motion_desc': '用于检测您何时开始和停止驾驶。',
+  'notifications_desc': '用于提醒您正在进行的行程，并发送每周里程摘要。',
+  'accept_terms': '我已阅读并接受服务条款和隐私政策。',
+  'permission_required': '需要权限',
+  'location_always_needed': 'ControlMiles 需要"始终允许"位置权限，以便在应用未打开时也能继续追踪您的行程。请在设置中启用此权限。',
+  'open_settings': '打开设置',
 
   // ============================================================
   // 特定功能
