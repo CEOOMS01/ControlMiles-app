@@ -326,6 +326,8 @@ const Map<String, String> deTexts = {
   'subscription_active': 'Abonnement aktiv',
   'subscription_required': 'Abonnement erforderlich',
   'premium_plan_description': 'Schalte die automatische Erkennung und weitere Premium-Funktionen frei.',
+  'base_plan_description': 'Das ControlMiles-Kernerlebnis.',
+  'current_plan': 'Aktueller Plan',
   'subscriptions_not_configured': 'Abonnements sind noch nicht verfügbar.',
 
   // ============================================================

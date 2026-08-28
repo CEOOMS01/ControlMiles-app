@@ -417,6 +417,8 @@ const Map<String, String> esTexts = {
   'subscription_active': 'Suscripción activa',
   'subscription_required': 'Se requiere suscripción',
   'premium_plan_description': 'Desbloquea la Detección Automática y otras funciones premium.',
+  'base_plan_description': 'La experiencia principal de ControlMiles.',
+  'current_plan': 'Plan actual',
   'subscriptions_not_configured': 'Las suscripciones aún no están disponibles.',
 
   // ============================================================

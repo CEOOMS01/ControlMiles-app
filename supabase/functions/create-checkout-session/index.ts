@@ -1,9 +1,13 @@
 // Olympus Mont Systems LLC - ControlMiles
 // supabase/functions/create-checkout-session/index.ts
 //
-// Creates a Stripe Checkout Session for ControlMiles Premium. Real
-// payment integration (see [[project_controlmiles]]) -- the whole point
-// of Stripe Checkout here is that ControlMiles NEVER sees a card number:
+// Creates a Stripe Checkout Session for ControlMiles Base ($5.99) or
+// Premium ($9.99) -- two real tiers (2026-08-28), not one: Base is the
+// core paid app experience, Premium adds Automatic Detection on top of
+// everything Base has. Caller passes {"tier": "base" | "premium"} in the
+// request body. Real payment integration (see [[project_controlmiles]])
+// -- the whole point of Stripe Checkout here is that ControlMiles NEVER
+// sees a card number:
 // the returned URL is Stripe's own hosted page, opened externally
 // (url_launcher, see subscription_screen.dart). Card data goes straight
 // to Stripe; the only thing that ever comes back to this app is a
@@ -29,7 +33,8 @@ const corsHeaders = {
 };
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
-const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID') ?? '';
+const STRIPE_PRICE_ID_BASE = Deno.env.get('STRIPE_PRICE_ID_BASE') ?? '';
+const STRIPE_PRICE_ID_PREMIUM = Deno.env.get('STRIPE_PRICE_ID_PREMIUM') ?? '';
 
 // Cosmetic only -- Stripe requires a success/cancel URL, but the real
 // source of truth for whether a subscription is active is always
@@ -71,17 +76,29 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Invalid or expired session' }, 401);
     }
 
-    if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_ID) {
+    let tier = 'premium';
+    try {
+      const body = await req.json();
+      if (body?.tier === 'base' || body?.tier === 'premium') tier = body.tier;
+    } catch {
+      // No/invalid body -- default to premium (the only tier that existed
+      // before this became a two-tier system, keeps any existing caller
+      // working unchanged).
+    }
+
+    const priceId = tier === 'base' ? STRIPE_PRICE_ID_BASE : STRIPE_PRICE_ID_PREMIUM;
+    if (!STRIPE_SECRET_KEY || !priceId) {
       return respond({ error: 'Subscriptions not configured yet', configured: false }, 200);
     }
 
     const form = new URLSearchParams();
     form.set('mode', 'subscription');
-    form.set('line_items[0][price]', STRIPE_PRICE_ID);
+    form.set('line_items[0][price]', priceId);
     form.set('line_items[0][quantity]', '1');
     form.set('client_reference_id', userData.user.id);
     if (userData.user.email) form.set('customer_email', userData.user.email);
     form.set('subscription_data[metadata][user_id]', userData.user.id);
+    form.set('subscription_data[metadata][tier]', tier);
     form.set('success_url', `${CHECKOUT_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`);
     form.set('cancel_url', CHECKOUT_CANCEL_URL);
 

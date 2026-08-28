@@ -326,6 +326,8 @@ const Map<String, String> ptTexts = {
   'subscription_active': 'Assinatura ativa',
   'subscription_required': 'Assinatura necessária',
   'premium_plan_description': 'Desbloqueie a Detecção Automática e outros recursos premium.',
+  'base_plan_description': 'A experiência principal do ControlMiles.',
+  'current_plan': 'Plano atual',
   'subscriptions_not_configured': 'As assinaturas ainda não estão disponíveis.',
 
   // ============================================================

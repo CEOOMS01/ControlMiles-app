@@ -15,10 +15,12 @@
 // so a duplicate delivery is detected and skipped before touching
 // subscriptions/profiles at all, rather than double-processing.
 //
-// subscription.metadata.user_id (set at Checkout time by
-// create-checkout-session's subscription_data[metadata][user_id]) is how
+// subscription.metadata.user_id / .tier (set at Checkout time by
+// create-checkout-session's subscription_data[metadata][...]) is how
 // every subscription.* event here knows which ControlMiles user it's
-// about, without a second API call back to Stripe.
+// about and which of the two tiers (base $5.99 / premium $9.99, see
+// [[project_controlmiles]]) they're on, without a second API call back
+// to Stripe or a price_id -> tier lookup table that could drift.
 //
 // Runs as the service role (no caller JWT to scope a userClient to) --
 // this is the one legitimate place in this project's subscription code
@@ -178,6 +180,11 @@ Deno.serve(async (req: Request) => {
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
       const sub = event.data.object;
       const userId: string | undefined = sub.metadata?.user_id;
+      // Older subscriptions created before the two-tier split (or a
+      // caller that never sent one) default to premium -- matches
+      // create-checkout-session's own default, keeps the one tier that
+      // existed before this change working unchanged.
+      const tier: string = sub.metadata?.tier === 'base' ? 'base' : 'premium';
       if (userId) {
         const status = sub.status as string;
         const priceId = sub.items?.data?.[0]?.price?.id ?? null;
@@ -192,25 +199,33 @@ Deno.serve(async (req: Request) => {
             stripe_subscription_id: sub.id,
             status,
             price_id: priceId,
+            tier,
             current_period_end: currentPeriodEnd,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'stripe_subscription_id' },
         );
 
-        const entitled = ACTIVE_STATUSES.has(status);
+        const active = ACTIVE_STATUSES.has(status);
+        // Premium includes everything Base has (per explicit product
+        // decision, 2026-08-28) -- a premium subscriber is base_entitled
+        // too, not just premium_entitled.
+        const baseEntitled = active;
+        const premiumEntitled = active && tier === 'premium';
         await adminClient
           .from('profiles')
-          .update({ premium_entitled: entitled })
+          .update({ base_entitled: baseEntitled, premium_entitled: premiumEntitled })
           .eq('id', userId);
 
-        // Only sync CGC Core on becoming entitled -- deliberately never
-        // auto-downgrades a tenant's CGC Core plan on a bad/cancelled
-        // subscription, since that could unexpectedly throttle a real
-        // user's governance rate-limit far below what they were already
-        // using. CGC Core's plan stays whatever it already was; someone
-        // can always adjust it directly via /billing/upgrade later.
-        if (entitled) {
+        // Only sync CGC Core on becoming premium-entitled -- deliberately
+        // never auto-downgrades a tenant's CGC Core plan on a bad/
+        // cancelled subscription, since that could unexpectedly throttle
+        // a real user's governance rate-limit far below what they were
+        // already using. CGC Core's plan stays whatever it already was;
+        // someone can always adjust it directly via /billing/upgrade
+        // later. Base tier doesn't touch CGC Core at all -- no known
+        // reason for it to yet.
+        if (premiumEntitled) {
           await syncCgcCore(userId, CGC_PLAN_FOR_SUBSCRIBED);
         }
       } else {
@@ -226,7 +241,10 @@ Deno.serve(async (req: Request) => {
         .eq('stripe_subscription_id', sub.id);
 
       if (userId) {
-        await adminClient.from('profiles').update({ premium_entitled: false }).eq('id', userId);
+        await adminClient
+          .from('profiles')
+          .update({ base_entitled: false, premium_entitled: false })
+          .eq('id', userId);
       }
     }
     // checkout.session.completed / invoice.payment_failed: already

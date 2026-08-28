@@ -326,6 +326,8 @@ const Map<String, String> zhTexts = {
   'subscription_active': '订阅已激活',
   'subscription_required': '需要订阅',
   'premium_plan_description': '解锁自动检测和其他高级功能。',
+  'base_plan_description': 'ControlMiles 核心体验。',
+  'current_plan': '当前套餐',
   'subscriptions_not_configured': '订阅功能尚未开放。',
 
   // ============================================================

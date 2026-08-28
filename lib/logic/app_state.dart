@@ -60,11 +60,16 @@ class AppState extends ChangeNotifier {
   // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
   String _accountType = 'gig';
   String? _defaultOrgId;
-  // Gates paid Gig features (starting with automatic trip detection) --
-  // enforcement-only, no payment processing wired yet (see
-  // multi_org_entitled's own migration for the same pattern). Granting
-  // it today is a manual/support action.
+  // Gates paid Gig features (starting with automatic trip detection).
+  // Real Stripe subscriptions now exist (see [[project_controlmiles]],
+  // stripe-webhook) -- this flag is kept in sync by that webhook, not
+  // manually toggled anymore.
   bool _premiumEntitled = false;
+  // Base tier ($5.99) -- prep only, per explicit user request
+  // (2026-08-28): the schema/webhook track this now so it's ready, but
+  // nothing in the app actually gates on it yet -- that's deliberately
+  // separate future work (a real trial-expiry paywall), not assumed here.
+  bool _baseEntitled = false;
   // Deliberately NOT cached to SharedPreferences like accountType/etc --
   // invites can arrive or get withdrawn at any time, so a stale disk copy
   // risks showing an already-handled invite (or hiding a brand new one).
@@ -112,6 +117,7 @@ class AppState extends ChangeNotifier {
   String get accountType => _accountType;
   String? get defaultOrgId => _defaultOrgId;
   bool get premiumEntitled => _premiumEntitled;
+  bool get baseEntitled => _baseEntitled;
   bool get accountTypeChosen => _accountTypeChosen;
   bool get isGig => _accountType == 'gig';
   bool get isFleetAdmin => _accountType == 'fleet_admin';
@@ -153,7 +159,7 @@ class AppState extends ChangeNotifier {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('display_id, first_name, account_type, default_org_id, premium_entitled')
+          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -162,11 +168,13 @@ class AppState extends ChangeNotifier {
       final String newAccountType = data?['account_type'] as String? ?? 'gig';
       final String? newDefaultOrgId = data?['default_org_id'] as String?;
       final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
+      final bool newBaseEntitled = data?['base_entitled'] as bool? ?? false;
       final bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||
           _defaultOrgId != newDefaultOrgId ||
-          _premiumEntitled != newPremiumEntitled;
+          _premiumEntitled != newPremiumEntitled ||
+          _baseEntitled != newBaseEntitled;
 
       if (changed) {
         _userDisplayId = newDisplayId;
@@ -174,6 +182,7 @@ class AppState extends ChangeNotifier {
         _accountType = newAccountType;
         _defaultOrgId = newDefaultOrgId;
         _premiumEntitled = newPremiumEntitled;
+        _baseEntitled = newBaseEntitled;
 
         final prefs = await SharedPreferences.getInstance();
         if (_userDisplayId != null) {
@@ -188,6 +197,7 @@ class AppState extends ChangeNotifier {
         }
         await prefs.setString('controlmiles_account_type', _accountType);
         await prefs.setBool('controlmiles_premium_entitled', _premiumEntitled);
+        await prefs.setBool('controlmiles_base_entitled', _baseEntitled);
         if (_defaultOrgId != null) {
           await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
         } else {
@@ -473,6 +483,7 @@ class AppState extends ChangeNotifier {
       _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
       _defaultOrgId = prefs.getString('controlmiles_default_org_id');
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
+      _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;
       _accountTypeChosen = prefs.getBool('controlmiles_account_type_chosen') ?? false;
 
       // First-launch role chooser (device-level, see clearAll())
@@ -495,6 +506,7 @@ class AppState extends ChangeNotifier {
     _accountType = 'gig';
     _defaultOrgId = null;
     _premiumEntitled = false;
+    _baseEntitled = false;
     _accountTypeChosen = false;
     // A different account on this same device shouldn't inherit the
     // previous account's premium auto-detect choice, and the listening

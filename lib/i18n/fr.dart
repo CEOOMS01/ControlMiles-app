@@ -334,6 +334,8 @@ const Map<String, String> frTexts = {
   'subscription_active': 'Abonnement actif',
   'subscription_required': 'Abonnement requis',
   'premium_plan_description': 'Débloquez la Détection Automatique et d\'autres fonctionnalités premium.',
+  'base_plan_description': 'L\'expérience ControlMiles de base.',
+  'current_plan': 'Forfait actuel',
   'subscriptions_not_configured': 'Les abonnements ne sont pas encore disponibles.',
 
   // ============================================================

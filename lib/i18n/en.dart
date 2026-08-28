@@ -417,6 +417,8 @@ const Map<String, String> enTexts = {
   'subscription_active': 'Subscription active',
   'subscription_required': 'Subscription required',
   'premium_plan_description': 'Unlock Automatic Detection and other premium features.',
+  'base_plan_description': 'The core ControlMiles experience.',
+  'current_plan': 'Current plan',
   'subscriptions_not_configured': 'Subscriptions are not available yet.',
 
   // ============================================================
