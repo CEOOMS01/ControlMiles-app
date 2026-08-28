@@ -4,6 +4,14 @@
 *.pyc
 *.swp
 .DS_Store
+
+# Security baseline (2026-08-28): no .env file exists in this project today
+# -- all secrets live server-side in Supabase Edge Function env vars, never
+# in the Flutter client -- but this is a zero-cost guard against one ever
+# being committed by accident if local tooling adds one later.
+.env
+.env.*
+!.env.example
 .atom/
 .build/
 .buildlog/

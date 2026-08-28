@@ -44,6 +44,28 @@ const CGC_TIMEOUT_MS = 10000; // Vercel cold starts on CGC Core (SCM/KMS,
 // TCO, ComplianceEngine init) can comfortably exceed 5s on the first call
 // after idle -- same value LedgiProof's report-error uses, tuned live.
 
+// Security hardening (2026-08-28): same Postgres-backed pattern as
+// create-checkout-session's own rate limiter (see its comment for why
+// this isn't an in-memory Map) -- a normal driver seals one trip at a
+// time, at most a handful per hour; this only stops a compromised token
+// from spamming CGC Core through this function.
+const RATE_LIMIT_MAX = 15;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+async function isRateLimited(client: ReturnType<typeof createClient>, clientId: string): Promise<boolean> {
+  const { data, error } = await client.rpc('check_rate_limit', {
+    p_fn_name: 'cgc-seal-trip',
+    p_client_key: clientId,
+    p_max_requests: RATE_LIMIT_MAX,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (error) {
+    console.warn('[cgc-seal-trip] rate limit check failed (failing open):', error);
+    return false;
+  }
+  return !data;
+}
+
 function respond(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -89,6 +111,10 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData?.user) {
       return respond({ sealed: false, reason: 'Invalid or expired session' }, 401);
+    }
+
+    if (await isRateLimited(userClient, userData.user.id)) {
+      return respond({ sealed: false, reason: 'rate_limited' }, 429);
     }
 
     const { data: session, error: sessionError } = await userClient

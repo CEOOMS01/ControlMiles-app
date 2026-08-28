@@ -18,6 +18,27 @@ const corsHeaders = {
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
 const PORTAL_RETURN_URL = 'https://controlmiles.com/account';
 
+// Security hardening (2026-08-28): same Postgres-backed pattern as
+// create-checkout-session's own rate limiter -- see its comment for why
+// this isn't an in-memory Map (verified live not to work on Supabase's
+// Deno edge runtime).
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+async function isRateLimited(client: ReturnType<typeof createClient>, clientId: string): Promise<boolean> {
+  const { data, error } = await client.rpc('check_rate_limit', {
+    p_fn_name: 'create-portal-session',
+    p_client_key: clientId,
+    p_max_requests: RATE_LIMIT_MAX,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (error) {
+    console.warn('[create-portal-session] rate limit check failed (failing open):', error);
+    return false;
+  }
+  return !data;
+}
+
 function respond(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -46,6 +67,10 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData?.user) {
       return respond({ error: 'Invalid or expired session' }, 401);
+    }
+
+    if (await isRateLimited(userClient, userData.user.id)) {
+      return respond({ error: 'Too many requests, please try again shortly' }, 429);
     }
 
     if (!STRIPE_SECRET_KEY) {

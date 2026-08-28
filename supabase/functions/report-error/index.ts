@@ -15,6 +15,8 @@
 // Never fails loudly to the caller -- error reporting must not itself
 // become a source of errors in the app.
 
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -23,6 +25,47 @@ const corsHeaders = {
 
 const CGC_ENDPOINT = Deno.env.get('CGC_ENDPOINT') ?? '';
 const CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
+
+// Security hardening (2026-08-28): this endpoint deliberately requires no
+// signed-in user (see comment above) -- that also makes it the one
+// ControlMiles edge function reachable by anyone holding the public anon
+// key, with no per-user identity to scope abuse to. Each call also fans
+// out to a real outbound request to CGC Core, so unbounded spam here is
+// both a local cost (this function's own invocations) and an
+// amplification vector against CGC Core's own quota.
+//
+// REAL FIX, not the first attempt: an in-memory Map-based limiter was
+// tried first and verified LIVE to NOT work -- a genuine 25-request
+// concurrent burst against this exact function returned 200 every time,
+// zero 429s. Supabase's Deno edge runtime doesn't reliably share
+// module-level state across invocations the way a traditional warm
+// server does. Replaced with check_rate_limit(), a real Postgres-backed
+// SECURITY DEFINER function (see migration
+// 20260828100000_create_edge_function_rate_limiter.sql) -- durable,
+// correct under concurrency (advisory-locked), the same fix CGC Core's
+// own TenantManager already needed for the identical reason.
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+async function isRateLimited(clientId: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const client = createClient(supabaseUrl, anonKey);
+  const { data, error } = await client.rpc('check_rate_limit', {
+    p_fn_name: 'report-error',
+    p_client_key: clientId,
+    p_max_requests: RATE_LIMIT_MAX,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (error) {
+    // Fails open, same as every other guard in this project's edge
+    // functions -- a broken rate-limit check must never block a real
+    // crash report from being recorded.
+    console.warn('[report-error] rate limit check failed (failing open):', error);
+    return false;
+  }
+  return !data;
+}
 
 // Authoritative allow-list lives server-side in CGC Core itself
 // (api/v1/endpoints/monitor.py's ALLOWED_APP_SOURCES) -- this is just the
@@ -52,6 +95,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const clientId = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+      ?? req.headers.get('cf-connecting-ip')
+      ?? 'unknown';
+    if (await isRateLimited(clientId)) {
+      return respond({ accepted: false, reason: 'rate_limited' }, 429);
+    }
+
     const body: ErrorReportBody = await req.json();
 
     if (!body.message || typeof body.message !== 'string') {

@@ -46,6 +46,36 @@ const STRIPE_PRICE_ID_PREMIUM = Deno.env.get('STRIPE_PRICE_ID_PREMIUM') ?? '';
 const CHECKOUT_SUCCESS_URL = 'https://controlmiles.com/checkout-success';
 const CHECKOUT_CANCEL_URL = 'https://controlmiles.com/checkout-cancel';
 
+// Security hardening (2026-08-28): keyed by user_id, not IP -- this
+// endpoint is authenticated, so the real identity is more precise than a
+// shared NAT/carrier IP and won't wrongly penalize other users behind
+// it. A legitimate user never needs more than a couple of these per
+// minute; this only stops a compromised/malicious token from hammering
+// Stripe's Checkout Session API through this function.
+//
+// Postgres-backed (check_rate_limit RPC, see migration
+// 20260828100000_create_edge_function_rate_limiter.sql), not an
+// in-memory Map -- the in-memory version was tried first and verified
+// LIVE to not work at all on Supabase's Deno edge runtime (a 25-request
+// concurrent burst against report-error returned 200 every time). This
+// one is durable and correct under concurrency.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+async function isRateLimited(client: ReturnType<typeof createClient>, clientId: string): Promise<boolean> {
+  const { data, error } = await client.rpc('check_rate_limit', {
+    p_fn_name: 'create-checkout-session',
+    p_client_key: clientId,
+    p_max_requests: RATE_LIMIT_MAX,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (error) {
+    console.warn('[create-checkout-session] rate limit check failed (failing open):', error);
+    return false;
+  }
+  return !data;
+}
+
 function respond(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -74,6 +104,10 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData?.user) {
       return respond({ error: 'Invalid or expired session' }, 401);
+    }
+
+    if (await isRateLimited(userClient, userData.user.id)) {
+      return respond({ error: 'Too many requests, please try again shortly' }, 429);
     }
 
     let tier = 'premium';
