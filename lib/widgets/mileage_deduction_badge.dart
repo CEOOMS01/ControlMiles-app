@@ -35,6 +35,7 @@ class MileageDeductionBadge extends StatefulWidget {
 
 class _MileageDeductionBadgeState extends State<MileageDeductionBadge> {
   double _yearMiles = 0.0;
+  double _yearDeduction = 0.0;
   bool _loading = true;
 
   @override
@@ -63,19 +64,32 @@ class _MileageDeductionBadgeState extends State<MileageDeductionBadge> {
       // — no amerita una función agregada en DB todavía.
       final rows = await Supabase.instance.client
           .from('sessions')
-          .select('total_miles')
+          .select('total_miles, start_time')
           .eq('user_id', user.id)
           .eq('is_closed', true)
           .gte('start_time', yearStartLocal.toUtc().toIso8601String());
 
-      final sum = (rows as List).fold<double>(
-        0.0,
-        (acc, r) => acc + ((r['total_miles'] as num?)?.toDouble() ?? 0.0),
-      );
+      double milesSum = 0.0;
+      double deductionSum = 0.0;
+      for (final r in (rows as List)) {
+        final miles = (r['total_miles'] as num?)?.toDouble() ?? 0.0;
+        final startTime = DateTime.tryParse(r['start_time'] as String? ?? '');
+        milesSum += miles;
+        // BUG FIX (2026-08-28): the IRS mileage rate changed mid-year --
+        // pricing every trip at a single flat rate silently understated
+        // every deduction since Jul 1 (see irs_rates.dart). Falls back to
+        // today's date only if a row somehow has no start_time, so this
+        // never throws on bad data.
+        deductionSum += calculateIrsDeductionEstimate(
+          miles,
+          startTime ?? DateTime.now(),
+        );
+      }
 
       if (!mounted) return;
       setState(() {
-        _yearMiles = sum;
+        _yearMiles = milesSum;
+        _yearDeduction = deductionSum;
         _loading = false;
       });
     } catch (e) {
@@ -115,7 +129,7 @@ class _MileageDeductionBadgeState extends State<MileageDeductionBadge> {
       );
     }
 
-    final deduction = calculateIrsDeductionEstimate(_yearMiles);
+    final deduction = _yearDeduction;
 
     return Align(
       alignment: Alignment.centerLeft,

@@ -40,6 +40,7 @@ class NotificationService {
   static const int _weeklySummaryNotificationId = 1002;
   static const int _midTripSwitchNotificationId = 1004;
   static const int _autoTripStartedNotificationId = 1005;
+  static const int _autoDetectFailedNotificationId = 1006;
 
   static const String _channelId = 'controlmiles_reminders';
   static const String _channelName = 'Recordatorios';
@@ -316,6 +317,41 @@ class NotificationService {
 
     await _plugin.show(
       _autoTripStartedNotificationId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _switchConfirmChannelId,
+          _switchConfirmChannelName,
+          channelDescription: _switchConfirmChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+      ),
+    );
+  }
+
+  /// REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"): the
+  /// whole point of this notification is that arming used to be able to
+  /// silently no-op -- the GPS engine failing to start (permission
+  /// revoked, plugin error) previously left the UI showing "Auto-
+  /// Detection ON" forever with zero indication anything was wrong. This
+  /// fires from BOTH the interactive activation path (requestEnable,
+  /// which ALSO shows a dialog since it has a live BuildContext) and the
+  /// silent cold-boot restore path (restoreFromPrefs, which has no UI to
+  /// show anything else -- this notification is the only signal that
+  /// path can give). Same heads-up-capable channel as the other
+  /// auto-detect notifications, since this needs to actually be seen.
+  Future<void> showAutoDetectFailedNotification() async {
+    if (!_initialized) return;
+
+    final title = await _tr('auto_detect_failed_title');
+    final body = await _tr('auto_detect_failed_body');
+
+    await _plugin.show(
+      _autoDetectFailedNotificationId,
       title,
       body,
       const NotificationDetails(

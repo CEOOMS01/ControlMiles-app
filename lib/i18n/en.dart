@@ -175,7 +175,7 @@ const Map<String, String> enTexts = {
   // detrás de un tap, nunca en el badge en sí.
   'year_miles_deduction_estimate': 'Est. deduction',
   'irs_estimate_title': 'About this estimate',
-  'irs_estimate_disclaimer': 'Estimated using the IRS 2026 standard mileage rate (\$0.725/mile). ControlMiles is not affiliated with or endorsed by the IRS or any official agency. This is an informational estimate only, not a guaranteed deduction — consult a tax professional.',
+  'irs_estimate_disclaimer': 'Estimated using the IRS 2026 standard mileage rates (\$0.725/mile Jan 1-Jun 30, \$0.76/mile Jul 1-Dec 31 — each trip priced at the rate in effect on its own date). ControlMiles is not affiliated with or endorsed by the IRS or any official agency. This is an informational estimate only, not a guaranteed deduction — consult a tax professional.',
 
   // ============================================================
   // TRIP PURPOSES & IRS.
@@ -480,6 +480,8 @@ const Map<String, String> enTexts = {
   'premium_feature_locked_body': 'Automatic trip detection is a premium add-on. Upgrade to enable it on your account.',
   'auto_detect_intro_title': 'Automatic Detection',
   'auto_detect_intro_body': 'When you open a supported gig app, ControlMiles starts tracking your trip automatically -- no need to tap Start. You\'ll capture your odometer once, right now; every trip detected after that carries the same reading forward. You can turn this off anytime.',
+  'auto_detect_failed_title': 'Automatic detection couldn\'t start',
+  'auto_detect_failed_body': 'Location tracking isn\'t running, so trips won\'t be detected automatically right now. Check that ControlMiles has "Allow all the time" location permission, then try again.',
   'auto_detect_apps_title_on': 'Auto-Detection On',
   'auto_detect_apps_title_off': 'Auto-Detect Apps',
   'auto_detect_apps_subtitle_on': 'Gig app detection is active',

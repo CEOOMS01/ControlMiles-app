@@ -177,21 +177,44 @@ class BackgroundGpsService {
   // =========================================================
   // START TRACKING
   // =========================================================
-  static Future<void> startTracking() async {
+  // REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"): this
+  // used to return void and swallow every failure into a debugPrint --
+  // AutoTripDetectionService.setEnabled(true) had no way to know the GPS
+  // engine never actually started (e.g. background-location permission
+  // revoked after the fact, which Android does on its own for
+  // rarely-opened apps). The feature would arm itself, the UI would show
+  // "Auto-Detection ON", the 30s gig-app poll would keep running (a
+  // completely separate Android subsystem/permission from GPS), and any
+  // auto-started trip would silently record zero real mileage forever --
+  // no error anywhere. Now returns whether the engine is ACTUALLY
+  // enabled after the attempt (re-checked, not just "no exception was
+  // thrown"), so callers that need to know -- not the manual Start
+  // button's own call sites, which don't check this return value and
+  // keep working exactly as before -- can detect and surface a real
+  // failure instead of silently no-op'ing.
+  static Future<bool> startTracking() async {
     if (!_isInitialized) {
       await initialize();
-      if (!_isInitialized) return;
+      if (!_isInitialized) return false;
     }
 
     try {
-      final state = await bg.BackgroundGeolocation.state;
+      var state = await bg.BackgroundGeolocation.state;
       if (!state.enabled) {
         await bg.BackgroundGeolocation.start();
+        state = await bg.BackgroundGeolocation.state;
       }
-      _instance.isTracking = true;
-      debugPrint('[BackgroundGpsService] GPS Tracking Started');
+      _instance.isTracking = state.enabled;
+      if (state.enabled) {
+        debugPrint('[BackgroundGpsService] GPS Tracking Started');
+      } else {
+        debugPrint('[BackgroundGpsService ERROR] start() returned without throwing, but the engine is not enabled');
+      }
+      return state.enabled;
     } catch (e) {
       debugPrint('[BackgroundGpsService ERROR] Start failed: $e');
+      _instance.isTracking = false;
+      return false;
     }
   }
 

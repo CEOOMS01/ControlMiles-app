@@ -59,11 +59,21 @@ class ReportService {
       });
 
     double totalMiles = 0;
+    double totalDeduction = 0;
     SessionSection? firstSection;
     SessionSection? lastSection;
 
     for (final session in sortedSessions) {
       totalMiles += session.totalMiles;
+      // BUG FIX (2026-08-28): the IRS mileage rate changed mid-year (see
+      // irs_rates.dart) -- pricing the whole period's miles at one flat
+      // rate silently understated any report spanning Jul 1, 2026.
+      // Falls back to the report's own end date only if a session
+      // somehow has no startTime.
+      totalDeduction += calculateIrsDeductionEstimate(
+        session.totalMiles,
+        session.startTime ?? dateRange.end,
+      );
       final secs = sectionsBySession[session.id] ?? [];
       if (secs.isNotEmpty) {
         firstSection ??= secs.first;
@@ -91,7 +101,7 @@ class ReportService {
           pw.SizedBox(height: 28),
           _buildGlobalTripsTable(sortedSessions, sectionsBySession),
           pw.SizedBox(height: 36),
-          _buildTotalSummary(totalMiles),
+          _buildTotalSummary(totalMiles, totalDeduction),
           pw.SizedBox(height: 24),
           _buildHRule(),
           pw.SizedBox(height: 16),
@@ -349,10 +359,9 @@ class ReportService {
   // TOTAL SUMMARY — recibe el total de millas ya sumado del período (antes
   // tomaba una sola TrackingSession).
   // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildTotalSummary(double totalMiles) {
-    final deduction  = calculateIrsDeductionEstimate(totalMiles);
+  static pw.Widget _buildTotalSummary(double totalMiles, double totalDeduction) {
     final totalStr   = totalMiles.toStringAsFixed(2);
-    final deductStr  = '\$${deduction.toStringAsFixed(2)}';
+    final deductStr  = '\$${totalDeduction.toStringAsFixed(2)}';
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -412,9 +421,11 @@ class ReportService {
           pw.SizedBox(
             width: 260,
             child: pw.Text(
-              'Estimated using the IRS 2026 standard mileage rate '
-              '(\$${(kIrsMileageRateCentsPerMile / 100).toStringAsFixed(3)}/mile). '
-              'ControlMiles is not affiliated with or endorsed by the IRS or '
+              'Estimated using the IRS 2026 standard mileage rates '
+              '(\$${(kIrsMileageRateCentsPerMile2026H1 / 100).toStringAsFixed(3)}/mile '
+              'Jan 1-Jun 30, \$${(kIrsMileageRateCentsPerMile2026H2 / 100).toStringAsFixed(2)}/mile '
+              'Jul 1-Dec 31 — each trip priced at the rate in effect on its own '
+              'date). ControlMiles is not affiliated with or endorsed by the IRS or '
               'any official agency. This is an informational estimate only, '
               'not a guaranteed deduction — consult a tax professional.',
               textAlign: pw.TextAlign.right,

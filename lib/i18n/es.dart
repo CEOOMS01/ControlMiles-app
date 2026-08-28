@@ -175,7 +175,7 @@ const Map<String, String> esTexts = {
   // detrás de un tap, nunca en el badge en sí.
   'year_miles_deduction_estimate': 'Deducción est.',
   'irs_estimate_title': 'Sobre este estimado',
-  'irs_estimate_disclaimer': 'Estimado según la tarifa estándar de millaje del IRS 2026 (\$0.725/milla). ControlMiles no está afiliado ni respaldado por el IRS ni ninguna entidad oficial. Es solo una referencia informativa, no una deducción garantizada — consulta a un profesional de impuestos.',
+  'irs_estimate_disclaimer': 'Estimado según las tarifas estándar de millaje del IRS 2026 (\$0.725/milla del 1 de enero al 30 de junio, \$0.76/milla del 1 de julio al 31 de diciembre — cada viaje se calcula con la tarifa vigente en su propia fecha). ControlMiles no está afiliado ni respaldado por el IRS ni ninguna entidad oficial. Es solo una referencia informativa, no una deducción garantizada — consulta a un profesional de impuestos.',
 
   // ============================================================
   // TRIP PURPOSES & IRS
@@ -474,6 +474,8 @@ const Map<String, String> esTexts = {
   'premium_feature_locked_body': 'La detección automática de viajes es un complemento premium. Mejora tu plan para habilitarla en tu cuenta.',
   'auto_detect_intro_title': 'Detección Automática',
   'auto_detect_intro_body': 'Cuando abras una app gig compatible, ControlMiles empezará a rastrear tu viaje automáticamente -- sin tocar Start. Vas a capturar tu odómetro una sola vez, ahora mismo; cada viaje detectado después lleva esa misma lectura. Puedes desactivar esto cuando quieras.',
+  'auto_detect_failed_title': 'La detección automática no pudo iniciarse',
+  'auto_detect_failed_body': 'El rastreo de ubicación no está activo, así que los viajes no se detectarán automáticamente por ahora. Verifica que ControlMiles tenga permiso de ubicación "Permitir todo el tiempo" y vuelve a intentarlo.',
   'auto_detect_apps_title_on': 'Detección Automática Activa',
   'auto_detect_apps_title_off': 'Detectar Apps Automáticamente',
   'auto_detect_apps_subtitle_on': 'La detección de apps gig está activa',

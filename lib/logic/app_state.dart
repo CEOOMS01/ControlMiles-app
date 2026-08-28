@@ -327,8 +327,14 @@ class AppState extends ChangeNotifier {
   /// calling this with value=true -- this setter itself doesn't re-check
   /// entitlement, same division of responsibility as the rest of this
   /// class (UI reads the flags, this just persists a choice).
-  Future<void> setAutoDetectEnabled(bool value) async {
-    if (_autoDetectEnabled == value) return;
+  ///
+  /// Returns whether the underlying GPS engine is actually running after
+  /// this call (only meaningful when value=true) -- part of the
+  /// 2026-08-28 silent-auto-detect-failure fix, see
+  /// AutoTripDetectionService.setEnabled's own comment. Turning it off
+  /// always reports true (there's nothing to fail).
+  Future<bool> setAutoDetectEnabled(bool value) async {
+    if (_autoDetectEnabled == value) return true;
 
     _autoDetectEnabled = value;
     notifyListeners();
@@ -336,7 +342,7 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('controlmiles_auto_detect_enabled', value);
 
-    await AutoTripDetectionService.instance.setEnabled(value);
+    return await AutoTripDetectionService.instance.setEnabled(value);
   }
 
   Future<void> setAutoSwitchGigApp(bool value) async {

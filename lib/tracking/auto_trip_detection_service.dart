@@ -149,7 +149,18 @@ class AutoTripDetectionService {
   /// only stops either if there's no trip actually in progress right
   /// now -- toggling the setting off mid-drive must not kill a real
   /// trip's GPS.
-  Future<void> setEnabled(bool enabled) async {
+  ///
+  /// REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"):
+  /// used to return void and arm unconditionally regardless of whether
+  /// BackgroundGpsService.startTracking() actually succeeded --
+  /// _armed/the poll timer would come up fine even with a dead GPS
+  /// engine, and the UI had no way to know. Now returns whether the GPS
+  /// engine is genuinely running after this call; still arms the gig-app
+  /// poll either way (that's a separate Android subsystem/permission
+  /// from GPS, and still useful on its own), but callers that need to
+  /// know the whole feature is healthy -- requestEnable's dialog,
+  /// restoreFromPrefs's notification -- can now tell.
+  Future<bool> setEnabled(bool enabled) async {
     _armed = enabled;
     _pollTimer?.cancel();
     _pollTimer = null;
@@ -170,7 +181,7 @@ class AutoTripDetectionService {
     }
 
     if (enabled) {
-      await BackgroundGpsService.startTracking();
+      final gpsOk = await BackgroundGpsService.startTracking();
       if (GigAppDetectionService.instance.isSupported) {
         // Pre-warm the package catalog NOW, while this call is guaranteed
         // to be running from a real foreground user action (the Settings/
@@ -185,14 +196,27 @@ class AutoTripDetectionService {
           (_) => _pollForGigApp(),
         );
       }
+      return gpsOk;
     } else if (TrackingController.currentState == TrackingState.idle) {
       await BackgroundGpsService.stopTracking();
     }
+    return true;
   }
 
   /// Re-arms on cold app start if the user already had this on -- mirrors
   /// NotificationService.init()'s own re-scheduling of the weekly summary
   /// reminder when it was left enabled.
+  ///
+  /// REAL BUG FIX (2026-08-28): this is THE path most exposed to the
+  /// silent-failure bug -- it runs on every cold boot with no
+  /// BuildContext to show anything, and used to call setEnabled(true)
+  /// with zero permission re-check (unlike requestEnable's interactive
+  /// activation, which does check). If background-location permission
+  /// gets revoked after the fact -- the user does it manually, or
+  /// Android's own automatic permission-reset for rarely-opened apps,
+  /// both real -- this is exactly where it would have gone unnoticed
+  /// forever. Now fires a real notification (the only signal available
+  /// with no UI up yet) when the GPS engine doesn't actually come back.
   Future<void> restoreFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(_enabledPrefKey) ?? false;
@@ -206,7 +230,11 @@ class AutoTripDetectionService {
     shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
     autoSwitchGigApp = prefs.getBool(_autoSwitchPrefKey) ?? false;
 
-    await setEnabled(true);
+    final gpsOk = await setEnabled(true);
+    if (!gpsOk) {
+      await NotificationService.instance.init();
+      await NotificationService.instance.showAutoDetectFailedNotification();
+    }
   }
 
   /// Called once the standalone OdometerCaptureScreen capture succeeds
@@ -266,9 +294,43 @@ class AutoTripDetectionService {
     if (value == null || imageUrl == null) return false;
 
     await instance.setShiftStartOdometer(value: value, imageUrl: imageUrl);
-    await appState.setAutoDetectEnabled(true);
+    final gpsOk = await appState.setAutoDetectEnabled(true);
+
+    // REAL BUG FIX (2026-08-28): this used to return true unconditionally
+    // the moment the odometer capture succeeded, regardless of whether
+    // the GPS engine underneath actually started -- the interactive
+    // activation path had a live BuildContext and still told the user
+    // nothing when it silently failed. Now surfaces it immediately, here,
+    // instead of only via the cold-boot notification.
+    if (!gpsOk && context.mounted) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(appState.tr('auto_detect_failed_title')),
+          content: Text(appState.tr('auto_detect_failed_body')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(appState.tr('ok')),
+            ),
+          ],
+        ),
+      );
+    }
+
     return true;
   }
+
+  // REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"): the
+  // 30s poll used to only ever check for a gig app, never whether the
+  // GPS engine underneath was still actually alive -- it could die
+  // AFTER a successful activation (permission revoked mid-session,
+  // Android killing the plugin, etc.) with nothing ever re-checking.
+  // One attempted restart per idle poll tick; a real notification only
+  // fires with a cooldown (not every 30s) so a genuinely stuck state
+  // doesn't spam the driver.
+  static const Duration _healthCheckNotifyCooldown = Duration(minutes: 30);
+  DateTime? _lastHealthCheckNotifiedAt;
 
   Future<void> _pollForGigApp() async {
     if (!_armed) return;
@@ -287,8 +349,37 @@ class AutoTripDetectionService {
       return;
     }
 
+    if (!BackgroundGpsService.isRunning) {
+      final restarted = await BackgroundGpsService.startTracking();
+      if (!restarted) {
+        final now = DateTime.now();
+        final last = _lastHealthCheckNotifiedAt;
+        if (last == null || now.difference(last) >= _healthCheckNotifyCooldown) {
+          _lastHealthCheckNotifiedAt = now;
+          await NotificationService.instance.init();
+          await NotificationService.instance.showAutoDetectFailedNotification();
+        }
+        return;
+      }
+    }
+
     if (_promptActive) return;
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
+
+    // Explicit user requirement (2026-08-28): "custom" must never be
+    // auto-activated -- it needs a manually-entered IRS purpose
+    // (irs_purpose is only ever populated for gig_app == 'custom', see
+    // tracking_controller.dart), which the automatic flow has no way to
+    // supply. Verified this can't actually happen today (no
+    // gig_app_packages row maps any real Android package to 'custom',
+    // confirmed live against the database) -- this is an explicit guard
+    // against that invariant ever silently breaking, not a fix for a
+    // reachable bug.
+    if (gigAppId == 'custom') {
+      lastDetectedGigAppId = null;
+      return;
+    }
+
     lastDetectedGigAppId = gigAppId;
     if (gigAppId != null) {
       await _autoStartTrip(gigAppId);
@@ -329,7 +420,9 @@ class AutoTripDetectionService {
 
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
 
-    if (gigAppId == null || gigAppId == currentGigApp) {
+    // Same explicit guard as _pollForGigApp above -- 'custom' must never
+    // be auto-selected, mid-trip switch included.
+    if (gigAppId == null || gigAppId == currentGigApp || gigAppId == 'custom') {
       midTripDetectedGigAppId = null;
       _dismissedMidTripAppId = null;
       return;
