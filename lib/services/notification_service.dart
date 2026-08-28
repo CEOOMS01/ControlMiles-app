@@ -371,42 +371,10 @@ class NotificationService {
   // ============================================================
   // CAMBIO DE APP GIG A MITAD DE VIAJE (premium)
   // ============================================================
-  /// "Ask" mode (AppState.autoSwitchGigApp == false, the default) --
-  /// informational, not urgent: ending/starting a trip needs the
-  /// odometer confirmed right now,
-  /// but switching which gig app an already-running trip is tracking
-  /// under doesn't need that same urgency. Tapping just opens the app --
-  /// the actual switch/dismiss action lives on DashboardScreen's status
-  /// card (AutoTripDetectionService.confirmMidTripSwitch/
-  /// dismissMidTripSwitch), not on the notification itself.
-  Future<void> showMidTripSwitchSuggestedNotification({required String gigAppId}) async {
-    if (!_initialized) return;
-
-    final title = await _tr('mid_trip_switch_suggested_title');
-    final appName = GigAppCatalog.byId(gigAppId).name;
-    final bodyPrefix = await _tr('mid_trip_switch_suggested_body');
-    final body = '$bodyPrefix $appName';
-
-    await _plugin.show(
-      _midTripSwitchNotificationId,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-    );
-  }
-
-  /// "Auto" mode (AppState.autoSwitchGigApp == true) -- the switch
-  /// already happened by the time this fires, purely informational.
+  /// REVISED 2026-08-28, explicit user request: mid-trip switching is
+  /// now always silent (see AutoTripDetectionService._pollForMidTripSwitch),
+  /// same as trip-start -- no more "ask" mode. The switch already
+  /// happened by the time this fires, purely informational.
   Future<void> showMidTripAutoSwitchedNotification({required String gigAppId}) async {
     if (!_initialized) return;
 

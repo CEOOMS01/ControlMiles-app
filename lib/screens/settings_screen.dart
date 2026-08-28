@@ -790,33 +790,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               ),
             ),
           ],
-          // Explicit user follow-up request: mid-trip gig-app-switch
-          // behavior is its own savable/revertible choice, separate from
-          // auto-detect itself -- default OFF (ask first via a
-          // notification + the Dashboard status card's tap-to-switch),
-          // ON switches silently and just confirms afterward.
-          if (!locked && appState.autoDetectEnabled) ...[
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                leading: Icon(Icons.swap_horiz_rounded, color: primary),
-                title: Text(
-                  appState.tr('auto_switch_toggle_title'),
-                  style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
-                ),
-                subtitle: Text(
-                  appState.tr('auto_switch_toggle_subtitle'),
-                  style: TextStyle(fontSize: 12, color: subTextColor),
-                ),
-                trailing: Switch.adaptive(
-                  value: appState.autoSwitchGigApp,
-                  onChanged: (v) => appState.setAutoSwitchGigApp(v),
-                  activeThumbColor: primary,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

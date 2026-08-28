@@ -73,7 +73,6 @@ class AutoTripDetectionService {
   static const String _enabledPrefKey = 'controlmiles_auto_detect_enabled';
   static const String _shiftOdoValueKey = 'controlmiles_shift_odometer_value';
   static const String _shiftOdoImageKey = 'controlmiles_shift_odometer_image_url';
-  static const String _autoSwitchPrefKey = 'controlmiles_auto_switch_gig_app';
 
   // Polling interval for "is a gig app in the foreground right now" --
   // relies on the SAME foreground service flutter_background_geolocation
@@ -112,17 +111,8 @@ class AutoTripDetectionService {
   // Mid-trip gig-app-switch detection (explicit user follow-up request,
   // separate from trip-START detection above): while a trip is RUNNING,
   // keep polling for the foreground gig app -- if it differs from the
-  // one the trip is currently tracking under, either switch silently
-  // (autoSwitchGigApp) or surface it as a tappable suggestion on
-  // DashboardScreen's status card for the driver to confirm themselves.
-  // Never both -- see _pollForMidTripSwitch. Set by AppState.
-  // setAutoSwitchGigApp, mirrored here the same way shiftStartOdometer*
-  // is (AppState owns persistence, this class holds the live copy the
-  // poll actually reads).
-  bool autoSwitchGigApp = false;
-  String? midTripDetectedGigAppId;
-  String? _dismissedMidTripAppId;
-  String? _lastPolledCurrentGigApp;
+  // one the trip is currently tracking under, switch silently, same as
+  // trip-start. See _pollForMidTripSwitch.
 
   // Shift-start odometer reading, captured once (real photo, real
   // evidence -- see OdometerCaptureService.processEvidence's standalone
@@ -171,9 +161,6 @@ class AutoTripDetectionService {
       _promptStuckTimer?.cancel();
       _promptStuckTimer = null;
       _promptActive = false;
-      _dismissedMidTripAppId = null;
-      midTripDetectedGigAppId = null;
-      _lastPolledCurrentGigApp = null;
       // Explicit user requirement: turning auto-detect off clears the
       // shift-start reading -- the next activation must capture a fresh
       // one, never silently reuse a stale one from an earlier session.
@@ -228,7 +215,6 @@ class AutoTripDetectionService {
     // do).
     shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
     shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
-    autoSwitchGigApp = prefs.getBool(_autoSwitchPrefKey) ?? false;
 
     final gpsOk = await setEnabled(true);
     if (!gpsOk) {
@@ -386,85 +372,31 @@ class AutoTripDetectionService {
     }
   }
 
-  /// Explicit user follow-up request: if a DIFFERENT gig app gets
-  /// detected while already tracking, either switch silently
-  /// (autoSwitchGigApp) or surface it as a tappable suggestion on the
-  /// status card -- never re-notify for the same detected app on every
-  /// 30s poll, and never re-suggest one the driver already dismissed
-  /// this trip (until the foreground app changes to something else
-  /// first, which resets both guards).
+  /// REVISED 2026-08-28, explicit user request: "la detección automática
+  /// de gig app es automática... el flujo no debe ni tiene que pedirle a
+  /// un cliente que toque una notificación para hacer switch." The old
+  /// "ask" mode (default, notification said "Open ControlMiles to switch
+  /// to X", required a tap) contradicted the whole premise of this
+  /// feature -- auto-detect already starts trips with zero taps, a
+  /// mid-trip app change is exactly the same kind of event and gets the
+  /// same treatment now. Every detected app change closes the old
+  /// section and opens a new one immediately, no toggle, no
+  /// confirmation, matching _autoStartTrip's own silent-by-default
+  /// design one section down.
   Future<void> _pollForMidTripSwitch() async {
     final currentGigApp = TrackingController.currentGigApp;
-
-    // Real bug found live (2026-08-27, "no lee Spark Driver/Shipt/Jitsu"):
-    // a dismissal only used to clear when the DETECTED app matched the
-    // CURRENTLY-tracked one -- but a driver moving app-to-app during a
-    // real shift (doordash->roadie->uber->doordash, all real auto-
-    // switches this session) changes currentGigApp on every switch
-    // WITHOUT ever detecting the OLD tracked app again, so that reset
-    // branch could go untouched for the rest of the trip. One old
-    // dismissal of e.g. Spark Driver, made while tracking DoorDash,
-    // silently suppressed it through every later switch to a totally
-    // different app -- confirmed via logs: detection correctly resolved
-    // 'walmart_spark' every poll, but switchSection() was never even
-    // attempted (no SWITCH_OK/SWITCH_ERROR ever logged), which only the
-    // `gigAppId == _dismissedMidTripAppId` early-return explains. Any
-    // real change in what's actively tracked -- this class's own auto-
-    // switch, a manual carousel switch, a confirmed suggestion -- means
-    // an old dismissal no longer applies to the new context.
-    if (_lastPolledCurrentGigApp != currentGigApp) {
-      _lastPolledCurrentGigApp = currentGigApp;
-      _dismissedMidTripAppId = null;
-      midTripDetectedGigAppId = null;
-    }
-
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
 
     // Same explicit guard as _pollForGigApp above -- 'custom' must never
     // be auto-selected, mid-trip switch included.
     if (gigAppId == null || gigAppId == currentGigApp || gigAppId == 'custom') {
-      midTripDetectedGigAppId = null;
-      _dismissedMidTripAppId = null;
       return;
     }
 
-    if (gigAppId == _dismissedMidTripAppId) return;
-
-    if (autoSwitchGigApp) {
-      final switched = await TrackingController.switchSection(gigAppId);
-      if (switched) {
-        midTripDetectedGigAppId = null;
-        await NotificationService.instance.showMidTripAutoSwitchedNotification(gigAppId: gigAppId);
-      }
-      return;
-    }
-
-    if (midTripDetectedGigAppId == gigAppId) return;
-    midTripDetectedGigAppId = gigAppId;
-    await NotificationService.instance.showMidTripSwitchSuggestedNotification(gigAppId: gigAppId);
-  }
-
-  /// Called from DashboardScreen's status card when the driver taps the
-  /// "switch" suggestion.
-  Future<void> confirmMidTripSwitch() async {
-    final gigAppId = midTripDetectedGigAppId;
-    if (gigAppId == null) return;
     final switched = await TrackingController.switchSection(gigAppId);
-    if (switched) midTripDetectedGigAppId = null;
-  }
-
-  /// Called from DashboardScreen's status card when the driver dismisses
-  /// the suggestion instead -- keeps tracking under the current app,
-  /// and won't re-suggest the SAME detected app again this trip.
-  void dismissMidTripSwitch() {
-    _dismissedMidTripAppId = midTripDetectedGigAppId;
-    midTripDetectedGigAppId = null;
-  }
-
-  /// Mirrors setEnabled's split: AppState.setAutoSwitchGigApp owns
-  /// persistence, this just updates the live copy the poll reads.
-  void setAutoSwitchGigApp(bool value) {
-    autoSwitchGigApp = value;
+    if (switched) {
+      await NotificationService.instance.showMidTripAutoSwitchedNotification(gigAppId: gigAppId);
+    }
   }
 
   /// Registered once from BackgroundGpsService.initialize()'s

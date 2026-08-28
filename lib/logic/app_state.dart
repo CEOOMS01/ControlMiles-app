@@ -33,11 +33,6 @@ class AppState extends ChangeNotifier {
   // at all is premiumEntitled (server-verified, see profiles.premium_entitled)
   // -- this flag only tracks whether the user has chosen to turn it on.
   bool _autoDetectEnabled = false;
-  // Explicit user requirement: mid-trip gig-app-switch behavior is a
-  // separate, savable/revertible choice from auto-detect itself --
-  // false (default) = ask before switching, true = switch silently.
-  // Only meaningful while autoDetectEnabled is also true.
-  bool _autoSwitchGigApp = false;
   bool _isInitialized = false;
   String? _currentSessionId;
 
@@ -108,7 +103,6 @@ class AppState extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;                    // ← Nuevo
   bool get notificationsEnabled => _notificationsEnabled;
   bool get autoDetectEnabled => _autoDetectEnabled;
-  bool get autoSwitchGigApp => _autoSwitchGigApp;
   bool get isInitialized => _isInitialized;
   String? get currentSessionId => _currentSessionId;
   String? get userDisplayId => _userDisplayId;
@@ -345,18 +339,6 @@ class AppState extends ChangeNotifier {
     return await AutoTripDetectionService.instance.setEnabled(value);
   }
 
-  Future<void> setAutoSwitchGigApp(bool value) async {
-    if (_autoSwitchGigApp == value) return;
-
-    _autoSwitchGigApp = value;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('controlmiles_auto_switch_gig_app', value);
-
-    AutoTripDetectionService.instance.setAutoSwitchGigApp(value);
-  }
-
   // ============================================================
   // IDIOMA
   // ============================================================
@@ -474,7 +456,6 @@ class AppState extends ChangeNotifier {
 
       // Detección automática de viajes (premium, Gig-only)
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
-      _autoSwitchGigApp = prefs.getBool('controlmiles_auto_switch_gig_app') ?? false;
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
@@ -519,7 +500,6 @@ class AppState extends ChangeNotifier {
     // service must stop -- it has no idle account to attribute a
     // detected trip to once signed out.
     _autoDetectEnabled = false;
-    _autoSwitchGigApp = false;
     await AutoTripDetectionService.instance.setEnabled(false);
     _pendingInvites = [];
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
@@ -533,7 +513,6 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_account_type');
     await prefs.remove('controlmiles_premium_entitled');
     await prefs.remove('controlmiles_auto_detect_enabled');
-    await prefs.remove('controlmiles_auto_switch_gig_app');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

@@ -106,7 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Real gap found (pedido explícito: confirmación visible en tiempo
   // real del switch detectado): AutoTripDetectionService's mid-trip
-  // auto-switch (_pollForMidTripSwitch, autoSwitchGigApp mode) calls
+  // auto-switch (_pollForMidTripSwitch, always silent) calls
   // TrackingController.switchSection() directly, bypassing
   // _handleAppSelection entirely -- the only place that already shows
   // the "X ⇄ Y SWITCHED" banner for a MANUAL carousel tap. A driver
@@ -325,11 +325,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Explicit user follow-up request: the carousel's OTHER job -- mid-trip
   // app switching -- is now also auto-detect's responsibility while
   // armed, so this replaces it here too instead of handing back to
-  // GigAppSelector. Two states: quietly showing what's currently
-  // tracking, or (a different app was detected) a tappable suggestion to
-  // switch -- confirmMidTripSwitch/dismissMidTripSwitch are the same
-  // actions AppState.autoSwitchGigApp's "ask" mode surfaces via
-  // notification when the app isn't foregrounded.
+  // GigAppSelector. REVISED 2026-08-28: mid-trip switching is always
+  // silent now (no more "ask" mode/tappable suggestion, see
+  // AutoTripDetectionService._pollForMidTripSwitch) -- this card only
+  // ever quietly shows what's currently being tracked.
   Widget _buildAutoDetectTrackingCard(AppState appState, bool isDark, {required bool isPaused}) {
     final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
     final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
@@ -340,24 +339,22 @@ class _DashboardScreenState extends State<DashboardScreen>
     final currentApp = TrackingController.currentGigApp != null
         ? GigAppCatalog.byId(TrackingController.currentGigApp!)
         : null;
-    final suggestedId = isPaused ? null : AutoTripDetectionService.instance.midTripDetectedGigAppId;
-    final suggestedApp = suggestedId != null ? GigAppCatalog.byId(suggestedId) : null;
-    final accent = suggestedApp?.color ?? currentApp?.color ?? primary;
+    final accent = currentApp?.color ?? primary;
 
-    final card = Container(
+    return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: suggestedApp != null ? accent : borderColor, width: suggestedApp != null ? 2 : 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), shape: BoxShape.circle),
-            child: Icon(suggestedApp?.icon ?? currentApp?.icon ?? Icons.auto_awesome_rounded, color: accent),
+            child: Icon(currentApp?.icon ?? Icons.auto_awesome_rounded, color: accent),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -365,40 +362,19 @@ class _DashboardScreenState extends State<DashboardScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  suggestedApp != null
-                      ? '${appState.tr('auto_detect_status_found_label')} ${suggestedApp.name}'
-                      : '${appState.tr('auto_detect_tracking_with_label')} ${currentApp?.name ?? ''}',
+                  '${appState.tr('auto_detect_tracking_with_label')} ${currentApp?.name ?? ''}',
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: textColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  suggestedApp != null
-                      ? appState.tr('auto_detect_tap_to_switch')
-                      : appState.tr(isPaused ? 'auto_detect_tracking_paused_subtitle' : 'auto_detect_tracking_subtitle'),
+                  appState.tr(isPaused ? 'auto_detect_tracking_paused_subtitle' : 'auto_detect_tracking_subtitle'),
                   style: TextStyle(fontSize: 12, color: subTextColor),
                 ),
               ],
             ),
           ),
-          if (suggestedApp != null)
-            IconButton(
-              icon: Icon(Icons.close_rounded, color: subTextColor, size: 20),
-              tooltip: appState.tr('cancel'),
-              onPressed: () => setState(() => AutoTripDetectionService.instance.dismissMidTripSwitch()),
-            ),
         ],
       ),
-    );
-
-    if (suggestedApp == null) return card;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () async {
-        await AutoTripDetectionService.instance.confirmMidTripSwitch();
-        if (mounted) setState(() {});
-      },
-      child: card,
     );
   }
 
