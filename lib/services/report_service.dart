@@ -28,6 +28,7 @@ import '../data/irs_rates.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
+import '../models/vehicle.dart';
 
 class ReportService {
   ReportService._();
@@ -50,6 +51,13 @@ class ReportService {
     // any calculation (ControlMiles only ever computes standard-mileage
     // figures), just what the report's own disclaimer honestly states.
     String mileageMethod = 'standard',
+    // BUG FIX (pedido explícito, 2026-08-28): el reporte nunca mostró qué
+    // vehículo(s) se usaron ni con qué odómetro inicial arrancaron en
+    // ControlMiles -- dato pedido explícitamente. Los vehículos vienen
+    // resueltos por ReportsScreen a partir de los sessions.vehicle_id
+    // realmente referenciados en el rango (ReportService no debe saber de
+    // Supabase, mismo criterio que userName/userDisplayId más abajo).
+    List<Vehicle> vehiclesUsed = const [],
   }) async {
     final pdf = pw.Document();
 
@@ -111,13 +119,30 @@ class ReportService {
       if (session.endOdometerValue != null) {
         lastOdoSession = session;
       }
+      // REAL BUG FOUND AND FIXED (2026-08-28, while verifying the report
+      // on-device): a session with NO session_sections rows at all --
+      // shown as "--" in the trip table, real and not rare, e.g. legacy
+      // sessions from before per-section IRS-purpose tagging existed --
+      // contributed nothing to businessMiles/nonBusinessMiles, so
+      // ANNUAL BUSINESS-USE SUMMARY's own "TOTAL MILES" silently didn't
+      // match the report's real Total Miles above it. Tracks how much of
+      // this session's miles the sections actually accounted for, and
+      // folds any leftover into business miles -- same "no purpose
+      // recorded -> treated as business" precedent this file's header
+      // comment already documents for legacy sections.
       final secs = sectionsBySession[session.id] ?? [];
+      var sectionedMiles = 0.0;
       for (final sec in secs) {
+        sectionedMiles += sec.totalMiles;
         if (nonBusinessPurposes.contains(sec.irsPurpose)) {
           nonBusinessMiles += sec.totalMiles;
         } else {
           businessMiles += sec.totalMiles;
         }
+      }
+      final unaccountedMiles = session.totalMiles - sectionedMiles;
+      if (unaccountedMiles > 0) {
+        businessMiles += unaccountedMiles;
       }
     }
 
@@ -131,6 +156,31 @@ class ReportService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin:     const pw.EdgeInsets.all(36),
+        // REAL BUG FOUND AND FIXED (2026-08-28): TooManyPagesException was
+        // never about report size -- reproduced and confirmed directly
+        // against the installed pdf 3.12.0 package (see the standalone
+        // repro used to diagnose this): pw.Flex (the base of pw.Column)
+        // and pw.Table both hardcode `hasMoreWidgets => true` instead of
+        // reporting real completion state. When a pw.Column wraps a title
+        // + a pw.Table together as ONE top-level MultiPage child, and that
+        // Column needs more than a single page to render (trivially true
+        // once a trip log has more rows than fit on one page -- confirmed
+        // with as few as 53 real trips from a blank page, not just a
+        // near-boundary edge case), MultiPage's page-break loop can never
+        // detect that the Column finished spanning and creates pages
+        // forever. This only threw a catchable exception here because
+        // Flutter debug builds run with asserts enabled (the pdf package's
+        // own safety counter is assert-guarded) -- a release build would
+        // have hung / grown memory unbounded instead, with no error at
+        // all. Fix: the trip log's title and its pw.Table are now two
+        // SEPARATE top-level list items below (see _buildTripLogTitle /
+        // _buildGlobalTripsTableOnly) instead of one pw.Column wrapping
+        // both -- confirmed via the same repro that this exact
+        // "flat, unwrapped" shape renders correctly at any row count.
+        // maxPages is deliberately left at its default (20): with the
+        // structural fix, this report never needs anywhere near that many
+        // pages, and a low ceiling is a better trip-wire for a future
+        // regression than a raised one that only delays the same failure.
         build: (ctx) => [
           _buildHeader(),
           pw.SizedBox(height: 18),
@@ -139,9 +189,13 @@ class ReportService {
           _buildGlobalProfileSection(
               userName, userDisplayId, periodLabel, sortedSessions.length),
           pw.SizedBox(height: 24),
+          _buildVehicleInfo(vehiclesUsed),
+          pw.SizedBox(height: 24),
           _buildOdometerEvidence(totalMiles, firstOdoSession, lastOdoSession),
           pw.SizedBox(height: 28),
-          _buildGlobalTripsTable(sortedSessions, sectionsBySession),
+          _buildTripLogTitle(),
+          pw.SizedBox(height: 10),
+          _buildGlobalTripsTableOnly(sortedSessions, sectionsBySession),
           pw.SizedBox(height: 36),
           _buildTotalSummary(totalMiles, totalDeduction, mileageMethod),
           pw.SizedBox(height: 20),
@@ -244,6 +298,69 @@ class ReportService {
   }
 
   // ════════════════════════════════════════════════════════════
+  // VEHICLE(S) USED — pedido explícito: qué vehículo(s) se usaron en el
+  // período y con qué odómetro arrancaron en ControlMiles (Vehicle.odometer
+  // -- la lectura capturada al dar de alta el vehículo, no la de un viaje
+  // puntual, que ya se muestra en ODOMETER EVIDENCE más abajo). Normalmente
+  // es un solo vehículo; si el usuario cambió de vehículo activo dentro del
+  // rango del reporte, se listan todos con su propio odómetro inicial.
+  // ════════════════════════════════════════════════════════════
+  static pw.Widget _buildVehicleInfo(List<Vehicle> vehicles) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'VEHICLE(S) USED',
+          style: pw.TextStyle(
+              fontSize: 12, fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blue800),
+        ),
+        pw.SizedBox(height: 10),
+        if (vehicles.isEmpty)
+          pw.Text('No vehicle associated with these trips.',
+              style: const pw.TextStyle(
+                  fontSize: 10, color: PdfColors.grey600))
+        else
+          pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Column(
+              children: [
+                for (var i = 0; i < vehicles.length; i++) ...[
+                  if (i > 0) pw.Container(height: 0.5, color: PdfColors.grey300),
+                  _vehicleRow(vehicles[i]),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  static pw.Widget _vehicleRow(Vehicle vehicle) {
+    final year = vehicle.year != null ? '${vehicle.year} ' : '';
+    final name = vehicle.displayName.isEmpty ? '--' : vehicle.displayName;
+    final startOdo = vehicle.odometer != null
+        ? '${vehicle.odometer!.toStringAsFixed(1)} mi'
+        : '--';
+
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text('$year$name',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Starting odometer (ControlMiles): $startOdo',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
   // ODOMETER EVIDENCE — toma el total ya sumado del período y la primera/
   // última SESIÓN del rango con un valor real de odómetro (no
   // SessionSection -- ver comentario en generateGlobalReport sobre el
@@ -321,8 +438,24 @@ class ReportService {
   // TRIP LOG — una fila condensada por sesión (no por sección) para no
   // producir un PDF de decenas de páginas en un rango de 3 meses. El
   // detalle de secciones por gig-app se resume como lista de apps usadas.
+  //
+  // BUG FIX (2026-08-28, TooManyPagesException): el título y la tabla
+  // vivían juntos dentro de un solo pw.Column -- ver el comentario en
+  // generateGlobalReport sobre por qué eso rompe MultiPage en cuanto el
+  // log de viajes necesita más de una página. Separados en dos widgets de
+  // nivel superior (título + tabla sola) para que MultiPage pagine la
+  // tabla directamente, sin un Column intermedio.
   // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildGlobalTripsTable(
+  static pw.Widget _buildTripLogTitle() {
+    return pw.Text(
+      'TRIP LOG',
+      style: pw.TextStyle(
+          fontSize: 12, fontWeight: pw.FontWeight.bold,
+          color: PdfColors.blue800),
+    );
+  }
+
+  static pw.Widget _buildGlobalTripsTableOnly(
     List<TrackingSession> sessions,
     Map<String, List<SessionSection>> sectionsBySession,
   ) {
@@ -357,54 +490,42 @@ class ReportService {
       return [dateStr, apps.isEmpty ? '--' : apps, milesStr, durStr, startOdoStr, endOdoStr, 'VERIFIED'];
     }).toList();
 
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'TRIP LOG',
-          style: pw.TextStyle(
-              fontSize: 12, fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue800),
-        ),
-        pw.SizedBox(height: 10),
-        if (rows.isEmpty)
-          pw.Text('No trips in this period.',
-              style: const pw.TextStyle(
-                  fontSize: 10, color: PdfColors.grey600))
-        else
-          pw.TableHelper.fromTextArray(
-            headers: ['DATE', 'GIG APP(S)', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
-            data:    rows,
-            headerStyle: pw.TextStyle(
-              fontWeight: pw.FontWeight.bold,
-              color:      PdfColors.white,
-              fontSize:   9,
-            ),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.blue800),
-            cellStyle:     const pw.TextStyle(fontSize: 9),
-            cellAlignment: pw.Alignment.centerLeft,
-            columnWidths: {
-              0: const pw.FlexColumnWidth(1.0),
-              1: const pw.FlexColumnWidth(1.4),
-              2: const pw.FlexColumnWidth(0.9),
-              3: const pw.FlexColumnWidth(0.9),
-              4: const pw.FlexColumnWidth(0.9),
-              5: const pw.FlexColumnWidth(0.9),
-              6: const pw.FlexColumnWidth(1.0),
-            },
-            oddRowDecoration:
-                const pw.BoxDecoration(color: PdfColors.grey50),
-            border: const pw.TableBorder(
-              horizontalInside: pw.BorderSide(
-                  color: PdfColors.grey200, width: 0.5),
-              verticalInside: pw.BorderSide(
-                  color: PdfColors.grey200, width: 0.5),
-            ),
-            cellPadding: const pw.EdgeInsets.symmetric(
-                horizontal: 6, vertical: 6),
-          ),
-      ],
+    if (rows.isEmpty) {
+      return pw.Text('No trips in this period.',
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600));
+    }
+
+    return pw.TableHelper.fromTextArray(
+      headers: ['DATE', 'GIG APP(S)', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
+      data:    rows,
+      headerStyle: pw.TextStyle(
+        fontWeight: pw.FontWeight.bold,
+        color:      PdfColors.white,
+        fontSize:   9,
+      ),
+      headerDecoration:
+          const pw.BoxDecoration(color: PdfColors.blue800),
+      cellStyle:     const pw.TextStyle(fontSize: 9),
+      cellAlignment: pw.Alignment.centerLeft,
+      columnWidths: {
+        0: const pw.FlexColumnWidth(1.0),
+        1: const pw.FlexColumnWidth(1.4),
+        2: const pw.FlexColumnWidth(0.9),
+        3: const pw.FlexColumnWidth(0.9),
+        4: const pw.FlexColumnWidth(0.9),
+        5: const pw.FlexColumnWidth(0.9),
+        6: const pw.FlexColumnWidth(1.0),
+      },
+      oddRowDecoration:
+          const pw.BoxDecoration(color: PdfColors.grey50),
+      border: const pw.TableBorder(
+        horizontalInside: pw.BorderSide(
+            color: PdfColors.grey200, width: 0.5),
+        verticalInside: pw.BorderSide(
+            color: PdfColors.grey200, width: 0.5),
+      ),
+      cellPadding: const pw.EdgeInsets.symmetric(
+          horizontal: 6, vertical: 6),
     );
   }
 

@@ -41,6 +41,16 @@ class Vehicle {
   // in the exportable report when set, omitted when not.
   final DateTime? placedInServiceDate;
 
+  // BUG FIX (2026-08-29): this column already existed in the DB (`vin
+  // text`, nullable) but was never mapped or written by any Dart code --
+  // confirmed via grep, zero references anywhere in lib/. Optional, not
+  // required to add a vehicle. When set, the DB itself (see migration
+  // 20260829010000) enforces that a new vehicle sharing this VIN can never
+  // be added with an odometer lower than what ControlMiles already has on
+  // record for that VIN -- fraud-prevention against deleting and
+  // re-adding the same real car with an artificially low starting mileage.
+  final String? vin;
+
   const Vehicle({
     required this.id,
     this.displayId,
@@ -60,6 +70,7 @@ class Vehicle {
     this.lastSpeed,
     this.lastLocationAt,
     this.placedInServiceDate,
+    this.vin,
   });
 
   bool get isFleetVehicle => organizationId != null;
@@ -99,6 +110,7 @@ class Vehicle {
       placedInServiceDate: map['placed_in_service_date'] != null
           ? DateTime.tryParse(map['placed_in_service_date'] as String)
           : null,
+      vin: map['vin'] as String?,
     );
   }
 

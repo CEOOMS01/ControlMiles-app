@@ -52,6 +52,7 @@ class _VehicleScreenState extends State<VehicleScreen>
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _customMakeController = TextEditingController();
+  final TextEditingController _vinController = TextEditingController();
   String? _selectedMake;
   bool _setAsActiveOnAdd = true;
   // IRS Fase 3 (2026-08-28): optional, only settable at creation time --
@@ -88,6 +89,7 @@ class _VehicleScreenState extends State<VehicleScreen>
     _yearController.dispose();
     _mileageController.dispose();
     _customMakeController.dispose();
+    _vinController.dispose();
     _recordOdometerController.dispose();
     _recordCostController.dispose();
     _recordNotesController.dispose();
@@ -137,6 +139,15 @@ class _VehicleScreenState extends State<VehicleScreen>
     final raw = e.toString();
     if (raw.contains('cambiar de vehículo activo mientras tienes un viaje en curso')) {
       return appState.tr('vehicle_switch_blocked_active_session');
+    }
+    // Fraud-prevention (2026-08-29): fn_enforce_vehicle_odometer_floor
+    // (migration 20260829010000) raises 'ODOMETER_BELOW_FLOOR:<value>' when
+    // this VIN already has a higher odometer on record for this user.
+    final floorMatch = RegExp(r'ODOMETER_BELOW_FLOOR:([\d.]+)').firstMatch(raw);
+    if (floorMatch != null) {
+      final floor = double.tryParse(floorMatch.group(1) ?? '');
+      final floorStr = floor != null ? floor.toStringAsFixed(1) : floorMatch.group(1)!;
+      return appState.tr('vehicle_odometer_below_floor').replaceFirst('{floor}', floorStr);
     }
     return raw.replaceFirst('Exception: ', '');
   }
@@ -244,6 +255,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         // Si ya tiene otros, respeta el checkbox del formulario.
         setAsActive: _vehicles.isEmpty ? true : _setAsActiveOnAdd,
         placedInServiceDate: _placedInServiceDate,
+        vin: _vinController.text,
       );
 
       _selectedMake = null;
@@ -252,6 +264,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       _colorController.clear();
       _yearController.clear();
       _mileageController.clear();
+      _vinController.clear();
       setState(() {
         _addingVehicle = false;
         _setAsActiveOnAdd = true;
@@ -539,6 +552,16 @@ class _VehicleScreenState extends State<VehicleScreen>
             ],
           ),
           TextField(controller: _mileageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: appState.tr('odometer'))),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _vinController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: appState.tr('vin_optional'),
+              helperText: appState.tr('vin_helper'),
+              helperMaxLines: 2,
+            ),
+          ),
           const SizedBox(height: 12),
           ListTile(
             contentPadding: EdgeInsets.zero,

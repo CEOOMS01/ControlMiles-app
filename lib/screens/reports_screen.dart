@@ -11,6 +11,7 @@ import '../logic/app_state.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
+import '../models/vehicle.dart';
 import '../services/report_service.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -57,16 +58,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   List<TrackingSession>                     _sessions = [];
   Map<String, List<SessionSection>>         _sections = {};
+  // BUG FIX (pedido explícito): el reporte nunca mostraba qué vehículo(s)
+  // se usaron -- resuelto acá a partir de los sessions.vehicle_id
+  // realmente presentes en el rango cargado (no assume un único vehículo
+  // "activo": si el usuario cambió de auto dentro del período, todos
+  // aparecen). Incluye vehículos archivados -- el historial de un auto que
+  // ya no se usa sigue siendo real evidencia del período reportado.
+  List<Vehicle>                             _vehiclesUsed = [];
 
   // ── NUEVO: card Summary (total del día, pedido explícito) ──
   // BUG FIX (mismo criterio que dashboard_screen.dart): este total es del
   // DÍA CALENDARIO en curso, independiente de _dateRange (el filtro de
   // fechas de esta pantalla) -- no tiene sentido que "el total de hoy"
   // cambie según qué rango histórico esté mirando el usuario. Fetch propio,
-  // no reutiliza _sessions.
+  // no reutiliza _sessions. Se refresca solo (DateTime.now() se re-evalúa
+  // cada vez que _loadTodaySummary corre -- pull-to-refresh, cambio de
+  // rango, o volver a abrir la pantalla), efectivamente "resetea" a las
+  // 12am porque la ventana de la query siempre arranca en la medianoche
+  // local del momento en que se ejecuta.
   double _todayMiles = 0.0;
   int _todayDurationSec = 0;
   bool _summaryLoading = true;
+
+  // BUG FIX (pedido explícito): el card Summary solo mostraba el total del
+  // día -- no había ningún total acumulado visible en Reports (History sí
+  // lo tiene, ver su propio card "LAST 12 MONTHS"). Estos NO se resetean a
+  // medianoche como _todayMiles/_todayDurationSec -- son la suma de
+  // _sessions, que ya está cargada para _dateRange (por defecto los
+  // últimos 12 meses, o el rango que el usuario elija con el selector de
+  // calendario), sin fetch adicional.
+  double _periodTotalMiles = 0.0;
+  int _periodTotalDurationSec = 0;
 
   @override
   void initState() {
@@ -160,10 +182,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
             .toList();
       }
 
+      final vehicleIds = sessions
+          .map((s) => s.vehicleId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      List<Vehicle> vehiclesUsed = [];
+      if (vehicleIds.isNotEmpty) {
+        final vehiclesRaw = await Supabase.instance.client
+            .from('vehicles')
+            .select()
+            .inFilter('id', vehicleIds);
+        vehiclesUsed = (vehiclesRaw as List)
+            .map((v) => Vehicle.fromMap(v as Map<String, dynamic>))
+            .toList();
+      }
+
+      final periodMiles = sessions.fold<double>(
+          0.0, (acc, s) => acc + s.totalMiles);
+      final periodDurationSec = sessions.fold<int>(
+          0, (acc, s) => acc + (s.effectiveDurationSeconds ?? 0));
+
       if (mounted) {
         setState(() {
           _sessions = sessions;
           _sections = sectionsMap;
+          _vehiclesUsed = vehiclesUsed;
+          _periodTotalMiles = periodMiles;
+          _periodTotalDurationSec = periodDurationSec;
         });
       }
     } catch (e) {
@@ -207,6 +254,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         userName:          _resolveUserName(),
         userDisplayId:     appState.userDisplayId ?? '---',
         mileageMethod:     appState.mileageMethod,
+        vehiclesUsed:      _vehiclesUsed,
       );
 
       if (mounted) _showSnack(appState.tr('report_generated_success'));
@@ -401,24 +449,47 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ── NUEVO: card Summary (total del día, pedido explícito) ──
-  // Reemplaza la card de rango de fechas (_buildDateHeader, eliminada).
-  // Mismo diseño/misma card que dashboard_screen.dart._buildSummaryCard --
-  // ambas muestran el mismo dato (total del día calendario en curso).
+  // ── card Summary ──
+  // BUG FIX (pedido explícito): el card solo mostraba el total del día
+  // calendario -- no había ningún total acumulado visible (History sí
+  // tiene el suyo, ver su card "LAST 12 MONTHS"). Ahora muestra dos filas:
+  // TOTAL (la suma de _sessions para _dateRange, el rango seleccionado --
+  // NO se resetea a medianoche) y TODAY (el total del día calendario en
+  // curso -- ese sí se "resetea" solo porque _loadTodaySummary reconsulta
+  // desde la medianoche local cada vez que corre).
   Widget _buildSummaryCard(AppState appState, bool isDark, Color border) {
     final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
     final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
 
-    final displayMiles = appState.useMetricSystem
-        ? (_todayMiles * 1.60934).toStringAsFixed(2)
-        : _todayMiles.toStringAsFixed(2);
-    final unitLabel = appState.useMetricSystem
-        ? appState.tr('kilometer_short')
-        : appState.tr('mile_short');
-    final durMin = _todayDurationSec ~/ 60;
-    final durH = durMin ~/ 60;
-    final durRemMin = durMin % 60;
-    final durLabel = durH > 0 ? '${durH}h ${durRemMin}m' : '${durRemMin}m';
+    String fmtMiles(double miles) {
+      final display = appState.useMetricSystem
+          ? (miles * 1.60934).toStringAsFixed(2)
+          : miles.toStringAsFixed(2);
+      final unit = appState.useMetricSystem
+          ? appState.tr('kilometer_short')
+          : appState.tr('mile_short');
+      return '$display $unit';
+    }
+
+    String fmtDuration(int seconds) {
+      final durMin = seconds ~/ 60;
+      final durH = durMin ~/ 60;
+      final durRemMin = durMin % 60;
+      return durH > 0 ? '${durH}h ${durRemMin}m' : '${durRemMin}m';
+    }
+
+    Widget subLabel(String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            text.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: labelColor,
+            ),
+          ),
+        );
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -444,31 +515,61 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           Divider(height: 1, color: border),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            // BUG FIX (pedido explícito, mismo criterio que Dashboard):
-            // millas y tiempo estaban "flotando" sueltos en un Row -- ahora
-            // cada uno vive en su propio cuadrito (mismo chip que ya usa
-            // _infoChip en esta pantalla).
-            child: _summaryLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Row(
-                    children: [
-                      _infoChip(
-                        icon: Icons.speed_rounded,
-                        label: '$displayMiles $unitLabel',
-                        isDark: isDark,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                subLabel(appState.tr('total_miles')),
+                Row(
+                  children: [
+                    _infoChip(
+                      icon: Icons.speed_rounded,
+                      label: fmtMiles(_periodTotalMiles),
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: 8),
+                    _infoChip(
+                      icon: Icons.timer_outlined,
+                      label: fmtDuration(_periodTotalDurationSec),
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                subLabel(appState.tr('today')),
+                // BUG FIX (pedido explícito, mismo criterio que Dashboard):
+                // millas y tiempo estaban "flotando" sueltos en un Row --
+                // ahora cada uno vive en su propio cuadrito (mismo chip que
+                // ya usa _infoChip en esta pantalla).
+                _summaryLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : Row(
+                        children: [
+                          _infoChip(
+                            icon: Icons.speed_rounded,
+                            label: fmtMiles(_todayMiles),
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 8),
+                          _infoChip(
+                            icon: Icons.timer_outlined,
+                            label: fmtDuration(_todayDurationSec),
+                            isDark: isDark,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      _infoChip(
-                        icon: Icons.timer_outlined,
-                        label: durLabel,
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
+              ],
+            ),
           ),
         ],
       ),

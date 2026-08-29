@@ -117,6 +117,13 @@ class VehicleService {
     // be set at creation time; the report shows it when present and
     // omits it otherwise.
     DateTime? placedInServiceDate,
+    // Fraud-prevention (2026-08-29): optional. When set, the DB (trigger
+    // fn_enforce_vehicle_odometer_floor, migration 20260829010000) blocks
+    // this insert if `odometer` is below what ControlMiles already has on
+    // record for another vehicle (active or archived) of this same user
+    // sharing this VIN -- see that migration's own comment for why VIN is
+    // required for this check and why there's no account-wide floor.
+    String? vin,
   }) async {
     _validate(make: make, model: model, color: color, year: year, odometer: odometer);
 
@@ -134,6 +141,7 @@ class VehicleService {
       'is_active': setAsActive,
       'is_primary': setAsActive,
       'placed_in_service_date': placedInServiceDate?.toIso8601String().split('T')[0],
+      'vin': (vin == null || vin.trim().isEmpty) ? null : vin.trim().toUpperCase(),
     });
   }
 
