@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../logic/app_state.dart';
+import '../i18n/app_texts.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
@@ -237,13 +238,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // ════════════════════════════════════════════════════════════
   Future<void> _exportGlobalPdf(AppState appState) async {
     if (_sessions.isEmpty) {
-      _showSnack(appState.tr('no_reports_found'), error: true);
+      // BUG FIX (2026-08-29, real bug the user actually hit): 'no_reports_found'
+      // was never defined in ANY language file, not even English -- the
+      // i18n_validator can't catch this class of bug (it only diffs non-English
+      // against English; a key missing everywhere is invisible to it). Every
+      // user, every language, saw the literal raw key. Reused the existing,
+      // semantically-fitting 'no_trips_yet' key instead of inventing a
+      // near-duplicate.
+      _showSnack(appState.tr('no_trips_yet'), error: true);
       return;
     }
 
     setState(() {
       _isLoading       = true;
-      _progressMessage = appState.tr('generating_report');
+      // BUG FIX (2026-08-29): 'generating_report' was never defined in ANY
+      // language file either -- see the 'no_trips_yet' comment above, same
+      // root cause. New real key, translated into all 6 fully-covered
+      // languages (no existing key fit this specific progress message).
+      _progressMessage = appState.tr('generating_report_progress');
     });
 
     try {
@@ -257,7 +269,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
         vehiclesUsed:      _vehiclesUsed,
       );
 
-      if (mounted) _showSnack(appState.tr('report_generated_success'));
+      // BUG FIX (2026-08-29, exactly what the user saw): 'report_generated_success'
+      // was never defined anywhere -- same root cause as above. This is the
+      // literal one reported: the success snackbar after generating a PDF
+      // showed the raw key instead of a real message. 'report_generated'
+      // already exists with the exact right meaning in all languages; no
+      // new key needed, just pointing the call site at the real one.
+      if (mounted) _showSnack(appState.tr('report_generated'));
     } catch (e) {
       debugPrint('[ReportsScreen] Global PDF error: $e');
       if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
@@ -635,8 +653,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     for (var i = 0; i < _sessions.length; i++) {
       final session = _sessions[i];
+      // BUG FIX (2026-08-29): without an explicit locale, DateFormat's
+      // month name always rendered in English regardless of the app's
+      // selected language -- see main.dart's initializeDateFormatting
+      // comment for the full explanation.
       final currentMonth = session.startTime != null
-          ? DateFormat('MMMM yyyy').format(session.startTime!.toLocal())
+          ? DateFormat('MMMM yyyy', appState.currentLanguage.code)
+              .format(session.startTime!.toLocal())
           : null;
 
       if (currentMonth != null && currentMonth != previousMonth) {
@@ -725,7 +748,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                       ),
                       Text(
-                        'ID: ${session.id.substring(0, 8).toUpperCase()}',
+                        '${appState.tr('id_label')}: ${session.id.substring(0, 8).toUpperCase()}',
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark

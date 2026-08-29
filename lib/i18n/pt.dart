@@ -10,6 +10,7 @@ const Map<String, String> ptTexts = {
   'not_found': 'Não encontrado',
   'error': 'Erro',
   'system_error': 'Erro do sistema',
+  'id_label': 'ID',
   'loading': 'Carregando...',
   'please_wait': 'Por favor, aguarde...',
 
@@ -315,6 +316,11 @@ const Map<String, String> ptTexts = {
   'vehicle': 'Veículo',
   'vehicles': 'Veículos',
   'add_vehicle': 'Adicionar veículo',
+  'active_badge': 'ATIVO',
+  'vehicle_make_hint': 'Ex: Toyota, Nissan',
+  'specify_make': 'Especifique a marca',
+  'mark_as_active': 'Marcar como ativo',
+  'use_as_active_vehicle': 'Usar como veículo ativo',
   'edit_vehicle': 'Editar veículo',
   'delete_vehicle': 'Excluir veículo',
   'vehicle_make': 'Marca',
@@ -526,6 +532,7 @@ const Map<String, String> ptTexts = {
   // RELATÓRIOS
   // ============================================================
   'report_generated': 'Relatório gerado',
+  'generating_report_progress': 'Gerando relatório...',
   'report_download': 'Baixar relatório',
   'report_verification': 'Verificação do relatório',
   'report_qr_verification': 'Verificação por QR',

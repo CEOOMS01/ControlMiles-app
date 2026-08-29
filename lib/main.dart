@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
@@ -58,6 +59,22 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // BUG FIX (2026-08-29, real bug the user actually saw): DateFormat
+  // patterns with a month name ('MMMM', used by Reports/History's
+  // month-divider headers) always rendered in English regardless of the
+  // in-app language, even though MaterialApp.locale is correctly bound to
+  // appState.currentLanguage below -- confirmed live on-device (Spanish
+  // UI, "AUGUST 2026" divider). Flutter's MaterialApp locale binding does
+  // NOT automatically initialize package:intl's per-locale date-symbol
+  // data for arbitrary DateFormat patterns; that has to be done
+  // explicitly. Loads all 11 supported languages' month/day name data
+  // once at startup (synchronous, bundled in the intl package, no network
+  // or asset I/O) so DateFormat(pattern, appState.currentLanguage.code)
+  // works correctly everywhere it's used.
+  for (final lang in AppLanguage.values) {
+    await initializeDateFormatting(lang.code);
+  }
 
   // CGC Core crash monitoring (see cgc_monitor_service.dart): both hooks
   // wired as early as possible, before Supabase/anything else that could

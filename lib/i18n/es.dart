@@ -10,6 +10,7 @@ const Map<String, String> esTexts = {
   'not_found': 'No encontrado',
   'error': 'Error',
   'system_error': 'Error del sistema',
+  'id_label': 'ID',
   'loading': 'Cargando...',
   'please_wait': 'Por favor espera...',
 
@@ -379,6 +380,11 @@ const Map<String, String> esTexts = {
   'vehicles': 'Vehículos',
   'add_vehicle': 'Agregar vehículo',
   'add_vehicle_prompt': 'Aún no agregaste un vehículo',
+  'active_badge': 'ACTIVO',
+  'vehicle_make_hint': 'Ej: Toyota, Nissan',
+  'specify_make': 'Especifica la marca',
+  'mark_as_active': 'Marcar como activo',
+  'use_as_active_vehicle': 'Usar como vehículo activo',
   'current_trip': 'Viaje actual',
   'edit_vehicle': 'Editar vehículo',
   'delete_vehicle': 'Eliminar vehículo',
@@ -624,6 +630,7 @@ const Map<String, String> esTexts = {
   // REPORTES
   // ============================================================
   'report_generated': 'Reporte generado',
+  'generating_report_progress': 'Generando reporte...',
   'report_download': 'Descargar reporte',
   'report_verification': 'Verificación de reporte',
   'report_qr_verification': 'Verificación por QR',

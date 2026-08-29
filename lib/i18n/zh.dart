@@ -10,6 +10,7 @@ const Map<String, String> zhTexts = {
   'not_found': '未找到',
   'error': '错误',
   'system_error': '系统错误',
+  'id_label': 'ID',
   'loading': '加载中...',
   'please_wait': '请稍候...',
 
@@ -315,6 +316,11 @@ const Map<String, String> zhTexts = {
   'vehicle': '车辆',
   'vehicles': '车辆',
   'add_vehicle': '添加车辆',
+  'active_badge': '使用中',
+  'vehicle_make_hint': '例如：丰田、日产',
+  'specify_make': '请填写品牌',
+  'mark_as_active': '设为当前车辆',
+  'use_as_active_vehicle': '设为当前使用车辆',
   'edit_vehicle': '编辑车辆',
   'delete_vehicle': '删除车辆',
   'vehicle_make': '品牌',
@@ -526,6 +532,7 @@ const Map<String, String> zhTexts = {
   // 报告
   // ============================================================
   'report_generated': '报告已生成',
+  'generating_report_progress': '正在生成报告…',
   'report_download': '下载报告',
   'report_verification': '报告验证',
   'report_qr_verification': 'QR 验证',

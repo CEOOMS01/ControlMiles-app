@@ -10,6 +10,7 @@ const Map<String, String> frTexts = {
   'not_found': 'Non trouvé',
   'error': 'Erreur',
   'system_error': 'Erreur système',
+  'id_label': 'ID',
   'loading': 'Chargement...',
   'please_wait': 'Veuillez patienter...',
 
@@ -323,6 +324,11 @@ const Map<String, String> frTexts = {
   'vehicle': 'Véhicule',
   'vehicles': 'Véhicules',
   'add_vehicle': 'Ajouter un véhicule',
+  'active_badge': 'ACTIF',
+  'vehicle_make_hint': 'Ex: Toyota, Nissan',
+  'specify_make': 'Précisez la marque',
+  'mark_as_active': 'Marquer comme actif',
+  'use_as_active_vehicle': 'Utiliser comme véhicule actif',
   'edit_vehicle': 'Modifier le véhicule',
   'delete_vehicle': 'Supprimer le véhicule',
   'vehicle_make': 'Marque',
@@ -531,6 +537,7 @@ const Map<String, String> frTexts = {
   // RAPPORTS
   // ============================================================
   'report_generated': 'Rapport généré',
+  'generating_report_progress': 'Génération du rapport...',
   'report_download': 'Télécharger le rapport',
   'report_verification': 'Vérification du rapport',
   'report_qr_verification': 'Vérification par QR',

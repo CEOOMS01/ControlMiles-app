@@ -23,11 +23,17 @@
 // draggable thumb -- "al tocar el círculo se pueda deslizar a la
 // derecha para activar la auto detección". Dragging past the midpoint
 // and releasing commits to the opposite state (same premium-lock/
-// first-time-explainer/requestEnable path a plain tap already used --
-// the thumb's own onTap is kept too, as a quick alternative to
-// dragging, not a replacement for it). The label stays centered in the
-// track; the subtitle moved below it, outside the dark track, since a
-// shorter track no longer has room for two lines.
+// first-time-explainer/requestEnable path a plain tap already used).
+// The label stays centered in the track; the subtitle moved below it,
+// outside the dark track, since a shorter track no longer has room for
+// two lines.
+//
+// Third explicit revision (2026-08-29): the thumb's plain-tap shortcut
+// (kept in the second revision above "as a quick alternative to
+// dragging") was REMOVED -- a simple tap was accidentally starting/
+// stopping auto-detection without the user meaning to drag. Only the
+// horizontal drag gesture (right past the midpoint = activate, left =
+// deactivate) can change state now.
 //
 // Self-contained, matching TrackingActionButton's own pattern: reads
 // AppState directly via Provider instead of taking enabled/onPressed
@@ -136,14 +142,6 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
   Future<void> _deactivate(AppState appState) async {
     await appState.setAutoDetectEnabled(false);
     if (mounted) setState(() {});
-  }
-
-  Future<void> _handleThumbTap(AppState appState, bool enabled) async {
-    if (enabled) {
-      await _deactivate(appState);
-    } else {
-      await _activate(appState);
-    }
   }
 
   void _handleDragStart(bool enabled) {
@@ -271,9 +269,14 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
                       left: thumbLeft,
                       top: (_trackHeight - _outerPad * 2 - _thumbSize) / 2,
                       child: GestureDetector(
-                        onTap: isBusy
-                            ? null
-                            : () => _handleThumbTap(appState, enabled),
+                        // BUG FIX (pedido explícito, 2026-08-29): un simple
+                        // tap ya no activa/desactiva -- solo el gesto de
+                        // arrastre (derecha = activar, izquierda =
+                        // desactivar) puede disparar el flujo. Reversa
+                        // deliberada de la decisión anterior (comentario de
+                        // cabecera, 2026-08-27) que mantenía el tap como
+                        // atajo rápido: ese atajo causaba activaciones
+                        // accidentales con un simple toque.
                         onHorizontalDragStart: isBusy
                             ? null
                             : (_) => _handleDragStart(enabled),

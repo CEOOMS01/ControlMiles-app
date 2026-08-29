@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
+import '../i18n/app_texts.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
@@ -360,21 +361,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                     // ── DIVISOR DE MES (pedido explícito: agrupar por mes,
                     // ej. "August", con todas sus sesiones debajo) ──
+                    // BUG FIX (2026-08-29): without an explicit locale,
+                    // DateFormat's month/weekday names always rendered in
+                    // English regardless of the app's selected language --
+                    // see main.dart's initializeDateFormatting comment.
+                    final monthYearFmt = DateFormat('MMMM yyyy', appState.currentLanguage.code);
                     final currentMonth = session.startTime != null
-                        ? DateFormat('MMMM yyyy').format(session.startTime!.toLocal())
+                        ? monthYearFmt.format(session.startTime!.toLocal())
                         : '';
                     final previousMonth = index > 0 && _sessions[index - 1].startTime != null
-                        ? DateFormat('MMMM yyyy').format(_sessions[index - 1].startTime!.toLocal())
+                        ? monthYearFmt.format(_sessions[index - 1].startTime!.toLocal())
                         : '';
                     final showMonthDivider = index == 0 || currentMonth != previousMonth;
 
                     // ── DIVISOR DIARIO ──
+                    final dayFmt = DateFormat('EEEE, MMMM d, yyyy', appState.currentLanguage.code);
                     final currentDate = session.startTime != null
-                        ? DateFormat('EEEE, MMMM d, yyyy').format(session.startTime!)
+                        ? dayFmt.format(session.startTime!)
                         : '';
 
                     final previousDate = index > 0 && _sessions[index - 1].startTime != null
-                        ? DateFormat('EEEE, MMMM d, yyyy').format(_sessions[index - 1].startTime!)
+                        ? dayFmt.format(_sessions[index - 1].startTime!)
                         : '';
 
                     final showDateDivider = index == 0 || currentDate != previousDate;

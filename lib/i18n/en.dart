@@ -10,6 +10,7 @@ const Map<String, String> enTexts = {
   'not_found': 'Not found',
   'error': 'Error',
   'system_error': 'System error',
+  'id_label': 'ID',
   'loading': 'Loading...',
   'please_wait': 'Please wait...',
 
@@ -389,6 +390,11 @@ const Map<String, String> enTexts = {
   'vehicles': 'Vehicles',
   'add_vehicle': 'Add vehicle',
   'add_vehicle_prompt': 'No vehicle added yet',
+  'active_badge': 'ACTIVE',
+  'vehicle_make_hint': 'E.g. Toyota, Nissan',
+  'specify_make': 'Specify the make',
+  'mark_as_active': 'Mark as active',
+  'use_as_active_vehicle': 'Use as active vehicle',
   'current_trip': 'Current trip',
   'edit_vehicle': 'Edit vehicle',
   'delete_vehicle': 'Delete vehicle',
@@ -648,6 +654,7 @@ const Map<String, String> enTexts = {
   // REPORT EXTENSIONS
   // ============================================================
   'report_generated': 'Report generated',
+  'generating_report_progress': 'Generating report...',
   'report_download': 'Download report',
   'report_verification': 'Report verification',
   'report_qr_verification': 'QR verification',

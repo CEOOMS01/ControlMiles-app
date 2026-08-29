@@ -10,6 +10,7 @@ const Map<String, String> deTexts = {
   'not_found': 'Nicht gefunden',
   'error': 'Fehler',
   'system_error': 'Systemfehler',
+  'id_label': 'ID',
   'loading': 'Wird geladen...',
   'please_wait': 'Bitte warten...',
 
@@ -315,6 +316,11 @@ const Map<String, String> deTexts = {
   'vehicle': 'Fahrzeug',
   'vehicles': 'Fahrzeuge',
   'add_vehicle': 'Fahrzeug hinzufügen',
+  'active_badge': 'AKTIV',
+  'vehicle_make_hint': 'Z. B. Toyota, Nissan',
+  'specify_make': 'Marke angeben',
+  'mark_as_active': 'Als aktiv markieren',
+  'use_as_active_vehicle': 'Als aktives Fahrzeug verwenden',
   'edit_vehicle': 'Fahrzeug bearbeiten',
   'delete_vehicle': 'Fahrzeug löschen',
   'vehicle_make': 'Marke',
@@ -526,6 +532,7 @@ const Map<String, String> deTexts = {
   // BERICHTE
   // ============================================================
   'report_generated': 'Bericht erstellt',
+  'generating_report_progress': 'Bericht wird erstellt...',
   'report_download': 'Bericht herunterladen',
   'report_verification': 'Bericht-Verifizierung',
   'report_qr_verification': 'QR-Verifizierung',

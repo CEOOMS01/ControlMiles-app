@@ -480,8 +480,8 @@ class _VehicleScreenState extends State<VehicleScreen>
                   color: const Color(0xFF22C55E).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('ACTIVO',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF22C55E))),
+                child: Text(appState.tr('active_badge'),
+                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF22C55E))),
               ),
             ],
           ],
@@ -493,7 +493,7 @@ class _VehicleScreenState extends State<VehicleScreen>
             if (!v.isActive)
               IconButton(
                 icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF475569)),
-                tooltip: 'Marcar como activo',
+                tooltip: appState.tr('mark_as_active'),
                 onPressed: _isLoading ? null : () => _setActiveVehicle(v.id, appState),
               ),
             IconButton(
@@ -524,7 +524,7 @@ class _VehicleScreenState extends State<VehicleScreen>
                 child: DropdownButtonFormField<String>(
                   initialValue: _selectedMake,
                   decoration: InputDecoration(labelText: appState.tr('make')),
-                  hint: const Text('Ej: Toyota, Nissan'),
+                  hint: Text(appState.tr('vehicle_make_hint')),
                   isExpanded: true,
                   items: kVehicleMakes
                       .map((m) => DropdownMenuItem(value: m, child: Text(m)))
@@ -540,7 +540,7 @@ class _VehicleScreenState extends State<VehicleScreen>
             const SizedBox(height: 12),
             TextField(
               controller: _customMakeController,
-              decoration: const InputDecoration(labelText: 'Especifica la marca'),
+              decoration: InputDecoration(labelText: appState.tr('specify_make')),
             ),
           ],
           const SizedBox(height: 12),
@@ -586,7 +586,7 @@ class _VehicleScreenState extends State<VehicleScreen>
               controlAffinity: ListTileControlAffinity.leading,
               value: _setAsActiveOnAdd,
               onChanged: (v) => setState(() => _setAsActiveOnAdd = v ?? true),
-              title: const Text('Usar como vehículo activo', style: TextStyle(fontSize: 13)),
+              title: Text(appState.tr('use_as_active_vehicle'), style: const TextStyle(fontSize: 13)),
             ),
           const SizedBox(height: 20),
           Row(
