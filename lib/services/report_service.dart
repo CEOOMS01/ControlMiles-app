@@ -46,6 +46,10 @@ class ReportService {
     required DateTimeRange dateRange,
     required String userName,
     required String userDisplayId,
+    // IRS Fase 3 (2026-08-28): 'standard' or 'actual' -- doesn't change
+    // any calculation (ControlMiles only ever computes standard-mileage
+    // figures), just what the report's own disclaimer honestly states.
+    String mileageMethod = 'standard',
   }) async {
     final pdf = pw.Document();
 
@@ -60,8 +64,35 @@ class ReportService {
 
     double totalMiles = 0;
     double totalDeduction = 0;
-    SessionSection? firstSection;
-    SessionSection? lastSection;
+    // REAL BUG FOUND AND FIXED (2026-08-28, while adding IRS Fase 3):
+    // this used to track SessionSection.startOdometerValue/
+    // endOdometerValue -- fields that read from
+    // map['start_odometer_value']/map['end_odometer_value'], columns
+    // that DO NOT EXIST on session_sections (confirmed live against the
+    // schema -- that table only has *_odometer_image_url). Every report
+    // ever generated has shown "0.0" for both START and END in the
+    // ODOMETER EVIDENCE block, always, silently -- the real numeric
+    // values live on `sessions` (one capture per trip, not per gig-app
+    // switch), which TrackingSession now maps correctly (see that
+    // model's own comment). Tracks the first/last SESSION with a real
+    // odometer value instead.
+    TrackingSession? firstOdoSession;
+    TrackingSession? lastOdoSession;
+
+    // IRS Fase 3 (2026-08-28): real business-use classification, not
+    // assumed. irs_purpose is a real category enum (IrsPurposeCatalog,
+    // gig_app.dart) -- 'business' (now auto-tagged for every named gig
+    // app, see tracking_controller.dart) or null (legacy sections from
+    // before that fix -- always a named-gig-app trip historically, since
+    // 'custom' mode has always required an explicit category choice, so
+    // treated as business too) count as business miles; any of the other
+    // real categories (personal/work/medical/moving/charitable/education)
+    // are the non-deductible categories the IRS text itself lists.
+    double businessMiles = 0;
+    double nonBusinessMiles = 0;
+    const nonBusinessPurposes = {
+      'personal', 'work', 'medical', 'moving', 'charitable', 'education',
+    };
 
     for (final session in sortedSessions) {
       totalMiles += session.totalMiles;
@@ -74,12 +105,23 @@ class ReportService {
         session.totalMiles,
         session.startTime ?? dateRange.end,
       );
+      if (session.startOdometerValue != null) {
+        firstOdoSession ??= session;
+      }
+      if (session.endOdometerValue != null) {
+        lastOdoSession = session;
+      }
       final secs = sectionsBySession[session.id] ?? [];
-      if (secs.isNotEmpty) {
-        firstSection ??= secs.first;
-        lastSection = secs.last;
+      for (final sec in secs) {
+        if (nonBusinessPurposes.contains(sec.irsPurpose)) {
+          nonBusinessMiles += sec.totalMiles;
+        } else {
+          businessMiles += sec.totalMiles;
+        }
       }
     }
+
+    final businessUsePercent = totalMiles > 0 ? (businessMiles / totalMiles) * 100 : 0.0;
 
     final dateFmt = DateFormat('MM/dd/yyyy');
     final periodLabel =
@@ -97,11 +139,13 @@ class ReportService {
           _buildGlobalProfileSection(
               userName, userDisplayId, periodLabel, sortedSessions.length),
           pw.SizedBox(height: 24),
-          _buildOdometerEvidence(totalMiles, firstSection, lastSection),
+          _buildOdometerEvidence(totalMiles, firstOdoSession, lastOdoSession),
           pw.SizedBox(height: 28),
           _buildGlobalTripsTable(sortedSessions, sectionsBySession),
           pw.SizedBox(height: 36),
-          _buildTotalSummary(totalMiles, totalDeduction),
+          _buildTotalSummary(totalMiles, totalDeduction, mileageMethod),
+          pw.SizedBox(height: 20),
+          _buildBusinessUseSummary(businessMiles, nonBusinessMiles, businessUsePercent),
           pw.SizedBox(height: 24),
           _buildHRule(),
           pw.SizedBox(height: 16),
@@ -200,16 +244,18 @@ class ReportService {
   }
 
   // ════════════════════════════════════════════════════════════
-  // ODOMETER EVIDENCE — ahora toma el total ya sumado del período y el
-  // primer/último SessionSection del rango (en vez de una sola sesión).
+  // ODOMETER EVIDENCE — toma el total ya sumado del período y la primera/
+  // última SESIÓN del rango con un valor real de odómetro (no
+  // SessionSection -- ver comentario en generateGlobalReport sobre el
+  // bug real que esto corrige).
   // ════════════════════════════════════════════════════════════
   static pw.Widget _buildOdometerEvidence(
-    double           totalMiles,
-    SessionSection?  firstSection,
-    SessionSection?  lastSection,
+    double            totalMiles,
+    TrackingSession?  firstOdoSession,
+    TrackingSession?  lastOdoSession,
   ) {
-    final start = firstSection?.startOdometerValue?.toStringAsFixed(1) ?? '0.0';
-    final end   = lastSection?.endOdometerValue?.toStringAsFixed(1)    ?? '0.0';
+    final start = firstOdoSession?.startOdometerValue?.toStringAsFixed(1) ?? '--';
+    final end   = lastOdoSession?.endOdometerValue?.toStringAsFixed(1)    ?? '--';
     final total = totalMiles.toStringAsFixed(2);
 
     return pw.Column(
@@ -303,7 +349,12 @@ class ReportService {
       final milesStr = '${session.totalMiles.toStringAsFixed(2)} mi';
       final durSec = session.effectiveDurationSeconds ?? 0;
       final durStr = '${durSec ~/ 3600}h ${(durSec % 3600) ~/ 60}m';
-      return [dateStr, apps.isEmpty ? '--' : apps, milesStr, durStr, 'VERIFIED'];
+      // IRS Fase 3 (2026-08-28): the odometer readings existed in the DB
+      // and were already shown in the top-level evidence block, but never
+      // per-trip in the actual table an auditor would read row by row.
+      final startOdoStr = session.startOdometerValue?.toStringAsFixed(0) ?? '--';
+      final endOdoStr = session.endOdometerValue?.toStringAsFixed(0) ?? '--';
+      return [dateStr, apps.isEmpty ? '--' : apps, milesStr, durStr, startOdoStr, endOdoStr, 'VERIFIED'];
     }).toList();
 
     return pw.Column(
@@ -322,7 +373,7 @@ class ReportService {
                   fontSize: 10, color: PdfColors.grey600))
         else
           pw.TableHelper.fromTextArray(
-            headers: ['DATE', 'GIG APP(S)', 'DISTANCE', 'DURATION', 'STATUS'],
+            headers: ['DATE', 'GIG APP(S)', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
             data:    rows,
             headerStyle: pw.TextStyle(
               fontWeight: pw.FontWeight.bold,
@@ -334,11 +385,13 @@ class ReportService {
             cellStyle:     const pw.TextStyle(fontSize: 9),
             cellAlignment: pw.Alignment.centerLeft,
             columnWidths: {
-              0: const pw.FlexColumnWidth(1.1),
-              1: const pw.FlexColumnWidth(1.6),
-              2: const pw.FlexColumnWidth(1.0),
-              3: const pw.FlexColumnWidth(1.0),
-              4: const pw.FlexColumnWidth(1.1),
+              0: const pw.FlexColumnWidth(1.0),
+              1: const pw.FlexColumnWidth(1.4),
+              2: const pw.FlexColumnWidth(0.9),
+              3: const pw.FlexColumnWidth(0.9),
+              4: const pw.FlexColumnWidth(0.9),
+              5: const pw.FlexColumnWidth(0.9),
+              6: const pw.FlexColumnWidth(1.0),
             },
             oddRowDecoration:
                 const pw.BoxDecoration(color: PdfColors.grey50),
@@ -359,9 +412,10 @@ class ReportService {
   // TOTAL SUMMARY — recibe el total de millas ya sumado del período (antes
   // tomaba una sola TrackingSession).
   // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildTotalSummary(double totalMiles, double totalDeduction) {
+  static pw.Widget _buildTotalSummary(double totalMiles, double totalDeduction, String mileageMethod) {
     final totalStr   = totalMiles.toStringAsFixed(2);
     final deductStr  = '\$${totalDeduction.toStringAsFixed(2)}';
+    final methodStr  = mileageMethod == 'actual' ? 'Actual Expenses' : 'Standard Mileage Rate';
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -421,7 +475,7 @@ class ReportService {
           pw.SizedBox(
             width: 260,
             child: pw.Text(
-              'Estimated using the IRS 2026 standard mileage rates '
+              'Method: $methodStr. Estimated using the IRS 2026 standard mileage rates '
               '(\$${(kIrsMileageRateCentsPerMile2026H1 / 100).toStringAsFixed(3)}/mile '
               'Jan 1-Jun 30, \$${(kIrsMileageRateCentsPerMile2026H2 / 100).toStringAsFixed(2)}/mile '
               'Jul 1-Dec 31 — each trip priced at the rate in effect on its own '
@@ -435,6 +489,61 @@ class ReportService {
                 fontStyle: pw.FontStyle.italic,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // BUSINESS-USE SUMMARY (IRS Fase 3, 2026-08-28) — the annual-summary
+  // fields the IRS recommends beyond the raw trip log: total miles split
+  // by real classification (irs_purpose), and the business-use
+  // percentage that split makes possible. See generateGlobalReport's own
+  // comment for exactly how business vs. non-business is derived.
+  // ════════════════════════════════════════════════════════════
+  static pw.Widget _buildBusinessUseSummary(
+    double businessMiles,
+    double nonBusinessMiles,
+    double businessUsePercent,
+  ) {
+    final totalMiles = businessMiles + nonBusinessMiles;
+    if (totalMiles <= 0) return pw.SizedBox.shrink();
+
+    pw.Widget stat(String label, String value) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(label,
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+            pw.SizedBox(height: 2),
+            pw.Text(value,
+                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          ],
+        );
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text('ANNUAL BUSINESS-USE SUMMARY',
+              style: pw.TextStyle(
+                  fontSize: 10, fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue800)),
+          pw.SizedBox(height: 10),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              stat('TOTAL MILES', '${totalMiles.toStringAsFixed(2)} mi'),
+              stat('BUSINESS MILES', '${businessMiles.toStringAsFixed(2)} mi'),
+              stat('NON-BUSINESS MILES', '${nonBusinessMiles.toStringAsFixed(2)} mi'),
+              stat('BUSINESS-USE %', '${businessUsePercent.toStringAsFixed(1)}%'),
+            ],
           ),
         ],
       ),

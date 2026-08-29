@@ -35,6 +35,12 @@ class Vehicle {
   final double? lastSpeed;
   final DateTime? lastLocationAt;
 
+  // IRS Fase 3 (2026-08-28): "date vehicle placed in service" -- one of
+  // the annual-summary fields the IRS recommends recording, per the
+  // audit in [[project_controlmiles]]. Nullable, no backfill -- shown
+  // in the exportable report when set, omitted when not.
+  final DateTime? placedInServiceDate;
+
   const Vehicle({
     required this.id,
     this.displayId,
@@ -53,6 +59,7 @@ class Vehicle {
     this.lastLongitude,
     this.lastSpeed,
     this.lastLocationAt,
+    this.placedInServiceDate,
   });
 
   bool get isFleetVehicle => organizationId != null;
@@ -88,6 +95,9 @@ class Vehicle {
       lastSpeed: _toDoubleOrNull(map['last_speed']),
       lastLocationAt: map['last_location_at'] != null
           ? DateTime.tryParse(map['last_location_at'] as String)
+          : null,
+      placedInServiceDate: map['placed_in_service_date'] != null
+          ? DateTime.tryParse(map['placed_in_service_date'] as String)
           : null,
     );
   }

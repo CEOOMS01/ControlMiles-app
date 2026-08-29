@@ -17,6 +17,19 @@ class TrackingSession {
   // antifraud verdict -- an independent, cryptographically-sealed proof
   // this codebase's own client-side hash chain can't provide by itself.
   final String? cgcDecisionId;
+  // IRS Fase 3 (2026-08-28): sessions.start_odometer_value/end_odometer_value
+  // are real columns, correctly written by TrackingController -- this
+  // model just never mapped them (same class of gap as vehicle_id/
+  // total_duration_seconds above). REAL BUG FOUND while adding this: the
+  // sibling fields on SessionSection (session_section.dart) read from
+  // map['start_odometer_value']/map['end_odometer_value'] too, but
+  // session_sections has NO such columns (only *_odometer_image_url) --
+  // those fields are always null in practice. Not touched here (separate,
+  // pre-existing issue, flagged not silently fixed) -- the real odometer
+  // values live only at the session level, which is what the report
+  // actually needs anyway (one capture per trip, not per gig-app switch).
+  final double? startOdometerValue;
+  final double? endOdometerValue;
 
   TrackingSession({
     required this.id,
@@ -30,6 +43,8 @@ class TrackingSession {
     required this.isClosed,
     this.dateKey,
     this.cgcDecisionId,
+    this.startOdometerValue,
+    this.endOdometerValue,
   });
 
   /// Crea una sesión vacía para inicialización de UI
@@ -57,6 +72,14 @@ class TrackingSession {
     return 0.0;
   }
 
+  static double? _toDoubleOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory TrackingSession.fromMap(Map<String, dynamic> map) {
     return TrackingSession(
       id: map['id'],
@@ -68,6 +91,8 @@ class TrackingSession {
           ? DateTime.parse(map['end_time'])
           : null,
       totalMiles: _toDouble(map['total_miles']),
+      startOdometerValue: _toDoubleOrNull(map['start_odometer_value']),
+      endOdometerValue: _toDoubleOrNull(map['end_odometer_value']),
       // BUG FIX: this column existed in `sessions` and is correctly persisted
       // by TrackingController.stopTracking() (pause-excluded net duration),
       // but the model never mapped it — every screen fell back to raw

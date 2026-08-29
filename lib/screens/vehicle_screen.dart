@@ -54,6 +54,10 @@ class _VehicleScreenState extends State<VehicleScreen>
   final TextEditingController _customMakeController = TextEditingController();
   String? _selectedMake;
   bool _setAsActiveOnAdd = true;
+  // IRS Fase 3 (2026-08-28): optional, only settable at creation time --
+  // no vehicle-edit flow exists (explicit user decision, see this file's
+  // own header comment).
+  DateTime? _placedInServiceDate;
 
   // ── Mantenimiento ──
   Vehicle? _selectedVehicleForMaintenance;
@@ -239,6 +243,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         // Primer vehículo del usuario: se marca activo automáticamente.
         // Si ya tiene otros, respeta el checkbox del formulario.
         setAsActive: _vehicles.isEmpty ? true : _setAsActiveOnAdd,
+        placedInServiceDate: _placedInServiceDate,
       );
 
       _selectedMake = null;
@@ -250,6 +255,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       setState(() {
         _addingVehicle = false;
         _setAsActiveOnAdd = true;
+        _placedInServiceDate = null;
       });
 
       await _loadVehicles();
@@ -533,6 +539,24 @@ class _VehicleScreenState extends State<VehicleScreen>
             ],
           ),
           TextField(controller: _mileageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: appState.tr('odometer'))),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(appState.tr('placed_in_service_date_optional')),
+            subtitle: Text(_placedInServiceDate != null
+                ? DateFormat('MM/dd/yyyy').format(_placedInServiceDate!)
+                : '—'),
+            trailing: const Icon(Icons.calendar_today_rounded, size: 18),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _placedInServiceDate ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) setState(() => _placedInServiceDate = picked);
+            },
+          ),
           if (!isFirstVehicle)
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,

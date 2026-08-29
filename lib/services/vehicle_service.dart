@@ -110,6 +110,13 @@ class VehicleService {
     required int? year,
     required double? odometer,
     required bool setAsActive,
+    // IRS Fase 3 (2026-08-28): "date placed in service", one of the
+    // annual-summary fields the IRS recommends recording. Optional --
+    // there's no vehicle-edit flow (explicit user decision, see
+    // vehicle_screen.dart's own header comment), so this can only ever
+    // be set at creation time; the report shows it when present and
+    // omits it otherwise.
+    DateTime? placedInServiceDate,
   }) async {
     _validate(make: make, model: model, color: color, year: year, odometer: odometer);
 
@@ -126,6 +133,7 @@ class VehicleService {
       'odometer': odometer,
       'is_active': setAsActive,
       'is_primary': setAsActive,
+      'placed_in_service_date': placedInServiceDate?.toIso8601String().split('T')[0],
     });
   }
 

@@ -877,6 +877,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             ),
           ),
           const SizedBox(height: 10),
+          _buildMileageMethodRow(appState, isDark),
+          const SizedBox(height: 10),
           _buildLegalLinkRow(
             icon: Icons.workspace_premium_outlined,
             label: appState.tr('subscription'),
@@ -931,6 +933,39 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   // accesibles desde la app, pese a que ControlMiles pide permisos
   // sensibles (ubicación en segundo plano, cámara, Usage Access). Estas
   // dos filas cierran ese hueco.
+  // IRS Fase 3 (2026-08-28): lets the driver state which deduction method
+  // they're using -- doesn't change any calculation (ControlMiles only
+  // ever computes standard-mileage figures), just what the report's
+  // disclaimer honestly claims. See AppState.setMileageMethod.
+  Widget _buildMileageMethodRow(AppState appState, bool isDark) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        leading: Icon(Icons.request_quote_outlined, color: Theme.of(context).colorScheme.primary),
+        title: Text(appState.tr('mileage_method_label'),
+            style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+        trailing: DropdownButton<String>(
+          value: appState.mileageMethod,
+          underline: const SizedBox.shrink(),
+          style: TextStyle(color: subTextColor, fontSize: 13),
+          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          items: [
+            DropdownMenuItem(value: 'standard', child: Text(appState.tr('mileage_method_standard'))),
+            DropdownMenuItem(value: 'actual', child: Text(appState.tr('mileage_method_actual'))),
+          ],
+          onChanged: (v) {
+            if (v != null) appState.setMileageMethod(v);
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildLegalLinkRow({
     required IconData icon,
     required String label,

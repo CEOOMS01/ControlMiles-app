@@ -301,7 +301,13 @@ class TrackingController {
             'user_id': user.id,
             'organization_id': organizationId,
             'gig_app': gigApp,
-            'irs_purpose': (gigApp == 'custom') ? irsPurpose : null,
+            // IRS Fase 3 (2026-08-28): driving for a named gig platform is
+            // unambiguously business use -- tag it as such automatically
+            // instead of leaving irs_purpose null. Reuses the exact same
+            // category system 'custom' mode's own picker already writes
+            // to (IrsPurposeCatalog, gig_app.dart) -- report_service.dart
+            // already renders whatever's here, no rendering change needed.
+            'irs_purpose': (gigApp == 'custom') ? irsPurpose : 'business',
             'section_status': 'active',
             'total_miles': 0.0,
             'total_duration_seconds': 0,
@@ -518,7 +524,13 @@ class TrackingController {
           'p_old_section_id': oldSection?.id,
           'p_new_section_id': newSectionId,
           'p_new_gig_app': newGigApp,
-          'p_new_irs_purpose': irsPurpose,
+          // IRS Fase 3: same auto-tagging rule as startNewSection above --
+          // a switch INTO a named gig app is business use regardless of
+          // caller (auto-detect's silent mid-trip switch never passes
+          // irsPurpose at all today; the manual GigAppSelector only
+          // passes a real value for 'custom'). Computed here, once, so
+          // every caller gets it right without needing to know this rule.
+          'p_new_irs_purpose': newGigApp == 'custom' ? irsPurpose : 'business',
           'p_old_total_miles': oldSection != null ? _totalSectionMiles : null,
           'p_old_total_duration_seconds': elapsedSeconds,
           'p_old_end_latitude': AntifraudEngine.lastLat,

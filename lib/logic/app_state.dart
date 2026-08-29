@@ -65,6 +65,12 @@ class AppState extends ChangeNotifier {
   // nothing in the app actually gates on it yet -- that's deliberately
   // separate future work (a real trial-expiry paywall), not assumed here.
   bool _baseEntitled = false;
+  // IRS Fase 3 (2026-08-28): which deduction method the driver states
+  // they're using -- 'standard' or 'actual'. ControlMiles only ever
+  // computes standard-mileage-rate figures; this exists so the report's
+  // disclaimer can honestly say which method the numbers reflect,
+  // not so the app itself changes any calculation based on it.
+  String _mileageMethod = 'standard';
   // Deliberately NOT cached to SharedPreferences like accountType/etc --
   // invites can arrive or get withdrawn at any time, so a stale disk copy
   // risks showing an already-handled invite (or hiding a brand new one).
@@ -112,6 +118,7 @@ class AppState extends ChangeNotifier {
   String? get defaultOrgId => _defaultOrgId;
   bool get premiumEntitled => _premiumEntitled;
   bool get baseEntitled => _baseEntitled;
+  String get mileageMethod => _mileageMethod;
   bool get accountTypeChosen => _accountTypeChosen;
   bool get isGig => _accountType == 'gig';
   bool get isFleetAdmin => _accountType == 'fleet_admin';
@@ -153,7 +160,7 @@ class AppState extends ChangeNotifier {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled')
+          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled, mileage_method')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -163,12 +170,18 @@ class AppState extends ChangeNotifier {
       final String? newDefaultOrgId = data?['default_org_id'] as String?;
       final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
       final bool newBaseEntitled = data?['base_entitled'] as bool? ?? false;
+      // IRS Fase 3 (2026-08-28): which deduction method the driver is
+      // actually using -- 'standard' is the only one ControlMiles
+      // computes figures for today, and the only one the report's
+      // disclaimer text can honestly claim.
+      final String newMileageMethod = data?['mileage_method'] as String? ?? 'standard';
       final bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||
           _defaultOrgId != newDefaultOrgId ||
           _premiumEntitled != newPremiumEntitled ||
-          _baseEntitled != newBaseEntitled;
+          _baseEntitled != newBaseEntitled ||
+          _mileageMethod != newMileageMethod;
 
       if (changed) {
         _userDisplayId = newDisplayId;
@@ -177,6 +190,7 @@ class AppState extends ChangeNotifier {
         _defaultOrgId = newDefaultOrgId;
         _premiumEntitled = newPremiumEntitled;
         _baseEntitled = newBaseEntitled;
+        _mileageMethod = newMileageMethod;
 
         final prefs = await SharedPreferences.getInstance();
         if (_userDisplayId != null) {
@@ -337,6 +351,30 @@ class AppState extends ChangeNotifier {
     await prefs.setBool('controlmiles_auto_detect_enabled', value);
 
     return await AutoTripDetectionService.instance.setEnabled(value);
+  }
+
+  /// IRS Fase 3 (2026-08-28): writes straight to profiles.mileage_method
+  /// -- no local device caching needed (unlike autoDetectEnabled/etc,
+  /// this has no offline-critical read path, it's just report metadata).
+  Future<void> setMileageMethod(String value) async {
+    if (_mileageMethod == value) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final previous = _mileageMethod;
+    _mileageMethod = value;
+    notifyListeners();
+
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'mileage_method': value})
+          .eq('id', user.id);
+    } catch (e) {
+      debugPrint('[AppState] Error saving mileage_method: $e');
+      _mileageMethod = previous;
+      notifyListeners();
+    }
   }
 
   // ============================================================

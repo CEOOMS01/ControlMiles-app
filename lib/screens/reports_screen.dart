@@ -206,6 +206,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         dateRange:         _dateRange,
         userName:          _resolveUserName(),
         userDisplayId:     appState.userDisplayId ?? '---',
+        mileageMethod:     appState.mileageMethod,
       );
 
       if (mounted) _showSnack(appState.tr('report_generated_success'));
