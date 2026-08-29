@@ -362,7 +362,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     final scaffoldBg = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
     final cardBg     = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final border     = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    // BUG FIX (pedido explícito): #E2E8F0 (el borde compartido por casi
+    // toda la app) es casi indistinguible del fondo del scaffold
+    // (#F8FAFC) en modo día -- las líneas de las cards en Reports (bordes
+    // + Dividers internos) quedaban casi invisibles. Escalado a un tono
+    // más oscuro de la misma paleta slate (#CBD5E1, ya usado en esta
+    // misma pantalla para el ícono del empty state) -- cambio acotado a
+    // esta pantalla, no al token compartido de toda la app.
+    final border     = isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1);
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -532,60 +539,80 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           Divider(height: 1, color: border),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // BUG FIX (pedido explícito): TOTAL y TODAY vivían apilados uno
+          // debajo del otro, sin ninguna separación visual que dejara claro
+          // que son dos cifras distintas (una es el total del período, la
+          // otra el total del día calendario en curso). Ahora van uno al
+          // lado del otro con un divisor vertical entre ambos.
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                subLabel(appState.tr('total_miles')),
-                Row(
-                  children: [
-                    _infoChip(
-                      icon: Icons.speed_rounded,
-                      label: fmtMiles(_periodTotalMiles),
-                      isDark: isDark,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        subLabel(appState.tr('total_miles')),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _infoChip(
+                              icon: Icons.speed_rounded,
+                              label: fmtMiles(_periodTotalMiles),
+                              isDark: isDark,
+                            ),
+                            _infoChip(
+                              icon: Icons.timer_outlined,
+                              label: fmtDuration(_periodTotalDurationSec),
+                              isDark: isDark,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    _infoChip(
-                      icon: Icons.timer_outlined,
-                      label: fmtDuration(_periodTotalDurationSec),
-                      isDark: isDark,
-                    ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                subLabel(appState.tr('today')),
-                // BUG FIX (pedido explícito, mismo criterio que Dashboard):
-                // millas y tiempo estaban "flotando" sueltos en un Row --
-                // ahora cada uno vive en su propio cuadrito (mismo chip que
-                // ya usa _infoChip en esta pantalla).
-                _summaryLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Row(
-                        children: [
-                          _infoChip(
-                            icon: Icons.speed_rounded,
-                            label: fmtMiles(_todayMiles),
-                            isDark: isDark,
-                          ),
-                          const SizedBox(width: 8),
-                          _infoChip(
-                            icon: Icons.timer_outlined,
-                            label: fmtDuration(_todayDurationSec),
-                            isDark: isDark,
-                          ),
-                        ],
-                      ),
+                VerticalDivider(width: 1, thickness: 1, color: border),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        subLabel(appState.tr('today')),
+                        // BUG FIX (pedido explícito, mismo criterio que
+                        // Dashboard): millas y tiempo estaban "flotando"
+                        // sueltos en un Row -- ahora cada uno vive en su
+                        // propio cuadrito (mismo chip que ya usa _infoChip
+                        // en esta pantalla).
+                        _summaryLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _infoChip(
+                                    icon: Icons.speed_rounded,
+                                    label: fmtMiles(_todayMiles),
+                                    isDark: isDark,
+                                  ),
+                                  _infoChip(
+                                    icon: Icons.timer_outlined,
+                                    label: fmtDuration(_todayDurationSec),
+                                    isDark: isDark,
+                                  ),
+                                ],
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
