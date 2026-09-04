@@ -412,4 +412,11 @@ const Map<String, String> koTexts = {
   'sections_count_label': '구간 {count}개',
   'vehicle_make_other': '기타',
   'email_not_linked_to_controlmiles': '이 이메일은 ControlMiles 계정에 연결되어 있지 않습니다.',
+
+  'free_trial_expired_title': '무료 체험이 종료되었습니다',
+  'free_trial_expired_body': '30일 무료 체험이 종료되었습니다. 계속 이동 기록을 추적하려면 Basic 또는 Premium을 구독하세요.',
+  'vehicle_limit_reached_title': '차량 한도에 도달했습니다',
+  'vehicle_limit_reached_body': '현재 플랜은 최대 {max}대의 차량을 지원합니다. 더 추가하려면 업그레이드하세요.',
+  'export_limit_reached_title': '내보내기 한도에 도달했습니다',
+  'export_limit_reached_body': 'Basic 플랜은 월 2회 PDF 내보내기를 포함합니다. 무제한 내보내기를 위해 Premium으로 업그레이드하세요.',
 };

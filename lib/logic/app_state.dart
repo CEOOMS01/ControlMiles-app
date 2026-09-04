@@ -65,6 +65,15 @@ class AppState extends ChangeNotifier {
   // nothing in the app actually gates on it yet -- that's deliberately
   // separate future work (a real trial-expiry paywall), not assumed here.
   bool _baseEntitled = false;
+  // Real subscription-tier enforcement (explicit user requirement,
+  // 2026-09-04): the 30-day free-trial clock starts here. Same column the
+  // server-side trigger (fn_enforce_trial_or_subscription) reads --
+  // single source of truth, no duplicated "trial start" concept.
+  DateTime? _accountCreatedAt;
+  // Owner/QA accounts exempted from all tier enforcement (trial expiry,
+  // vehicle count, PDF export limit) -- profiles.tier_enforcement_exempt,
+  // same flag the 3 server-side enforcement points check first.
+  bool _tierEnforcementExempt = false;
   // IRS Fase 3 (2026-08-28): which deduction method the driver states
   // they're using -- 'standard' or 'actual'. ControlMiles only ever
   // computes standard-mileage-rate figures; this exists so the report's
@@ -124,6 +133,32 @@ class AppState extends ChangeNotifier {
   bool get isFleetAdmin => _accountType == 'fleet_admin';
   bool get isFleetDriver => _accountType == 'fleet_driver';
   bool get isFleetAccount => isFleetAdmin || isFleetDriver;
+
+  // ============================================================
+  // SUBSCRIPTION-TIER ENFORCEMENT (explicit user requirement, 2026-09-04)
+  // Fleet is entirely out of scope (isFleetAccount check on every getter
+  // below) -- that's a separate pricing model, not built yet. Mirrors the
+  // server-side triggers/RPC exactly (fn_enforce_trial_or_subscription,
+  // fn_enforce_vehicle_count_limit, check_and_log_pdf_export) -- these
+  // getters are for instant client-side UX only, never the real floor.
+  // ============================================================
+  static const int _freeTrialDays = 30;
+
+  /// True once a Gig, non-exempt, non-subscribed account's 30-day trial
+  /// has run out -- the ONLY thing this blocks is starting a NEW trip
+  /// (see TrackingActionButton's canStart), never viewing existing data.
+  bool get isFreeTrialExpired {
+    if (isFleetAccount || _tierEnforcementExempt) return false;
+    if (_premiumEntitled || _baseEntitled) return false;
+    if (_accountCreatedAt == null) return false;
+    return DateTime.now().difference(_accountCreatedAt!).inDays > _freeTrialDays;
+  }
+
+  /// null = unlimited (Premium, exempt, or Fleet). 1 for Free, 2 for Basic.
+  int? get maxVehicles {
+    if (isFleetAccount || _tierEnforcementExempt || _premiumEntitled) return null;
+    return _baseEntitled ? 2 : 1;
+  }
   List<PendingInvite> get pendingInvites => _pendingInvites;
   bool get hasPendingInvites => _pendingInvites.isNotEmpty;
 
@@ -160,7 +195,7 @@ class AppState extends ChangeNotifier {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled, mileage_method')
+          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled, mileage_method, created_at, tier_enforcement_exempt')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -175,13 +210,20 @@ class AppState extends ChangeNotifier {
       // computes figures for today, and the only one the report's
       // disclaimer text can honestly claim.
       final String newMileageMethod = data?['mileage_method'] as String? ?? 'standard';
+      // Subscription-tier enforcement (2026-09-04) -- see isFreeTrialExpired.
+      final DateTime? newAccountCreatedAt = data?['created_at'] != null
+          ? DateTime.tryParse(data!['created_at'] as String)
+          : null;
+      final bool newTierEnforcementExempt = data?['tier_enforcement_exempt'] as bool? ?? false;
       final bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||
           _defaultOrgId != newDefaultOrgId ||
           _premiumEntitled != newPremiumEntitled ||
           _baseEntitled != newBaseEntitled ||
-          _mileageMethod != newMileageMethod;
+          _mileageMethod != newMileageMethod ||
+          _accountCreatedAt != newAccountCreatedAt ||
+          _tierEnforcementExempt != newTierEnforcementExempt;
 
       if (changed) {
         _userDisplayId = newDisplayId;
@@ -191,6 +233,8 @@ class AppState extends ChangeNotifier {
         _premiumEntitled = newPremiumEntitled;
         _baseEntitled = newBaseEntitled;
         _mileageMethod = newMileageMethod;
+        _accountCreatedAt = newAccountCreatedAt;
+        _tierEnforcementExempt = newTierEnforcementExempt;
 
         final prefs = await SharedPreferences.getInstance();
         if (_userDisplayId != null) {
@@ -206,6 +250,12 @@ class AppState extends ChangeNotifier {
         await prefs.setString('controlmiles_account_type', _accountType);
         await prefs.setBool('controlmiles_premium_entitled', _premiumEntitled);
         await prefs.setBool('controlmiles_base_entitled', _baseEntitled);
+        await prefs.setBool('controlmiles_tier_enforcement_exempt', _tierEnforcementExempt);
+        if (_accountCreatedAt != null) {
+          await prefs.setString('controlmiles_account_created_at', _accountCreatedAt!.toIso8601String());
+        } else {
+          await prefs.remove('controlmiles_account_created_at');
+        }
         if (_defaultOrgId != null) {
           await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
         } else {
@@ -509,6 +559,9 @@ class AppState extends ChangeNotifier {
       _defaultOrgId = prefs.getString('controlmiles_default_org_id');
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;
+      _tierEnforcementExempt = prefs.getBool('controlmiles_tier_enforcement_exempt') ?? false;
+      final cachedCreatedAt = prefs.getString('controlmiles_account_created_at');
+      _accountCreatedAt = cachedCreatedAt != null ? DateTime.tryParse(cachedCreatedAt) : null;
       _accountTypeChosen = prefs.getBool('controlmiles_account_type_chosen') ?? false;
 
       // First-launch role chooser (device-level, see clearAll())
@@ -532,6 +585,8 @@ class AppState extends ChangeNotifier {
     _defaultOrgId = null;
     _premiumEntitled = false;
     _baseEntitled = false;
+    _tierEnforcementExempt = false;
+    _accountCreatedAt = null;
     _accountTypeChosen = false;
     // A different account on this same device shouldn't inherit the
     // previous account's premium auto-detect choice, and the listening
@@ -550,6 +605,9 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_permissions_completed');
     await prefs.remove('controlmiles_account_type');
     await prefs.remove('controlmiles_premium_entitled');
+    await prefs.remove('controlmiles_base_entitled');
+    await prefs.remove('controlmiles_tier_enforcement_exempt');
+    await prefs.remove('controlmiles_account_created_at');
     await prefs.remove('controlmiles_auto_detect_enabled');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');

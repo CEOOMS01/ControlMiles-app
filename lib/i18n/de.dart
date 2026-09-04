@@ -704,4 +704,11 @@ const Map<String, String> deTexts = {
   'sections_count_label': '{count} Abschnitte',
   'vehicle_make_other': 'Andere',
   'email_not_linked_to_controlmiles': 'Diese E-Mail ist mit keinem ControlMiles-Konto verknüpft.',
+
+  'free_trial_expired_title': 'Deine kostenlose Testphase ist beendet',
+  'free_trial_expired_body': 'Deine 30-tägige kostenlose Testphase ist abgelaufen. Abonniere Basic oder Premium, um weiter Fahrten zu erfassen.',
+  'vehicle_limit_reached_title': 'Fahrzeuglimit erreicht',
+  'vehicle_limit_reached_body': 'Dein Plan erlaubt bis zu {max} Fahrzeug(e). Upgrade, um mehr hinzuzufügen.',
+  'export_limit_reached_title': 'Exportlimit erreicht',
+  'export_limit_reached_body': 'Der Basic-Plan beinhaltet 2 PDF-Exporte pro Monat. Upgrade auf Premium für unbegrenzte Exporte.',
 };

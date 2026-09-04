@@ -765,4 +765,14 @@ const Map<String, String> enTexts = {
   // as-is.
   'vehicle_make_other': 'Other',
   'email_not_linked_to_controlmiles': 'That email isn\'t linked to a ControlMiles account.',
+
+  // ============================================================
+  // SUBSCRIPTION-TIER ENFORCEMENT (2026-09-04)
+  // ============================================================
+  'free_trial_expired_title': 'Your free trial has ended',
+  'free_trial_expired_body': 'Your 30-day free trial is over. Subscribe to Basic or Premium to keep tracking trips.',
+  'vehicle_limit_reached_title': 'Vehicle limit reached',
+  'vehicle_limit_reached_body': 'Your plan allows up to {max} vehicle(s). Upgrade to add more.',
+  'export_limit_reached_title': 'Export limit reached',
+  'export_limit_reached_body': 'Basic plans include 2 PDF exports per month. Upgrade to Premium for unlimited exports.',
 };

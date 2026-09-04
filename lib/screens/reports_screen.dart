@@ -13,6 +13,7 @@ import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
 import '../models/vehicle.dart';
+import '../routes/app_routes.dart';
 import '../services/report_service.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -284,6 +285,49 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // near-duplicate.
       _showSnack(appState.tr('no_trips_yet'), error: true);
       return;
+    }
+
+    // Subscription-tier enforcement (explicit user requirement,
+    // 2026-09-04): Free/Basic capped at 2 PDF exports per calendar month;
+    // Premium (and exempt accounts) unlimited. The RPC is the real floor
+    // (SECURITY DEFINER, counts pdf_export_log server-side) -- PDF
+    // generation itself is 100% client-side with no other server round
+    // trip, so this check has to happen here, before generation starts,
+    // not as a follow-up validation.
+    try {
+      final limitCheck = await Supabase.instance.client
+          .rpc('check_and_log_pdf_export')
+          .single();
+      if (limitCheck['allowed'] != true) {
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(appState.tr('export_limit_reached_title')),
+            content: Text(appState.tr('export_limit_reached_body')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(appState.tr('cancel')),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(context, AppRoutes.subscription);
+                },
+                child: Text(appState.tr('upgrade_plan')),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      // Fails open, same convention as every other best-effort guard in
+      // this codebase (e.g. the payload/rate-limit checks in CGC Core) --
+      // a broken limit check must never block a real report a user is
+      // entitled to generate.
+      debugPrint('[ReportsScreen] export limit check failed (failing open): $e');
     }
 
     setState(() {

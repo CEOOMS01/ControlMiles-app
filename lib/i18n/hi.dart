@@ -422,4 +422,11 @@ const Map<String, String> hiTexts = {
   'sections_count_label': '{count} सेक्शन',
   'vehicle_make_other': 'अन्य',
   'email_not_linked_to_controlmiles': 'यह ईमेल किसी ControlMiles खाते से जुड़ा नहीं है।',
+
+  'free_trial_expired_title': 'आपका फ्री ट्रायल समाप्त हो गया है',
+  'free_trial_expired_body': 'आपका 30-दिन का फ्री ट्रायल समाप्त हो गया है। ट्रिप ट्रैक करना जारी रखने के लिए Basic या Premium सब्सक्राइब करें।',
+  'vehicle_limit_reached_title': 'वाहन सीमा पूरी हो गई',
+  'vehicle_limit_reached_body': 'आपकी योजना में अधिकतम {max} वाहन(वाहन) की अनुमति है। और जोड़ने के लिए अपग्रेड करें।',
+  'export_limit_reached_title': 'एक्सपोर्ट सीमा पूरी हो गई',
+  'export_limit_reached_body': 'Basic योजना में हर महीने 2 PDF एक्सपोर्ट शामिल हैं। असीमित एक्सपोर्ट के लिए Premium में अपग्रेड करें।',
 };

@@ -98,13 +98,20 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           if (widget.canStart != null) {
             final allowed = await widget.canStart!();
             if (!allowed) {
-              if (mounted) {
+              // Subscription-tier enforcement (2026-09-04): a canStart
+              // caller can now handle its own feedback (e.g. a real dialog
+              // with an upgrade CTA, see dashboard_screen.dart's free-trial
+              // gate) by passing null cannotStartMessage on purpose --
+              // showing this snackbar too would just stack a redundant,
+              // possibly mismatched message on top of whatever canStart
+              // already showed. Fleet's DVIR gate is unaffected: it always
+              // passes its own cannotStartMessage explicitly (see
+              // driver_operations_screen.dart), never relies on this
+              // fallback text.
+              if (mounted && widget.cannotStartMessage != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      widget.cannotStartMessage ??
-                          appState.tr('dvir_required_before_start'),
-                    ),
+                    content: Text(widget.cannotStartMessage!),
                     backgroundColor: Colors.red,
                     duration: const Duration(seconds: 3),
                   ),

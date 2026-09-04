@@ -411,4 +411,11 @@ const Map<String, String> jaTexts = {
   'sections_count_label': '{count}件のセクション',
   'vehicle_make_other': 'その他',
   'email_not_linked_to_controlmiles': 'このメールアドレスはControlMilesアカウントに紐付けられていません。',
+
+  'free_trial_expired_title': '無料トライアルが終了しました',
+  'free_trial_expired_body': '30日間の無料トライアルが終了しました。走行記録を続けるにはBasicまたはPremiumにご登録ください。',
+  'vehicle_limit_reached_title': '車両登録数の上限に達しました',
+  'vehicle_limit_reached_body': '現在のプランでは最大{max}台まで登録できます。追加するにはアップグレードしてください。',
+  'export_limit_reached_title': 'エクスポート回数の上限に達しました',
+  'export_limit_reached_body': 'Basicプランは月2回までPDFエクスポートが可能です。無制限にエクスポートするにはPremiumにアップグレードしてください。',
 };

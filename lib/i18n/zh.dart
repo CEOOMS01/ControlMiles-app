@@ -704,4 +704,11 @@ const Map<String, String> zhTexts = {
   'sections_count_label': '{count} 个路段',
   'vehicle_make_other': '其他',
   'email_not_linked_to_controlmiles': '该邮箱未关联任何 ControlMiles 账户。',
+
+  'free_trial_expired_title': '免费试用已结束',
+  'free_trial_expired_body': '您的 30 天免费试用已结束。订阅 Basic 或 Premium 以继续记录行程。',
+  'vehicle_limit_reached_title': '已达车辆数量上限',
+  'vehicle_limit_reached_body': '您的套餐最多支持 {max} 辆车。升级套餐以添加更多车辆。',
+  'export_limit_reached_title': '已达导出次数上限',
+  'export_limit_reached_body': 'Basic 套餐每月可导出 2 次 PDF。升级到 Premium 可无限导出。',
 };

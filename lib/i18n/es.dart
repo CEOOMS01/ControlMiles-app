@@ -736,4 +736,11 @@ const Map<String, String> esTexts = {
   'sections_count_label': '{count} secciones',
   'vehicle_make_other': 'Otra',
   'email_not_linked_to_controlmiles': 'Ese correo no está vinculado a ninguna cuenta de ControlMiles.',
+
+  'free_trial_expired_title': 'Tu prueba gratis terminó',
+  'free_trial_expired_body': 'Tus 30 días de prueba gratis se acabaron. Suscribite a Basic o Premium para seguir registrando viajes.',
+  'vehicle_limit_reached_title': 'Límite de vehículos alcanzado',
+  'vehicle_limit_reached_body': 'Tu plan permite hasta {max} vehículo(s). Mejorá tu plan para agregar más.',
+  'export_limit_reached_title': 'Límite de exportación alcanzado',
+  'export_limit_reached_body': 'El plan Basic incluye 2 exportaciones de PDF por mes. Mejorá a Premium para exportar sin límite.',
 };

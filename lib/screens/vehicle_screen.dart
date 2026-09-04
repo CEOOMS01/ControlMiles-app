@@ -24,6 +24,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/vehicle_makes.dart';
 import '../logic/app_state.dart';
+import '../routes/app_routes.dart';
 import '../models/maintenance_record.dart';
 import '../models/vehicle.dart';
 import '../services/maintenance_service.dart';
@@ -152,6 +153,14 @@ class _VehicleScreenState extends State<VehicleScreen>
       final floorStr = floor != null ? floor.toStringAsFixed(1) : floorMatch.group(1)!;
       return appState.tr('vehicle_odometer_below_floor').replaceFirst('{floor}', floorStr);
     }
+    // Subscription-tier enforcement (2026-09-04): safety net for
+    // fn_enforce_vehicle_count_limit -- the real client-side check in
+    // _addVehicle below should normally catch this first (with the richer
+    // upgrade dialog), this only fires if that check was ever skipped.
+    final limitMatch = RegExp(r'VEHICLE_LIMIT_REACHED:(\d+)').firstMatch(raw);
+    if (limitMatch != null) {
+      return appState.tr('vehicle_limit_reached_body').replaceFirst('{max}', limitMatch.group(1)!);
+    }
     return raw.replaceFirst('Exception: ', '');
   }
 
@@ -240,6 +249,37 @@ class _VehicleScreenState extends State<VehicleScreen>
     if (resolvedMake.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(appState.tr('field_required')), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // Subscription-tier enforcement (explicit user requirement,
+    // 2026-09-04): client-side check against AppState.maxVehicles, same
+    // limit fn_enforce_vehicle_count_limit enforces server-side (that
+    // trigger is the real floor, this is just instant UX -- see
+    // _friendlyVehicleError's VEHICLE_LIMIT_REACHED branch as the safety
+    // net if this check is ever skipped).
+    final maxVehicles = appState.maxVehicles;
+    if (maxVehicles != null && _vehicles.length >= maxVehicles) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(appState.tr('vehicle_limit_reached_title')),
+          content: Text(appState.tr('vehicle_limit_reached_body').replaceFirst('{max}', '$maxVehicles')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(appState.tr('cancel')),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, AppRoutes.subscription);
+              },
+              child: Text(appState.tr('upgrade_plan')),
+            ),
+          ],
+        ),
       );
       return;
     }

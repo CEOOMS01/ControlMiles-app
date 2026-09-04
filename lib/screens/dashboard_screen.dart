@@ -1083,6 +1083,48 @@ class _DashboardScreenState extends State<DashboardScreen>
                   _loadRecentSessions();
                   _loadTodaySummary();
                 },
+                // Subscription-tier enforcement (explicit user requirement,
+                // 2026-09-04): reuses the exact canStart/cannotStartMessage
+                // hook Fleet's DVIR gate already established -- Dashboard
+                // (Gig) never passed it before now. Only blocks STARTING a
+                // new trip; existing data/reports stay fully visible. Shows
+                // the same upgrade dialog auto_detect_apps_button.dart's
+                // premium gate already uses, not just a plain snackbar --
+                // canStart's own closure captures this build method's
+                // `context`, so a real dialog with a deep link to
+                // AppRoutes.subscription works fine here despite canStart's
+                // signature not passing one through.
+                canStart: appState.isFreeTrialExpired
+                    ? () async {
+                        await showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(appState.tr('free_trial_expired_title')),
+                            content: Text(appState.tr('free_trial_expired_body')),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(appState.tr('cancel')),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(context, AppRoutes.subscription);
+                                },
+                                child: Text(appState.tr('upgrade_plan')),
+                              ),
+                            ],
+                          ),
+                        );
+                        return false;
+                      }
+                    : null,
+                // No cannotStartMessage here on purpose -- the dialog above
+                // already tells the full story with a real upgrade CTA;
+                // TrackingActionButton would otherwise ALSO show a plain
+                // red snackbar right after the dialog closes (canStart
+                // resolving false triggers that path regardless), which
+                // would just be a redundant second message stacked on top.
               ),
 
               const SizedBox(height: 40),

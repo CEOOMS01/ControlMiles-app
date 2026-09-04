@@ -430,4 +430,11 @@ const Map<String, String> arTexts = {
   'sections_count_label': '{count} أقسام',
   'vehicle_make_other': 'أخرى',
   'email_not_linked_to_controlmiles': 'هذا البريد الإلكتروني غير مرتبط بأي حساب في ControlMiles.',
+
+  'free_trial_expired_title': 'انتهت فترتك التجريبية المجانية',
+  'free_trial_expired_body': 'انتهت فترتك التجريبية المجانية البالغة 30 يومًا. اشترك في Basic أو Premium لمواصلة تسجيل الرحلات.',
+  'vehicle_limit_reached_title': 'تم الوصول إلى حد المركبات',
+  'vehicle_limit_reached_body': 'تسمح خطتك بحد أقصى {max} مركبة/مركبات. قم بالترقية لإضافة المزيد.',
+  'export_limit_reached_title': 'تم الوصول إلى حد التصدير',
+  'export_limit_reached_body': 'تشمل خطة Basic تصديرين لملف PDF شهريًا. قم بالترقية إلى Premium للتصدير غير المحدود.',
 };

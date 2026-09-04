@@ -398,4 +398,11 @@ const Map<String, String> amTexts = {
   'sections_count_label': '{count} ክፍሎች',
   'vehicle_make_other': 'ሌላ',
   'email_not_linked_to_controlmiles': 'ይህ ኢሜይል ከየትኛውም ControlMiles መለያ ጋር የተገናኘ አይደለም።',
+
+  'free_trial_expired_title': 'ነጻ የሙከራ ጊዜዎ አልቋል',
+  'free_trial_expired_body': 'የ30 ቀን ነጻ የሙከራ ጊዜዎ አልቋል። ጉዞዎችን መከታተል ለመቀጠል Basic ወይም Premium ይመዝገቡ።',
+  'vehicle_limit_reached_title': 'የተሽከርካሪ ገደብ ላይ ደርሷል',
+  'vehicle_limit_reached_body': 'የእርስዎ ዕቅድ እስከ {max} ተሽከርካሪ(ዎች) ይፈቅዳል። ተጨማሪ ለመጨመር ያሻሽሉ።',
+  'export_limit_reached_title': 'የመላክ ገደብ ላይ ደርሷል',
+  'export_limit_reached_body': 'Basic ዕቅድ በወር 2 የPDF መላኮችን ያካትታል። ላልተገደበ መላክ ወደ Premium ያሻሽሉ።',
 };

@@ -715,4 +715,11 @@ const Map<String, String> frTexts = {
   'sections_count_label': '{count} sections',
   'vehicle_make_other': 'Autre',
   'email_not_linked_to_controlmiles': "Cet e-mail n'est lié à aucun compte ControlMiles.",
+
+  'free_trial_expired_title': 'Votre essai gratuit est terminé',
+  'free_trial_expired_body': "Votre essai gratuit de 30 jours est terminé. Abonnez-vous à Basic ou Premium pour continuer à suivre vos trajets.",
+  'vehicle_limit_reached_title': 'Limite de véhicules atteinte',
+  'vehicle_limit_reached_body': 'Votre forfait autorise jusqu\'à {max} véhicule(s). Passez à un forfait supérieur pour en ajouter.',
+  'export_limit_reached_title': "Limite d'export atteinte",
+  'export_limit_reached_body': "Le forfait Basic inclut 2 exports PDF par mois. Passez à Premium pour des exports illimités.",
 };
