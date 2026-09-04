@@ -673,4 +673,23 @@ const Map<String, String> esTexts = {
   'vehicle_switch_blocked_active_session': 'No puedes cambiar de vehículo activo mientras tienes un viaje en curso. Termina el viaje actual primero.',
   'vehicle_saved': 'Vehículo guardado',
   'vehicle_required': 'Se requiere un vehículo',
+
+  // ============================================================
+  // FIN DE TURNO
+  // ============================================================
+  'end_shift': 'FIN DE TURNO',
+  'end_shift_tooltip': 'Toca para cerrar tu turno de trabajo',
+  'end_shift_failed': 'No se pudo cerrar el turno — aún en seguimiento. Intenta de nuevo.',
+  'session_already_closed': 'Esta sesión ya está cerrada y no admite más cambios.',
+  'session_not_found': 'Error crítico: no se encontró la sesión activa.',
+  'session_already_finalized': 'Esta sesión ya fue finalizada anteriormente.',
+  'duplicate_capture': 'Ya existe una captura registrada para este evento.',
+  'photo_size_out_of_range': 'La foto está fuera del rango permitido ({min}KB–{max}MB). Intenta de nuevo.',
+  'photo_format_not_supported': 'Formato de foto no soportado. Formatos permitidos: {formats}.',
+
+  // Checkpoint semanal de odómetro (2026-09-03)
+  'weekly_odometer_close_title': 'Cierre semanal de odómetro',
+  'weekly_odometer_close_body': '¿Quieres tomar ahora la foto de cierre del odómetro de esta semana?',
+  'later': 'Más tarde',
+  'take_photo': 'Tomar foto',
 };

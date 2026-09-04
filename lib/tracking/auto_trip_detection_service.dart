@@ -56,12 +56,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'background_gps_service.dart';
 import 'tracking_controller.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
+import '../services/odometer_capture_service.dart';
+import '../services/vehicle_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../utils/permission_recovery_service.dart';
 
@@ -265,19 +268,46 @@ class AutoTripDetectionService {
     }
 
     if (!context.mounted) return false;
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const OdometerCaptureScreen(isStart: true),
-      ),
-    );
 
-    if (result is! Map || result['success'] != true) return false;
+    // Weekly odometer checkpoint (explicit user request, 2026-09-03): if
+    // this vehicle's current calendar week already has a start reading
+    // (fresh this week, or rolled forward from a missed close last week),
+    // arming auto-detect needs no new photo at all -- just reuse it.
+    double? value;
+    String? imageUrl;
 
-    final rawValue = result['odometer_value'];
-    final value = rawValue is num ? rawValue.toDouble() : double.tryParse(rawValue.toString());
-    final imageUrl = result['imageUrl'] as String?;
-    if (value == null || imageUrl == null) return false;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
+        user.id,
+        organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
+      );
+      if (activeVehicle != null) {
+        final existing = await OdometerCaptureService()
+            .currentWeekStartReading(activeVehicle.id);
+        if (existing != null) {
+          value = existing.value;
+          imageUrl = existing.imageUrl;
+        }
+      }
+    }
+
+    if (value == null || imageUrl == null) {
+      if (!context.mounted) return false;
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const OdometerCaptureScreen(isStart: true),
+        ),
+      );
+
+      if (result is! Map || result['success'] != true) return false;
+
+      final rawValue = result['odometer_value'];
+      value = rawValue is num ? rawValue.toDouble() : double.tryParse(rawValue.toString());
+      imageUrl = result['imageUrl'] as String?;
+      if (value == null || imageUrl == null) return false;
+    }
 
     await instance.setShiftStartOdometer(value: value, imageUrl: imageUrl);
     final gpsOk = await appState.setAutoDetectEnabled(true);

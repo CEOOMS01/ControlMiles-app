@@ -70,7 +70,17 @@ class OdometerCaptureScreen extends StatefulWidget {
 
   final bool isStart;
 
+  // Weekly odometer checkpoint mode (explicit user request, 2026-09-03):
+  // when true, the captured reading is recorded via
+  // OdometerCaptureService.processWeeklyCheckpoint (server decides
+  // start/end/roll-forward) instead of patching `sessions` directly.
+  // sessionId is still used afterward by the caller to mirror the value
+  // onto that session's own start_odometer_value for report_service.dart's
+  // existing per-session display -- this screen itself doesn't touch
+  // `sessions` in this mode.
+  final bool weeklyCheckpointMode;
 
+  final String? vehicleId;
 
   const OdometerCaptureScreen({
 
@@ -79,6 +89,10 @@ class OdometerCaptureScreen extends StatefulWidget {
     this.sessionId,
 
     required this.isStart,
+
+    this.weeklyCheckpointMode = false,
+
+    this.vehicleId,
 
   });
 
@@ -443,23 +457,32 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
 
 
-      final result = await _captureService.processEvidence(
+      final result = widget.weeklyCheckpointMode
+          ? await _captureService.processWeeklyCheckpoint(
+              vehicleId: widget.vehicleId!,
+              file: File(photo.path),
+              odometerValue: odometerValue,
+              language: appState.currentLanguage,
+              ocrSource: wasOcrSource,
+              ocrConfidence: confidence,
+            )
+          : await _captureService.processEvidence(
 
-        sessionId: widget.sessionId,
+              sessionId: widget.sessionId,
 
-        file: File(photo.path),
+              file: File(photo.path),
 
-        odometerValue: odometerValue,
+              odometerValue: odometerValue,
 
-        isStart: widget.isStart,
+              isStart: widget.isStart,
 
-        language: appState.currentLanguage,
+              language: appState.currentLanguage,
 
-        ocrSource: wasOcrSource,
+              ocrSource: wasOcrSource,
 
-        ocrConfidence: confidence,
+              ocrConfidence: confidence,
 
-      );
+            );
 
 
 

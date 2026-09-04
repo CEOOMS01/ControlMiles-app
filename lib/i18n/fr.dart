@@ -654,4 +654,23 @@ const Map<String, String> frTexts = {
   'vehicle_switch_blocked_active_session': 'Vous ne pouvez pas changer de véhicule actif pendant qu\'un trajet est en cours. Terminez d\'abord le trajet actuel.',
   'verify_code': 'Vérifier le code',
   'year_miles_deduction_estimate': 'Déduction est.',
+
+  // ============================================================
+  // FIN DE QUART
+  // ============================================================
+  'end_shift': 'FIN DE QUART',
+  'end_shift_tooltip': 'Appuyez pour clôturer votre quart de travail',
+  'end_shift_failed': 'Impossible de clôturer le quart — suivi toujours actif. Réessayez.',
+  'session_already_closed': 'Cette session est déjà clôturée et ne peut plus être modifiée.',
+  'session_not_found': 'Erreur critique : session active introuvable.',
+  'session_already_finalized': 'Cette session a déjà été finalisée.',
+  'duplicate_capture': 'Une capture est déjà enregistrée pour cet événement.',
+  'photo_size_out_of_range': 'La photo est hors de la plage autorisée ({min}Ko–{max}Mo). Réessayez.',
+  'photo_format_not_supported': 'Format de photo non pris en charge. Formats autorisés : {formats}.',
+
+  // Checkpoint hebdomadaire d'odomètre (2026-09-03)
+  'weekly_odometer_close_title': 'Clôture hebdomadaire de l\'odomètre',
+  'weekly_odometer_close_body': 'Voulez-vous prendre maintenant la photo de clôture de l\'odomètre de cette semaine ?',
+  'later': 'Plus tard',
+  'take_photo': 'Prendre une photo',
 };

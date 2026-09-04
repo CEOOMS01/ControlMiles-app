@@ -226,4 +226,153 @@ class OdometerCaptureService {
       },
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // WEEKLY ODOMETER CHECKPOINTS (explicit user request, 2026-09-03)
+  // ══════════════════════════════════════════════════════════════════════
+  // Odometer evidence moves from "every session" to a fixed Mon-Sun
+  // calendar week per vehicle. The write path is the SECURITY DEFINER RPC
+  // submit_vehicle_odometer_checkpoint (migration
+  // 20260903120000_vehicle_weekly_odometer_checkpoints.sql) -- it enforces
+  // server-side, not just here, that a reading can never be entered below
+  // vehicles.odometer already on file (covers OCR failure -> manual entry
+  // just as much as a real OCR read), and it's the only thing that keeps
+  // vehicles.odometer itself current going forward (that column used to be
+  // written once at vehicle creation and frozen forever).
+
+  /// Monday (ISO) of the calendar week containing [date] -- DateTime.weekday
+  /// already uses the same Monday=1..Sunday=7 numbering as Postgres'
+  /// isodow(), so this must stay in lockstep with the SQL side's own
+  /// `p_capture_date - (isodow - 1)` computation.
+  DateTime mondayOf(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    return d.subtract(Duration(days: d.weekday - 1));
+  }
+
+  /// True when this vehicle's current calendar week has no start reading
+  /// yet -- the trip-start flow uses this to decide whether to ask for a
+  /// photo at all. False means the week is already covered (whether via a
+  /// fresh capture earlier this week or a roll-forward from last week's
+  /// missed close) and starting a trip needs zero odometer friction.
+  Future<bool> needsCheckpointStartThisWeek(String vehicleId) async {
+    final monday = mondayOf(DateTime.now());
+    final row = await _supabase
+        .from('vehicle_odometer_checkpoints')
+        .select('start_odometer_value')
+        .eq('vehicle_id', vehicleId)
+        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .maybeSingle();
+    return row == null || row['start_odometer_value'] == null;
+  }
+
+  /// This vehicle's already-captured reading for the current calendar
+  /// week (start value + its photo), or null if the week hasn't started
+  /// yet. Used to skip auto-detect's activation-time camera prompt when
+  /// this week is already covered -- see AutoTripDetectionService.requestEnable.
+  Future<({double value, String imageUrl})?> currentWeekStartReading(
+    String vehicleId,
+  ) async {
+    final monday = mondayOf(DateTime.now());
+    final row = await _supabase
+        .from('vehicle_odometer_checkpoints')
+        .select('start_odometer_value, start_odometer_image_url')
+        .eq('vehicle_id', vehicleId)
+        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .maybeSingle();
+    final value = row?['start_odometer_value'];
+    final imageUrl = row?['start_odometer_image_url'] as String?;
+    if (value == null || imageUrl == null) return null;
+    return (value: (value as num).toDouble(), imageUrl: imageUrl);
+  }
+
+  /// True when this vehicle's current calendar week still has no closing
+  /// reading -- used to offer (never block on) the weekly closing photo
+  /// after a trip ends.
+  Future<bool> needsCheckpointEndThisWeek(String vehicleId) async {
+    final monday = mondayOf(DateTime.now());
+    final row = await _supabase
+        .from('vehicle_odometer_checkpoints')
+        .select('start_odometer_value, end_odometer_value')
+        .eq('vehicle_id', vehicleId)
+        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .maybeSingle();
+    if (row == null) return false; // nothing started this week yet -- start takes priority, not end
+    return row['start_odometer_value'] != null && row['end_odometer_value'] == null;
+  }
+
+  /// Uploads a fresh photo (same validation/hash/Storage path as
+  /// [processEvidence]) and records it as a weekly checkpoint reading via
+  /// the RPC -- the RPC decides on the server whether this fills the
+  /// week's start, its end, or rolls forward to close last week's still-
+  /// open end, and it's the single place vehicles.odometer gets updated.
+  Future<Map<String, dynamic>> processWeeklyCheckpoint({
+    required String vehicleId,
+    required File file,
+    required double odometerValue,
+    required AppLanguage language,
+    bool ocrSource = false,
+    double? ocrConfidence,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception(AppTexts.get('auth_session_expired', language.code));
+    }
+
+    if (!AppConfig.isValidFileSize(file)) {
+      throw Exception(
+        'La foto pesa fuera de rango permitido (entre ${AppConfig.minPhotoSizeKb}KB y ${AppConfig.maxPhotoSizeMb}MB). Intenta tomarla de nuevo.',
+      );
+    }
+    if (!AppConfig.isValidExtension(file.path)) {
+      throw Exception(
+        'Formato de imagen no soportado. Formatos permitidos: ${AppConfig.allowedImageFormats.join(', ')}.',
+      );
+    }
+
+    final bytes = await file.readAsBytes();
+    final fileHash = sha256.convert(bytes).toString();
+    final fileName = 'odo_weekly_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final storagePath = '${user.id}/$fileName';
+
+    await _supabase.storage
+        .from(AppConfig.evidenceBucket)
+        .uploadBinary(storagePath, bytes, retryAttempts: 3);
+
+    final publicUrl = _supabase.storage
+        .from(AppConfig.evidenceBucket)
+        .getPublicUrl(storagePath);
+
+    final checkpoint = await _supabase.rpc('submit_vehicle_odometer_checkpoint', params: {
+      'p_vehicle_id': vehicleId,
+      'p_odometer_value': odometerValue,
+      'p_odometer_image_url': publicUrl,
+      'p_file_hash': fileHash,
+      'p_ocr_source': ocrSource,
+      'p_ocr_confidence': ocrConfidence,
+    });
+
+    return {
+      'success': true,
+      'odometer_value': odometerValue,
+      'imageUrl': publicUrl,
+      'hash': fileHash,
+      'checkpoint': checkpoint,
+    };
+  }
+
+  /// Records a reading that was already captured for real (a photo already
+  /// in Storage -- e.g. auto-detect's cached shift-start reading) as this
+  /// week's checkpoint, without uploading anything new. Same server-side
+  /// floor/roll-forward/vehicles.odometer logic as [processWeeklyCheckpoint].
+  Future<void> recordCheckpointFromExistingCapture({
+    required String vehicleId,
+    required double odometerValue,
+    required String odometerImageUrl,
+  }) async {
+    await _supabase.rpc('submit_vehicle_odometer_checkpoint', params: {
+      'p_vehicle_id': vehicleId,
+      'p_odometer_value': odometerValue,
+      'p_odometer_image_url': odometerImageUrl,
+    });
+  }
 }

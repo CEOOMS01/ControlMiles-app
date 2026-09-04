@@ -58,6 +58,18 @@ class ReportService {
     // realmente referenciados en el rango (ReportService no debe saber de
     // Supabase, mismo criterio que userName/userDisplayId más abajo).
     List<Vehicle> vehiclesUsed = const [],
+    // Weekly odometer checkpoint (2026-09-03): odometer evidence is now
+    // captured once per Mon-Sun calendar week, not per session -- a
+    // session's own end_odometer_value is no longer written at all going
+    // forward (see TrackingActionButton._handleEndTrip), so relying on
+    // firstOdoSession/lastOdoSession below alone would silently show "--"
+    // for END on every post-migration report. ReportsScreen resolves the
+    // real earliest-start/latest-end reading from
+    // vehicle_odometer_checkpoints for the report's date range and passes
+    // them here; null (no checkpoint overlaps the range yet, or historical
+    // data predating this feature) falls back to the old per-session logic.
+    double? periodCheckpointStart,
+    double? periodCheckpointEnd,
   }) async {
     final pdf = pw.Document();
 
@@ -191,7 +203,13 @@ class ReportService {
           pw.SizedBox(height: 24),
           _buildVehicleInfo(vehiclesUsed),
           pw.SizedBox(height: 24),
-          _buildOdometerEvidence(totalMiles, firstOdoSession, lastOdoSession),
+          _buildOdometerEvidence(
+            totalMiles,
+            firstOdoSession,
+            lastOdoSession,
+            periodCheckpointStart: periodCheckpointStart,
+            periodCheckpointEnd: periodCheckpointEnd,
+          ),
           pw.SizedBox(height: 28),
           _buildTripLogTitle(),
           pw.SizedBox(height: 10),
@@ -369,10 +387,14 @@ class ReportService {
   static pw.Widget _buildOdometerEvidence(
     double            totalMiles,
     TrackingSession?  firstOdoSession,
-    TrackingSession?  lastOdoSession,
-  ) {
-    final start = firstOdoSession?.startOdometerValue?.toStringAsFixed(1) ?? '--';
-    final end   = lastOdoSession?.endOdometerValue?.toStringAsFixed(1)    ?? '--';
+    TrackingSession?  lastOdoSession, {
+    double? periodCheckpointStart,
+    double? periodCheckpointEnd,
+  }) {
+    final start = (periodCheckpointStart ?? firstOdoSession?.startOdometerValue)
+            ?.toStringAsFixed(1) ?? '--';
+    final end   = (periodCheckpointEnd ?? lastOdoSession?.endOdometerValue)
+            ?.toStringAsFixed(1) ?? '--';
     final total = totalMiles.toStringAsFixed(2);
 
     return pw.Column(

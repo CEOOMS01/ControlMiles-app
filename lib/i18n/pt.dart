@@ -656,4 +656,10 @@ const Map<String, String> ptTexts = {
   'vehicle_switch_blocked_active_session': 'Você não pode trocar seu veículo ativo enquanto uma viagem está em andamento. Encerre a viagem atual primeiro.',
   'verify_code': 'Verificar código',
   'year_miles_deduction_estimate': 'Dedução est.',
+
+  // Checkpoint semanal do odômetro (2026-09-03)
+  'weekly_odometer_close_title': 'Fechamento semanal do odômetro',
+  'weekly_odometer_close_body': 'Quer tirar agora a foto de fechamento do odômetro desta semana?',
+  'later': 'Mais tarde',
+  'take_photo': 'Tirar foto',
 };

@@ -66,6 +66,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // aparecen). Incluye vehículos archivados -- el historial de un auto que
   // ya no se usa sigue siendo real evidencia del período reportado.
   List<Vehicle>                             _vehiclesUsed = [];
+  double?                                   _periodCheckpointStart;
+  double?                                   _periodCheckpointEnd;
 
   // ── NUEVO: card Summary (total del día, pedido explícito) ──
   // BUG FIX (mismo criterio que dashboard_screen.dart): este total es del
@@ -200,6 +202,39 @@ class _ReportsScreenState extends State<ReportsScreen> {
             .toList();
       }
 
+      // Weekly odometer checkpoint (2026-09-03): a session's own
+      // end_odometer_value is no longer written going forward (see
+      // TrackingActionButton._handleEndTrip) -- the report's real ODOMETER
+      // EVIDENCE now comes from vehicle_odometer_checkpoints instead.
+      // Window is (report start - 6 days) so a week that started just
+      // before the report's own date range but whose end falls inside it
+      // is still picked up. Earliest week's start / latest week's end
+      // among the vehicles actually used in this range.
+      double? periodCheckpointStart;
+      double? periodCheckpointEnd;
+      if (vehicleIds.isNotEmpty) {
+        final checkpointsRaw = await Supabase.instance.client
+            .from('vehicle_odometer_checkpoints')
+            .select('week_start_date, start_odometer_value, end_odometer_value')
+            .inFilter('vehicle_id', vehicleIds)
+            .gte('week_start_date',
+                _dateRange.start.subtract(const Duration(days: 6)).toIso8601String().split('T')[0])
+            .lte('week_start_date', _dateRange.end.toIso8601String().split('T')[0])
+            .order('week_start_date', ascending: true);
+
+        final checkpoints = checkpointsRaw as List;
+        for (final row in checkpoints) {
+          final startVal = row['start_odometer_value'];
+          if (startVal != null && periodCheckpointStart == null) {
+            periodCheckpointStart = (startVal as num).toDouble();
+          }
+          final endVal = row['end_odometer_value'];
+          if (endVal != null) {
+            periodCheckpointEnd = (endVal as num).toDouble();
+          }
+        }
+      }
+
       final periodMiles = sessions.fold<double>(
           0.0, (acc, s) => acc + s.totalMiles);
       final periodDurationSec = sessions.fold<int>(
@@ -210,6 +245,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _sessions = sessions;
           _sections = sectionsMap;
           _vehiclesUsed = vehiclesUsed;
+          _periodCheckpointStart = periodCheckpointStart;
+          _periodCheckpointEnd = periodCheckpointEnd;
           _periodTotalMiles = periodMiles;
           _periodTotalDurationSec = periodDurationSec;
         });
@@ -267,6 +304,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         userDisplayId:     appState.userDisplayId ?? '---',
         mileageMethod:     appState.mileageMethod,
         vehiclesUsed:      _vehiclesUsed,
+        periodCheckpointStart: _periodCheckpointStart,
+        periodCheckpointEnd:   _periodCheckpointEnd,
       );
 
       // BUG FIX (2026-08-29, exactly what the user saw): 'report_generated_success'

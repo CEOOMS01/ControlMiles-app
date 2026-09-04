@@ -656,4 +656,10 @@ const Map<String, String> zhTexts = {
   'vehicle_switch_blocked_active_session': '行程进行中无法更换当前车辆，请先结束当前行程。',
   'verify_code': '验证验证码',
   'year_miles_deduction_estimate': '预估抵扣',
+
+  // 每周里程表检查点 (2026-09-03)
+  'weekly_odometer_close_title': '每周里程表结算',
+  'weekly_odometer_close_body': '要现在拍摄本周的结算里程表照片吗？',
+  'later': '稍后',
+  'take_photo': '拍照',
 };

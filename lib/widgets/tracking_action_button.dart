@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
 import '../screens/odometer_capture_screen.dart';
+import '../services/odometer_capture_service.dart';
 
 class TrackingActionButton extends StatefulWidget {
   final String? selectedGigApp;
@@ -180,29 +181,13 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
   Future<void> _handleEndTrip(AppState appState) async {
     if (TrackingController.activeSessionId == null) return;
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OdometerCaptureScreen(
-          sessionId: TrackingController.activeSessionId!,
-          isStart: false,
-        ),
-      ),
-    );
-
-    if (result == null || result['success'] != true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              appState.tr('odometer_required_to_end'),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
+    // Weekly odometer checkpoint (explicit user request, 2026-09-03):
+    // ending a trip no longer requires an odometer photo -- that
+    // requirement moved to once per Mon-Sun calendar week (see
+    // TrackingController.startTripFlow). Captured before stopTracking()
+    // resets TrackingController's static state, so there's still a
+    // vehicle id to offer the weekly closing photo against below.
+    final vehicleIdForClose = TrackingController.activeVehicleId;
 
     // BUG FIX (pedido explícito, alerta de hallazgos relacionados): antes
     // el pulso se reseteaba y Dashboard recargaba Recent Trips sin
@@ -234,6 +219,48 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     widget.onTripEnded?.call();
 
     if (mounted) setState(() {});
+
+    // Offer -- never block ending the trip on -- this week's closing
+    // photo, only when this week actually started and hasn't closed yet.
+    // A missed close still rolls forward automatically at the next real
+    // capture (server-side, see submit_vehicle_odometer_checkpoint), so
+    // skipping this dialog is always safe.
+    if (mounted && vehicleIdForClose != null) {
+      final needsClose = await OdometerCaptureService()
+          .needsCheckpointEndThisWeek(vehicleIdForClose);
+      if (needsClose && mounted) {
+        final takePhoto = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(appState.tr('weekly_odometer_close_title')),
+            content: Text(appState.tr('weekly_odometer_close_body')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(appState.tr('later')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(appState.tr('take_photo')),
+              ),
+            ],
+          ),
+        );
+
+        if (takePhoto == true && mounted) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OdometerCaptureScreen(
+                isStart: false,
+                weeklyCheckpointMode: true,
+                vehicleId: vehicleIdForClose,
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override

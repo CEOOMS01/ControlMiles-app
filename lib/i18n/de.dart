@@ -656,4 +656,10 @@ const Map<String, String> deTexts = {
   'vehicle_switch_blocked_active_session': 'Sie können Ihr aktives Fahrzeug nicht wechseln, während eine Fahrt läuft. Beenden Sie zuerst die aktuelle Fahrt.',
   'verify_code': 'Code bestätigen',
   'year_miles_deduction_estimate': 'Gesch. Abzug',
+
+  // Wöchentlicher Kilometerstand-Checkpoint (2026-09-03)
+  'weekly_odometer_close_title': 'Wöchentlicher Kilometerstand-Abschluss',
+  'weekly_odometer_close_body': 'Möchten Sie jetzt das Abschlussfoto des Kilometerstands dieser Woche aufnehmen?',
+  'later': 'Später',
+  'take_photo': 'Foto aufnehmen',
 };

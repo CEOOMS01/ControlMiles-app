@@ -210,35 +210,84 @@ class TrackingController {
         return;
       }
 
-      final cachedOdometer = AutoTripDetectionService.instance;
-      if (useAutoDetectOdometer && cachedOdometer.hasShiftStartOdometer) {
-        // No camera screen this time -- the shift-start reading was
-        // already captured for real when auto-detect was turned on, just
-        // carried forward onto THIS session (own honest audit event, see
-        // OdometerCaptureService.applyCarriedForwardStartOdometer).
-        await OdometerCaptureService().applyCarriedForwardStartOdometer(
-          sessionId: sessionId,
-          odometerValue: cachedOdometer.shiftStartOdometerValue!,
-          odometerImageUrl: cachedOdometer.shiftStartOdometerImageUrl!,
-        );
-      } else {
-        // Captura obligatoria de odómetro inicial
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OdometerCaptureScreen(
-              sessionId: sessionId,
-              isStart: true,
-            ),
-          ),
-        );
+      // Weekly odometer checkpoint (explicit user request, 2026-09-03):
+      // the mandatory-photo-per-session requirement is gone -- a photo is
+      // only needed once per Mon-Sun calendar week per vehicle. If this
+      // vehicle's current week already has a start reading (fresh this
+      // week, or rolled forward from a missed close last week), the trip
+      // starts with zero odometer friction.
+      final needsWeekStart = activeVehicle != null &&
+          await OdometerCaptureService()
+              .needsCheckpointStartThisWeek(activeVehicle.id);
 
-        if (result == null || result['success'] != true) {
-          await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
-          _resetState();
-          return;
+      if (needsWeekStart) {
+        final cachedOdometer = AutoTripDetectionService.instance;
+        if (useAutoDetectOdometer && cachedOdometer.hasShiftStartOdometer) {
+          // No camera screen this time -- the shift-start reading was
+          // already captured for real when auto-detect was turned on, just
+          // carried forward onto THIS session (own honest audit event, see
+          // OdometerCaptureService.applyCarriedForwardStartOdometer).
+          await OdometerCaptureService().applyCarriedForwardStartOdometer(
+            sessionId: sessionId,
+            odometerValue: cachedOdometer.shiftStartOdometerValue!,
+            odometerImageUrl: cachedOdometer.shiftStartOdometerImageUrl!,
+          );
+
+          // Also record it as this week's checkpoint (best-effort: this is
+          // a real reading already captured and uploaded, only the DB
+          // bookkeeping can fail here -- must not roll back a trip that
+          // already started for real).
+          try {
+            await OdometerCaptureService().recordCheckpointFromExistingCapture(
+              vehicleId: activeVehicle.id,
+              odometerValue: cachedOdometer.shiftStartOdometerValue!,
+              odometerImageUrl: cachedOdometer.shiftStartOdometerImageUrl!,
+            );
+          } catch (e) {
+            _logError('WEEKLY_CHECKPOINT_CARRY_FORWARD_ERROR', e.toString());
+          }
+        } else {
+          // Captura obligatoria de odómetro inicial -- solo la primera vez
+          // en la semana calendario, no en cada sesión. context.mounted
+          // re-checked here (same guard already used above at the sessions
+          // insert) -- needsCheckpointStartThisWeek's own await is a new
+          // real gap this restructuring introduced.
+          if (!context.mounted) {
+            await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+            _resetState();
+            return;
+          }
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OdometerCaptureScreen(
+                sessionId: sessionId,
+                isStart: true,
+                weeklyCheckpointMode: true,
+                vehicleId: activeVehicle.id,
+              ),
+            ),
+          );
+
+          if (result == null || result['success'] != true) {
+            await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+            _resetState();
+            return;
+          }
+
+          // Mirror onto this session's own start_odometer_value/image --
+          // report_service.dart still reads per-session columns for its
+          // existing display; the weekly RPC itself only wrote to
+          // vehicle_odometer_checkpoints, not `sessions`.
+          await OdometerCaptureService().applyCarriedForwardStartOdometer(
+            sessionId: sessionId,
+            odometerValue: (result['odometer_value'] as num).toDouble(),
+            odometerImageUrl: result['imageUrl'] as String,
+          );
         }
       }
+      // else: this week's checkpoint already has a start reading -- no
+      // photo, no camera screen, trip starts immediately.
 
       // Iniciar primera sección
       await startNewSection(

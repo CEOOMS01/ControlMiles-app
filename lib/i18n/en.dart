@@ -697,4 +697,23 @@ const Map<String, String> enTexts = {
   'vehicle_switch_blocked_active_session': 'You can\'t change your active vehicle while a trip is in progress. End the current trip first.',
   'vehicle_saved': 'Vehicle saved',
   'vehicle_required': 'Vehicle required',
+
+  // ============================================================
+  // END SHIFT
+  // ============================================================
+  'end_shift': 'END SHIFT',
+  'end_shift_tooltip': 'Tap to close your work shift',
+  'end_shift_failed': 'Could not end the shift — still tracking. Try again.',
+  'session_already_closed': 'This session is already closed and cannot be modified.',
+  'session_not_found': 'Critical error: active session not found.',
+  'session_already_finalized': 'This session was already finalized.',
+  'duplicate_capture': 'A capture is already registered for this event.',
+  'photo_size_out_of_range': 'Photo is outside the allowed size range ({min}KB–{max}MB). Try again.',
+  'photo_format_not_supported': 'Photo format not supported. Allowed formats: {formats}.',
+
+  // Weekly odometer checkpoint (2026-09-03)
+  'weekly_odometer_close_title': 'Weekly odometer close',
+  'weekly_odometer_close_body': 'Want to take this week\'s closing odometer photo now?',
+  'later': 'Later',
+  'take_photo': 'Take photo',
 };
