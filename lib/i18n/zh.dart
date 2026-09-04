@@ -702,4 +702,5 @@ const Map<String, String> zhTexts = {
   'error_invalid_maintenance_type': '保养类型无效。',
   'error_service_date_required': '服务日期为必填项。',
   'sections_count_label': '{count} 个路段',
+  'vehicle_make_other': '其他',
 };

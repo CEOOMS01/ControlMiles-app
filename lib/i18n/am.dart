@@ -396,4 +396,5 @@ const Map<String, String> amTexts = {
   'error_invalid_maintenance_type': 'ልክ ያልሆነ የጥገና ዓይነት።',
   'error_service_date_required': 'የአገልግሎት ቀን ያስፈልጋል።',
   'sections_count_label': '{count} ክፍሎች',
+  'vehicle_make_other': 'ሌላ',
 };

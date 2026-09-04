@@ -758,4 +758,10 @@ const Map<String, String> enTexts = {
   'error_invalid_maintenance_type': 'Invalid maintenance type.',
   'error_service_date_required': 'Service date is required.',
   'sections_count_label': '{count} sections',
+  // BUG FIX (hardcoded-string audit, vehicle screen): kOtherVehicleMake's
+  // display text ('Otra') was rendered literally in the make dropdown
+  // regardless of language -- only this one dropdown entry is UI text
+  // needing tr(), the real brand names (Toyota, Honda, ...) are correct
+  // as-is.
+  'vehicle_make_other': 'Other',
 };

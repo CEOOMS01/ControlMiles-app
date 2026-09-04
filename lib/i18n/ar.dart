@@ -428,4 +428,5 @@ const Map<String, String> arTexts = {
   'error_invalid_maintenance_type': 'نوع الصيانة غير صالح.',
   'error_service_date_required': 'تاريخ الخدمة مطلوب.',
   'sections_count_label': '{count} أقسام',
+  'vehicle_make_other': 'أخرى',
 };

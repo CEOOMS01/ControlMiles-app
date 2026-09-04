@@ -409,4 +409,5 @@ const Map<String, String> jaTexts = {
   'error_invalid_maintenance_type': '整備の種類が無効です。',
   'error_service_date_required': '整備日は必須です。',
   'sections_count_label': '{count}件のセクション',
+  'vehicle_make_other': 'その他',
 };

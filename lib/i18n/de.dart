@@ -702,4 +702,5 @@ const Map<String, String> deTexts = {
   'error_invalid_maintenance_type': 'Ungültiger Wartungstyp.',
   'error_service_date_required': 'Das Servicedatum ist erforderlich.',
   'sections_count_label': '{count} Abschnitte',
+  'vehicle_make_other': 'Andere',
 };

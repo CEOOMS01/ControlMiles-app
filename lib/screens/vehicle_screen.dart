@@ -540,8 +540,17 @@ class _VehicleScreenState extends State<VehicleScreen>
                   decoration: InputDecoration(labelText: appState.tr('vehicle_make')),
                   hint: Text(appState.tr('vehicle_make_hint')),
                   isExpanded: true,
+                  // BUG FIX (hardcoded-string audit): kOtherVehicleMake
+                  // ('Otra', kept as the internal sentinel value -- never
+                  // shown) was rendered as literal Spanish text in the
+                  // dropdown regardless of app language. Real brand names
+                  // (Toyota, Honda, ...) are correctly NOT translated --
+                  // only this one entry needs tr().
                   items: kVehicleMakes
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                      .map((m) => DropdownMenuItem(
+                            value: m,
+                            child: Text(m == kOtherVehicleMake ? appState.tr('vehicle_make_other') : m),
+                          ))
                       .toList(),
                   onChanged: (v) => setState(() => _selectedMake = v),
                 ),

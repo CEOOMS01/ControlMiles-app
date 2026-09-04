@@ -713,4 +713,5 @@ const Map<String, String> frTexts = {
   'error_invalid_maintenance_type': "Type d'entretien invalide.",
   'error_service_date_required': "La date d'entretien est obligatoire.",
   'sections_count_label': '{count} sections',
+  'vehicle_make_other': 'Autre',
 };

@@ -702,4 +702,5 @@ const Map<String, String> ptTexts = {
   'error_invalid_maintenance_type': 'Tipo de manutenção inválido.',
   'error_service_date_required': 'A data do serviço é obrigatória.',
   'sections_count_label': '{count} seções',
+  'vehicle_make_other': 'Outra',
 };

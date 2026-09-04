@@ -734,4 +734,5 @@ const Map<String, String> esTexts = {
   'error_invalid_maintenance_type': 'Tipo de mantenimiento inválido.',
   'error_service_date_required': 'La fecha de servicio es obligatoria.',
   'sections_count_label': '{count} secciones',
+  'vehicle_make_other': 'Otra',
 };

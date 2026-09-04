@@ -420,4 +420,5 @@ const Map<String, String> hiTexts = {
   'error_invalid_maintenance_type': 'रखरखाव प्रकार अमान्य है।',
   'error_service_date_required': 'सेवा तिथि आवश्यक है।',
   'sections_count_label': '{count} सेक्शन',
+  'vehicle_make_other': 'अन्य',
 };

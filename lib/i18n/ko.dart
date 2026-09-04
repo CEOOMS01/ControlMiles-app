@@ -410,4 +410,5 @@ const Map<String, String> koTexts = {
   'error_invalid_maintenance_type': '정비 유형이 유효하지 않습니다.',
   'error_service_date_required': '서비스 날짜는 필수입니다.',
   'sections_count_label': '구간 {count}개',
+  'vehicle_make_other': '기타',
 };
