@@ -677,7 +677,29 @@ const Map<String, String> zhTexts = {
   'current_odometer': '当前里程表读数',
   'miles_since_service': '距上次保养的里程',
   'no_service_recorded': '暂无保养记录',
-  'next_service_due_miles': '下次保养里程：{miles} mi',
-  'service_overdue_miles': '已超期 {miles} mi',
-  'service_recommended_interval': '建议：每 {miles} mi',
+  'next_service_due_miles': '下次保养里程：{miles}',
+  'service_overdue_miles': '已超期 {miles}',
+  'service_recommended_interval': '建议：每 {miles}',
+
+  // ============================================================
+  // 缺失键审计 (2026-09-03)
+  // ============================================================
+  'auth_error': '身份验证错误，请重试。',
+  'invalid_credentials': '邮箱或密码无效。',
+  'email_already_exists': '该邮箱已被注册。',
+  'end': '结束',
+  'navigation_error_title': '导航错误',
+  'route_not_found_message': '未找到路由 {route}。\n请联系 Olympus Mont Systems。',
+  'switched_label': '已切换',
+  'trip_number_label': '行程 {number}',
+  'trip_end_time_label': '结束：{time}',
+  'sections_label': '路段',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': '系统初始化中，正在跳转...',
+  'error_all_fields_required': '所有字段均为必填项。',
+  'error_invalid_vehicle_year': '车辆年份无效。',
+  'error_odometer_negative_or_empty': '里程表不能为负数或为空。',
+  'error_invalid_maintenance_type': '保养类型无效。',
+  'error_service_date_required': '服务日期为必填项。',
+  'sections_count_label': '{count} 个路段',
 };

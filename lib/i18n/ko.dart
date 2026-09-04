@@ -385,7 +385,29 @@ const Map<String, String> koTexts = {
   'current_odometer': '현재 주행거리계',
   'miles_since_service': '마지막 서비스 이후 마일',
   'no_service_recorded': '아직 등록된 서비스가 없습니다',
-  'next_service_due_miles': '다음 서비스: {miles} mi',
-  'service_overdue_miles': '{miles} mi 초과',
-  'service_recommended_interval': '권장: {miles} mi마다',
+  'next_service_due_miles': '다음 서비스: {miles}',
+  'service_overdue_miles': '{miles} 초과',
+  'service_recommended_interval': '권장: {miles}마다',
+
+  // ============================================================
+  // 누락된 키 감사 (2026-09-03)
+  // ============================================================
+  'auth_error': '인증 오류입니다. 다시 시도해 주세요.',
+  'invalid_credentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
+  'email_already_exists': '이미 등록된 이메일입니다.',
+  'end': '종료',
+  'navigation_error_title': '탐색 오류',
+  'route_not_found_message': '경로 {route}를 찾을 수 없습니다.\nOlympus Mont Systems에 문의하세요.',
+  'switched_label': '전환됨',
+  'trip_number_label': '주행 {number}',
+  'trip_end_time_label': '종료: {time}',
+  'sections_label': '구간',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': '시스템 초기화 중입니다. 이동 중...',
+  'error_all_fields_required': '모든 항목은 필수입니다.',
+  'error_invalid_vehicle_year': '차량 연식이 유효하지 않습니다.',
+  'error_odometer_negative_or_empty': '주행거리계는 음수이거나 비어 있을 수 없습니다.',
+  'error_invalid_maintenance_type': '정비 유형이 유효하지 않습니다.',
+  'error_service_date_required': '서비스 날짜는 필수입니다.',
+  'sections_count_label': '구간 {count}개',
 };

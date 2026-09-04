@@ -384,7 +384,29 @@ const Map<String, String> jaTexts = {
   'current_odometer': '現在のオドメーター',
   'miles_since_service': '前回のサービスからの距離',
   'no_service_recorded': 'まだサービス記録がありません',
-  'next_service_due_miles': '次回: {miles} mi',
-  'service_overdue_miles': '{miles} mi超過',
-  'service_recommended_interval': '推奨: {miles} miごと',
+  'next_service_due_miles': '次回: {miles}',
+  'service_overdue_miles': '{miles}超過',
+  'service_recommended_interval': '推奨: {miles}ごと',
+
+  // ============================================================
+  // 欠落キー監査 (2026-09-03)
+  // ============================================================
+  'auth_error': '認証エラーです。もう一度お試しください。',
+  'invalid_credentials': 'メールアドレスまたはパスワードが無効です。',
+  'email_already_exists': 'このメールアドレスは既に登録されています。',
+  'end': '終了',
+  'navigation_error_title': 'ナビゲーションエラー',
+  'route_not_found_message': 'ルート {route} が見つかりません。\nOlympus Mont Systemsにお問い合わせください。',
+  'switched_label': '切り替え済み',
+  'trip_number_label': 'トリップ {number}',
+  'trip_end_time_label': '終了: {time}',
+  'sections_label': 'セクション',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': 'システムを初期化しています。リダイレクト中...',
+  'error_all_fields_required': 'すべての項目が必須です。',
+  'error_invalid_vehicle_year': '車両の年式が無効です。',
+  'error_odometer_negative_or_empty': 'オドメーターはマイナスまたは空にできません。',
+  'error_invalid_maintenance_type': '整備の種類が無効です。',
+  'error_service_date_required': '整備日は必須です。',
+  'sections_count_label': '{count}件のセクション',
 };

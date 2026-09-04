@@ -259,6 +259,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         setAsActive: _vehicles.isEmpty ? true : _setAsActiveOnAdd,
         placedInServiceDate: _placedInServiceDate,
         vin: _vinController.text,
+        language: appState.currentLanguage,
       );
 
       _selectedMake = null;
@@ -329,6 +330,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         vehicleId: vehicle.id,
         type: _recordType,
         performedAt: _recordDate,
+        language: appState.currentLanguage,
         odometerAtService: double.tryParse(_recordOdometerController.text.trim()),
         nextDueOdometer: double.tryParse(_recordNextDueOdometerController.text.trim()),
         nextDueDate: _recordNextDueDate,
@@ -535,7 +537,7 @@ class _VehicleScreenState extends State<VehicleScreen>
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _selectedMake,
-                  decoration: InputDecoration(labelText: appState.tr('make')),
+                  decoration: InputDecoration(labelText: appState.tr('vehicle_make')),
                   hint: Text(appState.tr('vehicle_make_hint')),
                   isExpanded: true,
                   items: kVehicleMakes
@@ -545,7 +547,7 @@ class _VehicleScreenState extends State<VehicleScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: TextField(controller: _modelController, decoration: InputDecoration(labelText: appState.tr('model')))),
+              Expanded(child: TextField(controller: _modelController, decoration: InputDecoration(labelText: appState.tr('vehicle_model')))),
             ],
           ),
           if (_selectedMake == kOtherVehicleMake) ...[
@@ -558,9 +560,9 @@ class _VehicleScreenState extends State<VehicleScreen>
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: TextField(controller: _yearController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: appState.tr('year')))),
+              Expanded(child: TextField(controller: _yearController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: appState.tr('vehicle_year')))),
               const SizedBox(width: 12),
-              Expanded(child: TextField(controller: _colorController, decoration: InputDecoration(labelText: appState.tr('color')))),
+              Expanded(child: TextField(controller: _colorController, decoration: InputDecoration(labelText: appState.tr('vehicle_color')))),
             ],
           ),
           TextField(controller: _mileageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: appState.tr('odometer'))),
@@ -672,6 +674,17 @@ class _VehicleScreenState extends State<VehicleScreen>
     );
   }
 
+  // BUG FIX (hardcoded-string audit): "mi" estaba fijo en el código, sin
+  // pasar por tr('mile_short')/tr('kilometer_short') ni respetar
+  // appState.useMetricSystem -- mismo criterio ya usado en
+  // history_screen.dart. Los valores en DB siempre están en millas.
+  String _formatMiles(double miles, AppState appState) {
+    if (appState.useMetricSystem) {
+      return '${(miles * 1.60934).toStringAsFixed(0)} ${appState.tr('kilometer_short')}';
+    }
+    return '${miles.toStringAsFixed(0)} ${appState.tr('mile_short')}';
+  }
+
   // Explicit user requirement: "que las millas esten tambien presentes en
   // ese menu [Mantenimiento]" -- muestra el odómetro actual del vehículo
   // seleccionado (ya vivo desde el checkpoint semanal, ver header comment
@@ -686,7 +699,7 @@ class _VehicleScreenState extends State<VehicleScreen>
           leading: const Icon(Icons.speed_rounded, color: Color(0xFF475569)),
           title: Text(appState.tr('current_odometer')),
           trailing: Text(
-            vehicle.odometer != null ? '${vehicle.odometer!.toStringAsFixed(0)} mi' : '—',
+            vehicle.odometer != null ? _formatMiles(vehicle.odometer!, appState) : '—',
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
           ),
         ),
@@ -709,13 +722,13 @@ class _VehicleScreenState extends State<VehicleScreen>
 
     if (currentOdometer != null && r.odometerAtService != null) {
       final since = currentOdometer - r.odometerAtService!;
-      final sinceLabel = '${appState.tr('miles_since_service')}: ${since.toStringAsFixed(0)} mi';
+      final sinceLabel = '${appState.tr('miles_since_service')}: ${_formatMiles(since, appState)}';
 
       if (threshold != null) {
         final remaining = threshold - currentOdometer;
         final statusText = remaining <= 0
-            ? appState.tr('service_overdue_miles').replaceFirst('{miles}', (-remaining).toStringAsFixed(0))
-            : appState.tr('next_service_due_miles').replaceFirst('{miles}', remaining.toStringAsFixed(0));
+            ? appState.tr('service_overdue_miles').replaceFirst('{miles}', _formatMiles(-remaining, appState))
+            : appState.tr('next_service_due_miles').replaceFirst('{miles}', _formatMiles(remaining, appState));
         final color = remaining <= 0 ? Colors.red.shade700 : const Color(0xFF475569);
 
         return Column(
@@ -725,9 +738,8 @@ class _VehicleScreenState extends State<VehicleScreen>
             Text(statusText, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
             if (!r.dueThresholdIsCustom && r.typeMeta.defaultIntervalMiles != null)
               Text(
-                appState
-                    .tr('service_recommended_interval')
-                    .replaceFirst('{miles}', r.typeMeta.defaultIntervalMiles.toString()),
+                appState.tr('service_recommended_interval').replaceFirst(
+                    '{miles}', _formatMiles(r.typeMeta.defaultIntervalMiles!.toDouble(), appState)),
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
           ],

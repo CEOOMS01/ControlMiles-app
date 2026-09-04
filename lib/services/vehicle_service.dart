@@ -22,6 +22,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../i18n/app_texts.dart';
 import '../models/vehicle.dart';
 
 class VehicleService {
@@ -81,24 +82,28 @@ class VehicleService {
     return getActiveVehicle(userId);
   }
 
-  /// Lanza Exception con mensaje en español listo para mostrar en un
-  /// SnackBar — mismo patrón usado en odometer_capture_service.dart.
+  /// Lanza Exception con mensaje ya localizado -- mismo patrón usado en
+  /// odometer_capture_service.dart (AppTexts.get(key, language.code)).
+  /// BUG FIX (hardcoded-string audit): antes tiraba texto en español fijo,
+  /// mostrado tal cual al usuario sin pasar por tr() -- un usuario en
+  /// cualquier otro idioma veía estos 3 mensajes en español.
   void _validate({
     required String make,
     required String model,
     required String color,
     required int? year,
     required double? odometer,
+    required AppLanguage language,
   }) {
     if (make.trim().isEmpty || model.trim().isEmpty || color.trim().isEmpty) {
-      throw Exception('Todos los campos son obligatorios.');
+      throw Exception(AppTexts.get('error_all_fields_required', language.code));
     }
     final currentYear = DateTime.now().year;
     if (year == null || year < 1980 || year > currentYear + 1) {
-      throw Exception('Año de vehículo inválido.');
+      throw Exception(AppTexts.get('error_invalid_vehicle_year', language.code));
     }
     if (odometer == null || odometer < 0) {
-      throw Exception('El odómetro no puede ser negativo o estar vacío.');
+      throw Exception(AppTexts.get('error_odometer_negative_or_empty', language.code));
     }
   }
 
@@ -110,6 +115,7 @@ class VehicleService {
     required int? year,
     required double? odometer,
     required bool setAsActive,
+    required AppLanguage language,
     // IRS Fase 3 (2026-08-28): "date placed in service", one of the
     // annual-summary fields the IRS recommends recording. Optional --
     // there's no vehicle-edit flow (explicit user decision, see
@@ -125,7 +131,7 @@ class VehicleService {
     // required for this check and why there's no account-wide floor.
     String? vin,
   }) async {
-    _validate(make: make, model: model, color: color, year: year, odometer: odometer);
+    _validate(make: make, model: model, color: color, year: year, odometer: odometer, language: language);
 
     if (setAsActive) {
       await _clearActiveFlags(userId);

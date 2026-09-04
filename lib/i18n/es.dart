@@ -707,7 +707,31 @@ const Map<String, String> esTexts = {
   'current_odometer': 'Odómetro actual',
   'miles_since_service': 'Millas desde el último servicio',
   'no_service_recorded': 'Aún no hay servicios registrados',
-  'next_service_due_miles': 'Próximo a las {miles} mi',
-  'service_overdue_miles': 'Vencido por {miles} mi',
-  'service_recommended_interval': 'Recomendado: cada {miles} mi',
+  'next_service_due_miles': 'Próximo a las {miles}',
+  'service_overdue_miles': 'Vencido por {miles}',
+  'service_recommended_interval': 'Recomendado: cada {miles}',
+
+  // ============================================================
+  // Auditoría de claves faltantes (2026-09-03): claves ya referenciadas
+  // con .tr() en el código pero nunca agregadas a ningún diccionario --
+  // tr() mostraba en pantalla la clave cruda en silencio.
+  // ============================================================
+  'auth_error': 'Error de autenticación. Intenta de nuevo.',
+  'invalid_credentials': 'Correo o contraseña inválidos.',
+  'email_already_exists': 'Este correo ya está registrado.',
+  'end': 'Fin',
+  'navigation_error_title': 'Error de Navegación',
+  'route_not_found_message': 'Ruta {route} no encontrada.\nContacta a Olympus Mont Systems.',
+  'switched_label': 'CAMBIADO',
+  'trip_number_label': 'Viaje {number}',
+  'trip_end_time_label': 'Fin: {time}',
+  'sections_label': 'SECCIONES',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': 'Inicializando el sistema. Redirigiendo...',
+  'error_all_fields_required': 'Todos los campos son obligatorios.',
+  'error_invalid_vehicle_year': 'Año de vehículo inválido.',
+  'error_odometer_negative_or_empty': 'El odómetro no puede ser negativo o estar vacío.',
+  'error_invalid_maintenance_type': 'Tipo de mantenimiento inválido.',
+  'error_service_date_required': 'La fecha de servicio es obligatoria.',
+  'sections_count_label': '{count} secciones',
 };

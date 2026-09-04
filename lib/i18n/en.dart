@@ -731,7 +731,31 @@ const Map<String, String> enTexts = {
   'current_odometer': 'Current odometer',
   'miles_since_service': 'Miles since last service',
   'no_service_recorded': 'No service recorded yet',
-  'next_service_due_miles': 'Next due at {miles} mi',
-  'service_overdue_miles': 'Overdue by {miles} mi',
-  'service_recommended_interval': 'Recommended: every {miles} mi',
+  'next_service_due_miles': 'Next due at {miles}',
+  'service_overdue_miles': 'Overdue by {miles}',
+  'service_recommended_interval': 'Recommended: every {miles}',
+
+  // ============================================================
+  // Missing-key audit (2026-09-03): keys already referenced via .tr() in
+  // code but never added to any dictionary -- tr() was silently rendering
+  // the raw key string on screen. See feedback_i18n_hardcoded_strings.
+  // ============================================================
+  'auth_error': 'Authentication error. Please try again.',
+  'invalid_credentials': 'Invalid email or password.',
+  'email_already_exists': 'This email is already registered.',
+  'end': 'End',
+  'navigation_error_title': 'Navigation Error',
+  'route_not_found_message': 'Route {route} not found.\nContact Olympus Mont Systems.',
+  'switched_label': 'SWITCHED',
+  'trip_number_label': 'Trip {number}',
+  'trip_end_time_label': 'End: {time}',
+  'sections_label': 'SECTIONS',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': 'System initializing. Redirecting...',
+  'error_all_fields_required': 'All fields are required.',
+  'error_invalid_vehicle_year': 'Invalid vehicle year.',
+  'error_odometer_negative_or_empty': 'Odometer cannot be negative or empty.',
+  'error_invalid_maintenance_type': 'Invalid maintenance type.',
+  'error_service_date_required': 'Service date is required.',
+  'sections_count_label': '{count} sections',
 };

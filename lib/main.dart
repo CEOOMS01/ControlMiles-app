@@ -282,16 +282,19 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       },
 
       onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text("Error de Navegación")),
-          body: Center(
-            child: Text(
-              "Route ${settings.name} not found.\nContact Olympus Mont Systems.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
+        builder: (context) {
+          final appState = Provider.of<AppState>(context, listen: false);
+          return Scaffold(
+            appBar: AppBar(title: Text(appState.tr('navigation_error_title'))),
+            body: Center(
+              child: Text(
+                appState.tr('route_not_found_message').replaceFirst('{route}', settings.name ?? '?'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

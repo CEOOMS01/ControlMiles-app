@@ -696,7 +696,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   : const Color(0xFFCBD5E1)),
           const SizedBox(height: 16),
           Text(
-            appState.tr('no_reports_found'),
+            // BUG FIX (missing key, real report from user): 'no_reports_found'
+            // was never added to any i18n dictionary -- tr() silently fell
+            // back to rendering the raw key string on screen. Same fix
+            // already applied to the SnackBar above (2026-08-29 comment):
+            // reuse the existing, semantically-fitting 'no_trips_yet' key
+            // instead of inventing a new one that would need adding to all
+            // 11 language files for an identical message.
+            appState.tr('no_trips_yet'),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

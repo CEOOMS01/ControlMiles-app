@@ -125,6 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
+        // BUG FIX (missing key, hardcoded-string audit): 'auth_error' was
+        // referenced here but never added to any i18n dictionary -- tr()
+        // silently rendered the raw key string. Now added to all 11.
         _showError(appState.tr('auth_error'));
         return;
       }

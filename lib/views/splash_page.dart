@@ -69,9 +69,14 @@ class _SplashPageState extends State<SplashPage> {
 
       if (!mounted) return;
 
+      // BUG FIX (hardcoded string audit): `appState` from the try block
+      // above is out of scope here (declared inside try {}, not visible in
+      // catch {}) -- fetch a fresh reference instead of hardcoding the
+      // message in English.
+      final appState = Provider.of<AppState>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("System initializing. Redirecting..."),
+        SnackBar(
+          content: Text(appState.tr('system_initializing_redirecting')),
           backgroundColor: Colors.red,
         ),
       );

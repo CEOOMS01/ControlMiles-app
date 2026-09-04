@@ -371,7 +371,29 @@ const Map<String, String> amTexts = {
   'current_odometer': 'የአሁኑ የመንገድ መለኪያ',
   'miles_since_service': 'ካለፈው አገልግሎት ጀምሮ ያሉ ማይሎች',
   'no_service_recorded': 'እስካሁን አገልግሎት አልተመዘገበም',
-  'next_service_due_miles': 'ቀጣይ በ{miles} mi',
-  'service_overdue_miles': 'በ{miles} mi ዘግይቷል',
-  'service_recommended_interval': 'የሚመከር፦ በየ{miles} mi',
+  'next_service_due_miles': 'ቀጣይ በ{miles}',
+  'service_overdue_miles': 'በ{miles} ዘግይቷል',
+  'service_recommended_interval': 'የሚመከር፦ በየ{miles}',
+
+  // ============================================================
+  // የጎደሉ ቁልፎች ኦዲት (2026-09-03)
+  // ============================================================
+  'auth_error': 'የማረጋገጫ ስህተት። እባክዎ እንደገና ይሞክሩ።',
+  'invalid_credentials': 'ልክ ያልሆነ ኢሜይል ወይም የይለፍ ቃል።',
+  'email_already_exists': 'ይህ ኢሜይል አስቀድሞ ተመዝግቧል።',
+  'end': 'መጨረሻ',
+  'navigation_error_title': 'የአሰሳ ስህተት',
+  'route_not_found_message': 'መንገድ {route} አልተገኘም።\nከ Olympus Mont Systems ጋር ይገናኙ።',
+  'switched_label': 'ተቀይሯል',
+  'trip_number_label': 'ጉዞ {number}',
+  'trip_end_time_label': 'መጨረሻ፦ {time}',
+  'sections_label': 'ክፍሎች',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': 'ስርዓቱ በመጀመር ላይ ነው። በማዘዋወር ላይ...',
+  'error_all_fields_required': 'ሁሉም መስኮች ያስፈልጋሉ።',
+  'error_invalid_vehicle_year': 'ልክ ያልሆነ የተሽከርካሪ ዓመት።',
+  'error_odometer_negative_or_empty': 'የመንገድ መለኪያ አሉታዊ ወይም ባዶ መሆን አይችልም።',
+  'error_invalid_maintenance_type': 'ልክ ያልሆነ የጥገና ዓይነት።',
+  'error_service_date_required': 'የአገልግሎት ቀን ያስፈልጋል።',
+  'sections_count_label': '{count} ክፍሎች',
 };

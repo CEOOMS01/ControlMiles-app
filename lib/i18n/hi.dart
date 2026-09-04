@@ -395,7 +395,29 @@ const Map<String, String> hiTexts = {
   'current_odometer': 'वर्तमान ओडोमीटर',
   'miles_since_service': 'पिछली सर्विस के बाद की मील',
   'no_service_recorded': 'अभी तक कोई सर्विस दर्ज नहीं',
-  'next_service_due_miles': 'अगली सर्विस {miles} mi पर',
-  'service_overdue_miles': '{miles} mi से अतिदेय',
-  'service_recommended_interval': 'अनुशंसित: हर {miles} mi',
+  'next_service_due_miles': 'अगली सर्विस {miles} पर',
+  'service_overdue_miles': '{miles} से अतिदेय',
+  'service_recommended_interval': 'अनुशंसित: हर {miles}',
+
+  // ============================================================
+  // गुम कुंजी लेखा परीक्षा (2026-09-03)
+  // ============================================================
+  'auth_error': 'प्रमाणीकरण त्रुटि। कृपया पुनः प्रयास करें।',
+  'invalid_credentials': 'अमान्य ईमेल या पासवर्ड।',
+  'email_already_exists': 'यह ईमेल पहले से पंजीकृत है।',
+  'end': 'समाप्त',
+  'navigation_error_title': 'नेविगेशन त्रुटि',
+  'route_not_found_message': 'रूट {route} नहीं मिला।\nOlympus Mont Systems से संपर्क करें।',
+  'switched_label': 'बदला गया',
+  'trip_number_label': 'यात्रा {number}',
+  'trip_end_time_label': 'समाप्ति: {time}',
+  'sections_label': 'सेक्शन',
+  'vin_label': 'VIN',
+  'system_initializing_redirecting': 'सिस्टम प्रारंभ हो रहा है। पुनर्निर्देशित कर रहे हैं...',
+  'error_all_fields_required': 'सभी फ़ील्ड आवश्यक हैं।',
+  'error_invalid_vehicle_year': 'वाहन का वर्ष अमान्य है।',
+  'error_odometer_negative_or_empty': 'ओडोमीटर नकारात्मक या खाली नहीं हो सकता।',
+  'error_invalid_maintenance_type': 'रखरखाव प्रकार अमान्य है।',
+  'error_service_date_required': 'सेवा तिथि आवश्यक है।',
+  'sections_count_label': '{count} सेक्शन',
 };

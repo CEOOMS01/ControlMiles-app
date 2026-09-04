@@ -8,6 +8,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../i18n/app_texts.dart';
 import '../models/maintenance_record.dart';
 
 class MaintenanceService {
@@ -24,15 +25,19 @@ class MaintenanceService {
         .toList();
   }
 
+  // BUG FIX (hardcoded-string audit): antes tiraba texto en español fijo,
+  // mostrado tal cual al usuario sin pasar por tr() -- mismo patrón de fix
+  // aplicado a VehicleService._validate.
   void _validate({
     required String type,
     required DateTime? performedAt,
+    required AppLanguage language,
   }) {
     if (!MaintenanceType.all.any((t) => t.id == type)) {
-      throw Exception('Tipo de mantenimiento inválido.');
+      throw Exception(AppTexts.get('error_invalid_maintenance_type', language.code));
     }
     if (performedAt == null) {
-      throw Exception('La fecha de servicio es obligatoria.');
+      throw Exception(AppTexts.get('error_service_date_required', language.code));
     }
   }
 
@@ -41,13 +46,14 @@ class MaintenanceService {
     required String vehicleId,
     required String type,
     required DateTime performedAt,
+    required AppLanguage language,
     double? odometerAtService,
     double? nextDueOdometer,
     DateTime? nextDueDate,
     double? cost,
     String? notes,
   }) async {
-    _validate(type: type, performedAt: performedAt);
+    _validate(type: type, performedAt: performedAt, language: language);
 
     await _supabase.from('vehicle_maintenance_records').insert({
       'user_id': userId,

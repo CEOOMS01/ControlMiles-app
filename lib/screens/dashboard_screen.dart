@@ -224,6 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildSwitchAppBanner() {
     if (!_showSwitchBanner) return const SizedBox.shrink();
+    final appState = Provider.of<AppState>(context, listen: false);
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 500),
@@ -247,8 +248,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             Text(_switchingTo?.toUpperCase() ?? "",
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(width: 10),
-            const Text("SWITCHED",
-                style: TextStyle(color: Color(0xFF4ADE80), fontSize: 10, fontWeight: FontWeight.w900)),
+            Text(appState.tr('switched_label'),
+                style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 10, fontWeight: FontWeight.w900)),
           ],
         ),
       ),

@@ -55,7 +55,7 @@ class OdometerCaptureService {
 
         if (isStart) {
           if (sessionResponse != null && sessionResponse['is_closed'] == true) {
-            throw Exception("La sesión ya está cerrada y no admite más cambios.");
+            throw Exception(AppTexts.get('session_already_closed', language.code));
           }
 
           // Si no existe la sesión al empezar, la creamos inmediatamente
@@ -73,10 +73,10 @@ class OdometerCaptureService {
         } else {
           // Para ODOMETER_END, la sesión DEBE existir
           if (sessionResponse == null) {
-            throw Exception("Error crítico: No se encontró la sesión activa para cerrar.");
+            throw Exception(AppTexts.get('session_not_found', language.code));
           }
           if (sessionResponse['is_closed'] == true) {
-            throw Exception("Esta sesión ya fue finalizada anteriormente.");
+            throw Exception(AppTexts.get('session_already_finalized', language.code));
           }
 
           // Validación lógica: El odómetro final no puede ser menor al inicial
@@ -100,7 +100,7 @@ class OdometerCaptureService {
             .maybeSingle();
 
         if (existingAudit != null) {
-          throw Exception("Ya existe una captura registrada para este evento.");
+          throw Exception(AppTexts.get('duplicate_capture', language.code));
         }
       }
 
@@ -114,13 +114,16 @@ class OdometerCaptureService {
       // bytes completos a memoria.
       if (!AppConfig.isValidFileSize(file)) {
         throw Exception(
-          'La foto pesa fuera de rango permitido (entre ${AppConfig.minPhotoSizeKb}KB y ${AppConfig.maxPhotoSizeMb}MB). Intenta tomarla de nuevo.',
+          AppTexts.get('photo_size_out_of_range', language.code)
+              .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
+              .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
         );
       }
 
       if (!AppConfig.isValidExtension(file.path)) {
         throw Exception(
-          'Formato de imagen no soportado. Formatos permitidos: ${AppConfig.allowedImageFormats.join(', ')}.',
+          AppTexts.get('photo_format_not_supported', language.code)
+              .replaceFirst('{formats}', AppConfig.allowedImageFormats.join(', ')),
         );
       }
 

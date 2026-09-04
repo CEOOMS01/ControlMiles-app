@@ -403,7 +403,29 @@ const Map<String, String> arTexts = {
   'current_odometer': 'عداد المسافة الحالي',
   'miles_since_service': 'الأميال منذ آخر صيانة',
   'no_service_recorded': 'لا توجد صيانة مسجلة بعد',
-  'next_service_due_miles': 'الصيانة القادمة عند {miles} ميل',
-  'service_overdue_miles': 'متأخر بمقدار {miles} ميل',
-  'service_recommended_interval': 'موصى به: كل {miles} ميل',
+  'next_service_due_miles': 'الصيانة القادمة عند {miles}',
+  'service_overdue_miles': 'متأخر بمقدار {miles}',
+  'service_recommended_interval': 'موصى به: كل {miles}',
+
+  // ============================================================
+  // تدقيق المفاتيح المفقودة (2026-09-03)
+  // ============================================================
+  'auth_error': 'خطأ في المصادقة. حاول مرة أخرى.',
+  'invalid_credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+  'email_already_exists': 'هذا البريد الإلكتروني مسجل بالفعل.',
+  'end': 'إنهاء',
+  'navigation_error_title': 'خطأ في التنقل',
+  'route_not_found_message': 'المسار {route} غير موجود.\nتواصل مع Olympus Mont Systems.',
+  'switched_label': 'تم التبديل',
+  'trip_number_label': 'الرحلة {number}',
+  'trip_end_time_label': 'النهاية: {time}',
+  'sections_label': 'الأقسام',
+  'vin_label': 'رقم الهيكل',
+  'system_initializing_redirecting': 'جارٍ تهيئة النظام. جارِ التحويل...',
+  'error_all_fields_required': 'جميع الحقول مطلوبة.',
+  'error_invalid_vehicle_year': 'سنة المركبة غير صالحة.',
+  'error_odometer_negative_or_empty': 'لا يمكن أن يكون عداد المسافة سالباً أو فارغاً.',
+  'error_invalid_maintenance_type': 'نوع الصيانة غير صالح.',
+  'error_service_date_required': 'تاريخ الخدمة مطلوب.',
+  'sections_count_label': '{count} أقسام',
 };

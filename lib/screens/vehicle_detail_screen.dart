@@ -69,6 +69,19 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     }
   }
 
+  // BUG FIX (hardcoded-string audit): esta pantalla mostraba "mi" fijo sin
+  // pasar por tr('mile_short')/tr('kilometer_short') ni respetar
+  // appState.useMetricSystem -- mismo criterio ya usado en
+  // history_screen.dart para las millas de un viaje. Los valores en DB
+  // siempre están en millas (ver AppConfig), la conversión es solo de
+  // presentación.
+  String _formatMiles(double miles, AppState appState) {
+    if (appState.useMetricSystem) {
+      return '${(miles * 1.60934).toStringAsFixed(0)} ${appState.tr('kilometer_short')}';
+    }
+    return '${miles.toStringAsFixed(0)} ${appState.tr('mile_short')}';
+  }
+
   void _openPhoto(String? url) {
     if (url == null) return;
     showDialog(
@@ -156,7 +169,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[700])),
             if (v.vin != null && v.vin!.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text('VIN: ${v.vin}', style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
+              Text('${appState.tr('vin_label')}: ${v.vin}', style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
             ],
             const Divider(height: 24),
             Row(
@@ -165,7 +178,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 Text(appState.tr('current_odometer'),
                     style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[700])),
                 Text(
-                  v.odometer != null ? '${v.odometer!.toStringAsFixed(0)} mi' : '—',
+                  v.odometer != null ? _formatMiles(v.odometer!, appState) : '—',
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                 ),
               ],
@@ -184,7 +197,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         leading: const Icon(Icons.timeline_rounded, color: Color(0xFF22C55E)),
         title: Text(appState.tr('tracked_miles_gps')),
         trailing: Text(
-          '${_trackedMiles.toStringAsFixed(1)} mi',
+          _formatMiles(_trackedMiles, appState),
           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF22C55E)),
         ),
       ),
@@ -226,6 +239,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   value: startValue,
                   imageUrl: startImage,
                   isDark: isDark,
+                  appState: appState,
                 ),
                 const SizedBox(width: 12),
                 _buildReadingTile(
@@ -234,6 +248,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   imageUrl: endImage,
                   pendingLabel: endValue == null ? appState.tr('checkpoint_pending_close') : null,
                   isDark: isDark,
+                  appState: appState,
                 ),
               ],
             ),
@@ -248,6 +263,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     required double? value,
     required String? imageUrl,
     required bool isDark,
+    required AppState appState,
     String? pendingLabel,
   }) {
     return Expanded(
@@ -274,7 +290,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               children: [
                 Text(label, style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.grey)),
                 Text(
-                  value != null ? '${value.toStringAsFixed(0)} mi' : (pendingLabel ?? '—'),
+                  value != null ? _formatMiles(value, appState) : (pendingLabel ?? '—'),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ],

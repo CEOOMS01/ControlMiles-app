@@ -454,10 +454,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text('Trip ${index + 1}  ·  ${session.startTime != null ? DateFormat('MM/dd hh:mm a').format(session.startTime!) : '--'}',
+                                                Text('${appState.tr('trip_number_label').replaceFirst('{number}', '${index + 1}')}  ·  ${session.startTime != null ? DateFormat('MM/dd hh:mm a').format(session.startTime!) : '--'}',
                                                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B))),
                                                 const SizedBox(height: 2),
-                                                Text('End: ${session.endTime != null ? DateFormat('hh:mm a').format(session.endTime!) : '--'}',
+                                                Text(appState.tr('trip_end_time_label').replaceFirst('{time}', session.endTime != null ? DateFormat('hh:mm a').format(session.endTime!) : '--'),
                                                     style: TextStyle(fontSize: 11, color: labelCol)),
                                               ],
                                             ),
@@ -478,7 +478,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           const SizedBox(width: 8),
                                           _buildInfoChip(icon: Icons.timer_outlined, label: _formatDuration(session.effectiveDurationSeconds ?? 0), isDark: isDark),
                                           const SizedBox(width: 8),
-                                          _buildInfoChip(icon: Icons.apps_rounded, label: '${sections.length} section${sections.length != 1 ? 's' : ''}', isDark: isDark),
+                                          _buildInfoChip(icon: Icons.apps_rounded, label: appState.tr('sections_count_label').replaceFirst('{count}', '${sections.length}'), isDark: isDark),
                                           if (session.cgcDecisionId != null) ...[
                                             const SizedBox(width: 8),
                                             _buildInfoChip(icon: Icons.verified_user_outlined, label: appState.tr('trip_sealed_badge'), isDark: isDark),
@@ -499,7 +499,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.only(left: 4, bottom: 8),
-                                        child: Text('SECTIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: labelCol)),
+                                        child: Text(appState.tr('sections_label'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: labelCol)),
                                       ),
                                       ...sections.map((section) => _buildSectionRow(section, appState, isDark)),
                                     ],
