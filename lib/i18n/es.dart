@@ -692,4 +692,22 @@ const Map<String, String> esTexts = {
   'weekly_odometer_close_body': '¿Quieres tomar ahora la foto de cierre del odómetro de esta semana?',
   'later': 'Más tarde',
   'take_photo': 'Tomar foto',
+
+  // ============================================================
+  // VEHICLE PROFILE (pantalla de detalle, solo lectura) + millas en mantenimiento
+  // ============================================================
+  'vehicle_profile_title': 'Perfil del vehículo',
+  'tracked_miles_gps': 'Millas registradas (GPS)',
+  'odometer_checkpoints_title': 'Cierres semanales de odómetro',
+  'no_odometer_checkpoints': 'Aún no hay cierres de odómetro',
+  'checkpoint_week_label': 'Semana del {date}',
+  'checkpoint_start': 'Inicio',
+  'checkpoint_end': 'Cierre',
+  'checkpoint_pending_close': 'Pendiente de cierre',
+  'current_odometer': 'Odómetro actual',
+  'miles_since_service': 'Millas desde el último servicio',
+  'no_service_recorded': 'Aún no hay servicios registrados',
+  'next_service_due_miles': 'Próximo a las {miles} mi',
+  'service_overdue_miles': 'Vencido por {miles} mi',
+  'service_recommended_interval': 'Recomendado: cada {miles} mi',
 };

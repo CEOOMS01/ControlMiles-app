@@ -662,4 +662,22 @@ const Map<String, String> zhTexts = {
   'weekly_odometer_close_body': '要现在拍摄本周的结算里程表照片吗？',
   'later': '稍后',
   'take_photo': '拍照',
+
+  // ============================================================
+  // VEHICLE PROFILE（只读详情页）+ 保养里程
+  // ============================================================
+  'vehicle_profile_title': '车辆档案',
+  'tracked_miles_gps': '已记录里程（GPS）',
+  'odometer_checkpoints_title': '每周里程表结算记录',
+  'no_odometer_checkpoints': '暂无里程表结算记录',
+  'checkpoint_week_label': '{date} 当周',
+  'checkpoint_start': '起始',
+  'checkpoint_end': '结算',
+  'checkpoint_pending_close': '待结算',
+  'current_odometer': '当前里程表读数',
+  'miles_since_service': '距上次保养的里程',
+  'no_service_recorded': '暂无保养记录',
+  'next_service_due_miles': '下次保养里程：{miles} mi',
+  'service_overdue_miles': '已超期 {miles} mi',
+  'service_recommended_interval': '建议：每 {miles} mi',
 };

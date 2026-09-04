@@ -716,4 +716,22 @@ const Map<String, String> enTexts = {
   'weekly_odometer_close_body': 'Want to take this week\'s closing odometer photo now?',
   'later': 'Later',
   'take_photo': 'Take photo',
+
+  // ============================================================
+  // VEHICLE PROFILE (read-only detail screen) + maintenance mileage
+  // ============================================================
+  'vehicle_profile_title': 'Vehicle Profile',
+  'tracked_miles_gps': 'Tracked miles (GPS)',
+  'odometer_checkpoints_title': 'Weekly odometer checkpoints',
+  'no_odometer_checkpoints': 'No odometer checkpoints yet',
+  'checkpoint_week_label': 'Week of {date}',
+  'checkpoint_start': 'Start',
+  'checkpoint_end': 'End',
+  'checkpoint_pending_close': 'Pending close',
+  'current_odometer': 'Current odometer',
+  'miles_since_service': 'Miles since last service',
+  'no_service_recorded': 'No service recorded yet',
+  'next_service_due_miles': 'Next due at {miles} mi',
+  'service_overdue_miles': 'Overdue by {miles} mi',
+  'service_recommended_interval': 'Recommended: every {miles} mi',
 };

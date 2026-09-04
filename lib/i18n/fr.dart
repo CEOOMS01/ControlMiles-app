@@ -673,4 +673,22 @@ const Map<String, String> frTexts = {
   'weekly_odometer_close_body': 'Voulez-vous prendre maintenant la photo de clôture de l\'odomètre de cette semaine ?',
   'later': 'Plus tard',
   'take_photo': 'Prendre une photo',
+
+  // ============================================================
+  // VEHICLE PROFILE (écran de détail en lecture seule) + kilométrage entretien
+  // ============================================================
+  'vehicle_profile_title': 'Profil du véhicule',
+  'tracked_miles_gps': 'Miles suivis (GPS)',
+  'odometer_checkpoints_title': "Clôtures hebdomadaires de l'odomètre",
+  'no_odometer_checkpoints': "Aucune clôture d'odomètre pour l'instant",
+  'checkpoint_week_label': 'Semaine du {date}',
+  'checkpoint_start': 'Début',
+  'checkpoint_end': 'Fin',
+  'checkpoint_pending_close': 'Clôture en attente',
+  'current_odometer': 'Odomètre actuel',
+  'miles_since_service': 'Miles depuis le dernier entretien',
+  'no_service_recorded': 'Aucun entretien enregistré',
+  'next_service_due_miles': 'Prochain à {miles} mi',
+  'service_overdue_miles': 'En retard de {miles} mi',
+  'service_recommended_interval': 'Recommandé : tous les {miles} mi',
 };

@@ -378,4 +378,32 @@ const Map<String, String> arTexts = {
   'vehicle_deleted_success': 'تم حذف المركبة',
   'vehicle_saved': 'تم حفظ المركبة',
   'vehicle_required': 'المركبة مطلوبة',
+
+  'end_shift': 'إنهاء الوردية',
+  'end_shift_tooltip': 'اضغط لإغلاق وردية العمل',
+  'end_shift_failed': 'تعذّر إنهاء الوردية — التتبع لا يزال نشطاً. حاول مجدداً.',
+  'session_already_closed': 'هذه الجلسة مغلقة بالفعل ولا يمكن تعديلها.',
+  'session_not_found': 'خطأ فادح: لم يتم العثور على الجلسة النشطة.',
+  'session_already_finalized': 'تم إنهاء هذه الجلسة مسبقاً.',
+  'duplicate_capture': 'يوجد بالفعل تسجيل لهذا الحدث.',
+  'photo_size_out_of_range': 'حجم الصورة خارج النطاق المسموح ({min}KB–{max}MB). حاول مجدداً.',
+  'photo_format_not_supported': 'صيغة الصورة غير مدعومة. الصيغ المسموحة: {formats}.',
+
+  // ============================================================
+  // VEHICLE PROFILE (شاشة تفاصيل للقراءة فقط) + الأميال في الصيانة
+  // ============================================================
+  'vehicle_profile_title': 'ملف المركبة',
+  'tracked_miles_gps': 'الأميال المسجلة (GPS)',
+  'odometer_checkpoints_title': 'إغلاقات عداد المسافة الأسبوعية',
+  'no_odometer_checkpoints': 'لا توجد إغلاقات لعداد المسافة بعد',
+  'checkpoint_week_label': 'أسبوع {date}',
+  'checkpoint_start': 'البداية',
+  'checkpoint_end': 'الإغلاق',
+  'checkpoint_pending_close': 'بانتظار الإغلاق',
+  'current_odometer': 'عداد المسافة الحالي',
+  'miles_since_service': 'الأميال منذ آخر صيانة',
+  'no_service_recorded': 'لا توجد صيانة مسجلة بعد',
+  'next_service_due_miles': 'الصيانة القادمة عند {miles} ميل',
+  'service_overdue_miles': 'متأخر بمقدار {miles} ميل',
+  'service_recommended_interval': 'موصى به: كل {miles} ميل',
 };

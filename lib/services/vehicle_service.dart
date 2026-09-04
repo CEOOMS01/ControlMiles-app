@@ -184,4 +184,21 @@ class VehicleService {
       await setActiveVehicle(userId, remaining.first.id);
     }
   }
+
+  /// Suma de `sessions.total_miles` (GPS, ya cerradas) para este vehículo —
+  /// usado por VehicleDetailScreen para mostrar "millas calculadas" junto
+  /// a las lecturas de odómetro por foto (vehicle_odometer_checkpoints),
+  /// sin mezclar ambas fuentes en una sola cifra (evidencia distinta, ver
+  /// comentario de submit_vehicle_odometer_checkpoint).
+  Future<double> totalTrackedMiles(String vehicleId) async {
+    final data = await _supabase
+        .from('sessions')
+        .select('total_miles')
+        .eq('vehicle_id', vehicleId)
+        .eq('is_closed', true);
+    return List<Map<String, dynamic>>.from(data).fold<double>(
+      0.0,
+      (sum, row) => sum + ((row['total_miles'] as num?)?.toDouble() ?? 0.0),
+    );
+  }
 }

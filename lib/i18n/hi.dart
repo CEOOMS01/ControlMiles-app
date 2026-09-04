@@ -370,4 +370,32 @@ const Map<String, String> hiTexts = {
   'vehicle_deleted_success': 'वाहन हटा दिया गया',
   'vehicle_saved': 'वाहन सहेज लिया गया',
   'vehicle_required': 'वाहन आवश्यक है',
+
+  'end_shift': 'शिफ्ट समाप्त',
+  'end_shift_tooltip': 'कार्य शिफ्ट बंद करने के लिए टैप करें',
+  'end_shift_failed': 'शिफ्ट बंद नहीं हो सकी — ट्रैकिंग अभी भी चल रही है। पुनः प्रयास करें।',
+  'session_already_closed': 'यह सत्र पहले से बंद है और इसमें बदलाव नहीं किए जा सकते।',
+  'session_not_found': 'गंभीर त्रुटि: सक्रिय सत्र नहीं मिला।',
+  'session_already_finalized': 'यह सत्र पहले से समाप्त हो चुका है।',
+  'duplicate_capture': 'इस घटना के लिए पहले से एक कैप्चर दर्ज है।',
+  'photo_size_out_of_range': 'फ़ोटो का आकार अनुमत सीमा ({min}KB–{max}MB) से बाहर है। पुनः प्रयास करें।',
+  'photo_format_not_supported': 'फ़ोटो प्रारूप समर्थित नहीं है। अनुमत प्रारूप: {formats}।',
+
+  // ============================================================
+  // VEHICLE PROFILE (केवल-पठन विवरण स्क्रीन) + रखरखाव में मील
+  // ============================================================
+  'vehicle_profile_title': 'वाहन प्रोफ़ाइल',
+  'tracked_miles_gps': 'ट्रैक की गई मील (GPS)',
+  'odometer_checkpoints_title': 'साप्ताहिक ओडोमीटर चेकपॉइंट',
+  'no_odometer_checkpoints': 'अभी तक कोई ओडोमीटर चेकपॉइंट नहीं',
+  'checkpoint_week_label': '{date} का सप्ताह',
+  'checkpoint_start': 'शुरुआत',
+  'checkpoint_end': 'समाप्ति',
+  'checkpoint_pending_close': 'समाप्ति लंबित',
+  'current_odometer': 'वर्तमान ओडोमीटर',
+  'miles_since_service': 'पिछली सर्विस के बाद की मील',
+  'no_service_recorded': 'अभी तक कोई सर्विस दर्ज नहीं',
+  'next_service_due_miles': 'अगली सर्विस {miles} mi पर',
+  'service_overdue_miles': '{miles} mi से अतिदेय',
+  'service_recommended_interval': 'अनुशंसित: हर {miles} mi',
 };

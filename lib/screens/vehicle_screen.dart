@@ -6,14 +6,16 @@
 // Dos pestañas: "Mi Vehículo" (CRUD movido de Profile, sin cambios de
 // comportamiento) y "Mantenimiento" (nuevo).
 //
-// NOTA (limitación real, no oculta): vehicles.odometer es un valor que el
-// usuario ingresa una vez al agregar el vehículo — no se actualiza solo con
-// las millas que la app trackea por viaje (son sistemas separados, y no hay
-// "editar vehículo" por decisión explícita del usuario: para corregirlo hay
-// que archivar y agregar uno nuevo). Por eso "Mantenimiento" NO calcula un
-// badge automático de "vencido" comparando contra el odómetro — sería
-// engañoso con un dato que puede estar desactualizado hace meses. Solo
-// muestra el próximo umbral guardado (millaje y/o fecha) como referencia.
+// NOTA (actualizado 2026-09-03, ver migración
+// 20260903120000_vehicle_weekly_odometer_checkpoints.sql): vehicles.odometer
+// ya NO queda congelado en el valor ingresado al agregar el vehículo -- cada
+// checkpoint semanal de odómetro (foto real, ver submit_vehicle_odometer_
+// checkpoint) lo actualiza hacia adelante. Sigue sin haber "editar vehículo"
+// por decisión explícita del usuario (para corregirlo hay que archivar y
+// agregar uno nuevo), pero el dato ya no es estático. "Mantenimiento" SÍ
+// calcula ahora un umbral de "próximo servicio" contra este odómetro (ver
+// _buildMaintenanceMileageCard) -- ya no sería engañoso, el dato se
+// mantiene al día por sí solo.
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +28,7 @@ import '../models/maintenance_record.dart';
 import '../models/vehicle.dart';
 import '../services/maintenance_service.dart';
 import '../services/vehicle_service.dart';
+import 'vehicle_detail_screen.dart';
 
 class VehicleScreen extends StatefulWidget {
   const VehicleScreen({super.key});
@@ -468,6 +471,15 @@ class _VehicleScreenState extends State<VehicleScreen>
             : BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
       ),
       child: ListTile(
+        // Explicit user requirement: entrar al perfil del vehículo para
+        // revisar (no editar) que las millas suban conforme al registro --
+        // el tap en el cuerpo de la tarjeta abre VehicleDetailScreen,
+        // solo-lectura. Los controles de acción (activar/eliminar) siguen
+        // viviendo en `trailing`, sin cambio de comportamiento.
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
+        ),
         leading: const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF475569)),
         title: Row(
           children: [
@@ -625,6 +637,8 @@ class _VehicleScreenState extends State<VehicleScreen>
       child: Column(
         children: [
           if (_vehicles.length > 1) _buildVehiclePicker(appState, isDark),
+          if (_selectedVehicleForMaintenance != null)
+            _buildMaintenanceMileageCard(_selectedVehicleForMaintenance!, appState, isDark),
           if (_addingRecord)
             _buildMaintenanceForm(appState, isDark)
           else ...[
@@ -658,6 +672,72 @@ class _VehicleScreenState extends State<VehicleScreen>
     );
   }
 
+  // Explicit user requirement: "que las millas esten tambien presentes en
+  // ese menu [Mantenimiento]" -- muestra el odómetro actual del vehículo
+  // seleccionado (ya vivo desde el checkpoint semanal, ver header comment
+  // de este archivo) directamente en la pestaña de mantenimiento.
+  Widget _buildMaintenanceMileageCard(Vehicle vehicle, AppState appState, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Card(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: ListTile(
+          leading: const Icon(Icons.speed_rounded, color: Color(0xFF475569)),
+          title: Text(appState.tr('current_odometer')),
+          trailing: Text(
+            vehicle.odometer != null ? '${vehicle.odometer!.toStringAsFixed(0)} mi' : '—',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Explicit user requirement: "que el cambio del auto sea en base a lo que
+  // dice un experto o en base a la necesidad del cliente. siempre tomando
+  // en cuenta el calculo de millas desde el cambio de aceite" -- traduce
+  // eso a un badge por registro: usa el umbral propio del cliente
+  // (nextDueOdometer, si lo definió) o cae al intervalo de experto del tipo
+  // (MaintenanceRecord.dueThresholdOdometer ya resuelve esa prioridad),
+  // comparado contra el odómetro actual del vehículo (vivo, ver arriba).
+  // Puramente informativo -- no bloquea ni dispara nada, mismo criterio que
+  // isDueByOdometer/isDueByDate ya documentado en el modelo.
+  Widget? _buildDueStatusLine(MaintenanceRecord r, Vehicle vehicle, AppState appState) {
+    final currentOdometer = vehicle.odometer;
+    final threshold = r.dueThresholdOdometer;
+
+    if (currentOdometer != null && r.odometerAtService != null) {
+      final since = currentOdometer - r.odometerAtService!;
+      final sinceLabel = '${appState.tr('miles_since_service')}: ${since.toStringAsFixed(0)} mi';
+
+      if (threshold != null) {
+        final remaining = threshold - currentOdometer;
+        final statusText = remaining <= 0
+            ? appState.tr('service_overdue_miles').replaceFirst('{miles}', (-remaining).toStringAsFixed(0))
+            : appState.tr('next_service_due_miles').replaceFirst('{miles}', remaining.toStringAsFixed(0));
+        final color = remaining <= 0 ? Colors.red.shade700 : const Color(0xFF475569);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(sinceLabel),
+            Text(statusText, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            if (!r.dueThresholdIsCustom && r.typeMeta.defaultIntervalMiles != null)
+              Text(
+                appState
+                    .tr('service_recommended_interval')
+                    .replaceFirst('{miles}', r.typeMeta.defaultIntervalMiles.toString()),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+          ],
+        );
+      }
+      return Text(sinceLabel);
+    }
+    return null;
+  }
+
   Widget _buildVehiclePicker(AppState appState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -682,6 +762,8 @@ class _VehicleScreenState extends State<VehicleScreen>
   Widget _buildMaintenanceRecordCard(MaintenanceRecord r, AppState appState, bool isDark) {
     final meta = r.typeMeta;
     final dateFmt = DateFormat('MM/dd/yyyy');
+    final vehicle = _selectedVehicleForMaintenance;
+    final dueStatus = vehicle != null ? _buildDueStatusLine(r, vehicle, appState) : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
@@ -705,6 +787,10 @@ class _VehicleScreenState extends State<VehicleScreen>
             if (r.nextDueDate != null)
               Text('${appState.tr('next_due_date_optional')}: ${dateFmt.format(r.nextDueDate!)}'),
             if (r.notes != null && r.notes!.isNotEmpty) Text(r.notes!),
+            if (dueStatus != null) ...[
+              const SizedBox(height: 6),
+              dueStatus,
+            ],
           ],
         ),
         isThreeLine: true,

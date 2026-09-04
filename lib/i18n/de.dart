@@ -662,4 +662,22 @@ const Map<String, String> deTexts = {
   'weekly_odometer_close_body': 'Möchten Sie jetzt das Abschlussfoto des Kilometerstands dieser Woche aufnehmen?',
   'later': 'Später',
   'take_photo': 'Foto aufnehmen',
+
+  // ============================================================
+  // VEHICLE PROFILE (schreibgeschützte Detailansicht) + Laufleistung in Wartung
+  // ============================================================
+  'vehicle_profile_title': 'Fahrzeugprofil',
+  'tracked_miles_gps': 'Erfasste Meilen (GPS)',
+  'odometer_checkpoints_title': 'Wöchentliche Kilometerstand-Abschlüsse',
+  'no_odometer_checkpoints': 'Noch keine Kilometerstand-Abschlüsse',
+  'checkpoint_week_label': 'Woche vom {date}',
+  'checkpoint_start': 'Start',
+  'checkpoint_end': 'Ende',
+  'checkpoint_pending_close': 'Abschluss ausstehend',
+  'current_odometer': 'Aktueller Kilometerstand',
+  'miles_since_service': 'Meilen seit letztem Service',
+  'no_service_recorded': 'Noch kein Service erfasst',
+  'next_service_due_miles': 'Nächster fällig bei {miles} mi',
+  'service_overdue_miles': 'Überfällig um {miles} mi',
+  'service_recommended_interval': 'Empfohlen: alle {miles} mi',
 };

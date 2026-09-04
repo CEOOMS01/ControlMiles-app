@@ -15,20 +15,38 @@ class MaintenanceType {
   // son términos genéricos ("Cambio de aceite") que sí deben localizarse.
   final String labelKey;
   final IconData icon;
+  // Intervalo "de experto" (millas), usado como umbral por defecto para
+  // el próximo servicio cuando el usuario no definió uno propio en
+  // nextDueOdometer — explicit user requirement: "el cambio del auto sea
+  // en base a lo que dice un experto o en base a la necesidad del
+  // cliente". null para tipos cuyo vencimiento típico es por fecha, no
+  // por millaje (inspection/registration), donde un número inventado
+  // sería más engañoso que útil.
+  final int? defaultIntervalMiles;
 
-  const MaintenanceType({required this.id, required this.labelKey, required this.icon});
+  const MaintenanceType({
+    required this.id,
+    required this.labelKey,
+    required this.icon,
+    this.defaultIntervalMiles,
+  });
 
   // Íconos elegidos de forma conservadora — solo de los muy comunes/estables
   // de Material Icons (no de las series "oil_barrel"/"tire_repair"/
   // "disc_full", más nuevas y no confirmadas en todas las variantes
   // _rounded, para no repetir el problema de lucide_icons de esta sesión).
+  //
+  // defaultIntervalMiles: cifras genéricas de industria (no específicas de
+  // marca/modelo, ControlMiles no tiene esa data) — 5,000 mi para aceite
+  // convencional, 6,000-8,000 rotación de llantas, 12,000-15,000 frenos,
+  // 30,000 batería. Puramente informativo, nunca bloquea nada.
   static const List<MaintenanceType> all = [
-    MaintenanceType(id: 'oil_change', labelKey: 'maintenance_type_oil_change', icon: Icons.opacity_rounded),
-    MaintenanceType(id: 'tire_rotation', labelKey: 'maintenance_type_tire_rotation', icon: Icons.autorenew_rounded),
-    MaintenanceType(id: 'brake_service', labelKey: 'maintenance_type_brake_service', icon: Icons.stop_circle_rounded),
+    MaintenanceType(id: 'oil_change', labelKey: 'maintenance_type_oil_change', icon: Icons.opacity_rounded, defaultIntervalMiles: 5000),
+    MaintenanceType(id: 'tire_rotation', labelKey: 'maintenance_type_tire_rotation', icon: Icons.autorenew_rounded, defaultIntervalMiles: 6000),
+    MaintenanceType(id: 'brake_service', labelKey: 'maintenance_type_brake_service', icon: Icons.stop_circle_rounded, defaultIntervalMiles: 12000),
     MaintenanceType(id: 'inspection', labelKey: 'maintenance_type_inspection', icon: Icons.checklist_rounded),
     MaintenanceType(id: 'registration', labelKey: 'maintenance_type_registration', icon: Icons.assignment_rounded),
-    MaintenanceType(id: 'battery', labelKey: 'maintenance_type_battery', icon: Icons.battery_charging_full_rounded),
+    MaintenanceType(id: 'battery', labelKey: 'maintenance_type_battery', icon: Icons.battery_charging_full_rounded, defaultIntervalMiles: 30000),
     MaintenanceType(id: 'other', labelKey: 'maintenance_type_other', icon: Icons.build_rounded),
   ];
 
@@ -100,6 +118,26 @@ class MaintenanceRecord {
   }
 
   MaintenanceType get typeMeta => MaintenanceType.byId(type);
+
+  /// Umbral de millaje para el "próximo servicio" — explicit user
+  /// requirement: usa el propio umbral del cliente si lo definió al
+  /// registrar el servicio (nextDueOdometer), y si no, cae al intervalo
+  /// "de experto" del tipo (MaintenanceType.defaultIntervalMiles) sumado
+  /// al odómetro en que se hizo ESTE servicio. Null si no hay ninguno de
+  /// los dos datos (tipo sin intervalo por defecto y sin odómetro
+  /// registrado, o el tipo vence por fecha, no por millaje).
+  double? get dueThresholdOdometer {
+    if (nextDueOdometer != null) return nextDueOdometer;
+    final base = odometerAtService;
+    final interval = typeMeta.defaultIntervalMiles;
+    if (base == null || interval == null) return null;
+    return base + interval;
+  }
+
+  /// True cuando el umbral vino del cliente (nextDueOdometer explícito) en
+  /// vez de calculado desde el intervalo de experto — usado por la UI para
+  /// distinguir "tu umbral" de "recomendado" en el panel de mantenimiento.
+  bool get dueThresholdIsCustom => nextDueOdometer != null;
 
   /// True si hay un umbral de millaje definido y el odómetro actual ya lo
   /// alcanzó o superó. Puramente informativo en v1 (no dispara nada).

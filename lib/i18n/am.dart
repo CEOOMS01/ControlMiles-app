@@ -356,4 +356,22 @@ const Map<String, String> amTexts = {
   'vehicle_deleted_success': 'ተሽከርካሪ ተሰርዟል',
   'vehicle_saved': 'ተሽከርካሪ ተቀምጧል',
   'vehicle_required': 'ተሽከርካሪ ያስፈልጋል',
+
+  // ============================================================
+  // VEHICLE PROFILE (ለንባብ ብቻ ዝርዝር ገጽ) + በጥገና ውስጥ ማይሎች
+  // ============================================================
+  'vehicle_profile_title': 'የተሽከርካሪ መገለጫ',
+  'tracked_miles_gps': 'የተመዘገቡ ማይሎች (GPS)',
+  'odometer_checkpoints_title': 'ሳምንታዊ የመንገድ መለኪያ ማጠቃለያዎች',
+  'no_odometer_checkpoints': 'እስካሁን የመንገድ መለኪያ ማጠቃለያ የለም',
+  'checkpoint_week_label': 'የ{date} ሳምንት',
+  'checkpoint_start': 'መጀመሪያ',
+  'checkpoint_end': 'መጨረሻ',
+  'checkpoint_pending_close': 'መዘጋት በመጠበቅ ላይ',
+  'current_odometer': 'የአሁኑ የመንገድ መለኪያ',
+  'miles_since_service': 'ካለፈው አገልግሎት ጀምሮ ያሉ ማይሎች',
+  'no_service_recorded': 'እስካሁን አገልግሎት አልተመዘገበም',
+  'next_service_due_miles': 'ቀጣይ በ{miles} mi',
+  'service_overdue_miles': 'በ{miles} mi ዘግይቷል',
+  'service_recommended_interval': 'የሚመከር፦ በየ{miles} mi',
 };

@@ -369,4 +369,22 @@ const Map<String, String> jaTexts = {
   'vehicle_deleted_success': '車両が削除されました',
   'vehicle_saved': '車両が保存されました',
   'vehicle_required': '車両が必要です',
+
+  // ============================================================
+  // VEHICLE PROFILE (読み取り専用の詳細画面) + メンテナンス画面の走行距離
+  // ============================================================
+  'vehicle_profile_title': '車両プロフィール',
+  'tracked_miles_gps': '記録された走行距離（GPS）',
+  'odometer_checkpoints_title': '週次オドメーターチェックポイント',
+  'no_odometer_checkpoints': 'オドメーターチェックポイントはまだありません',
+  'checkpoint_week_label': '{date}の週',
+  'checkpoint_start': '開始',
+  'checkpoint_end': '終了',
+  'checkpoint_pending_close': '終了待ち',
+  'current_odometer': '現在のオドメーター',
+  'miles_since_service': '前回のサービスからの距離',
+  'no_service_recorded': 'まだサービス記録がありません',
+  'next_service_due_miles': '次回: {miles} mi',
+  'service_overdue_miles': '{miles} mi超過',
+  'service_recommended_interval': '推奨: {miles} miごと',
 };

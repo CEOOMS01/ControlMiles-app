@@ -375,4 +375,17 @@ class OdometerCaptureService {
       'p_odometer_image_url': odometerImageUrl,
     });
   }
+
+  /// Historial completo de checkpoints (más reciente primero) — usado por
+  /// VehicleDetailScreen (pantalla de solo lectura del vehículo, explicit
+  /// user requirement) para mostrar la foto inicial y las de cada cierre
+  /// semanal, no solo la semana en curso.
+  Future<List<Map<String, dynamic>>> listCheckpoints(String vehicleId) async {
+    final data = await _supabase
+        .from('vehicle_odometer_checkpoints')
+        .select()
+        .eq('vehicle_id', vehicleId)
+        .order('week_start_date', ascending: false);
+    return List<Map<String, dynamic>>.from(data);
+  }
 }

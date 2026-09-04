@@ -370,4 +370,22 @@ const Map<String, String> koTexts = {
   'vehicle_deleted_success': '차량이 삭제되었습니다',
   'vehicle_saved': '차량이 저장되었습니다',
   'vehicle_required': '차량이 필요합니다',
+
+  // ============================================================
+  // VEHICLE PROFILE (읽기 전용 상세 화면) + 정비 화면의 주행거리
+  // ============================================================
+  'vehicle_profile_title': '차량 프로필',
+  'tracked_miles_gps': '추적된 마일 (GPS)',
+  'odometer_checkpoints_title': '주간 주행거리계 체크포인트',
+  'no_odometer_checkpoints': '아직 주행거리계 체크포인트가 없습니다',
+  'checkpoint_week_label': '{date} 주',
+  'checkpoint_start': '시작',
+  'checkpoint_end': '종료',
+  'checkpoint_pending_close': '종료 대기 중',
+  'current_odometer': '현재 주행거리계',
+  'miles_since_service': '마지막 서비스 이후 마일',
+  'no_service_recorded': '아직 등록된 서비스가 없습니다',
+  'next_service_due_miles': '다음 서비스: {miles} mi',
+  'service_overdue_miles': '{miles} mi 초과',
+  'service_recommended_interval': '권장: {miles} mi마다',
 };
