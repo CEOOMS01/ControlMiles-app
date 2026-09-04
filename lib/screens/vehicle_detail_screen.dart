@@ -43,6 +43,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   bool _loading = true;
   double _trackedMiles = 0.0;
   List<Map<String, dynamic>> _checkpoints = [];
+  // SECURITY/BUG FIX (see OdometerCaptureService.resolveViewableImageUrl's
+  // own comment): the URLs stored in vehicle_odometer_checkpoints don't
+  // actually resolve (private bucket) -- this maps each stored URL to a
+  // real, working signed URL, resolved once per screen load.
+  final Map<String, String?> _resolvedImageUrls = {};
 
   @override
   void initState() {
@@ -58,9 +63,24 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         _odometerService.listCheckpoints(widget.vehicle.id),
       ]);
       if (!mounted) return;
+      _checkpoints = results[1] as List<Map<String, dynamic>>;
+
+      final urlsToResolve = <String>{
+        for (final c in _checkpoints) ...[
+          if (c['start_odometer_image_url'] != null) c['start_odometer_image_url'] as String,
+          if (c['end_odometer_image_url'] != null) c['end_odometer_image_url'] as String,
+        ],
+      };
+      final resolved = await Future.wait(
+        urlsToResolve.map((u) async => MapEntry(u, await _odometerService.resolveViewableImageUrl(u))),
+      );
+
+      if (!mounted) return;
       setState(() {
         _trackedMiles = results[0] as double;
-        _checkpoints = results[1] as List<Map<String, dynamic>>;
+        _resolvedImageUrls
+          ..clear()
+          ..addEntries(resolved);
       });
     } catch (e) {
       debugPrint('[VehicleDetailScreen] Error loading: $e');
@@ -210,9 +230,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final dateFmt = DateFormat('MM/dd');
 
     final startValue = (c['start_odometer_value'] as num?)?.toDouble();
-    final startImage = c['start_odometer_image_url'] as String?;
+    final startImageStored = c['start_odometer_image_url'] as String?;
+    final startImage = startImageStored != null ? _resolvedImageUrls[startImageStored] : null;
     final endValue = (c['end_odometer_value'] as num?)?.toDouble();
-    final endImage = c['end_odometer_image_url'] as String?;
+    final endImageStored = c['end_odometer_image_url'] as String?;
+    final endImage = endImageStored != null ? _resolvedImageUrls[endImageStored] : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),

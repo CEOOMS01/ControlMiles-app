@@ -379,6 +379,38 @@ class OdometerCaptureService {
     });
   }
 
+  // SECURITY/BUG FIX (2026-09-04, found during IRS-compliance + security
+  // review): the `odometers` Storage bucket is private (verified: RLS
+  // policies scope SELECT to the caller's own folder) -- correct, that's
+  // exactly what should protect these photos. But every write path in this
+  // file (and inspection_service.dart) calls .getPublicUrl() and persists
+  // THAT url to sessions/vehicle_odometer_checkpoints/audit_events. A
+  // getPublicUrl() link only resolves for a PUBLIC bucket -- for a private
+  // one it 400s unconditionally, confirmed live against a real stored
+  // object. Every odometer photo ever taken in this app has been
+  // permanently unviewable through that stored link; the numeric odometer
+  // value itself was never affected (separate column), but the photo
+  // evidence the IRS substantiation actually depends on could not be
+  // opened by anyone, including the driver.
+  //
+  // Not reworking the write path (would mean migrating every already-
+  // stored URL) -- this resolves a stored link into a real, working, HMAC-
+  // signed URL at the moment something needs to display it. Safe to call
+  // on old links from before this fix too, since it re-derives the storage
+  // path from the URL text itself.
+  Future<String?> resolveViewableImageUrl(String storedUrl) async {
+    final marker = '/object/public/${AppConfig.evidenceBucket}/';
+    final idx = storedUrl.indexOf(marker);
+    if (idx == -1) return null;
+    final path = storedUrl.substring(idx + marker.length);
+    try {
+      return await _supabase.storage.from(AppConfig.evidenceBucket).createSignedUrl(path, 3600);
+    } catch (e) {
+      debugPrint('[ControlMiles] resolveViewableImageUrl failed for $storedUrl: $e');
+      return null;
+    }
+  }
+
   /// Historial completo de checkpoints (más reciente primero) — usado por
   /// VehicleDetailScreen (pantalla de solo lectura del vehículo, explicit
   /// user requirement) para mostrar la foto inicial y las de cada cierre
