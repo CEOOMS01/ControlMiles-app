@@ -450,6 +450,18 @@ class TrackingController {
       await BackgroundGpsService.startTracking();
       _runSegmentStartedAt = DateTime.now();
 
+      // BUG FIX (millas dormidas): AntifraudEngine retiene lastLat/lastLng
+      // de la última posición antes de pausar. Sin este reset, el primer tick
+      // GPS tras el resume calcula haversine entre esa posición pre-pausa y
+      // la posición actual — acumulando todas las millas recorridas durante
+      // la pausa de golpe. El timer no sufre este bug porque usa wall-clock
+      // (_runSegmentStartedAt), no posiciones GPS.
+      // El reset limpia el baseline: el primer tick post-resume solo establece
+      // la nueva posición de partida sin sumar distancia, igual que ocurre en
+      // startNewSection() y switchSection().
+      AntifraudEngine.reset();
+      DriverSafetyMonitor.reset();
+
       activeSection = activeSection!.copyWith(
         status: 'active',
         endTime: null,
