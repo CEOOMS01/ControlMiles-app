@@ -42,6 +42,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // Explicit user requirement (2026-09-04): if this email has no
+      // ControlMiles account, send NO email at all -- just an in-app
+      // notice. See AuthService.emailHasAccount's own comment for the
+      // security tradeoff this deliberately accepts.
+      final hasAccount = await _authService.emailHasAccount(email);
+      if (!hasAccount) {
+        if (mounted) _showSnack(appState.tr('email_not_linked_to_controlmiles'), error: true);
+        return;
+      }
+
       await _authService.requestPasswordReset(email);
       if (!mounted) return;
       _showSnack(appState.tr('reset_code_sent'));

@@ -429,4 +429,5 @@ const Map<String, String> arTexts = {
   'error_service_date_required': 'تاريخ الخدمة مطلوب.',
   'sections_count_label': '{count} أقسام',
   'vehicle_make_other': 'أخرى',
+  'email_not_linked_to_controlmiles': 'هذا البريد الإلكتروني غير مرتبط بأي حساب في ControlMiles.',
 };

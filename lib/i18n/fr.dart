@@ -714,4 +714,5 @@ const Map<String, String> frTexts = {
   'error_service_date_required': "La date d'entretien est obligatoire.",
   'sections_count_label': '{count} sections',
   'vehicle_make_other': 'Autre',
+  'email_not_linked_to_controlmiles': "Cet e-mail n'est lié à aucun compte ControlMiles.",
 };

@@ -703,4 +703,5 @@ const Map<String, String> zhTexts = {
   'error_service_date_required': '服务日期为必填项。',
   'sections_count_label': '{count} 个路段',
   'vehicle_make_other': '其他',
+  'email_not_linked_to_controlmiles': '该邮箱未关联任何 ControlMiles 账户。',
 };

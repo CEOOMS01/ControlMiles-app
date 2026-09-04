@@ -410,4 +410,5 @@ const Map<String, String> jaTexts = {
   'error_service_date_required': '整備日は必須です。',
   'sections_count_label': '{count}件のセクション',
   'vehicle_make_other': 'その他',
+  'email_not_linked_to_controlmiles': 'このメールアドレスはControlMilesアカウントに紐付けられていません。',
 };

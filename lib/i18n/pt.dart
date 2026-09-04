@@ -703,4 +703,5 @@ const Map<String, String> ptTexts = {
   'error_service_date_required': 'A data do serviço é obrigatória.',
   'sections_count_label': '{count} seções',
   'vehicle_make_other': 'Outra',
+  'email_not_linked_to_controlmiles': 'Esse e-mail não está vinculado a nenhuma conta do ControlMiles.',
 };

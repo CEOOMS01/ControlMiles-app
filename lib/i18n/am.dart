@@ -397,4 +397,5 @@ const Map<String, String> amTexts = {
   'error_service_date_required': 'የአገልግሎት ቀን ያስፈልጋል።',
   'sections_count_label': '{count} ክፍሎች',
   'vehicle_make_other': 'ሌላ',
+  'email_not_linked_to_controlmiles': 'ይህ ኢሜይል ከየትኛውም ControlMiles መለያ ጋር የተገናኘ አይደለም።',
 };

@@ -68,6 +68,33 @@ class AuthService {
   // llegue el código de 6 dígitos, no solo el link.
   // ════════════════════════════════════════════════════════════
 
+  /// Chequeo previo al paso 1 (explicit user requirement, 2026-09-04): si
+  /// el email no tiene cuenta en ControlMiles, NO se manda ningún correo --
+  /// la pantalla muestra un aviso in-app en su lugar. Va contra la práctica
+  /// estándar de Supabase (resetPasswordForEmail responde igual exista o no
+  /// el email, justo para evitar que alguien pueda enumerar cuentas reales
+  /// probando emails al azar) -- decisión explícita del usuario, no un
+  /// descuido; el tradeoff de seguridad real está documentado en el propio
+  /// edge function (supabase/functions/check-email-exists/index.ts).
+  /// Falla ABIERTO hacia "sí existe" si el chequeo mismo falla (red caída,
+  /// rate limit, etc.) -- así un problema de este chequeo nunca le bloquea
+  /// a un usuario real la posibilidad de resetear su contraseña.
+  Future<bool> emailHasAccount(String email) async {
+    try {
+      final response = await _supabase.functions.invoke(
+        'check-email-exists',
+        body: {'email': email.trim()},
+      );
+      final data = response.data;
+      if (data is Map && data['exists'] is bool) {
+        return data['exists'] as bool;
+      }
+      return true;
+    } catch (e) {
+      return true;
+    }
+  }
+
   /// Paso 1: pide a Supabase que envíe el código de reseteo al email.
   Future<void> requestPasswordReset(String email) async {
     try {

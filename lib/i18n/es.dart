@@ -735,4 +735,5 @@ const Map<String, String> esTexts = {
   'error_service_date_required': 'La fecha de servicio es obligatoria.',
   'sections_count_label': '{count} secciones',
   'vehicle_make_other': 'Otra',
+  'email_not_linked_to_controlmiles': 'Ese correo no está vinculado a ninguna cuenta de ControlMiles.',
 };

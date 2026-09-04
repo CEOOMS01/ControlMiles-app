@@ -421,4 +421,5 @@ const Map<String, String> hiTexts = {
   'error_service_date_required': 'सेवा तिथि आवश्यक है।',
   'sections_count_label': '{count} सेक्शन',
   'vehicle_make_other': 'अन्य',
+  'email_not_linked_to_controlmiles': 'यह ईमेल किसी ControlMiles खाते से जुड़ा नहीं है।',
 };
