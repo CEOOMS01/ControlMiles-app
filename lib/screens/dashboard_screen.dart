@@ -1045,7 +1045,19 @@ class _DashboardScreenState extends State<DashboardScreen>
               // shown at idle (Gig-only, same scope the drawer's removed
               // version had) -- once running, the mode is already
               // committed for that trip.
-              if (appState.isGig && TrackingController.currentState == TrackingState.idle) ...[
+              //
+              // BUG FIX (explicit user requirement, 2026-09-04): this
+              // button was visible to EVERY gig user regardless of tier --
+              // Basic/Free could see and tap it, only to hit
+              // AutoDetectAppsButton._activate()'s premium-locked dialog.
+              // "Basic solo debe ver el carrusel, Premium añade Auto
+              // Detection" -- the entry point itself is now Premium-only,
+              // not just what happens after tapping it. Basic/Free always
+              // fall through to the plain GigAppSelector carousel below,
+              // same as if auto-detect were simply off.
+              if (appState.isGig &&
+                  appState.premiumEntitled &&
+                  TrackingController.currentState == TrackingState.idle) ...[
                 const AutoDetectAppsButton(),
                 const SizedBox(height: 20),
               ],

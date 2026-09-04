@@ -225,6 +225,23 @@ class AppState extends ChangeNotifier {
           _accountCreatedAt != newAccountCreatedAt ||
           _tierEnforcementExempt != newTierEnforcementExempt;
 
+      // BUG FIX (explicit user requirement, 2026-09-04, "Basic solo debe
+      // ver el carrusel"): if Premium lapses (subscription cancelled,
+      // downgraded) while auto-detect was left on from before, nothing
+      // used to turn it back off -- the dashboard would keep showing the
+      // auto-detect status card instead of the plain carousel, and the
+      // background detection service would keep running silently for a
+      // tier that no longer has access to the feature at all. Checked
+      // BEFORE the `changed` block below updates _premiumEntitled, so this
+      // only fires on a genuine true -> false transition, not on every
+      // profile fetch.
+      if (_premiumEntitled && !newPremiumEntitled && _autoDetectEnabled) {
+        _autoDetectEnabled = false;
+        await AutoTripDetectionService.instance.setEnabled(false);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('controlmiles_auto_detect_enabled', false);
+      }
+
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
