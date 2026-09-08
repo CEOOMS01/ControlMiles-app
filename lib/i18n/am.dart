@@ -405,4 +405,15 @@ const Map<String, String> amTexts = {
   'vehicle_limit_reached_body': 'የእርስዎ ዕቅድ እስከ {max} ተሽከርካሪ(ዎች) ይፈቅዳል። ተጨማሪ ለመጨመር ያሻሽሉ።',
   'export_limit_reached_title': 'የመላክ ገደብ ላይ ደርሷል',
   'export_limit_reached_body': 'Basic ዕቅድ በወር 2 የPDF መላኮችን ያካትታል። ላልተገደበ መላክ ወደ Premium ያሻሽሉ።',
+
+  // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
+  // missing entirely for this language (dialog fell back to raw keys).
+  'weekly_odometer_close_title': 'ሳምንታዊ ኦዶሜትር መዝጊያ',
+  'weekly_odometer_close_body': 'የዚህን ሳምንት መዝጊያ ኦዶሜትር ፎቶ አሁን ማንሳት ይፈልጋሉ?',
+  'weekly_odometer_close_title_mandatory': 'ሳምንታዊ መዝጊያ ግዴታ ነው',
+  'weekly_odometer_close_body_mandatory': 'ለመቀጠል የዚህን ሳምንት መዝጊያ ኦዶሜትር ፎቶ ያንሱ -- እሁድ ላይ ይህን መዝለል አይቻልም።',
+  'later': 'በኋላ',
+  'take_photo': 'ፎቶ አንሳ',
+  'odometer_evidence_label': 'የኦዶሜትር ፎቶዎች (ማስረጃ)',
+  'gps_vs_odometer_disclaimer': 'እነዚህ ቁጥሮች ሁልጊዜ በትክክል አይመሳሰሉም -- የግል (ያልተከታተሉ) ማይሎች በGPS አይቆጠሩም፣ ስለዚህ የተወሰነ ልዩነት የተለመደ ነው።',
 };

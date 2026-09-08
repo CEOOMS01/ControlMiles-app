@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
@@ -196,6 +197,12 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     // vehicle id to offer the weekly closing photo against below.
     final vehicleIdForClose = TrackingController.activeVehicleId;
 
+    // Sunday-close hardening (explicit user request, 2026-09-08): captured
+    // before stopTracking() clears activeSessionId, same reasoning as
+    // vehicleIdForClose above -- need this trip's own start_time to decide
+    // whether ITS week's close should be mandatory.
+    final sessionIdForClose = TrackingController.activeSessionId;
+
     // BUG FIX (pedido explícito, alerta de hallazgos relacionados): antes
     // el pulso se reseteaba y Dashboard recargaba Recent Trips sin
     // confirmar que stopTracking() de verdad cerró la sesión -- si el
@@ -219,6 +226,17 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
 
     _pulseController.reset();
 
+    // Explicit user request (2026-09-08, with a concrete example): the
+    // Auto Detection toggle used to stay armed indefinitely after a trip
+    // ended (by design, to keep listening for the next one) -- but the
+    // user wants pressing Stop Tracking to disarm it too, the same as
+    // manually flipping the toggle off, not just the visual flash added
+    // earlier today. Runs after stopTracking() is already confirmed OK,
+    // so this never interferes with actually closing the trip.
+    if (appState.autoDetectEnabled) {
+      await appState.setAutoDetectEnabled(false);
+    }
+
     // (comentario original conservado): se notifica DESPUÉS de que
     // stopTracking() confirmó el cierre (cierre de sección final + suma
     // de duración + update de sessions), no antes — así el padre recarga
@@ -233,39 +251,85 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     // capture (server-side, see submit_vehicle_odometer_checkpoint), so
     // skipping this dialog is always safe.
     if (mounted && vehicleIdForClose != null) {
-      final needsClose = await OdometerCaptureService()
+      var needsClose = await OdometerCaptureService()
           .needsCheckpointEndThisWeek(vehicleIdForClose);
-      if (needsClose && mounted) {
+
+      // Sunday-close hardening (explicit user request, 2026-09-08): a trip
+      // that STARTED on a Sunday (session start_time, not wall-clock at
+      // prompt time -- consistent with how week_start_date/mondayOf()
+      // already anchor weeks) makes this week's closing photo mandatory
+      // instead of the "Later" option every other weekday still keeps.
+      // The real floor stays server-side and unchanged: starting NEXT
+      // week's first trip already requires a fresh photo either way
+      // (needsCheckpointStartThisWeek), and submit_vehicle_odometer_checkpoint's
+      // own roll-forward closes whatever week was left open the moment
+      // that photo is submitted -- this only makes the UX ask for it
+      // immediately on Sunday instead of deferring to Monday.
+      var isMandatory = false;
+      if (needsClose && sessionIdForClose != null) {
+        try {
+          final sessionRow = await Supabase.instance.client
+              .from('sessions')
+              .select('start_time')
+              .eq('id', sessionIdForClose)
+              .maybeSingle();
+          final startTimeStr = sessionRow?['start_time'] as String?;
+          if (startTimeStr != null) {
+            isMandatory = DateTime.parse(startTimeStr).toLocal().weekday == DateTime.sunday;
+          }
+        } catch (_) {
+          // Fails open to the existing optional behavior -- a lookup
+          // hiccup here must never turn into an unclosable dialog.
+        }
+      }
+
+      while (needsClose) {
+        if (!mounted) break;
         final takePhoto = await showDialog<bool>(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(appState.tr('weekly_odometer_close_title')),
-            content: Text(appState.tr('weekly_odometer_close_body')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text(appState.tr('later')),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: Text(appState.tr('take_photo')),
-              ),
-            ],
+          barrierDismissible: !isMandatory,
+          builder: (dialogContext) => PopScope(
+            canPop: !isMandatory,
+            child: AlertDialog(
+              title: Text(appState.tr(isMandatory
+                  ? 'weekly_odometer_close_title_mandatory'
+                  : 'weekly_odometer_close_title')),
+              content: Text(appState.tr(isMandatory
+                  ? 'weekly_odometer_close_body_mandatory'
+                  : 'weekly_odometer_close_body')),
+              actions: [
+                if (!isMandatory)
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(appState.tr('later')),
+                  ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text(appState.tr('take_photo')),
+                ),
+              ],
+            ),
           ),
         );
 
-        if (takePhoto == true && mounted) {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OdometerCaptureScreen(
-                isStart: false,
-                weeklyCheckpointMode: true,
-                vehicleId: vehicleIdForClose,
-              ),
+        if (takePhoto != true) break; // only reachable when !isMandatory
+
+        if (!mounted) break;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OdometerCaptureScreen(
+              isStart: false,
+              weeklyCheckpointMode: true,
+              vehicleId: vehicleIdForClose,
             ),
-          );
-        }
+          ),
+        );
+
+        if (!mounted) break;
+        needsClose = await OdometerCaptureService()
+            .needsCheckpointEndThisWeek(vehicleIdForClose);
+        if (!isMandatory) break; // optional path never loops back
       }
     }
   }

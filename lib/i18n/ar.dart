@@ -437,4 +437,15 @@ const Map<String, String> arTexts = {
   'vehicle_limit_reached_body': 'تسمح خطتك بحد أقصى {max} مركبة/مركبات. قم بالترقية لإضافة المزيد.',
   'export_limit_reached_title': 'تم الوصول إلى حد التصدير',
   'export_limit_reached_body': 'تشمل خطة Basic تصديرين لملف PDF شهريًا. قم بالترقية إلى Premium للتصدير غير المحدود.',
+
+  // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
+  // missing entirely for this language (dialog fell back to raw keys).
+  'weekly_odometer_close_title': 'إغلاق عداد المسافات الأسبوعي',
+  'weekly_odometer_close_body': 'هل تريد التقاط صورة إغلاق عداد المسافات لهذا الأسبوع الآن؟',
+  'weekly_odometer_close_title_mandatory': 'الإغلاق الأسبوعي إلزامي',
+  'weekly_odometer_close_body_mandatory': 'التقط صورة إغلاق عداد المسافات لهذا الأسبوع للمتابعة -- لا يمكن تأجيل هذا يوم الأحد.',
+  'later': 'لاحقًا',
+  'take_photo': 'التقاط صورة',
+  'odometer_evidence_label': 'صور عداد المسافات (دليل)',
+  'gps_vs_odometer_disclaimer': 'قد لا تتطابق هذه الأرقام دائمًا تمامًا -- الأميال الشخصية (غير المتعقبة) لا يحسبها GPS، لذا من الطبيعي وجود بعض الفرق.',
 };

@@ -418,4 +418,15 @@ const Map<String, String> jaTexts = {
   'vehicle_limit_reached_body': '現在のプランでは最大{max}台まで登録できます。追加するにはアップグレードしてください。',
   'export_limit_reached_title': 'エクスポート回数の上限に達しました',
   'export_limit_reached_body': 'Basicプランは月2回までPDFエクスポートが可能です。無制限にエクスポートするにはPremiumにアップグレードしてください。',
+
+  // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
+  // missing entirely for this language (dialog fell back to raw keys).
+  'weekly_odometer_close_title': '週次オドメーター締め',
+  'weekly_odometer_close_body': '今、今週の締めのオドメーター写真を撮りますか？',
+  'weekly_odometer_close_title_mandatory': '週次締めは必須です',
+  'weekly_odometer_close_body_mandatory': '続行するには今週の締めのオドメーター写真を撮ってください -- 日曜日はスキップできません。',
+  'later': '後で',
+  'take_photo': '写真を撮る',
+  'odometer_evidence_label': 'オドメーター写真（証拠）',
+  'gps_vs_odometer_disclaimer': 'これらの数値は必ずしも完全に一致するとは限りません -- 個人的な（追跡されていない）走行距離はGPSに計上されないため、多少の差は想定内です。',
 };

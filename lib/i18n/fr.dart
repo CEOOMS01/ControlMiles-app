@@ -671,8 +671,12 @@ const Map<String, String> frTexts = {
   // Checkpoint hebdomadaire d'odomètre (2026-09-03)
   'weekly_odometer_close_title': 'Clôture hebdomadaire de l\'odomètre',
   'weekly_odometer_close_body': 'Voulez-vous prendre maintenant la photo de clôture de l\'odomètre de cette semaine ?',
+  'weekly_odometer_close_title_mandatory': 'Clôture hebdomadaire obligatoire',
+  'weekly_odometer_close_body_mandatory': 'Prenez la photo de clôture de l\'odomètre de cette semaine pour continuer -- impossible à reporter le dimanche.',
   'later': 'Plus tard',
   'take_photo': 'Prendre une photo',
+  'odometer_evidence_label': 'Photos d\'odomètre (preuve)',
+  'gps_vs_odometer_disclaimer': 'Ces chiffres ne correspondront pas toujours exactement -- les miles personnels (non suivis) ne sont pas comptés par le GPS, une certaine différence est donc normale.',
 
   // ============================================================
   // VEHICLE PROFILE (écran de détail en lecture seule) + kilométrage entretien

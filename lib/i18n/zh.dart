@@ -660,8 +660,12 @@ const Map<String, String> zhTexts = {
   // 每周里程表检查点 (2026-09-03)
   'weekly_odometer_close_title': '每周里程表结算',
   'weekly_odometer_close_body': '要现在拍摄本周的结算里程表照片吗？',
+  'weekly_odometer_close_title_mandatory': '每周结算为必填项',
+  'weekly_odometer_close_body_mandatory': '请拍摄本周的结算里程表照片以继续——周日无法跳过此步骤。',
   'later': '稍后',
   'take_photo': '拍照',
+  'odometer_evidence_label': '里程表照片（凭证）',
+  'gps_vs_odometer_disclaimer': '这两个数字不会总是完全一致——私人（未追踪）里程不会被GPS计入，因此存在一定差异属于正常情况。',
 
   // ============================================================
   // VEHICLE PROFILE（只读详情页）+ 保养里程

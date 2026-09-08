@@ -660,8 +660,12 @@ const Map<String, String> deTexts = {
   // Wöchentlicher Kilometerstand-Checkpoint (2026-09-03)
   'weekly_odometer_close_title': 'Wöchentlicher Kilometerstand-Abschluss',
   'weekly_odometer_close_body': 'Möchten Sie jetzt das Abschlussfoto des Kilometerstands dieser Woche aufnehmen?',
+  'weekly_odometer_close_title_mandatory': 'Wöchentlicher Abschluss erforderlich',
+  'weekly_odometer_close_body_mandatory': 'Machen Sie jetzt das Abschlussfoto des Kilometerstands dieser Woche, um fortzufahren -- sonntags kann dies nicht verschoben werden.',
   'later': 'Später',
   'take_photo': 'Foto aufnehmen',
+  'odometer_evidence_label': 'Kilometerstand-Fotos (Nachweis)',
+  'gps_vs_odometer_disclaimer': 'Diese Zahlen stimmen nicht immer genau überein -- private (nicht verfolgte) Kilometer werden vom GPS nicht gezählt, daher ist ein gewisser Unterschied normal.',
 
   // ============================================================
   // VEHICLE PROFILE (schreibgeschützte Detailansicht) + Laufleistung in Wartung

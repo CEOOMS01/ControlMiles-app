@@ -429,4 +429,15 @@ const Map<String, String> hiTexts = {
   'vehicle_limit_reached_body': 'आपकी योजना में अधिकतम {max} वाहन(वाहन) की अनुमति है। और जोड़ने के लिए अपग्रेड करें।',
   'export_limit_reached_title': 'एक्सपोर्ट सीमा पूरी हो गई',
   'export_limit_reached_body': 'Basic योजना में हर महीने 2 PDF एक्सपोर्ट शामिल हैं। असीमित एक्सपोर्ट के लिए Premium में अपग्रेड करें।',
+
+  // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
+  // missing entirely for this language (dialog fell back to raw keys).
+  'weekly_odometer_close_title': 'साप्ताहिक ओडोमीटर समापन',
+  'weekly_odometer_close_body': 'क्या आप अभी इस सप्ताह की समापन ओडोमीटर फ़ोटो लेना चाहते हैं?',
+  'weekly_odometer_close_title_mandatory': 'साप्ताहिक समापन अनिवार्य है',
+  'weekly_odometer_close_body_mandatory': 'जारी रखने के लिए इस सप्ताह की समापन ओडोमीटर फ़ोटो लें -- रविवार को इसे टाला नहीं जा सकता।',
+  'later': 'बाद में',
+  'take_photo': 'फ़ोटो लें',
+  'odometer_evidence_label': 'ओडोमीटर फ़ोटो (प्रमाण)',
+  'gps_vs_odometer_disclaimer': 'ये संख्याएँ हमेशा बिल्कुल मेल नहीं खाएँगी -- व्यक्तिगत (अनट्रैक्ड) मील GPS द्वारा नहीं गिने जाते, इसलिए कुछ अंतर सामान्य है।',
 };

@@ -495,6 +495,7 @@ class AutoTripDetectionService {
 
     if (TrackingController.currentState == TrackingState.running) {
       await NotificationService.instance.showAutoTripStartedNotification(gigAppId: gigAppId);
+      TrackingController.autoFlashEvent.value = 'start';
     }
   }
 

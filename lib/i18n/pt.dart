@@ -660,8 +660,12 @@ const Map<String, String> ptTexts = {
   // Checkpoint semanal do odômetro (2026-09-03)
   'weekly_odometer_close_title': 'Fechamento semanal do odômetro',
   'weekly_odometer_close_body': 'Quer tirar agora a foto de fechamento do odômetro desta semana?',
+  'weekly_odometer_close_title_mandatory': 'Fechamento semanal obrigatório',
+  'weekly_odometer_close_body_mandatory': 'Tire a foto de fechamento do odômetro desta semana para continuar -- aos domingos isso não pode ser adiado.',
   'later': 'Mais tarde',
   'take_photo': 'Tirar foto',
+  'odometer_evidence_label': 'Fotos do odômetro (evidência)',
+  'gps_vs_odometer_disclaimer': 'Esses números nem sempre vão coincidir exatamente -- as milhas pessoais (não rastreadas) não são contadas pelo GPS, então alguma diferença é esperada.',
 
   // ============================================================
   // VEHICLE PROFILE (tela de detalhe somente leitura) + milhas na manutenção

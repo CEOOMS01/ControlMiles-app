@@ -419,4 +419,15 @@ const Map<String, String> koTexts = {
   'vehicle_limit_reached_body': '현재 플랜은 최대 {max}대의 차량을 지원합니다. 더 추가하려면 업그레이드하세요.',
   'export_limit_reached_title': '내보내기 한도에 도달했습니다',
   'export_limit_reached_body': 'Basic 플랜은 월 2회 PDF 내보내기를 포함합니다. 무제한 내보내기를 위해 Premium으로 업그레이드하세요.',
+
+  // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
+  // missing entirely for this language (dialog fell back to raw keys).
+  'weekly_odometer_close_title': '주간 주행거리계 마감',
+  'weekly_odometer_close_body': '지금 이번 주 마감 주행거리계 사진을 찍으시겠습니까?',
+  'weekly_odometer_close_title_mandatory': '주간 마감이 필수입니다',
+  'weekly_odometer_close_body_mandatory': '계속하려면 이번 주 마감 주행거리계 사진을 찍어야 합니다 -- 일요일에는 건너뛸 수 없습니다.',
+  'later': '나중에',
+  'take_photo': '사진 찍기',
+  'odometer_evidence_label': '주행거리계 사진(증빙)',
+  'gps_vs_odometer_disclaimer': '이 숫자들은 항상 정확히 일치하지 않을 수 있습니다 -- 개인(추적되지 않은) 마일은 GPS에 집계되지 않으므로 약간의 차이는 정상입니다.',
 };

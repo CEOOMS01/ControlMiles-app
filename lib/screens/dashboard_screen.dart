@@ -81,6 +81,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _todayDurationSec = 0;
   bool _summaryLoading = true;
 
+  // Auto-detect start/stop flash (explicit user request, 2026-09-08):
+  // consumes TrackingController.autoFlashEvent ('start'/'end'), plays a
+  // brief colored fade over the tracking button/status card area, then
+  // resets both this local state and the notifier's value -- same
+  // one-shot "consume and clear" shape as _showSwitchBanner just above.
+  Color? _autoFlashColor;
+  Timer? _autoFlashTimer;
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +96,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     _initDashboard();
     _setupRealTimeListeners();
     _loadActiveVehicle();
+    TrackingController.autoFlashEvent.addListener(_onAutoFlashEvent);
+  }
+
+  void _onAutoFlashEvent() {
+    final event = TrackingController.autoFlashEvent.value;
+    if (event == null || !mounted) return;
+    TrackingController.autoFlashEvent.value = null;
+
+    _autoFlashTimer?.cancel();
+    setState(() {
+      _autoFlashColor = event == 'start'
+          ? Theme.of(context).colorScheme.primary
+          : Colors.red.shade700;
+    });
+    _autoFlashTimer = Timer(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() => _autoFlashColor = null);
+    });
   }
 
   void _setupRealTimeListeners() {
@@ -414,6 +440,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     WidgetsBinding.instance.removeObserver(this);
     _uiTimer?.cancel();
     _switchBannerTimer?.cancel();
+    _autoFlashTimer?.cancel();
+    TrackingController.autoFlashEvent.removeListener(_onAutoFlashEvent);
     super.dispose();
   }
 
@@ -1071,20 +1099,31 @@ class _DashboardScreenState extends State<DashboardScreen>
               // _pollForMidTripSwitch), so the status card stays up
               // throughout instead of handing back to the manual
               // carousel.
-              appState.autoDetectEnabled
-                  ? _buildAutoDetectStatusCard(appState, isDark)
-                  : GigAppSelector(
-                      selectedGigApp: _selectedGigApp,
-                      activeGigApp: TrackingController.currentGigApp,
-                      isPaused: TrackingController.isPaused,
-                      onAppSelected: (appId) => _handleAppSelection(appId),
-                      onCustomSelected: (appId, irsPurpose) =>
-                          _handleAppSelection(appId, irsPurpose: irsPurpose),
-                    ),
+              // Auto-detect start/stop flash (explicit user request,
+              // 2026-09-08): Stack + AnimatedContainer instead of touching
+              // TrackingActionButton's own color logic directly -- this is
+              // a transient overlay independent of the button's persistent
+              // running/idle color, so it can flash blue-then-fade even
+              // while the button underneath is already showing its normal
+              // red "running" state.
+              Stack(
+                children: [
+                  Column(
+                    children: [
+                      appState.autoDetectEnabled
+                          ? _buildAutoDetectStatusCard(appState, isDark)
+                          : GigAppSelector(
+                              selectedGigApp: _selectedGigApp,
+                              activeGigApp: TrackingController.currentGigApp,
+                              isPaused: TrackingController.isPaused,
+                              onAppSelected: (appId) => _handleAppSelection(appId),
+                              onCustomSelected: (appId, irsPurpose) =>
+                                  _handleAppSelection(appId, irsPurpose: irsPurpose),
+                            ),
 
-              const SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
-              TrackingActionButton(
+                      TrackingActionButton(
                 selectedGigApp: _selectedGigApp,
                 selectedIrsPurpose: _selectedIrsPurpose,
                 // BUG FIX (dashboard no se refrescaba tras terminar un
@@ -1137,6 +1176,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // red snackbar right after the dialog closes (canStart
                 // resolving false triggers that path regardless), which
                 // would just be a redundant second message stacked on top.
+              ),
+                    ],
+                  ),
+                  // Flash overlay itself: a full-bleed, non-interactive
+                  // colored fade over the Column above. IgnorePointer so it
+                  // never blocks taps on the real carousel/button beneath
+                  // it; AnimatedOpacity (not AnimatedContainer) since only
+                  // opacity changes here, color is set once per flash.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        opacity: _autoFlashColor == null ? 0.0 : 0.25,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _autoFlashColor ?? Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 40),

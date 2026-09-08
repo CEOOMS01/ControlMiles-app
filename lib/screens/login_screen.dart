@@ -91,6 +91,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Security hardening (explicit user request, 2026-09-08): signup only
+    // -- login must keep accepting whatever password an existing account
+    // already has, even one shorter than this floor. UX-layer only; the
+    // real floor is Supabase Auth's own server-side minimum, which this
+    // client-side check can't see or enforce (verify/raise it in the
+    // Supabase Dashboard to match, under Authentication -> Policies).
+    if (!_isLoginMode && password.length < 8) {
+      _showError(appState.tr('password_too_short'));
+      return;
+    }
+
     if (!_isLoginMode && !_agreedToTerms) {
       _showError(appState.tr('age_terms_required_error'));
       return;

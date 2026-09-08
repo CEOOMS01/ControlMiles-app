@@ -48,6 +48,22 @@ class TrackingController {
   static final ValueNotifier<({double lat, double lng})?> livePosition =
       ValueNotifier(null);
 
+  // Auto-detect start/stop flash (explicit user request, 2026-09-08): a
+  // transient in-app visual cue distinct from the existing OS notification
+  // (showAutoTripStartedNotification) -- blue flash the instant auto-detect
+  // starts a trip, red flash when that SAME auto-started trip's tracking
+  // ends (however it ends -- today that's always the manual End button,
+  // auto-detect never auto-ends by design). DashboardScreen listens and
+  // resets the value to null after playing the animation, same one-shot
+  // "consume and clear" pattern as a SnackBar queue.
+  static final ValueNotifier<String?> autoFlashEvent = ValueNotifier(null);
+
+  // Tags the CURRENT trip as started by auto-detect vs the manual Dashboard
+  // button, purely so stopTracking() knows whether to fire the red flash --
+  // not persisted to DB, lifecycle mirrors currentGigApp (set in
+  // startTripFlow, cleared in _resetState).
+  static bool startedViaAutoDetect = false;
+
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
@@ -125,6 +141,7 @@ class TrackingController {
     _minDrivingSignatureScore = 1.0;
     _runSegmentStartedAt = null;
     livePosition.value = null;
+    startedViaAutoDetect = false;
     AntifraudEngine.reset();
     DriverSafetyMonitor.reset();
     LocalStorageService.clearAllCheckpoint();
@@ -162,6 +179,7 @@ class TrackingController {
     try {
       final sessionId = const Uuid().v4();
       currentGigApp = gigApp;
+      startedViaAutoDetect = useAutoDetectOdometer;
 
       // BUG FIX: sessions.vehicle_id existía en la DB pero ningún código lo
       // escribía (0 de 7 sesiones reales lo tenían seteado) — el "vehículo
@@ -759,7 +777,17 @@ class TrackingController {
         minDrivingSignatureScore: _minDrivingSignatureScore,
       );
 
+      // Captured BEFORE _resetState() clears the flag -- red flash only
+      // for a trip that auto-detect itself started (explicit user
+      // request, 2026-09-08); a manually-started trip's end is already an
+      // intentional user action and doesn't need the extra cue.
+      final wasAutoDetect = startedViaAutoDetect;
+
       _resetState();
+
+      if (wasAutoDetect) {
+        autoFlashEvent.value = 'end';
+      }
 
       // Efecto secundario best-effort: la sesión ya quedó cerrada arriba.
       try {

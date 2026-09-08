@@ -714,8 +714,12 @@ const Map<String, String> enTexts = {
   // Weekly odometer checkpoint (2026-09-03)
   'weekly_odometer_close_title': 'Weekly odometer close',
   'weekly_odometer_close_body': 'Want to take this week\'s closing odometer photo now?',
+  'weekly_odometer_close_title_mandatory': 'Weekly close required',
+  'weekly_odometer_close_body_mandatory': 'Take this week\'s closing odometer photo to finish -- it can\'t be skipped on Sundays.',
   'later': 'Later',
   'take_photo': 'Take photo',
+  'odometer_evidence_label': 'Odometer photos (evidence)',
+  'gps_vs_odometer_disclaimer': 'These numbers won\'t always match exactly -- personal (untracked) miles aren\'t counted by GPS, so some difference is expected.',
 
   // ============================================================
   // VEHICLE PROFILE (read-only detail screen) + maintenance mileage
