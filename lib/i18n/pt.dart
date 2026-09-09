@@ -157,6 +157,7 @@ const Map<String, String> ptTexts = {
   'terms_conditions': 'Termos e Condições',
   'send_feedback': 'Enviar sugestões',
   'send_feedback_no_mail_app': 'Nenhum app de e-mail encontrado. Escreva para contact@controlmiles.com.',
+  'send_feedback_email_subject': 'Sugestões para o ControlMiles',
   'trademark_disclaimer_short': 'O ControlMiles é um aplicativo independente e não é afiliado, endossado ou patrocinado por Uber, Lyft, DoorDash, Instacart, Amazon, Walmart, Shipt ou qualquer outra plataforma mencionada neste aplicativo. Todas as marcas pertencem aos seus respectivos proprietários.',
   'age_terms_checkbox_prefix': 'Confirmo que tenho pelo menos 18 anos e concordo com os',
   'age_terms_checkbox_and': 'e a',

@@ -157,6 +157,7 @@ const Map<String, String> zhTexts = {
   'terms_conditions': '服务条款',
   'send_feedback': '发送建议',
   'send_feedback_no_mail_app': '未找到邮件应用，请写信至 contact@controlmiles.com。',
+  'send_feedback_email_subject': 'ControlMiles 建议反馈',
   'trademark_disclaimer_short': 'ControlMiles 是一款独立应用程序,与 Uber、Lyft、DoorDash、Instacart、Amazon、Walmart、Shipt 及本应用中提及的任何其他平台均无关联,未获其认可或赞助。所有商标均归其各自所有者所有。',
   'age_terms_checkbox_prefix': '我确认我已年满18周岁,并同意',
   'age_terms_checkbox_and': '和',

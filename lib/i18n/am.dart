@@ -139,6 +139,7 @@ const Map<String, String> amTexts = {
   'terms_conditions': 'ውሎች እና ሁኔታዎች',
   'send_feedback': 'አስተያየት ላክ',
   'send_feedback_no_mail_app': 'የኢሜይል መተግበሪያ አልተገኘም። ወደ contact@controlmiles.com ይጻፉ።',
+  'send_feedback_email_subject': 'ለ ControlMiles አስተያየት',
   'data_security': 'የውሂብ ደህንነት',
   'security_audit': 'የደህንነት ኦዲት',
 

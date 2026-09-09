@@ -872,10 +872,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   }
 
   Future<void> _sendFeedback(AppState appState) async {
+    // BUG FIX (pedido explícito, 2026-09-09): el asunto del correo estaba
+    // hardcodeado en inglés en vez de pasar por tr() como el resto de
+    // esta pantalla.
     final uri = Uri(
       scheme: 'mailto',
       path: 'contact@controlmiles.com',
-      query: 'subject=${Uri.encodeComponent('ControlMiles feedback')}',
+      query: 'subject=${Uri.encodeComponent(appState.tr('send_feedback_email_subject'))}',
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
