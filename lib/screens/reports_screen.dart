@@ -568,6 +568,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildSummaryCard(AppState appState, bool isDark, Color border) {
     final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
     final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    // BUG FIX (pedido explícito): el título "SUMMARY" usaba el mismo gris
+    // clarito que sus propios sub-labels (TOTAL MILES, TODAY) -- se perdía
+    // como encabezado en modo claro. Ahora un color oscuro propio, mismo
+    // tono ya usado en esta pantalla para títulos (ej. AppBar más abajo).
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
     String fmtMiles(double miles) {
       final display = appState.useMetricSystem
@@ -617,7 +622,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,
-                color: labelColor,
+                color: titleColor,
               ),
             ),
           ),
@@ -699,52 +704,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ],
             ),
           ),
-          // GPS vs odometer-photo evidence, side by side (explicit user
-          // request, 2026-09-08): this data was already being fetched
-          // (_periodCheckpointStart/_periodCheckpointEnd) but only ever
-          // forwarded into the PDF, never shown on screen. Deliberately
-          // NOT reconciled into a single number here either -- same
-          // reasoning already established in vehicle_detail_screen.dart's
-          // own side-by-side display: GPS (continuous) and odometer
-          // photos (point-in-time) are different kinds of evidence and
-          // won't match to the mile once personal (untracked) miles are
-          // factored in. Shown only when this period actually has
-          // odometer evidence at all.
-          if (_periodCheckpointStart != null) ...[
-            Divider(height: 1, color: border),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  subLabel(appState.tr('odometer_evidence_label')),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _infoChip(
-                        icon: Icons.speed_rounded,
-                        label: fmtMiles(_periodTotalMiles),
-                        isDark: isDark,
-                      ),
-                      _infoChip(
-                        icon: Icons.camera_alt_outlined,
-                        label: _periodCheckpointEnd != null
-                            ? '${fmtMiles(_periodCheckpointStart!)} → ${fmtMiles(_periodCheckpointEnd!)}'
-                            : fmtMiles(_periodCheckpointStart!),
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    appState.tr('gps_vs_odometer_disclaimer'),
-                    style: TextStyle(fontSize: 10.5, color: labelColor),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
