@@ -24,7 +24,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../errors/app_error.dart';
-import '../services/odometer_capture_service.dart';
 
 class GenerateReportCodeScreen extends StatefulWidget {
   const GenerateReportCodeScreen({super.key});
@@ -78,20 +77,12 @@ class _GenerateReportCodeScreenState extends State<GenerateReportCodeScreen> {
     });
 
     try {
-      // Weekly odometer photo evidence (same pairing VehicleDetailScreen
-      // already shows per vehicle) attached to the report metadata --
-      // signed here, as the driver's own authenticated session, since the
-      // anon-facing redemption RPC has no Storage access of its own.
-      final checkpoints = await OdometerCaptureService()
-          .listCheckpointsInRange(_dateRange.start, _dateRange.end);
-
       final result = await Supabase.instance.client.rpc(
         'generate_report_access_code',
         params: {
           'p_start_date': _dateRange.start.toIso8601String().split('T')[0],
           'p_end_date': _dateRange.end.toIso8601String().split('T')[0],
           'p_vehicle_id': null,
-          'p_weekly_checkpoints': checkpoints,
         },
       );
 
