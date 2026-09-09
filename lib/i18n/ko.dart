@@ -151,6 +151,8 @@ const Map<String, String> koTexts = {
   'privacy_security': '개인정보 보호 및 보안',
   'privacy_policy': '개인정보 처리방침',
   'terms_conditions': '이용약관',
+  'send_feedback': '의견 보내기',
+  'send_feedback_no_mail_app': '메일 앱을 찾을 수 없습니다. contact@controlmiles.com으로 연락해 주세요.',
   'data_security': '데이터 보안',
   'security_audit': '보안 감사',
 

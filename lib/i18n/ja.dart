@@ -150,6 +150,8 @@ const Map<String, String> jaTexts = {
   'privacy_security': 'プライバシーとセキュリティ',
   'privacy_policy': 'プライバシーポリシー',
   'terms_conditions': '利用規約',
+  'send_feedback': 'フィードバックを送る',
+  'send_feedback_no_mail_app': 'メールアプリが見つかりません。contact@controlmiles.com までご連絡ください。',
   'data_security': 'データセキュリティ',
   'security_audit': 'セキュリティ監査',
 

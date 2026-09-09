@@ -151,6 +151,8 @@ const Map<String, String> hiTexts = {
   'privacy_security': 'गोपनीयता और सुरक्षा',
   'privacy_policy': 'गोपनीयता नीति',
   'terms_conditions': 'नियम और शर्तें',
+  'send_feedback': 'सुझाव भेजें',
+  'send_feedback_no_mail_app': 'कोई ईमेल ऐप नहीं मिला। contact@controlmiles.com पर लिखें।',
   'data_security': 'डेटा सुरक्षा',
   'security_audit': 'सुरक्षा ऑडिट',
 

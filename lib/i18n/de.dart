@@ -142,6 +142,8 @@ const Map<String, String> deTexts = {
   'privacy_security': 'Datenschutz & Sicherheit',
   'privacy_policy': 'Datenschutzrichtlinie',
   'terms_conditions': 'Allgemeine Geschäftsbedingungen',
+  'send_feedback': 'Feedback senden',
+  'send_feedback_no_mail_app': 'Keine E-Mail-App gefunden. Schreib an contact@controlmiles.com.',
   'trademark_disclaimer_short': 'ControlMiles ist eine unabhängige App und steht in keiner Verbindung zu Uber, Lyft, DoorDash, Instacart, Amazon, Walmart, Shipt oder anderen in dieser App genannten Plattformen und wird von diesen nicht unterstützt oder gesponsert. Alle Marken gehören ihren jeweiligen Eigentümern.',
   'age_terms_checkbox_prefix': 'Ich bestätige, dass ich mindestens 18 Jahre alt bin und stimme den',
   'age_terms_checkbox_and': 'und der',

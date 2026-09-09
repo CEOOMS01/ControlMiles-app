@@ -153,6 +153,8 @@ const Map<String, String> arTexts = {
   'privacy_security': 'الخصوصية والأمان',
   'privacy_policy': 'سياسة الخصوصية',
   'terms_conditions': 'الشروط والأحكام',
+  'send_feedback': 'إرسال اقتراحات',
+  'send_feedback_no_mail_app': 'لم يتم العثور على تطبيق بريد. راسلنا على contact@controlmiles.com.',
   'data_security': 'أمن البيانات',
   'security_audit': 'تدقيق أمني',
 

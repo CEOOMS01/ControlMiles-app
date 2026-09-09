@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../models/organization.dart';
@@ -855,9 +856,33 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          // Explicit user request (2026-09-09): a place for user
+          // suggestions/feedback that isn't the Dashboard -- Settings,
+          // same row style as Subscription/Privacy/Terms above.
+          _buildLegalLinkRow(
+            icon: Icons.mail_outline_rounded,
+            label: appState.tr('send_feedback'),
+            isDark: isDark,
+            onTap: () => _sendFeedback(appState),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _sendFeedback(AppState appState) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'contact@controlmiles.com',
+      query: 'subject=${Uri.encodeComponent('ControlMiles feedback')}',
+    );
+    final launched = await launchUrl(uri);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appState.tr('send_feedback_no_mail_app'))),
+      );
+    }
   }
 
   // BUG FIX (pedido explícito, riesgo legal): privacy_policy/terms_conditions
