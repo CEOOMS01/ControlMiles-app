@@ -458,4 +458,17 @@ const Map<String, String> koTexts = {
   'fleet_select_vehicle_button': '차량 선택',
   'fleet_vehicle_picker_title': '차량 선택',
   'fleet_vehicle_picker_empty': '지금은 이용 가능한 차량이 없습니다 -- 모든 플릿 차량이 현재 사용 중입니다.',
+
+  // 리포트 포털 접근 코드, 이제 앱 내에서 생성 (2026-09-09)
+  'copy': '복사',
+  'copied_to_clipboard': '클립보드에 복사됨',
+  'generate_report_code_title': '보고서 접근 코드',
+  'generate_report_code_body': '여행 날짜 범위에 대한 일회용 코드를 생성하세요. 세무 담당자가 controlmiles.com/portal/verify에서 이 코드를 입력하여 읽기 전용 주행거리 요약을 볼 수 있습니다 -- 로그인이나 계정이 필요하지 않습니다.',
+  'generate_report_code_button': '코드 생성',
+  'generate_report_code_your_code': '이 코드를 세무 담당자와 공유하세요',
+  'generate_report_code_expires_in': '{mmss} 후 만료',
+  'generate_report_code_expired': '이 코드는 만료되었습니다.',
+  'generate_report_code_disclaimer': '최대 2회까지 사용 가능합니다. 이 앱이 보증하지 않습니다 -- 공제 목적으로만 사용하세요.',
+  'report_portal_section': '리포트 포털',
+  'report_portal_section_subtitle': '세무 담당자를 위한 코드를 생성하세요',
 };

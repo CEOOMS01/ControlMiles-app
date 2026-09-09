@@ -775,4 +775,20 @@ const Map<String, String> esTexts = {
   'fleet_select_vehicle_button': 'Seleccionar vehículo',
   'fleet_vehicle_picker_title': 'Elige un vehículo',
   'fleet_vehicle_picker_empty': 'No hay vehículos disponibles ahora mismo -- todos los vehículos de la flota están en uso.',
+
+  // Código de acceso al Report Portal, generado desde la app (pedido
+  // explícito, 2026-09-09) -- se movió aquí porque antes solo existía en
+  // la web, y un chofer gig nunca debería necesitar iniciar sesión en
+  // controlmiles.com.
+  'copy': 'Copiar',
+  'copied_to_clipboard': 'Copiado al portapapeles',
+  'generate_report_code_title': 'Código de acceso al reporte',
+  'generate_report_code_body': 'Genera un código de un solo uso para un rango de fechas de tus viajes. Tu contador lo ingresa en controlmiles.com/portal/verify para ver un resumen de millas de solo lectura -- sin login ni cuenta de su parte.',
+  'generate_report_code_button': 'Generar código',
+  'generate_report_code_your_code': 'Comparte este código con tu contador',
+  'generate_report_code_expires_in': 'Expira en {mmss}',
+  'generate_report_code_expired': 'Este código ya expiró.',
+  'generate_report_code_disclaimer': 'Usable hasta 2 veces. No garantizado por esta app -- para fines de deducción.',
+  'report_portal_section': 'Report Portal',
+  'report_portal_section_subtitle': 'Genera un código para tu contador',
 };

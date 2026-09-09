@@ -468,4 +468,17 @@ const Map<String, String> hiTexts = {
   'fleet_select_vehicle_button': 'वाहन चुनें',
   'fleet_vehicle_picker_title': 'एक वाहन चुनें',
   'fleet_vehicle_picker_empty': 'अभी कोई वाहन उपलब्ध नहीं है -- फ्लीट के सभी वाहन उपयोग में हैं।',
+
+  // रिपोर्ट पोर्टल एक्सेस कोड, अब ऐप के अंदर बनाया जाता है (2026-09-09)
+  'copy': 'कॉपी करें',
+  'copied_to_clipboard': 'क्लिपबोर्ड पर कॉपी किया गया',
+  'generate_report_code_title': 'रिपोर्ट एक्सेस कोड',
+  'generate_report_code_body': 'अपनी यात्राओं की एक तिथि सीमा के लिए एक बार उपयोग होने वाला कोड बनाएं। आपका टैक्स तैयारकर्ता इसे controlmiles.com/portal/verify पर दर्ज करता है ताकि एक केवल-पढ़ने योग्य माइलेज सारांश देख सके -- उनकी ओर से कोई लॉगिन या खाता आवश्यक नहीं।',
+  'generate_report_code_button': 'कोड बनाएं',
+  'generate_report_code_your_code': 'यह कोड अपने टैक्स तैयारकर्ता के साथ साझा करें',
+  'generate_report_code_expires_in': '{mmss} में समाप्त होता है',
+  'generate_report_code_expired': 'यह कोड समाप्त हो गया है।',
+  'generate_report_code_disclaimer': '2 बार तक उपयोग करने योग्य। यह ऐप इसकी गारंटी नहीं देता -- कटौती के उद्देश्यों के लिए।',
+  'report_portal_section': 'रिपोर्ट पोर्टल',
+  'report_portal_section_subtitle': 'अपने टैक्स तैयारकर्ता के लिए एक कोड बनाएं',
 };

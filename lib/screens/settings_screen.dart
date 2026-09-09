@@ -13,6 +13,7 @@ import '../services/gig_app_detection_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
+import 'generate_report_code_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -300,6 +301,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           if (appState.isGig) ...[
             _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
             _buildAutoDetectSection(appState, isDark),
+
+            // Explicit user requirement (2026-09-09): generating a Report
+            // Portal access code used to only exist on controlmiles.com --
+            // but a gig driver should never need to log into the web at
+            // all (web is fleet-admin only going forward). Moved here so
+            // the "no login needed for your preparer" pitch is actually
+            // true for the driver too, not just the preparer.
+            _buildSectionHeader(appState, 'report_portal_section', isDark),
+            _buildReportPortalSection(appState, isDark),
           ],
 
           _buildSectionHeader(appState, 'preferences', isDark),
@@ -569,6 +579,43 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Explicit user requirement (2026-09-09): a driver generates their own
+  // Report Portal access code straight from the app now -- see
+  // GenerateReportCodeScreen's own header comment for why this moved
+  // here instead of staying web-only.
+  Widget _buildReportPortalSection(AppState appState, bool isDark) {
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ListTile(
+          leading: Icon(Icons.qr_code_2_rounded, color: primary),
+          title: Text(
+            appState.tr('generate_report_code_title'),
+            style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+          ),
+          subtitle: Text(
+            appState.tr('report_portal_section_subtitle'),
+            style: TextStyle(fontSize: 12, color: subTextColor),
+          ),
+          trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GenerateReportCodeScreen()),
+          ),
+        ),
       ),
     );
   }

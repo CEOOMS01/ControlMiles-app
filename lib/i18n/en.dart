@@ -807,4 +807,19 @@ const Map<String, String> enTexts = {
   'fleet_select_vehicle_button': 'Select vehicle',
   'fleet_vehicle_picker_title': 'Choose a vehicle',
   'fleet_vehicle_picker_empty': 'No vehicles available right now -- every fleet vehicle is currently in use.',
+
+  // Report Portal access code, generated in-app (explicit user
+  // requirement, 2026-09-09) -- moved here from being web-only, since a
+  // gig driver should never need to log into controlmiles.com at all.
+  'copy': 'Copy',
+  'copied_to_clipboard': 'Copied to clipboard',
+  'generate_report_code_title': 'Report access code',
+  'generate_report_code_body': 'Generate a one-time code for a date range of your trips. Your tax preparer enters it at controlmiles.com/portal/verify to view a read-only mileage summary -- no login, no account needed on their end.',
+  'generate_report_code_button': 'Generate code',
+  'generate_report_code_your_code': 'Share this code with your tax preparer',
+  'generate_report_code_expires_in': 'Expires in {mmss}',
+  'generate_report_code_expired': 'This code has expired.',
+  'generate_report_code_disclaimer': 'Usable up to 2 times. Not guaranteed by this app -- for deduction purposes.',
+  'report_portal_section': 'Report Portal',
+  'report_portal_section_subtitle': 'Generate a code for your tax preparer',
 };

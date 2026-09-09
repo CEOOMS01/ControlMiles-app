@@ -743,4 +743,17 @@ const Map<String, String> zhTexts = {
   'fleet_select_vehicle_button': '选择车辆',
   'fleet_vehicle_picker_title': '选择一辆车',
   'fleet_vehicle_picker_empty': '目前没有可用车辆——所有车队车辆都在使用中。',
+
+  // 报告门户访问码，现在可在应用内生成（2026-09-09）
+  'copy': '复制',
+  'copied_to_clipboard': '已复制到剪贴板',
+  'generate_report_code_title': '报告访问码',
+  'generate_report_code_body': '为你行程的某个日期范围生成一次性代码。你的报税员在 controlmiles.com/portal/verify 输入该代码即可查看只读的里程摘要——他们无需登录或账户。',
+  'generate_report_code_button': '生成代码',
+  'generate_report_code_your_code': '将此代码分享给你的报税员',
+  'generate_report_code_expires_in': '{mmss} 后过期',
+  'generate_report_code_expired': '此代码已过期。',
+  'generate_report_code_disclaimer': '最多可使用2次。本应用不保证其有效性——仅供抵扣用途参考。',
+  'report_portal_section': '报告门户',
+  'report_portal_section_subtitle': '为你的报税员生成一个代码',
 };

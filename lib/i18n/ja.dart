@@ -457,4 +457,17 @@ const Map<String, String> jaTexts = {
   'fleet_select_vehicle_button': '車両を選択',
   'fleet_vehicle_picker_title': '車両を選んでください',
   'fleet_vehicle_picker_empty': '現在利用可能な車両はありません -- すべてのフリート車両が使用中です。',
+
+  // レポートポータルアクセスコード、アプリ内で生成可能に（2026-09-09）
+  'copy': 'コピー',
+  'copied_to_clipboard': 'クリップボードにコピーしました',
+  'generate_report_code_title': 'レポートアクセスコード',
+  'generate_report_code_body': 'あなたの走行記録の日付範囲に対して1回限りのコードを生成します。税務担当者が controlmiles.com/portal/verify でこのコードを入力すると、読み取り専用の走行距離サマリーを閲覧できます -- ログインやアカウントは不要です。',
+  'generate_report_code_button': 'コードを生成',
+  'generate_report_code_your_code': 'このコードを税務担当者と共有してください',
+  'generate_report_code_expires_in': '{mmss}後に期限切れ',
+  'generate_report_code_expired': 'このコードは期限切れです。',
+  'generate_report_code_disclaimer': '最大2回まで使用可能です。このアプリによる保証はありません -- 控除目的でご利用ください。',
+  'report_portal_section': 'レポートポータル',
+  'report_portal_section_subtitle': '税務担当者用のコードを生成',
 };

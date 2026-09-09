@@ -743,4 +743,17 @@ const Map<String, String> ptTexts = {
   'fleet_select_vehicle_button': 'Selecionar veículo',
   'fleet_vehicle_picker_title': 'Escolha um veículo',
   'fleet_vehicle_picker_empty': 'Nenhum veículo disponível no momento -- todos os veículos da frota estão em uso.',
+
+  // Código de acesso ao Report Portal, gerado no app (2026-09-09)
+  'copy': 'Copiar',
+  'copied_to_clipboard': 'Copiado para a área de transferência',
+  'generate_report_code_title': 'Código de acesso ao relatório',
+  'generate_report_code_body': 'Gere um código de uso único para um intervalo de datas das suas viagens. Seu contador o insere em controlmiles.com/portal/verify para ver um resumo de quilometragem somente leitura -- sem login, sem conta necessária do lado dele.',
+  'generate_report_code_button': 'Gerar código',
+  'generate_report_code_your_code': 'Compartilhe este código com seu contador',
+  'generate_report_code_expires_in': 'Expira em {mmss}',
+  'generate_report_code_expired': 'Este código expirou.',
+  'generate_report_code_disclaimer': 'Utilizável até 2 vezes. Não garantido por este aplicativo -- para fins de dedução.',
+  'report_portal_section': 'Report Portal',
+  'report_portal_section_subtitle': 'Gere um código para seu contador',
 };

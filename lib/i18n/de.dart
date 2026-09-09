@@ -743,4 +743,17 @@ const Map<String, String> deTexts = {
   'fleet_select_vehicle_button': 'Fahrzeug auswählen',
   'fleet_vehicle_picker_title': 'Fahrzeug wählen',
   'fleet_vehicle_picker_empty': 'Derzeit sind keine Fahrzeuge verfügbar -- alle Flottenfahrzeuge werden gerade genutzt.',
+
+  // Report-Portal-Zugangscode, jetzt in der App generiert (2026-09-09)
+  'copy': 'Kopieren',
+  'copied_to_clipboard': 'In die Zwischenablage kopiert',
+  'generate_report_code_title': 'Berichtszugangscode',
+  'generate_report_code_body': 'Erstellen Sie einen einmaligen Code für einen Datumsbereich Ihrer Fahrten. Ihr Steuerberater gibt ihn unter controlmiles.com/portal/verify ein, um eine schreibgeschützte Kilometerübersicht zu sehen -- keine Anmeldung, kein Konto auf seiner Seite nötig.',
+  'generate_report_code_button': 'Code erstellen',
+  'generate_report_code_your_code': 'Teilen Sie diesen Code mit Ihrem Steuerberater',
+  'generate_report_code_expires_in': 'Läuft ab in {mmss}',
+  'generate_report_code_expired': 'Dieser Code ist abgelaufen.',
+  'generate_report_code_disclaimer': 'Bis zu 2-mal verwendbar. Nicht von dieser App garantiert -- für Abzugszwecke.',
+  'report_portal_section': 'Report Portal',
+  'report_portal_section_subtitle': 'Erstellen Sie einen Code für Ihren Steuerberater',
 };

@@ -476,4 +476,17 @@ const Map<String, String> arTexts = {
   'fleet_select_vehicle_button': 'اختر مركبة',
   'fleet_vehicle_picker_title': 'اختر مركبة',
   'fleet_vehicle_picker_empty': 'لا توجد مركبات متاحة الآن -- جميع مركبات الأسطول قيد الاستخدام حاليًا.',
+
+  // رمز الوصول لبوابة التقارير، الآن يُنشأ داخل التطبيق (2026-09-09)
+  'copy': 'نسخ',
+  'copied_to_clipboard': 'تم النسخ إلى الحافظة',
+  'generate_report_code_title': 'رمز الوصول إلى التقرير',
+  'generate_report_code_body': 'أنشئ رمزًا لمرة واحدة لنطاق زمني من رحلاتك. يقوم محاسب الضرائب الخاص بك بإدخاله في controlmiles.com/portal/verify لعرض ملخص أميال للقراءة فقط -- بدون تسجيل دخول أو حساب من جانبه.',
+  'generate_report_code_button': 'إنشاء رمز',
+  'generate_report_code_your_code': 'شارك هذا الرمز مع محاسب الضرائب الخاص بك',
+  'generate_report_code_expires_in': 'تنتهي الصلاحية خلال {mmss}',
+  'generate_report_code_expired': 'انتهت صلاحية هذا الرمز.',
+  'generate_report_code_disclaimer': 'قابل للاستخدام حتى مرتين. غير مضمون من قبل هذا التطبيق -- لأغراض الخصم.',
+  'report_portal_section': 'بوابة التقارير',
+  'report_portal_section_subtitle': 'أنشئ رمزًا لمحاسب الضرائب الخاص بك',
 };

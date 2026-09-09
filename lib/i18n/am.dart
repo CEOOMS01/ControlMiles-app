@@ -444,4 +444,17 @@ const Map<String, String> amTexts = {
   'fleet_select_vehicle_button': 'ተሽከርካሪ ይምረጡ',
   'fleet_vehicle_picker_title': 'ተሽከርካሪ ይምረጡ',
   'fleet_vehicle_picker_empty': 'በአሁኑ ጊዜ ምንም ተሽከርካሪዎች የሉም -- ሁሉም የመርከብ ተሽከርካሪዎች በአሁኑ ጊዜ ጥቅም ላይ ናቸው።',
+
+  // የሪፖርት ፖርታል መዳረሻ ኮድ፣ አሁን በመተግበሪያው ውስጥ ይፈጠራል (2026-09-09)
+  'copy': 'ቅዳ',
+  'copied_to_clipboard': 'ወደ ቅንጥብ ሰሌዳ ተቀድቷል',
+  'generate_report_code_title': 'የሪፖርት መዳረሻ ኮድ',
+  'generate_report_code_body': 'ለጉዞዎችዎ የቀን ክልል ነጠላ-አጠቃቀም ኮድ ይፍጠሩ። የግብር አዘጋጅዎ በ controlmiles.com/portal/verify ላይ ያስገባዋል የንባብ-ብቻ የማይል ማጠቃለያ ለማየት -- ከነሱ በኩል ምንም መግቢያ ወይም መለያ አያስፈልግም።',
+  'generate_report_code_button': 'ኮድ ፍጠር',
+  'generate_report_code_your_code': 'ይህን ኮድ ከግብር አዘጋጅዎ ጋር ያጋሩ',
+  'generate_report_code_expires_in': 'በ{mmss} ውስጥ ያበቃል',
+  'generate_report_code_expired': 'ይህ ኮድ አልቋል።',
+  'generate_report_code_disclaimer': 'እስከ 2 ጊዜ ጥቅም ላይ ሊውል ይችላል። በዚህ መተግበሪያ የተረጋገጠ አይደለም -- ለቅናሽ ዓላማዎች።',
+  'report_portal_section': 'የሪፖርት በር',
+  'report_portal_section_subtitle': 'ለግብር አዘጋጅዎ ኮድ ይፍጠሩ',
 };
