@@ -50,6 +50,7 @@ Implementations:
 | 430 | Duplicate entry | Unique-constraint violation |
 | 440 | Subscriptions not configured | Stripe not yet set up in this environment |
 | 441 | Already own a fleet | A second org create attempt without the multi-fleet add-on |
+| 450 | Business rule rejection | A hand-written RAISE EXCEPTION from one of our own RPCs that doesn't match a more specific code above -- the message text itself is safe to show (see `looksLikeRawDbError`/`_looksLikeRawDbError`), just not common enough to deserve its own named code |
 | 700 | Unexpected (client) | Uncaught client-side exception, unclassified |
 | 701 | Unexpected (server) | Uncaught server/Postgrest exception, unclassified |
 | 720 | Unexpected (critical flow) | Same as 701, but in a payment/deletion/data-loss-adjacent flow |
