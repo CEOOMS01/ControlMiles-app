@@ -80,7 +80,7 @@
                  emailed by the send-driver-invite edge function.
                  android:autoVerify requires the matching assetlinks.json to
                  be served at https://controlmiles.com/.well-known/assetlinks.json
-                 (controlmiles-web repo) -- without it Android silently falls
+                 (controlmiles-web repo); without it Android silently falls
                  back to showing a disambiguation dialog instead of opening
                  this app directly. -->
             <intent-filter android:autoVerify="true">
