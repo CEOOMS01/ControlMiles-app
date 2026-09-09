@@ -793,4 +793,13 @@ const Map<String, String> enTexts = {
   // Dual-mode context switcher (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'Personal',
   'org_mode_company': 'Company: {org}',
+
+  // Shift-ended lock screen (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'Shift ended',
+  'shift_ended_body': 'You have no access to the app until your next shift starts.',
+  'shift_ended_start_next': 'Start next shift',
+
+  // Revocation (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'Fleet access removed',
+  'org_access_revoked_body': 'Your fleet admin has removed your access to this organization. Sign out to continue.',
 };

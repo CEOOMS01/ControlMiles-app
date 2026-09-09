@@ -454,4 +454,13 @@ const Map<String, String> hiTexts = {
   // दोहरा संदर्भ स्विचर (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'व्यक्तिगत',
   'org_mode_company': 'कंपनी: {org}',
+
+  // शिफ्ट समाप्त लॉक स्क्रीन (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'शिफ्ट समाप्त हुई',
+  'shift_ended_body': 'आपकी अगली शिफ्ट शुरू होने तक आपके पास ऐप तक पहुंच नहीं है।',
+  'shift_ended_start_next': 'अगली शिफ्ट शुरू करें',
+
+  // पहुंच रद्द करना (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'फ्लीट पहुंच हटा दी गई',
+  'org_access_revoked_body': 'आपके फ्लीट व्यवस्थापक ने इस संगठन तक आपकी पहुंच हटा दी है। जारी रखने के लिए साइन आउट करें।',
 };

@@ -443,4 +443,13 @@ const Map<String, String> jaTexts = {
   // デュアルコンテキスト切り替え（Fleet Sprint 2、2026-09-09）
   'org_mode_personal': '個人',
   'org_mode_company': '会社: {org}',
+
+  // シフト終了ロック画面（Fleet Sprint 3、2026-09-09）
+  'shift_ended_title': 'シフト終了',
+  'shift_ended_body': '次のシフトが始まるまでアプリにアクセスできません。',
+  'shift_ended_start_next': '次のシフトを開始',
+
+  // アクセス取り消し（Fleet Sprint 3、2026-09-09）
+  'org_access_revoked_title': 'フリートへのアクセスが削除されました',
+  'org_access_revoked_body': 'フリート管理者がこの組織へのあなたのアクセスを削除しました。続行するにはサインアウトしてください。',
 };

@@ -237,12 +237,6 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       await appState.setAutoDetectEnabled(false);
     }
 
-    // (comentario original conservado): se notifica DESPUÉS de que
-    // stopTracking() confirmó el cierre (cierre de sección final + suma
-    // de duración + update de sessions), no antes — así el padre recarga
-    // solo cuando los datos ya están persistidos.
-    widget.onTripEnded?.call();
-
     if (mounted) setState(() {});
 
     // Offer -- never block ending the trip on -- this week's closing
@@ -332,6 +326,15 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
         if (!isMandatory) break; // optional path never loops back
       }
     }
+
+    // Fires DESPUÉS de que stopTracking() confirmó el cierre real Y de
+    // que cualquier foto de cierre semanal obligatoria (domingo) ya se
+    // resolvió -- reordenado (2026-09-09) porque el caller de Fleet
+    // (DriverOperationsScreen) necesita esperar exactamente este punto
+    // antes de navegar a la pantalla de "Turno finalizado"; navegar
+    // antes habría desmontado este widget a mitad del diálogo semanal
+    // obligatorio.
+    widget.onTripEnded?.call();
   }
 
   @override

@@ -740,4 +740,13 @@ const Map<String, String> frTexts = {
   // Sélecteur de contexte double (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'Personnel',
   'org_mode_company': 'Entreprise : {org}',
+
+  // Écran de verrouillage fin de service (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'Service terminé',
+  'shift_ended_body': "Vous n'avez plus accès à l'application jusqu'au début de votre prochain service.",
+  'shift_ended_start_next': 'Démarrer le prochain service',
+
+  // Révocation (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'Accès à la flotte supprimé',
+  'org_access_revoked_body': "L'administrateur de votre flotte a supprimé votre accès à cette organisation. Déconnectez-vous pour continuer.",
 };

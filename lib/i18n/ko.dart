@@ -444,4 +444,13 @@ const Map<String, String> koTexts = {
   // 듀얼 컨텍스트 전환기 (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': '개인',
   'org_mode_company': '회사: {org}',
+
+  // 근무 종료 잠금 화면 (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': '근무 종료됨',
+  'shift_ended_body': '다음 근무가 시작될 때까지 앱에 접근할 수 없습니다.',
+  'shift_ended_start_next': '다음 근무 시작',
+
+  // 접근 권한 취소 (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': '플릿 접근 권한이 제거되었습니다',
+  'org_access_revoked_body': '플릿 관리자가 이 조직에 대한 귀하의 접근 권한을 제거했습니다. 계속하려면 로그아웃하세요.',
 };

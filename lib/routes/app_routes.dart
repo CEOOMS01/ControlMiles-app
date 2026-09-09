@@ -52,6 +52,10 @@ class AppRoutes {
   // organization_members row; this is the pre-account/pre-membership link
   // an admin emails out (see driver_invites/accept_driver_invite).
   static const String inviteLanding = '/invite-landing';
+  // Fleet Sprint 3 (shift-scoped privacy, 2026-09-09): reached ONLY by a
+  // fleet_driver ending their turno -- see ShiftEndedScreen's own header
+  // comment. Never reached from Gig's Dashboard.
+  static const String shiftEnded = '/shift-ended';
 
   // ============================================================
   // RUTAS PRINCIPALES
@@ -127,6 +131,7 @@ class AppRoutes {
         fleetStateMileage,
         pendingInvite,
         inviteLanding,
+        shiftEnded,
         home,
         dashboard,
         tracking,
@@ -289,6 +294,7 @@ class AppRoutes {
       case driverOperations: return 'Driver Operations';
       case pendingInvite: return 'Pending Invite';
       case inviteLanding: return 'Invite Landing';
+      case shiftEnded: return 'Shift Ended';
 
       case tracking: return 'Tracking';
       case trackingActive: return 'Tracking Active';

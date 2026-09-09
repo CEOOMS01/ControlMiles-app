@@ -729,4 +729,13 @@ const Map<String, String> zhTexts = {
   // 双重身份切换器（Fleet Sprint 2，2026-09-09）
   'org_mode_personal': '个人',
   'org_mode_company': '公司：{org}',
+
+  // 班次结束锁定屏幕（Fleet Sprint 3，2026-09-09）
+  'shift_ended_title': '班次已结束',
+  'shift_ended_body': '在下一班次开始之前，你无法使用此应用。',
+  'shift_ended_start_next': '开始下一班次',
+
+  // 撤销访问权限（Fleet Sprint 3，2026-09-09）
+  'org_access_revoked_title': '车队访问权限已移除',
+  'org_access_revoked_body': '你的车队管理员已移除你对该组织的访问权限。请登出以继续。',
 };

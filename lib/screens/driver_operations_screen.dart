@@ -19,9 +19,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../models/vehicle.dart';
+import '../routes/app_routes.dart';
 import '../models/vehicle_inspection.dart';
 import '../services/vehicle_service.dart';
 import '../services/inspection_service.dart';
@@ -41,19 +43,83 @@ class DriverOperationsScreen extends StatefulWidget {
   State<DriverOperationsScreen> createState() => _DriverOperationsScreenState();
 }
 
-class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
+class _DriverOperationsScreenState extends State<DriverOperationsScreen>
+    with WidgetsBindingObserver {
   final _vehicleService = VehicleService();
   final _inspectionService = InspectionService();
   Vehicle? _vehicle;
   VehicleInspection? _latestInspection;
   bool _isLoadingVehicle = true;
   bool _tripIsActive = false;
+  bool _revocationDialogShown = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tripIsActive = TrackingController.currentState != TrackingState.idle;
     _loadVehicle();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Fleet Sprint 3 (revocation, explicit user requirement, 2026-09-09):
+  // "check-on-next-action" -- app foreground is the most common re-entry
+  // point, so this is what makes revocation feel immediate in practice
+  // without a persistent Realtime subscription. Deliberately does NOT
+  // interrupt an already-active trip (the DB trigger only blocks a NEW
+  // session insert, never touches one already open) -- only warns and
+  // blocks the NEXT one.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkMembershipStillActive();
+  }
+
+  Future<void> _checkMembershipStillActive() async {
+    if (_revocationDialogShown || !mounted) return;
+    final appState = context.read<AppState>();
+    final orgId = appState.defaultOrgId;
+    if (!appState.isFleetDriver || orgId == null) return;
+
+    try {
+      final stillActive = await Supabase.instance.client
+          .rpc('check_active_org_membership', params: {'p_org_id': orgId});
+      if (stillActive == true || !mounted) return;
+
+      _revocationDialogShown = true;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: Text(appState.tr('org_access_revoked_title')),
+            content: Text(appState.tr('org_access_revoked_body')),
+            actions: [
+              FilledButton(
+                onPressed: () async {
+                  await appState.signOutAndClear();
+                  if (!dialogContext.mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(
+                    dialogContext,
+                    AppRoutes.login,
+                    (route) => false,
+                  );
+                },
+                child: Text(appState.tr('sign_out')),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (_) {
+      // Fails open -- a lookup hiccup must never lock out a still-active
+      // driver; the DB trigger remains the real floor regardless.
+    }
   }
 
   Future<void> _loadVehicle() async {
@@ -282,9 +348,19 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
                       canStart: _canStartTrip,
                       cannotStartMessage: appState.tr('dvir_required_before_start'),
                       onTripStarted: () => setState(() => _tripIsActive = true),
+                      // Fleet Sprint 3 (shift-scoped privacy, explicit
+                      // user request, 2026-09-09): ending a turno navigates
+                      // straight to the ShiftEndedScreen dead end -- fires
+                      // after any mandatory weekly odometer-close dialog
+                      // already resolved (see tracking_action_button.dart's
+                      // reordering of this exact callback). Gig's Dashboard
+                      // never does this -- scoped to fleet_driver only.
                       onTripEnded: () {
-                        setState(() => _tripIsActive = false);
-                        _loadVehicle();
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          AppRoutes.shiftEnded,
+                          (route) => false,
+                        );
                       },
                     ),
                   ),

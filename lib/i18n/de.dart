@@ -729,4 +729,13 @@ const Map<String, String> deTexts = {
   // Dualer Kontextumschalter (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'Persönlich',
   'org_mode_company': 'Unternehmen: {org}',
+
+  // Schicht-beendet-Sperrbildschirm (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'Schicht beendet',
+  'shift_ended_body': 'Sie haben keinen Zugriff auf die App, bis Ihre nächste Schicht beginnt.',
+  'shift_ended_start_next': 'Nächste Schicht starten',
+
+  // Widerruf (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'Flottenzugriff entfernt',
+  'org_access_revoked_body': 'Ihr Flottenadministrator hat Ihren Zugriff auf diese Organisation entfernt. Melden Sie sich ab, um fortzufahren.',
 };

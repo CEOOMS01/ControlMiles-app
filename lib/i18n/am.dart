@@ -430,4 +430,13 @@ const Map<String, String> amTexts = {
   // ድርብ አውድ መቀየሪያ (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'የግል',
   'org_mode_company': 'ኩባንያ፦ {org}',
+
+  // የፈረቃ ማብቂያ መቆለፊያ ማያ ገጽ (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'ፈረቃ አብቅቷል',
+  'shift_ended_body': 'የሚቀጥለው ፈረቃዎ እስኪጀምር ድረስ መተግበሪያውን መድረስ አይችሉም።',
+  'shift_ended_start_next': 'የሚቀጥለውን ፈረቃ ጀምር',
+
+  // መዳረሻ ስረዛ (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'የመርከብ መዳረሻ ተወግዷል',
+  'org_access_revoked_body': 'የመርከብ አስተዳዳሪዎ ወደዚህ ድርጅት ያለዎትን መዳረሻ አስወግደዋል። ለመቀጠል ይውጡ።',
 };

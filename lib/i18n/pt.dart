@@ -729,4 +729,13 @@ const Map<String, String> ptTexts = {
   // Seletor de contexto duplo (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'Pessoal',
   'org_mode_company': 'Empresa: {org}',
+
+  // Tela de bloqueio de turno encerrado (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'Turno encerrado',
+  'shift_ended_body': 'Você não tem acesso ao app até o início do seu próximo turno.',
+  'shift_ended_start_next': 'Iniciar próximo turno',
+
+  // Revogação (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'Acesso à frota removido',
+  'org_access_revoked_body': 'O administrador da sua frota removeu seu acesso a esta organização. Saia para continuar.',
 };

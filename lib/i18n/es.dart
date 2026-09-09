@@ -761,4 +761,13 @@ const Map<String, String> esTexts = {
   // Selector de contexto dual (Fleet Sprint 2, 2026-09-09)
   'org_mode_personal': 'Personal',
   'org_mode_company': 'Empresa: {org}',
+
+  // Pantalla de bloqueo de turno finalizado (Fleet Sprint 3, 2026-09-09)
+  'shift_ended_title': 'Turno finalizado',
+  'shift_ended_body': 'No tienes acceso a la app hasta que empiece tu próximo turno.',
+  'shift_ended_start_next': 'Iniciar próximo turno',
+
+  // Revocación (Fleet Sprint 3, 2026-09-09)
+  'org_access_revoked_title': 'Acceso a la flota removido',
+  'org_access_revoked_body': 'El administrador de tu flota removió tu acceso a esta organización. Cierra sesión para continuar.',
 };

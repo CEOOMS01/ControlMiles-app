@@ -462,4 +462,13 @@ const Map<String, String> arTexts = {
   // محول السياق المزدوج (Fleet Sprint 2، 2026-09-09)
   'org_mode_personal': 'شخصي',
   'org_mode_company': 'الشركة: {org}',
+
+  // شاشة قفل انتهاء المناوبة (Fleet Sprint 3، 2026-09-09)
+  'shift_ended_title': 'انتهت المناوبة',
+  'shift_ended_body': 'ليس لديك وصول إلى التطبيق حتى تبدأ مناوبتك التالية.',
+  'shift_ended_start_next': 'بدء المناوبة التالية',
+
+  // إلغاء الوصول (Fleet Sprint 3، 2026-09-09)
+  'org_access_revoked_title': 'تمت إزالة الوصول إلى الأسطول',
+  'org_access_revoked_body': 'قام مسؤول أسطولك بإزالة وصولك إلى هذه المؤسسة. سجّل الخروج للمتابعة.',
 };

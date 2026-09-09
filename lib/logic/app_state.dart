@@ -242,6 +242,25 @@ class AppState extends ChangeNotifier {
         await prefs.setBool('controlmiles_auto_detect_enabled', false);
       }
 
+      // Fleet Sprint 3 (shift-scoped privacy, explicit user request,
+      // 2026-09-09): a hybrid account switching from gig into fleet_admin/
+      // fleet_driver mode (OrgModeSwitcher, Sprint 2) could otherwise carry
+      // an auto-detect flag left on from their Gig usage straight into
+      // Fleet mode -- the background location/gig-app-detection service
+      // has no business running at all for a fleet_driver outside an
+      // active tracked session. Same "check BEFORE _accountType updates
+      // below" ordering as the premium-lapse fix above, so this only fires
+      // on a genuine gig -> fleet transition, not on every profile fetch
+      // while already in fleet mode.
+      final becameFleetAccount = _accountType == 'gig' &&
+          (newAccountType == 'fleet_admin' || newAccountType == 'fleet_driver');
+      if (becameFleetAccount && _autoDetectEnabled) {
+        _autoDetectEnabled = false;
+        await AutoTripDetectionService.instance.setEnabled(false);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('controlmiles_auto_detect_enabled', false);
+      }
+
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
