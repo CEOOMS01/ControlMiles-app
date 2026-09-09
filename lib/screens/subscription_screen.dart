@@ -20,6 +20,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../errors/app_error.dart';
+
 import '../logic/app_state.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -88,9 +90,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   void _showError(AppState appState, Object e) {
     if (!mounted) return;
+    // BUG FIX (pedido explícito, 2026-09-09): mostraba el objeto de
+    // excepción crudo ($e) directamente -- en un flujo de pago, texto
+    // crudo de Stripe/Supabase es exactamente lo que no debe verse.
+    // critical:true porque esto es la pantalla de suscripción/pago --
+    // un error no reconocido acá cae en el código 720 (no el 701
+    // genérico), fácil de encontrar en soporte.
+    final appError = AppError.from(e, critical: true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${appState.tr('error')}: $e'),
+        content: Text(appError.display(appState.tr(appError.messageKey))),
         backgroundColor: Colors.red,
       ),
     );

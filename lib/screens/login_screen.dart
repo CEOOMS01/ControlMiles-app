@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
+import '../errors/app_error.dart';
 import '../i18n/app_texts.dart';   // ← Importante: Necesario para AppLanguage
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
@@ -176,22 +177,20 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {
+      // BUG FIX (pedido explícito, 2026-09-09): esta rama antes mostraba
+      // texto crudo de la excepción/base de datos al usuario (primeras 6
+      // palabras del error real) cuando no coincidía con los dos casos
+      // conocidos. Ahora usa el registro central de errores -- nunca
+      // texto crudo, siempre un mensaje traducido + código estable
+      // (AppError.from ya reconoce credenciales inválidas/email
+      // duplicado; cualquier otra cosa cae en el código 701 genérico).
       if (mounted) {
-        _showError(_getErrorMessage(e.toString(), appState));
+        final appError = AppError.from(e);
+        _showError(appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  String _getErrorMessage(String error, AppState appState) {
-    if (error.contains('Invalid login credentials') || error.contains('Invalid credentials')) {
-      return appState.tr('invalid_credentials');
-    }
-    if (error.contains('Email already registered') || error.contains('already exists')) {
-      return appState.tr('email_already_exists');
-    }
-    return '${appState.tr('error')}: ${error.split(' ').take(6).join(' ')}';
   }
 
   void _showError(String message) {

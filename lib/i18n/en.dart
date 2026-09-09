@@ -750,6 +750,17 @@ const Map<String, String> enTexts = {
   'auth_error': 'Authentication error. Please try again.',
   'invalid_credentials': 'Invalid email or password.',
   'email_already_exists': 'This email is already registered.',
+  // AppError registry (lib/errors/app_error.dart) -- coded error
+  // messages shown to the user, never raw exception/database text.
+  'camera_permission_denied_error': 'Camera access is needed for this.',
+  'no_internet_connection_error': 'No internet connection.',
+  'invalid_input_error': 'Please check what you entered.',
+  'local_storage_error': 'Could not save locally on this device.',
+  'session_expired_error': 'Your session expired. Please sign in again.',
+  'vehicle_limit_reached_error': "You've reached your plan's vehicle limit.",
+  'rate_limited_error': 'Too many attempts. Try again in a few minutes.',
+  'duplicate_entry_error': 'This already exists.',
+  'unexpected_error': 'Something went wrong.',
   'end': 'End',
   'navigation_error_title': 'Navigation Error',
   'route_not_found_message': 'Route {route} not found.\nContact Olympus Mont Systems.',
