@@ -423,4 +423,56 @@ class OdometerCaptureService {
         .order('week_start_date', ascending: false);
     return List<Map<String, dynamic>>.from(data);
   }
+
+  /// Weekly checkpoints (any vehicle the caller can see, per RLS) whose week
+  /// overlaps [start]..[end] -- used by GenerateReportCodeScreen to attach
+  /// odometer photo evidence to a Report Portal code, the same pairing
+  /// VehicleDetailScreen already shows per vehicle, now surfaced on the
+  /// shared report too. Photo URLs are already resolved into working signed
+  /// links here (resolveViewableImageUrl), same as every other place that
+  /// displays one -- the stored getPublicUrl() link is otherwise dead
+  /// against the private `odometers` bucket.
+  Future<List<Map<String, dynamic>>> listCheckpointsInRange(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final weekStartFloor = start.subtract(Duration(days: start.weekday - 1));
+    final data = await _supabase
+        .from('vehicle_odometer_checkpoints')
+        .select(
+            'vehicle_id, week_start_date, start_odometer_value, start_odometer_image_url, end_odometer_value, end_odometer_image_url, vehicles(nickname, make, model, year, plate)')
+        .gte('week_start_date', weekStartFloor.toIso8601String().split('T')[0])
+        .lte('week_start_date', end.toIso8601String().split('T')[0])
+        .order('week_start_date', ascending: true);
+
+    final rows = List<Map<String, dynamic>>.from(data);
+    final out = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      final weekStart = DateTime.parse(row['week_start_date'] as String);
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      final startUrl = row['start_odometer_image_url'] as String?;
+      final endUrl = row['end_odometer_image_url'] as String?;
+      final vehicle = row['vehicles'] as Map<String, dynamic>?;
+      out.add({
+        'vehicle': vehicle == null
+            ? null
+            : {
+                'nickname': vehicle['nickname'],
+                'make': vehicle['make'],
+                'model': vehicle['model'],
+                'year': vehicle['year'],
+                'plate': vehicle['plate'],
+              },
+        'week_start_date': row['week_start_date'],
+        'week_end_date': weekEnd.toIso8601String().split('T')[0],
+        'start_odometer_value': row['start_odometer_value'],
+        'start_odometer_photo_url':
+            startUrl == null ? null : await resolveViewableImageUrl(startUrl),
+        'end_odometer_value': row['end_odometer_value'],
+        'end_odometer_photo_url':
+            endUrl == null ? null : await resolveViewableImageUrl(endUrl),
+      });
+    }
+    return out;
+  }
 }
