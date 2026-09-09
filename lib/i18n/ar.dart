@@ -458,4 +458,8 @@ const Map<String, String> arTexts = {
   'invite_invalid_title': 'دعوة غير صالحة أو منتهية الصلاحية',
   'invite_invalid_body': 'رابط الدعوة هذا لم يعد صالحًا. اطلب من مسؤول الأسطول إرسال رابط جديد.',
   'invite_confirm_email_first': 'تحقق من بريدك الإلكتروني لتأكيد حسابك، ثم افتح رابط الدعوة هذا مرة أخرى.',
+
+  // محول السياق المزدوج (Fleet Sprint 2، 2026-09-09)
+  'org_mode_personal': 'شخصي',
+  'org_mode_company': 'الشركة: {org}',
 };

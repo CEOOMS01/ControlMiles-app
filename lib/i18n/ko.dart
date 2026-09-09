@@ -440,4 +440,8 @@ const Map<String, String> koTexts = {
   'invite_invalid_title': '유효하지 않거나 만료된 초대',
   'invite_invalid_body': '이 초대 링크는 더 이상 유효하지 않습니다. 플릿 관리자에게 새 링크를 요청하세요.',
   'invite_confirm_email_first': '이메일을 확인하여 계정을 인증한 후 이 초대 링크를 다시 여세요.',
+
+  // 듀얼 컨텍스트 전환기 (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': '개인',
+  'org_mode_company': '회사: {org}',
 };

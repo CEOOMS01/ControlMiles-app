@@ -439,4 +439,8 @@ const Map<String, String> jaTexts = {
   'invite_invalid_title': '無効または期限切れの招待',
   'invite_invalid_body': 'この招待リンクは無効になりました。フリート管理者に新しいリンクの送信を依頼してください。',
   'invite_confirm_email_first': 'メールを確認してアカウントを認証し、その後この招待リンクをもう一度開いてください。',
+
+  // デュアルコンテキスト切り替え（Fleet Sprint 2、2026-09-09）
+  'org_mode_personal': '個人',
+  'org_mode_company': '会社: {org}',
 };

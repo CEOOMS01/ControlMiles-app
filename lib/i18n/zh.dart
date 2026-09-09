@@ -725,4 +725,8 @@ const Map<String, String> zhTexts = {
   'invite_invalid_title': '邀请无效或已过期',
   'invite_invalid_body': '此邀请链接已失效。请让车队管理员重新发送一个。',
   'invite_confirm_email_first': '请查收邮件以确认你的账户，然后重新打开此邀请链接。',
+
+  // 双重身份切换器（Fleet Sprint 2，2026-09-09）
+  'org_mode_personal': '个人',
+  'org_mode_company': '公司：{org}',
 };

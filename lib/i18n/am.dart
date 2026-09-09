@@ -426,4 +426,8 @@ const Map<String, String> amTexts = {
   'invite_invalid_title': 'ልክ ያልሆነ ወይም ጊዜው ያለፈበት ግብዣ',
   'invite_invalid_body': 'ይህ የግብዣ አገናኝ ከአሁን በኋላ ልክ አይደለም። የመርከብ አስተዳዳሪዎ አዲስ እንዲልክ ይጠይቁ።',
   'invite_confirm_email_first': 'መለያዎን ለማረጋገጥ ኢሜይልዎን ይመልከቱ፣ ከዚያ ይህን የግብዣ አገናኝ እንደገና ይክፈቱ።',
+
+  // ድርብ አውድ መቀየሪያ (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'የግል',
+  'org_mode_company': 'ኩባንያ፦ {org}',
 };

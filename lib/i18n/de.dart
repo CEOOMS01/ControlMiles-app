@@ -725,4 +725,8 @@ const Map<String, String> deTexts = {
   'invite_invalid_title': 'Ungültige oder abgelaufene Einladung',
   'invite_invalid_body': 'Dieser Einladungslink ist nicht mehr gültig. Bitten Sie Ihren Flottenadministrator, einen neuen zu senden.',
   'invite_confirm_email_first': 'Bestätigen Sie Ihr Konto per E-Mail und öffnen Sie diesen Einladungslink dann erneut.',
+
+  // Dualer Kontextumschalter (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'Persönlich',
+  'org_mode_company': 'Unternehmen: {org}',
 };

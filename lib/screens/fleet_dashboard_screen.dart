@@ -12,6 +12,7 @@ import '../logic/app_state.dart';
 import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
+import '../widgets/org_mode_switcher.dart';
 
 class FleetDashboardScreen extends StatefulWidget {
   const FleetDashboardScreen({super.key});
@@ -145,6 +146,11 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(20),
                       children: [
+                        // Fleet Sprint 2 (dual-mode UX, 2026-09-09): only
+                        // renders for a hybrid account -- see
+                        // OrgModeSwitcher's own header comment.
+                        const OrgModeSwitcher(),
+                        const SizedBox(height: 4),
                         Text(
                           _organization?.name ?? '',
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textColor),

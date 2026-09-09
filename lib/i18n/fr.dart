@@ -736,4 +736,8 @@ const Map<String, String> frTexts = {
   'invite_invalid_title': 'Invitation invalide ou expirée',
   'invite_invalid_body': "Ce lien d'invitation n'est plus valide. Demandez à votre administrateur de flotte d'en envoyer un nouveau.",
   'invite_confirm_email_first': "Vérifiez votre e-mail pour confirmer votre compte, puis rouvrez ce lien d'invitation.",
+
+  // Sélecteur de contexte double (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'Personnel',
+  'org_mode_company': 'Entreprise : {org}',
 };

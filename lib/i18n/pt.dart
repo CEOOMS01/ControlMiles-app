@@ -725,4 +725,8 @@ const Map<String, String> ptTexts = {
   'invite_invalid_title': 'Convite inválido ou expirado',
   'invite_invalid_body': 'Este link de convite não é mais válido. Peça ao administrador da frota para enviar um novo.',
   'invite_confirm_email_first': 'Verifique seu e-mail para confirmar sua conta e depois abra este link de convite novamente.',
+
+  // Seletor de contexto duplo (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'Pessoal',
+  'org_mode_company': 'Empresa: {org}',
 };

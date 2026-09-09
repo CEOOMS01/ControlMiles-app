@@ -450,4 +450,8 @@ const Map<String, String> hiTexts = {
   'invite_invalid_title': 'अमान्य या समाप्त निमंत्रण',
   'invite_invalid_body': 'यह निमंत्रण लिंक अब मान्य नहीं है। अपने फ्लीट व्यवस्थापक से नया भेजने के लिए कहें।',
   'invite_confirm_email_first': 'अपना खाता confirm करने के लिए अपना ईमेल देखें, फिर इस निमंत्रण लिंक को फिर से खोलें।',
+
+  // दोहरा संदर्भ स्विचर (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'व्यक्तिगत',
+  'org_mode_company': 'कंपनी: {org}',
 };

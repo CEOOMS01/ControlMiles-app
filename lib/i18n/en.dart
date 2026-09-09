@@ -789,4 +789,8 @@ const Map<String, String> enTexts = {
   'invite_invalid_title': 'Invalid or expired invite',
   'invite_invalid_body': 'This invite link is no longer valid. Ask your fleet admin to send a new one.',
   'invite_confirm_email_first': 'Check your email to confirm your account, then open this invite link again.',
+
+  // Dual-mode context switcher (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'Personal',
+  'org_mode_company': 'Company: {org}',
 };

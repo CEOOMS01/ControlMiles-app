@@ -757,4 +757,8 @@ const Map<String, String> esTexts = {
   'invite_invalid_title': 'Invitación inválida o expirada',
   'invite_invalid_body': 'Este enlace de invitación ya no es válido. Pídele al administrador de la flota que envíe uno nuevo.',
   'invite_confirm_email_first': 'Revisa tu correo para confirmar tu cuenta, luego abre este enlace de invitación de nuevo.',
+
+  // Selector de contexto dual (Fleet Sprint 2, 2026-09-09)
+  'org_mode_personal': 'Personal',
+  'org_mode_company': 'Empresa: {org}',
 };

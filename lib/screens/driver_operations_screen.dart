@@ -28,6 +28,7 @@ import '../services/inspection_service.dart';
 import '../tracking/tracking_controller.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
+import '../widgets/org_mode_switcher.dart';
 import 'vehicle_inspection_screen.dart';
 import 'inspection_detail_screen.dart';
 import 'report_incident_sheet.dart';
@@ -165,6 +166,14 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
+                  // Fleet Sprint 2 (dual-mode UX, 2026-09-09): only renders
+                  // for a genuine hybrid driver (real personal trip
+                  // history on file) -- an exclusive corporate driver
+                  // invited straight into Fleet mode sees nothing here,
+                  // matching the spec's "no necesita configurar vehículos
+                  // personales" requirement. See OrgModeSwitcher's own
+                  // header comment for the exact eligibility check.
+                  const OrgModeSwitcher(),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
