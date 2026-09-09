@@ -139,6 +139,11 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
+  # Apple App Store rejects an app icon with an alpha channel -- the
+  # source PNG carries one (even though it's visually opaque), caught by
+  # this tool's own warning the first time this ran against the newly
+  # scaffolded ios/ project.
+  remove_alpha_ios: true
   image_path: "assets/images/logo_controlmiles.png"
   adaptive_icon_background: "#F8FAFC"
   adaptive_icon_foreground: "assets/images/logo_controlmiles.png"
