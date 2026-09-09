@@ -87,9 +87,10 @@ const Map<String, String> koTexts = {
   'capture_photo': '사진 촬영',
   'retry_camera': '카메라 다시 시도',
   'camera_error': '카메라 오류',
+  'camera_error_body': '카메라에 접근할 수 없습니다. 설정에서 카메라 권한을 확인한 후 다시 시도하세요.',
   'odometer_not_detected': '주행계가 감지되지 않습니다',
   'center_odometer_numbers': '주행계 숫자를 중앙에 맞춰주세요',
-  'ai_processing': 'AI 처리 중',
+  'ai_processing': '사진 처리 중',
   'validating_mileage_gps_hash': '주행거리, GPS, 해시 검증 중',
 
 
@@ -172,6 +173,9 @@ const Map<String, String> koTexts = {
   // ============================================================
   'ok': '확인',
   'cancel': '취소',
+  'permission_required': '권한이 필요합니다',
+  'location_always_needed': 'ControlMiles는 앱이 열려 있지 않을 때도 이동을 계속 추적하기 위해 위치 정보 "항상 허용" 권한이 필요합니다. 설정에서 활성화해 주세요.',
+  'open_settings': '설정 열기',
   'save': '저장',
   'delete': '삭제',
   'edit': '수정',

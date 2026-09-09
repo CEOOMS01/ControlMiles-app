@@ -109,9 +109,10 @@ const Map<String, String> enTexts = {
   'capture_photo': 'Capture photo',
   'retry_camera': 'Retry camera',
   'camera_error': 'Camera error',
+  'camera_error_body': 'We couldn\'t access your camera. Check camera permission in Settings, then try again.',
   'odometer_not_detected': 'Odometer not detected',
   'center_odometer_numbers': 'Center odometer numbers',
-  'ai_processing': 'AI processing',
+  'ai_processing': 'Processing photo',
   'validating_mileage_gps_hash': 'Validating mileage, GPS, and hash',
 
   // ============================================================

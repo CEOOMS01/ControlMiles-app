@@ -29,6 +29,10 @@ import '../services/odometer_capture_service.dart';
 
 import '../services/odometer_ocr_service.dart';
 
+import '../errors/app_error.dart';
+
+import '../utils/permission_recovery_service.dart';
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,11 +138,21 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
   Timer? _torchSuggestionTimer;
 
-  Timer? _torchFailTimer;
+  Timer? _ocrTimeoutTimer;
 
   bool _showTorchButton = false;
 
   bool _isProcessing = false;
+
+  // BUG FIX: camera init failure (permission denied, hardware busy, etc.)
+  // used to leave _cameraController null forever with no state change --
+  // _buildCameraPreview() showed an infinite spinner with no explanation,
+  // no retry, and no way to open Settings. The odometer field/capture
+  // button also required a real photo (isStart/isEnd evidence is
+  // mandatory by design, not something manual entry can bypass), so a
+  // user stuck here had no way forward at all. Now a genuine failure
+  // surfaces a real error state with Retry + Open Settings actions.
+  bool _cameraError = false;
 
 
 
@@ -178,7 +192,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
     _torchSuggestionTimer?.cancel();
 
-    _torchFailTimer?.cancel();
+    _ocrTimeoutTimer?.cancel();
 
     _cameraController?.dispose();
 
@@ -212,9 +226,17 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
   Future<void> _initCamera() async {
 
+    if (mounted) setState(() => _cameraError = false);
+
     if (_cameras.isEmpty) await initializeCameras();
 
-    if (_cameras.isEmpty) return;
+    if (_cameras.isEmpty) {
+
+      if (mounted) setState(() => _cameraError = true);
+
+      return;
+
+    }
 
 
 
@@ -258,11 +280,38 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
       setState(() => _cameraController = controller);
 
+      _startOcrTimeoutTimer();
+
     } catch (e) {
 
       debugPrint('[Camera] Init failed: $e');
 
+      if (mounted) setState(() => _cameraError = true);
+
     }
+
+  }
+
+
+
+  // General OCR stabilization timeout, independent of the torch (BUG FIX:
+  // previously the only "give up on OCR, tell the user to type it" signal
+  // was a 5s timer started ONLY after the user manually turned the torch
+  // on -- with good ambient lighting, an odometer that simply never
+  // stabilizes (blurry/angled/worn digits) left the UI showing "scanning"
+  // forever with no guidance). Starts once the camera is ready; cancelled
+  // the moment OCR actually locks a value.
+  void _startOcrTimeoutTimer() {
+
+    _ocrTimeoutTimer?.cancel();
+
+    _ocrTimeoutTimer = Timer(const Duration(seconds: 10), () {
+
+      if (!mounted || _ocrLocked) return;
+
+      setState(() => _ocrFailed = true);
+
+    });
 
   }
 
@@ -304,25 +353,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
 
 
-      if (next) {
-
-        _torchFailTimer?.cancel();
-
-        _torchFailTimer = Timer(const Duration(seconds: 5), () {
-
-          if (!mounted || _ocrLocked) return;
-
-          setState(() => _ocrFailed = true);
-
-        });
-
-      } else {
-
-        _torchFailTimer?.cancel();
-
-        if (!_ocrFailed) _startTorchSuggestionTimer();
-
-      }
+      if (!next && !_ocrFailed) _startTorchSuggestionTimer();
 
     } catch (e) {
 
@@ -385,7 +416,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
       _torchSuggestionTimer?.cancel();
 
-      _torchFailTimer?.cancel();
+      _ocrTimeoutTimer?.cancel();
 
 
 
@@ -417,7 +448,15 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
 
 
-    if (odometerValue == null || odometerValue <= 0) {
+    // BUG FIX (sanity-check gap): the OCR candidate filter already rejects
+    // anything outside kMinOdometer..kMaxOdometer before ever proposing a
+    // value, but a manually typed or hand-edited reading skipped that
+    // check entirely -- a user could submit "5" or "12345678" and it would
+    // be accepted. Reusing the same plausible range here closes that gap
+    // without duplicating the constants.
+    if (odometerValue == null ||
+        odometerValue < OdometerOcrService.kMinOdometer ||
+        odometerValue > OdometerOcrService.kMaxOdometer) {
 
       _showError(appState.tr('invalid_input'));
 
@@ -429,7 +468,7 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
 
-      _showError(appState.tr('error'));
+      _showError(appState.tr('camera_error'));
 
       return;
 
@@ -504,7 +543,17 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
       _startTorchSuggestionTimer();
 
-      _showError(e.toString());
+      _startOcrTimeoutTimer();
+
+      // BUG FIX (raw exception text shown to the user): this was the one
+      // remaining spot in the odometer capture flow still doing
+      // _showError(e.toString()) -- every other screen touched this
+      // session went through AppError.from(...).display(...) instead, per
+      // the project-wide "no raw database/exception text in the UI" rule.
+
+      final appError = AppError.from(e);
+
+      _showError(appError.display(appState.tr(appError.messageKey)));
 
     }
 
@@ -576,9 +625,9 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
           children: [
 
-            _buildCameraPreview(),
+            _buildCameraPreview(appState),
 
-            _buildScanOverlay(),
+            if (!_cameraError) _buildScanOverlay(),
 
             _buildUI(appState),
 
@@ -596,7 +645,97 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
 
 
-  Widget _buildCameraPreview() {
+  Widget _buildCameraPreview(AppState appState) {
+
+    if (_cameraError) {
+
+      return Center(
+
+        child: Padding(
+
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+
+          child: Column(
+
+            mainAxisSize: MainAxisSize.min,
+
+            children: [
+
+              const Icon(Icons.no_photography_outlined, color: Colors.white54, size: 48),
+
+              const SizedBox(height: 16),
+
+              Text(
+
+                appState.tr('camera_error'),
+
+                textAlign: TextAlign.center,
+
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+
+                appState.tr('camera_error_body'),
+
+                textAlign: TextAlign.center,
+
+                style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+
+                mainAxisSize: MainAxisSize.min,
+
+                children: [
+
+                  OutlinedButton(
+
+                    onPressed: _initCamera,
+
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+
+                    child: Text(appState.tr('retry_camera')),
+
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  ElevatedButton(
+
+                    onPressed: PermissionRecoveryService.openAppSettings,
+
+                    style: ElevatedButton.styleFrom(
+
+                      backgroundColor: const Color(0xFF00E5A0),
+
+                      foregroundColor: Colors.black,
+
+                    ),
+
+                    child: Text(appState.tr('open_settings')),
+
+                  ),
+
+                ],
+
+              ),
+
+            ],
+
+          ),
+
+        ),
+
+      );
+
+    }
 
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
 
@@ -646,9 +785,9 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
           _buildTopBar(appState),
 
-          _buildOdometerArea(appState),
+          if (!_cameraError) _buildOdometerArea(appState),
 
-          _buildBottomBar(appState),
+          if (!_cameraError) _buildBottomBar(appState),
 
         ],
 

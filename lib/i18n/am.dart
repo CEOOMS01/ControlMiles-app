@@ -86,9 +86,10 @@ const Map<String, String> amTexts = {
   'capture_photo': 'ፎቶ አንሳ',
   'retry_camera': 'ካሜራ እንደገና ሞክር',
   'camera_error': 'የካሜራ ስህተት',
+  'camera_error_body': 'ካሜራዎን መድረስ አልቻልንም። በቅንብሮች ውስጥ የካሜራ ፈቃድን ያረጋግጡ እና እንደገና ይሞክሩ።',
   'odometer_not_detected': 'ኦዶሜትር አልተገኘም',
   'center_odometer_numbers': 'የኦዶሜትር ቁጥሮችን በመሀል አስቀምጥ',
-  'ai_processing': 'በAI በመስራት ላይ',
+  'ai_processing': 'ፎቶ በማካሄድ ላይ',
   'validating_mileage_gps_hash': 'ማይሎች፣ ጂፒኤስ እና ሃሽ በማረጋገጥ ላይ',
 
   // ============================================================
@@ -158,6 +159,9 @@ const Map<String, String> amTexts = {
   // ============================================================
   'ok': 'እሺ',
   'cancel': 'ይቅር',
+  'permission_required': 'ፈቃድ ያስፈልጋል',
+  'location_always_needed': 'መተግበሪያው ክፍት ባይሆንም ጉዞዎን መከታተል እንዲቀጥል ControlMiles የ"ሁልጊዜ ፍቀድ" የአካባቢ ፈቃድ ያስፈልገዋል። እባክዎ በቅንብሮች ውስጥ ያንቁት።',
+  'open_settings': 'ቅንብሮችን ክፈት',
   'save': 'አስቀምጥ',
   'delete': 'ሰርዝ',
   'edit': 'አርትዕ',

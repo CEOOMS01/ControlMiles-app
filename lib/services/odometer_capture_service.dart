@@ -321,14 +321,23 @@ class OdometerCaptureService {
       throw Exception(AppTexts.get('auth_session_expired', language.code));
     }
 
+    // BUG FIX (found during OCR/odometer production-readiness review): this
+    // duplicated processEvidence's file-size/extension checks but with
+    // hardcoded SPANISH exception text instead of going through
+    // AppTexts.get(..., language.code) like processEvidence does -- a user
+    // on any other language would see Spanish text here regardless of
+    // their app language setting.
     if (!AppConfig.isValidFileSize(file)) {
       throw Exception(
-        'La foto pesa fuera de rango permitido (entre ${AppConfig.minPhotoSizeKb}KB y ${AppConfig.maxPhotoSizeMb}MB). Intenta tomarla de nuevo.',
+        AppTexts.get('photo_size_out_of_range', language.code)
+            .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
+            .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
       );
     }
     if (!AppConfig.isValidExtension(file.path)) {
       throw Exception(
-        'Formato de imagen no soportado. Formatos permitidos: ${AppConfig.allowedImageFormats.join(', ')}.',
+        AppTexts.get('photo_format_not_supported', language.code)
+            .replaceFirst('{formats}', AppConfig.allowedImageFormats.join(', ')),
       );
     }
 

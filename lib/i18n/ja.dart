@@ -87,9 +87,10 @@ const Map<String, String> jaTexts = {
   'capture_photo': '写真を撮影',
   'retry_camera': 'カメラを再試行',
   'camera_error': 'カメラエラー',
+  'camera_error_body': 'カメラにアクセスできませんでした。設定でカメラの権限を確認してから、もう一度お試しください。',
   'odometer_not_detected': 'オドメーターが検出されません',
   'center_odometer_numbers': 'オドメーターの数字を中央に合わせる',
-  'ai_processing': 'AI処理中',
+  'ai_processing': '写真を処理中',
   'validating_mileage_gps_hash': '走行距離、GPS、ハッシュを検証中',
 
   // ============================================================
@@ -171,6 +172,9 @@ const Map<String, String> jaTexts = {
   // ============================================================
   'ok': 'OK',
   'cancel': 'キャンセル',
+  'permission_required': '権限が必要です',
+  'location_always_needed': 'ControlMilesは、アプリを開いていないときでも走行を追跡し続けるために、位置情報の「常に許可」アクセスが必要です。設定で有効にしてください。',
+  'open_settings': '設定を開く',
   'save': '保存',
   'delete': '削除',
   'edit': '編集',

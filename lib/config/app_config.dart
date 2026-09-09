@@ -84,12 +84,6 @@ class AppConfig {
     return p == planPro;
   }
 
-  /// AI / OCR scanning (enabled for now)
-  static bool canUseAiScanning(String plan) {
-
-    return true;
-  }
-
   // ============================================================
   // IMAGE VALIDATION
   // ============================================================

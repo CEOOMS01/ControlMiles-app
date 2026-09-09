@@ -90,9 +90,10 @@ const Map<String, String> zhTexts = {
   'capture_photo': '拍摄照片',
   'retry_camera': '重试相机',
   'camera_error': '相机错误',
+  'camera_error_body': '无法访问您的相机。请在设置中检查相机权限，然后重试。',
   'odometer_not_detected': '未检测到里程表',
   'center_odometer_numbers': '请将里程表数字置于中央',
-  'ai_processing': 'AI 处理中',
+  'ai_processing': '正在处理照片',
   'validating_mileage_gps_hash': '正在验证里程、GPS 和哈希',
 
   // ============================================================

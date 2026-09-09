@@ -89,9 +89,10 @@ const Map<String, String> deTexts = {
   'capture_photo': 'Foto aufnehmen',
   'retry_camera': 'Kamera erneut versuchen',
   'camera_error': 'Kamerafehler',
+  'camera_error_body': 'Wir konnten nicht auf deine Kamera zugreifen. Überprüfe die Kameraberechtigung in den Einstellungen und versuche es erneut.',
   'odometer_not_detected': 'Kilometerzähler nicht erkannt',
   'center_odometer_numbers': 'Zahlen des Kilometerzählers zentrieren',
-  'ai_processing': 'KI-Verarbeitung',
+  'ai_processing': 'Foto wird verarbeitet',
   'validating_mileage_gps_hash': 'Kilometerstand, GPS und Hash werden validiert',
 
   // ============================================================

@@ -90,9 +90,10 @@ const Map<String, String> frTexts = {
   'capture_photo': 'Prendre une photo',
   'retry_camera': 'Réessayer la caméra',
   'camera_error': 'Erreur de caméra',
+  'camera_error_body': 'Impossible d\'accéder à votre caméra. Vérifiez l\'autorisation de la caméra dans les Paramètres, puis réessayez.',
   'odometer_not_detected': 'Odomètre non détecté',
   'center_odometer_numbers': 'Centrez les chiffres de l\'odomètre',
-  'ai_processing': 'Traitement par IA',
+  'ai_processing': 'Traitement de la photo',
   'validating_mileage_gps_hash': 'Validation du kilométrage, GPS et hash',
 
   // ============================================================

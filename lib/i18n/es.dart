@@ -109,9 +109,10 @@ const Map<String, String> esTexts = {
   'capture_photo': 'Capturar foto',
   'retry_camera': 'Reintentar cámara',
   'camera_error': 'Error en la cámara',
+  'camera_error_body': 'No pudimos acceder a tu cámara. Revisa el permiso de cámara en Ajustes y vuelve a intentarlo.',
   'odometer_not_detected': 'Odómetro no detectado',
   'center_odometer_numbers': 'Centra los números del odómetro',
-  'ai_processing': 'Procesando con IA',
+  'ai_processing': 'Procesando foto',
   'validating_mileage_gps_hash': 'Validando millas, GPS y hash',
 
   // ============================================================

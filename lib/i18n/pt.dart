@@ -90,9 +90,10 @@ const Map<String, String> ptTexts = {
   'capture_photo': 'Tirar foto',
   'retry_camera': 'Tentar câmera novamente',
   'camera_error': 'Erro na câmera',
+  'camera_error_body': 'Não conseguimos acessar sua câmera. Verifique a permissão da câmera nas Configurações e tente novamente.',
   'odometer_not_detected': 'Odômetro não detectado',
   'center_odometer_numbers': 'Centralize os números do odômetro',
-  'ai_processing': 'Processando com IA',
+  'ai_processing': 'Processando foto',
   'validating_mileage_gps_hash': 'Validando milhagem, GPS e hash',
 
   // ============================================================
