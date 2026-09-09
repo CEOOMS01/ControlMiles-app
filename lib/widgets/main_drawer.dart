@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
+import 'org_mode_switcher.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
@@ -34,6 +35,13 @@ class MainDrawer extends StatelessWidget {
               children: [
                 _buildHeader(context, appState),
                 const SizedBox(height: 8),
+
+                // Explicit user request (moved from the dashboard body,
+                // 2026-09-09): the Personal/Company switcher lives here now
+                // instead of taking up space in the dashboard's scrollable
+                // content -- same widget, same self-gating (renders nothing
+                // for a non-hybrid account), just relocated.
+                const OrgModeSwitcher(),
 
                 // --- Sección: Navegación Principal ---
                 _buildSectionLabel(appState, 'navigation', labelColor),

@@ -21,7 +21,6 @@ import '../widgets/mileage_deduction_badge.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
 import '../widgets/auto_detect_apps_button.dart';
-import '../widgets/org_mode_switcher.dart';
 import '../logic/app_state.dart';
 import '../utils/permission_recovery_service.dart';
 
@@ -1026,12 +1025,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           child: Column(
             children: [
               const SizedBox(height: 10),
-
-              // Fleet Sprint 2 (dual-mode UX, 2026-09-09): only renders
-              // anything for a hybrid account (appState.defaultOrgId
-              // non-null) -- a plain gig-only or fleet-only account sees
-              // no change here at all.
-              const OrgModeSwitcher(),
 
               // BUG FIX (pedido explícito): reemplaza el badge "StandardCM"
               // (Cloud Sync) — estaba roto, pegaba a una tabla/columna que
