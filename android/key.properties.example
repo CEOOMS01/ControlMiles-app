@@ -1,0 +1,14 @@
+# Copy this file to android/key.properties (already gitignored -- never
+# commit the real one) and fill in your real release keystore details.
+#
+# Generate the keystore first (once, keep it forever -- losing it means
+# you can never update the app on Play Store again under the same
+# listing):
+#   keytool -genkey -v -keystore ~/controlmiles-release.keystore \
+#     -alias controlmiles -keyalg RSA -keysize 2048 -validity 10000
+#
+# storeFile can be an absolute path or relative to android/app/.
+storeFile=/absolute/path/to/controlmiles-release.keystore
+storePassword=CHANGE_ME
+keyAlias=controlmiles
+keyPassword=CHANGE_ME

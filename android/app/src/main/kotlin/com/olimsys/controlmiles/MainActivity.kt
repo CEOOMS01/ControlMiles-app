@@ -1,4 +1,4 @@
-package com.example.controlmiles
+package com.olimsys.controlmiles
 
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents
