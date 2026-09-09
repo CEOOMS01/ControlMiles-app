@@ -715,4 +715,14 @@ const Map<String, String> ptTexts = {
   'vehicle_limit_reached_body': 'Seu plano permite até {max} veículo(s). Faça upgrade para adicionar mais.',
   'export_limit_reached_title': 'Limite de exportação atingido',
   'export_limit_reached_body': 'O plano Basic inclui 2 exportações de PDF por mês. Faça upgrade para o Premium para exportações ilimitadas.',
+
+  // Link de convite de frota (fechamento Sprint 1, 2026-09-09)
+  'invite_landing_title': '{org} convidou você para se juntar',
+  'invite_confirm_body': '{org} convidou você para se juntar à sua frota. Aceitar?',
+  'invite_login_prompt': 'Digite sua senha para aceitar este convite.',
+  'invite_signup_prompt': 'Crie sua conta para se juntar a esta frota.',
+  'invite_accept_button': 'Aceitar convite',
+  'invite_invalid_title': 'Convite inválido ou expirado',
+  'invite_invalid_body': 'Este link de convite não é mais válido. Peça ao administrador da frota para enviar um novo.',
+  'invite_confirm_email_first': 'Verifique seu e-mail para confirmar sua conta e depois abra este link de convite novamente.',
 };

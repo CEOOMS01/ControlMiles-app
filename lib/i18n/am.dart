@@ -416,4 +416,14 @@ const Map<String, String> amTexts = {
   'take_photo': 'ፎቶ አንሳ',
   'odometer_evidence_label': 'የኦዶሜትር ፎቶዎች (ማስረጃ)',
   'gps_vs_odometer_disclaimer': 'እነዚህ ቁጥሮች ሁልጊዜ በትክክል አይመሳሰሉም -- የግል (ያልተከታተሉ) ማይሎች በGPS አይቆጠሩም፣ ስለዚህ የተወሰነ ልዩነት የተለመደ ነው።',
+
+  // የመርከብ ግብዣ አገናኝ (Sprint 1 መዘጋት፣ 2026-09-09)
+  'invite_landing_title': '{org} እንዲቀላቀሉ ጋብዘዎታል',
+  'invite_confirm_body': '{org} ወደ መርከቧ እንዲቀላቀሉ ጋብዘዎታል። ይቀበሉ?',
+  'invite_login_prompt': 'ይህን ግብዣ ለመቀበል የይለፍ ቃልዎን ያስገቡ።',
+  'invite_signup_prompt': 'ወደዚህ መርከብ ለመቀላቀል መለያዎን ይፍጠሩ።',
+  'invite_accept_button': 'ግብዣ ተቀበል',
+  'invite_invalid_title': 'ልክ ያልሆነ ወይም ጊዜው ያለፈበት ግብዣ',
+  'invite_invalid_body': 'ይህ የግብዣ አገናኝ ከአሁን በኋላ ልክ አይደለም። የመርከብ አስተዳዳሪዎ አዲስ እንዲልክ ይጠይቁ።',
+  'invite_confirm_email_first': 'መለያዎን ለማረጋገጥ ኢሜይልዎን ይመልከቱ፣ ከዚያ ይህን የግብዣ አገናኝ እንደገና ይክፈቱ።',
 };

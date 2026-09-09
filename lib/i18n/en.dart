@@ -779,4 +779,14 @@ const Map<String, String> enTexts = {
   'vehicle_limit_reached_body': 'Your plan allows up to {max} vehicle(s). Upgrade to add more.',
   'export_limit_reached_title': 'Export limit reached',
   'export_limit_reached_body': 'Basic plans include 2 PDF exports per month. Upgrade to Premium for unlimited exports.',
+
+  // Fleet driver invite link (Sprint 1 close, 2026-09-09)
+  'invite_landing_title': '{org} invited you to join',
+  'invite_confirm_body': '{org} has invited you to join their fleet. Accept?',
+  'invite_login_prompt': 'Enter your password to accept this invite.',
+  'invite_signup_prompt': 'Create your account to join this fleet.',
+  'invite_accept_button': 'Accept invitation',
+  'invite_invalid_title': 'Invalid or expired invite',
+  'invite_invalid_body': 'This invite link is no longer valid. Ask your fleet admin to send a new one.',
+  'invite_confirm_email_first': 'Check your email to confirm your account, then open this invite link again.',
 };

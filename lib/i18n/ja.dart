@@ -429,4 +429,14 @@ const Map<String, String> jaTexts = {
   'take_photo': '写真を撮る',
   'odometer_evidence_label': 'オドメーター写真（証拠）',
   'gps_vs_odometer_disclaimer': 'これらの数値は必ずしも完全に一致するとは限りません -- 個人的な（追跡されていない）走行距離はGPSに計上されないため、多少の差は想定内です。',
+
+  // フリート招待リンク（Sprint 1 締めくくり、2026-09-09）
+  'invite_landing_title': '{org}があなたを招待しました',
+  'invite_confirm_body': '{org}があなたを自社のフリートに招待しました。承諾しますか？',
+  'invite_login_prompt': 'この招待を承諾するにはパスワードを入力してください。',
+  'invite_signup_prompt': 'このフリートに参加するにはアカウントを作成してください。',
+  'invite_accept_button': '招待を承諾',
+  'invite_invalid_title': '無効または期限切れの招待',
+  'invite_invalid_body': 'この招待リンクは無効になりました。フリート管理者に新しいリンクの送信を依頼してください。',
+  'invite_confirm_email_first': 'メールを確認してアカウントを認証し、その後この招待リンクをもう一度開いてください。',
 };

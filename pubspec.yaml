@@ -83,6 +83,13 @@ dependencies:
   # the pub version solver.
   collection: ^1.19.0
 
+  # --- Fleet driver invite deep link (Sprint 1 close, 2026-09-09): first
+  # deep-link infrastructure in this project -- Android App Links now
+  # (controlmiles.com resolves), iOS Universal Links pending the user's
+  # Apple Developer Team ID. app_links over uni_links: actively maintained,
+  # single package for both platforms, initial-link + stream in one API.
+  app_links: ^6.4.0
+
 # ============================================================
 # DEV DEPENDENCIES
 # ============================================================

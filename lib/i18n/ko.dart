@@ -430,4 +430,14 @@ const Map<String, String> koTexts = {
   'take_photo': '사진 찍기',
   'odometer_evidence_label': '주행거리계 사진(증빙)',
   'gps_vs_odometer_disclaimer': '이 숫자들은 항상 정확히 일치하지 않을 수 있습니다 -- 개인(추적되지 않은) 마일은 GPS에 집계되지 않으므로 약간의 차이는 정상입니다.',
+
+  // 플릿 초대 링크 (Sprint 1 마무리, 2026-09-09)
+  'invite_landing_title': '{org}에서 가입을 초대했습니다',
+  'invite_confirm_body': '{org}에서 귀하를 자사 플릿에 초대했습니다. 수락하시겠습니까?',
+  'invite_login_prompt': '이 초대를 수락하려면 비밀번호를 입력하세요.',
+  'invite_signup_prompt': '이 플릿에 가입하려면 계정을 만드세요.',
+  'invite_accept_button': '초대 수락',
+  'invite_invalid_title': '유효하지 않거나 만료된 초대',
+  'invite_invalid_body': '이 초대 링크는 더 이상 유효하지 않습니다. 플릿 관리자에게 새 링크를 요청하세요.',
+  'invite_confirm_email_first': '이메일을 확인하여 계정을 인증한 후 이 초대 링크를 다시 여세요.',
 };

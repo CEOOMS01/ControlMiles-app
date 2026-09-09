@@ -448,4 +448,14 @@ const Map<String, String> arTexts = {
   'take_photo': 'التقاط صورة',
   'odometer_evidence_label': 'صور عداد المسافات (دليل)',
   'gps_vs_odometer_disclaimer': 'قد لا تتطابق هذه الأرقام دائمًا تمامًا -- الأميال الشخصية (غير المتعقبة) لا يحسبها GPS، لذا من الطبيعي وجود بعض الفرق.',
+
+  // رابط دعوة الأسطول (إغلاق Sprint 1، 2026-09-09)
+  'invite_landing_title': '{org} دعتك للانضمام',
+  'invite_confirm_body': 'دعتك {org} للانضمام إلى أسطولها. هل تقبل؟',
+  'invite_login_prompt': 'أدخل كلمة المرور لقبول هذه الدعوة.',
+  'invite_signup_prompt': 'أنشئ حسابك للانضمام إلى هذا الأسطول.',
+  'invite_accept_button': 'قبول الدعوة',
+  'invite_invalid_title': 'دعوة غير صالحة أو منتهية الصلاحية',
+  'invite_invalid_body': 'رابط الدعوة هذا لم يعد صالحًا. اطلب من مسؤول الأسطول إرسال رابط جديد.',
+  'invite_confirm_email_first': 'تحقق من بريدك الإلكتروني لتأكيد حسابك، ثم افتح رابط الدعوة هذا مرة أخرى.',
 };

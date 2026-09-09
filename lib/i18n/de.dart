@@ -715,4 +715,14 @@ const Map<String, String> deTexts = {
   'vehicle_limit_reached_body': 'Dein Plan erlaubt bis zu {max} Fahrzeug(e). Upgrade, um mehr hinzuzufügen.',
   'export_limit_reached_title': 'Exportlimit erreicht',
   'export_limit_reached_body': 'Der Basic-Plan beinhaltet 2 PDF-Exporte pro Monat. Upgrade auf Premium für unbegrenzte Exporte.',
+
+  // Flotten-Einladungslink (Abschluss Sprint 1, 2026-09-09)
+  'invite_landing_title': '{org} hat Sie eingeladen',
+  'invite_confirm_body': '{org} hat Sie eingeladen, ihrer Flotte beizutreten. Annehmen?',
+  'invite_login_prompt': 'Geben Sie Ihr Passwort ein, um diese Einladung anzunehmen.',
+  'invite_signup_prompt': 'Erstellen Sie Ihr Konto, um dieser Flotte beizutreten.',
+  'invite_accept_button': 'Einladung annehmen',
+  'invite_invalid_title': 'Ungültige oder abgelaufene Einladung',
+  'invite_invalid_body': 'Dieser Einladungslink ist nicht mehr gültig. Bitten Sie Ihren Flottenadministrator, einen neuen zu senden.',
+  'invite_confirm_email_first': 'Bestätigen Sie Ihr Konto per E-Mail und öffnen Sie diesen Einladungslink dann erneut.',
 };

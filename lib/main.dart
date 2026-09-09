@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:app_links/app_links.dart';
 
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
@@ -50,6 +51,7 @@ import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
 import 'screens/fleet_state_mileage_screen.dart';
 import 'screens/pending_invite_screen.dart';
+import 'screens/invite_landing_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
 // toca la notificación de resumen semanal, sin depender de un BuildContext
@@ -165,15 +167,50 @@ class ControlMilesApp extends StatefulWidget {
 class _ControlMilesAppState extends State<ControlMilesApp> {
   final AppLifecycleObserver _lifecycleObserver = AppLifecycleObserver();
 
+  // Fleet driver invite deep link (Sprint 1 close, 2026-09-09): handles
+  // both a cold start FROM the link (getInitialLink) and the link arriving
+  // while the app is already running (uriLinkStream) -- app_links covers
+  // both cases through one API. Only https://controlmiles.com/invite/<token>
+  // is handled; anything else is ignored rather than guessed at.
+  final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) _handleIncomingLink(initialUri);
+    } catch (_) {
+      // Best-effort -- a malformed/unreadable initial link must never
+      // block normal app startup.
+    }
+
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      _handleIncomingLink,
+      onError: (_) {},
+    );
+  }
+
+  void _handleIncomingLink(Uri uri) {
+    if (uri.host != 'controlmiles.com' || uri.pathSegments.length < 2) return;
+    if (uri.pathSegments[0] != 'invite') return;
+
+    final token = uri.pathSegments[1];
+    if (token.isEmpty) return;
+
+    navigatorKey.currentState?.pushNamed(AppRoutes.inviteLanding, arguments: token);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(_lifecycleObserver);
+    _linkSubscription?.cancel();
     super.dispose();
   }
 
@@ -265,6 +302,10 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
         AppRoutes.fleetStateMileage: (_) => const FleetStateMileageScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
+        AppRoutes.inviteLanding: (context) {
+          final token = ModalRoute.of(context)!.settings.arguments as String? ?? '';
+          return InviteLandingScreen(token: token);
+        },
         AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.reports: (_) => const ReportsScreen(),

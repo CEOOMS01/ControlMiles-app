@@ -747,4 +747,14 @@ const Map<String, String> esTexts = {
   'vehicle_limit_reached_body': 'Tu plan permite hasta {max} vehículo(s). Mejorá tu plan para agregar más.',
   'export_limit_reached_title': 'Límite de exportación alcanzado',
   'export_limit_reached_body': 'El plan Basic incluye 2 exportaciones de PDF por mes. Mejorá a Premium para exportar sin límite.',
+
+  // Enlace de invitación de flota (cierre Sprint 1, 2026-09-09)
+  'invite_landing_title': '{org} te invitó a unirte',
+  'invite_confirm_body': '{org} te ha invitado a unirte a su flota. ¿Aceptar?',
+  'invite_login_prompt': 'Ingresa tu contraseña para aceptar esta invitación.',
+  'invite_signup_prompt': 'Crea tu cuenta para unirte a esta flota.',
+  'invite_accept_button': 'Aceptar invitación',
+  'invite_invalid_title': 'Invitación inválida o expirada',
+  'invite_invalid_body': 'Este enlace de invitación ya no es válido. Pídele al administrador de la flota que envíe uno nuevo.',
+  'invite_confirm_email_first': 'Revisa tu correo para confirmar tu cuenta, luego abre este enlace de invitación de nuevo.',
 };

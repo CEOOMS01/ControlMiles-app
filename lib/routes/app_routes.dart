@@ -45,6 +45,13 @@ class AppRoutes {
   // accidental duplication of the earlier decision's mistake.
   static const String driverOperations = '/driver-operations';
   static const String pendingInvite = '/pending-invite';
+  // Reached via the https://controlmiles.com/invite/<token> deep link (see
+  // AndroidManifest.xml's App Links intent-filter + main.dart's AppLinks
+  // listener), or pushed directly with the token as arguments. Distinct
+  // from pendingInvite above -- that's for an EXISTING member's in-app
+  // organization_members row; this is the pre-account/pre-membership link
+  // an admin emails out (see driver_invites/accept_driver_invite).
+  static const String inviteLanding = '/invite-landing';
 
   // ============================================================
   // RUTAS PRINCIPALES
@@ -119,6 +126,7 @@ class AppRoutes {
         fleetLiveMap,
         fleetStateMileage,
         pendingInvite,
+        inviteLanding,
         home,
         dashboard,
         tracking,
@@ -280,6 +288,7 @@ class AppRoutes {
       case fleetStateMileage: return 'Fleet State Mileage';
       case driverOperations: return 'Driver Operations';
       case pendingInvite: return 'Pending Invite';
+      case inviteLanding: return 'Invite Landing';
 
       case tracking: return 'Tracking';
       case trackingActive: return 'Tracking Active';

@@ -715,4 +715,14 @@ const Map<String, String> zhTexts = {
   'vehicle_limit_reached_body': '您的套餐最多支持 {max} 辆车。升级套餐以添加更多车辆。',
   'export_limit_reached_title': '已达导出次数上限',
   'export_limit_reached_body': 'Basic 套餐每月可导出 2 次 PDF。升级到 Premium 可无限导出。',
+
+  // 车队邀请链接（Sprint 1 收尾，2026-09-09）
+  'invite_landing_title': '{org} 邀请你加入',
+  'invite_confirm_body': '{org} 邀请你加入他们的车队。接受吗？',
+  'invite_login_prompt': '输入你的密码以接受此邀请。',
+  'invite_signup_prompt': '创建你的账户以加入此车队。',
+  'invite_accept_button': '接受邀请',
+  'invite_invalid_title': '邀请无效或已过期',
+  'invite_invalid_body': '此邀请链接已失效。请让车队管理员重新发送一个。',
+  'invite_confirm_email_first': '请查收邮件以确认你的账户，然后重新打开此邀请链接。',
 };

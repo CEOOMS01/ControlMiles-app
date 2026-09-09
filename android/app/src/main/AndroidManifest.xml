@@ -74,6 +74,24 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Fleet driver invite deep link (Sprint 1 close, 2026-09-09):
+                 Android App Links for https://controlmiles.com/invite/<token>,
+                 emailed by the send-driver-invite edge function.
+                 android:autoVerify requires the matching assetlinks.json to
+                 be served at https://controlmiles.com/.well-known/assetlinks.json
+                 (controlmiles-web repo) -- without it Android silently falls
+                 back to showing a disambiguation dialog instead of opening
+                 this app directly. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="controlmiles.com"
+                    android:pathPrefix="/invite"/>
+            </intent-filter>
         </activity>
 
         <!-- Geolocator Foreground Service -->

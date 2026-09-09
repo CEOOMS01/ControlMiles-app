@@ -726,4 +726,14 @@ const Map<String, String> frTexts = {
   'vehicle_limit_reached_body': 'Votre forfait autorise jusqu\'à {max} véhicule(s). Passez à un forfait supérieur pour en ajouter.',
   'export_limit_reached_title': "Limite d'export atteinte",
   'export_limit_reached_body': "Le forfait Basic inclut 2 exports PDF par mois. Passez à Premium pour des exports illimités.",
+
+  // Lien d'invitation de flotte (clôture Sprint 1, 2026-09-09)
+  'invite_landing_title': '{org} vous a invité à rejoindre',
+  'invite_confirm_body': "{org} vous a invité à rejoindre sa flotte. Accepter ?",
+  'invite_login_prompt': 'Entrez votre mot de passe pour accepter cette invitation.',
+  'invite_signup_prompt': 'Créez votre compte pour rejoindre cette flotte.',
+  'invite_accept_button': "Accepter l'invitation",
+  'invite_invalid_title': 'Invitation invalide ou expirée',
+  'invite_invalid_body': "Ce lien d'invitation n'est plus valide. Demandez à votre administrateur de flotte d'en envoyer un nouveau.",
+  'invite_confirm_email_first': "Vérifiez votre e-mail pour confirmer votre compte, puis rouvrez ce lien d'invitation.",
 };
