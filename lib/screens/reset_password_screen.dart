@@ -7,6 +7,8 @@
 // (ver AppRoutes.resetPassword en main.dart, mismo patrón que ya usa
 // odometerCapture para pasar argumentos sin onGenerateRoute).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -34,12 +36,40 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // BUG FIX (pre-launch security audit): the resend button had no cooldown
+  // at all -- only the async loading-spinner disable, which lifts as soon
+  // as the request round-trips (well under a second), so it could be
+  // tapped repeatedly to spam the target's inbox with reset codes. A
+  // simple client-side cooldown timer closes the realistic abuse case;
+  // Supabase's own Auth rate limits are still the real floor.
+  static const int _resendCooldownSeconds = 30;
+  int _resendSecondsLeft = 0;
+  Timer? _resendCooldownTimer;
+
   @override
   void dispose() {
     _codeController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _resendCooldownTimer?.cancel();
     super.dispose();
+  }
+
+  void _startResendCooldown() {
+    _resendCooldownTimer?.cancel();
+    setState(() => _resendSecondsLeft = _resendCooldownSeconds);
+    _resendCooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendSecondsLeft <= 1) {
+        timer.cancel();
+        setState(() => _resendSecondsLeft = 0);
+      } else {
+        setState(() => _resendSecondsLeft--);
+      }
+    });
   }
 
   Future<void> _verifyCode(AppState appState) async {
@@ -72,10 +102,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Future<void> _resendCode(AppState appState) async {
+    if (_resendSecondsLeft > 0) return;
     setState(() => _isLoading = true);
     try {
       await _authService.requestPasswordReset(widget.email);
-      if (mounted) _showSnack(appState.tr('reset_code_sent'));
+      if (mounted) {
+        _showSnack(appState.tr('reset_code_sent'));
+        _startResendCooldown();
+      }
     } catch (e) {
       if (mounted) {
         final appError = AppError.from(e);
@@ -232,8 +266,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       const SizedBox(height: 12),
       Center(
         child: TextButton(
-          onPressed: _isLoading ? null : () => _resendCode(appState),
-          child: Text(appState.tr('resend_code')),
+          onPressed: (_isLoading || _resendSecondsLeft > 0) ? null : () => _resendCode(appState),
+          child: Text(
+            _resendSecondsLeft > 0
+                ? '${appState.tr('resend_code')} (${_resendSecondsLeft}s)'
+                : appState.tr('resend_code'),
+          ),
         ),
       ),
     ];

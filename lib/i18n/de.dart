@@ -260,6 +260,7 @@ const Map<String, String> deTexts = {
   'powered_by_footer': 'Bereitgestellt von',
   'invalid_email': 'Ungültige E-Mail-Adresse',
   'password_too_short': 'Passwort ist zu kurz',
+  'password_too_weak': 'Das Passwort muss mindestens einen Buchstaben und eine Zahl enthalten',
   'passwords_do_not_match': 'Passwörter stimmen nicht überein',
   'invalid_input': 'Ungültige Eingabe',
 

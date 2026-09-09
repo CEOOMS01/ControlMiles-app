@@ -34,10 +34,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
+  static final RegExp _emailFormat = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   Future<void> _sendCode(AppState appState) async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+    if (email.isEmpty) {
       _showSnack(appState.tr('field_required'), error: true);
+      return;
+    }
+    // BUG FIX (pre-launch security audit): only checked for the literal
+    // "@" character, not a real format -- upgraded to the same regex used
+    // at login/signup and server-side in create_driver_invite.
+    if (!_emailFormat.hasMatch(email)) {
+      _showSnack(appState.tr('invalid_email'), error: true);
       return;
     }
 

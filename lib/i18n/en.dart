@@ -336,6 +336,7 @@ const Map<String, String> enTexts = {
   'powered_by_footer': 'Powered by',
   'invalid_email': 'Invalid email address',
   'password_too_short': 'Password is too short',
+  'password_too_weak': 'Password must include at least one letter and one number',
   'passwords_do_not_match': 'Passwords do not match',
   'invalid_input': 'Invalid input',
 

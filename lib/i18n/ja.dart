@@ -267,6 +267,7 @@ const Map<String, String> jaTexts = {
   'powered_by_footer': '提供元',
   'invalid_email': 'メールアドレスが無効です',
   'password_too_short': 'パスワードが短すぎます',
+  'password_too_weak': 'パスワードには少なくとも1つの文字と1つの数字を含める必要があります',
   'passwords_do_not_match': 'パスワードが一致しません',
   'invalid_input': '入力が無効です',
 

@@ -268,6 +268,7 @@ const Map<String, String> koTexts = {
   'powered_by_footer': '제공',
   'invalid_email': '유효하지 않은 이메일 주소',
   'password_too_short': '비밀번호가 너무 짧습니다',
+  'password_too_weak': '비밀번호에는 최소 하나의 문자와 하나의 숫자가 포함되어야 합니다',
   'passwords_do_not_match': '비밀번호가 일치하지 않습니다',
   'invalid_input': '잘못된 입력',
 

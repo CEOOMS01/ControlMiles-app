@@ -276,6 +276,7 @@ const Map<String, String> arTexts = {
   'powered_by_footer': 'بدعم من',
   'invalid_email': 'البريد الإلكتروني غير صحيح',
   'password_too_short': 'كلمة المرور قصيرة جداً',
+  'password_too_weak': 'يجب أن تحتوي كلمة المرور على حرف واحد ورقم واحد على الأقل',
   'passwords_do_not_match': 'كلمات المرور غير متطابقة',
   'invalid_input': 'إدخال غير صحيح',
 

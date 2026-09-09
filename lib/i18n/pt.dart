@@ -273,6 +273,7 @@ const Map<String, String> ptTexts = {
   'powered_by_footer': 'Desenvolvido por',
   'invalid_email': 'Endereço de email inválido',
   'password_too_short': 'A senha é muito curta',
+  'password_too_weak': 'A senha deve incluir pelo menos uma letra e um número',
   'passwords_do_not_match': 'As senhas não coincidem',
   'invalid_input': 'Entrada inválida',
 

@@ -281,6 +281,7 @@ const Map<String, String> frTexts = {
   'powered_by_footer': 'Propulsé par',
   'invalid_email': 'Adresse email invalide',
   'password_too_short': 'Le mot de passe est trop court',
+  'password_too_weak': 'Le mot de passe doit contenir au moins une lettre et un chiffre',
   'passwords_do_not_match': 'Les mots de passe ne correspondent pas',
   'invalid_input': 'Entrée invalide',
 

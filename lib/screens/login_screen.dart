@@ -69,6 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  static final RegExp _emailFormat = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  bool _isValidEmailFormat(String email) => _emailFormat.hasMatch(email);
+
   // ============================================================
   // AUTH LOGIC - ACTUALIZADA PARA TU BASE DE DATOS
   // ============================================================
@@ -78,6 +82,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       _showError(appState.tr('field_required'));
+      return;
+    }
+
+    // BUG FIX (pre-launch security audit): there was no email format
+    // validation at all on either login or signup -- 'invalid_email' was
+    // already translated in every i18n file but never actually wired to
+    // any check. Same regex used server-side in create_driver_invite, for
+    // consistency across the project.
+    if (!_isValidEmailFormat(email)) {
+      _showError(appState.tr('invalid_email'));
       return;
     }
 
@@ -100,6 +114,16 @@ class _LoginScreenState extends State<LoginScreen> {
     // Supabase Dashboard to match, under Authentication -> Policies).
     if (!_isLoginMode && password.length < 8) {
       _showError(appState.tr('password_too_short'));
+      return;
+    }
+
+    // BUG FIX (pre-launch security audit): length was the only rule --
+    // "password"/"12345678" both passed. Light complexity floor (needs at
+    // least one letter AND one digit), still UX-layer only same as the
+    // length check above.
+    if (!_isLoginMode &&
+        !(RegExp(r'[A-Za-z]').hasMatch(password) && RegExp(r'[0-9]').hasMatch(password))) {
+      _showError(appState.tr('password_too_weak'));
       return;
     }
 

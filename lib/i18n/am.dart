@@ -254,6 +254,7 @@ const Map<String, String> amTexts = {
   'powered_by_footer': 'የተጎላበተው በ',
   'invalid_email': 'የተሳሳተ ኢሜይል አድራሻ',
   'password_too_short': 'የይለፍ ቃል በጣም አጭር ነው',
+  'password_too_weak': 'የይለፍ ቃል ቢያንስ አንድ ፊደል እና አንድ ቁጥር ማካተት አለበት',
   'passwords_do_not_match': 'የይለፍ ቃሎች አይዛመዱም',
   'invalid_input': 'የተሳሳተ ግቤት',
 

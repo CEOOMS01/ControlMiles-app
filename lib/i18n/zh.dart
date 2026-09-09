@@ -273,6 +273,7 @@ const Map<String, String> zhTexts = {
   'powered_by_footer': '技术支持',
   'invalid_email': '邮箱地址无效',
   'password_too_short': '密码太短',
+  'password_too_weak': '密码必须包含至少一个字母和一个数字',
   'passwords_do_not_match': '两次输入的密码不一致',
   'invalid_input': '输入无效',
 

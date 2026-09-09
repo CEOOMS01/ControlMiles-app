@@ -268,6 +268,7 @@ const Map<String, String> hiTexts = {
   'powered_by_footer': 'द्वारा संचालित',
   'invalid_email': 'अमान्य ईमेल पता',
   'password_too_short': 'पासवर्ड बहुत छोटा है',
+  'password_too_weak': 'पासवर्ड में कम से कम एक अक्षर और एक अंक होना चाहिए',
   'passwords_do_not_match': 'पासवर्ड मेल नहीं खाते',
   'invalid_input': 'अमान्य इनपुट',
 

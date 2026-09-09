@@ -336,6 +336,7 @@ const Map<String, String> esTexts = {
   'powered_by_footer': 'Desarrollado por',
   'invalid_email': 'Correo electrónico inválido',
   'password_too_short': 'La contraseña es demasiado corta',
+  'password_too_weak': 'La contraseña debe incluir al menos una letra y un número',
   'passwords_do_not_match': 'Las contraseñas no coinciden',
   'invalid_input': 'Entrada inválida',
 
