@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
+import '../errors/app_error.dart';
 
 class ClaimDriverSlotScreen extends StatefulWidget {
   const ClaimDriverSlotScreen({super.key});
@@ -65,7 +66,8 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
       Navigator.pushReplacementNamed(context, AppRoutes.driverOperations);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+        final appError = AppError.from(e);
+        setState(() => _error = appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);

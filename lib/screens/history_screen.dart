@@ -10,6 +10,7 @@ import '../i18n/app_texts.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
+import '../errors/app_error.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -180,9 +181,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     } catch (e) {
       debugPrint('[HistoryScreen] Note save error: $e');
       if (!mounted) return;
+      final appError = AppError.from(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700),
       );
     }
@@ -249,9 +251,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     } catch (e) {
       debugPrint('[HistoryScreen] Delete trip error: $e');
       if (!mounted) return;
+      final appError = AppError.from(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700),
       );
     }

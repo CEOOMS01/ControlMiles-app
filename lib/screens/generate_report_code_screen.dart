@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
+import '../errors/app_error.dart';
 
 class GenerateReportCodeScreen extends StatefulWidget {
   const GenerateReportCodeScreen({super.key});
@@ -95,7 +96,9 @@ class _GenerateReportCodeScreenState extends State<GenerateReportCodeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+        final appError = AppError.from(e);
+        final appState = context.read<AppState>();
+        setState(() => _error = appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);

@@ -32,6 +32,7 @@ import '../models/vehicle.dart';
 import '../models/vehicle_geofence.dart';
 import '../services/geofence_service.dart';
 import '../services/organization_service.dart';
+import '../errors/app_error.dart';
 
 class FleetLiveMapScreen extends StatefulWidget {
   const FleetLiveMapScreen({super.key});
@@ -188,8 +189,12 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
       setState(() => _selectedVehicleGeofences = geofences);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${appState.tr('error')}: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(appError.display(appState.tr(appError.messageKey))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

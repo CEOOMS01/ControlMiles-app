@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
+import '../errors/app_error.dart';
 
 class CreateOrganizationScreen extends StatefulWidget {
   const CreateOrganizationScreen({super.key});
@@ -58,7 +59,8 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
       Navigator.pushReplacementNamed(context, AppRoutes.fleetDashboard);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = '${appState.tr('error')}: ${e.toString()}');
+        final appError = AppError.from(e);
+        setState(() => _error = appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);

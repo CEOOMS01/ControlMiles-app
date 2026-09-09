@@ -9,6 +9,7 @@ import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../services/odometer_capture_service.dart';
+import '../errors/app_error.dart';
 
 class TrackingActionButton extends StatefulWidget {
   final String? selectedGigApp;
@@ -183,9 +184,10 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       }
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red,
           ),
         );

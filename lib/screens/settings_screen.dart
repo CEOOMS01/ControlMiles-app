@@ -14,6 +14,7 @@ import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
 import 'generate_report_code_screen.dart';
+import '../errors/app_error.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -136,9 +137,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       }
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -215,9 +217,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     } catch (e) {
       if (mounted) {
         setState(() => _isDeletingOrg = false);
+        // critical:true -- org deletion is destructive/irreversible, gets
+        // its own 720 code range instead of a generic 701.
+        final appError = AppError.from(e, critical: true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -429,9 +434,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     } catch (e) {
       if (mounted) {
         setState(() => _isDeletingAccount = false);
+        // critical:true -- account deletion is destructive/irreversible.
+        final appError = AppError.from(e, critical: true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${appState.tr('error')}: $e'),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700,
           ),
         );

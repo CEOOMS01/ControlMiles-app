@@ -13,6 +13,7 @@ import '../logic/app_state.dart';
 import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
+import '../errors/app_error.dart';
 
 class PendingInviteScreen extends StatefulWidget {
   const PendingInviteScreen({super.key});
@@ -60,9 +61,10 @@ class _PendingInviteScreenState extends State<PendingInviteScreen> {
       Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         setState(() {
           _isProcessing = false;
-          _error = '${appState.tr('error')}: ${e.toString()}';
+          _error = appError.display(appState.tr(appError.messageKey));
         });
       }
     }

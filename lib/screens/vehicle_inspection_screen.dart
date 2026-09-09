@@ -18,6 +18,7 @@ import '../logic/app_state.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_inspection.dart';
 import '../services/inspection_service.dart';
+import '../errors/app_error.dart';
 
 class VehicleInspectionScreen extends StatefulWidget {
   final Vehicle vehicle;
@@ -106,9 +107,10 @@ class _VehicleInspectionScreenState extends State<VehicleInspectionScreen> {
       Navigator.pop(context, result);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         setState(() {
           _isSubmitting = false;
-          _error = '${appState.tr('error')}: $e';
+          _error = appError.display(appState.tr(appError.messageKey));
         });
       }
     }

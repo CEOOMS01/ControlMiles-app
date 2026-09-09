@@ -32,6 +32,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
+import '../errors/app_error.dart';
 
 class OrgModeSwitcher extends StatefulWidget {
   const OrgModeSwitcher({super.key});
@@ -104,9 +105,10 @@ class _OrgModeSwitcherState extends State<OrgModeSwitcher> {
       Navigator.pushNamedAndRemoveUntil(context, target, (route) => false);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(appError.display(appState.tr(appError.messageKey))),
             backgroundColor: Colors.red.shade700,
           ),
         );

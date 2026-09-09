@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import '../errors/app_error.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -57,7 +58,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _showSnack(appState.tr('reset_code_sent'));
       Navigator.pushNamed(context, AppRoutes.resetPassword, arguments: email);
     } catch (e) {
-      if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
+      if (mounted) {
+        final appError = AppError.from(e);
+        _showSnack(appError.display(appState.tr(appError.messageKey)), error: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

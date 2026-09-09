@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
+import '../errors/app_error.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -134,8 +135,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${appState.tr('error')}: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(appError.display(appState.tr(appError.messageKey))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

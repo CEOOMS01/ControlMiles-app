@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../services/incident_service.dart';
+import '../errors/app_error.dart';
 
 Future<void> showReportIncidentSheet(
   BuildContext context, {
@@ -89,7 +90,8 @@ class _ReportIncidentSheetState extends State<_ReportIncidentSheet> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _error = '${appState.tr('error')}: $e');
+        final appError = AppError.from(e);
+        setState(() => _error = appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

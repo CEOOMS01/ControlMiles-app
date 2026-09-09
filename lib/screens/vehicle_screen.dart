@@ -30,6 +30,7 @@ import '../models/vehicle.dart';
 import '../services/maintenance_service.dart';
 import '../services/vehicle_service.dart';
 import 'vehicle_detail_screen.dart';
+import '../errors/app_error.dart';
 
 class VehicleScreen extends StatefulWidget {
   const VehicleScreen({super.key});
@@ -426,8 +427,12 @@ class _VehicleScreenState extends State<VehicleScreen>
       }
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${appState.tr('error')}: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(appError.display(appState.tr(appError.messageKey))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

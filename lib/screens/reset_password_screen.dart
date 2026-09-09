@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import '../errors/app_error.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -61,7 +62,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       if (!mounted) return;
       setState(() => _codeVerified = true);
     } catch (e) {
-      if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
+      if (mounted) {
+        final appError = AppError.from(e);
+        _showSnack(appError.display(appState.tr(appError.messageKey)), error: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -73,7 +77,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       await _authService.requestPasswordReset(widget.email);
       if (mounted) _showSnack(appState.tr('reset_code_sent'));
     } catch (e) {
-      if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
+      if (mounted) {
+        final appError = AppError.from(e);
+        _showSnack(appError.display(appState.tr(appError.messageKey)), error: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -107,7 +114,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       Navigator.pushNamedAndRemoveUntil(
           context, AppRoutes.login, (route) => false);
     } catch (e) {
-      if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
+      if (mounted) {
+        final appError = AppError.from(e);
+        _showSnack(appError.display(appState.tr(appError.messageKey)), error: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

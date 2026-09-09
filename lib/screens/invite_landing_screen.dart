@@ -24,6 +24,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import '../errors/app_error.dart';
 
 class InviteLandingScreen extends StatefulWidget {
   final String token;
@@ -115,7 +116,8 @@ class _InviteLandingScreenState extends State<InviteLandingScreen> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+        final appError = AppError.from(e);
+        setState(() => _error = appError.display(appState.tr(appError.messageKey)));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -164,9 +166,10 @@ class _InviteLandingScreenState extends State<InviteLandingScreen> {
       await _accept(appState);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         setState(() {
           _isProcessing = false;
-          _error = e.toString().replaceFirst('Exception: ', '');
+          _error = appError.display(appState.tr(appError.messageKey));
         });
       }
     }
@@ -189,9 +192,10 @@ class _InviteLandingScreenState extends State<InviteLandingScreen> {
       await _accept(appState);
     } catch (e) {
       if (mounted) {
+        final appError = AppError.from(e);
         setState(() {
           _isProcessing = false;
-          _error = e.toString().replaceFirst('Exception: ', '');
+          _error = appError.display(appState.tr(appError.messageKey));
         });
       }
     }
