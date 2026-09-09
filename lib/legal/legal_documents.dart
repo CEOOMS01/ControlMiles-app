@@ -1,14 +1,28 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/legal/legal_documents.dart
 //
-// DRAFT LEGAL TEXT -- NOT REVIEWED BY AN ATTORNEY. Do not treat this as a
-// finished, publishable Privacy Policy / Terms of Service. It is a working
-// first draft, grounded in what the app actually does as of 2026-08-27
-// (permissions requested, data actually collected/stored, the premium
-// auto-detect feature, fleet/org data sharing), meant to give a real
-// attorney a concrete starting point instead of a blank page. Update
-// lastUpdated below whenever the text changes, and get real legal review
-// before this is linked from the Play Store listing or relied upon.
+// Strengthened 2026-09-09 (explicit user request): removed the user-facing
+// "draft, pending legal review" banner and filled in the previously-open
+// Governing Law placeholder (Maryland, per the user directly). Added the
+// protections real competitor mileage-tracking apps carry that this
+// document didn't (researched live: MileIQ's published Terms/Privacy at
+// mileiq.com/terms and mileiq.com/privacy, Everlance's at everlance.com/
+// terms-of-service and everlance.com/privacy) -- binding arbitration +
+// class action waiver (MileIQ has this; this document didn't), an
+// indemnification clause, and the standard severability/entire-agreement/
+// assignment boilerplate every one of these documents carries and this one
+// was missing entirely. Privacy Policy gained a CCPA/CPRA rights section
+// (California and comparable-law states) and a brief international-users
+// note, matching what Everlance and MileIQ both disclose given a
+// multi-language, non-US-only user base.
+//
+// This was assembled by an AI system against public competitor documents
+// and general legal-drafting practice, not drafted or reviewed by a
+// licensed attorney -- it is not legal advice. The user has explicitly
+// directed that no draft/pending-review notice be shown to end users, but
+// having actual counsel review this before a real dispute, a regulatory
+// inquiry, or a material product change (new data types, new jurisdictions,
+// payment processing changes) remains genuinely advisable, not a formality.
 //
 // Deliberately English-only, not routed through appState.tr() -- same
 // precedent already established in report_service.dart's IrsPurposeCatalog
@@ -18,12 +32,11 @@
 // disclaimer shown inline in Settings (see settings_screen.dart) IS
 // translated -- low translation risk, high value for non-English users.
 
-const String legalDocumentsLastUpdated = 'August 27, 2026';
+const String legalDocumentsLastUpdated = 'September 9, 2026';
 
 const String privacyPolicyEn = '''
 Last updated: $legalDocumentsLastUpdated
-
-This is a draft Privacy Policy, published for transparency while it undergoes legal review. If you have questions, contact privacy@controlmiles.com.
+© 2026 ControlMiles. All rights reserved.
 
 1. WHO WE ARE
 
@@ -58,9 +71,9 @@ Service providers: we use Supabase (database, authentication, and file storage) 
 
 5. THIRD-PARTY GIG PLATFORMS -- NO AFFILIATION
 
-ControlMiles lets you label trips with the name of the gig platform you were working for (for example: Uber, Lyft, DoorDash, Instacart, Amazon Flex, Roadie, Shipt, Veho, Jitsu, Spark Driver, and others), and, if you enable Automatic Detection, can recognize when one of those apps is open on your device.
+ControlMiles lets you label trips with the name of the gig platform you were working for, and, if you enable Automatic Detection, can recognize when one of those apps is open on your device.
 
-ControlMiles is an independent, third-party tool. It is not affiliated with, endorsed by, sponsored by, or officially connected to Uber, Lyft, DoorDash, Instacart, Amazon, Walmart, Shipt, Roadie, or any other platform referenced in the app. All product names, logos, and brand names are trademarks of their respective owners, used here only to describe compatibility. ControlMiles does not access, read, or store any data from those platforms' own apps, accounts, or servers -- it only knows the name of whichever app is currently on your screen.
+ControlMiles is an independent, third-party tool. It is not affiliated with, endorsed by, sponsored by, or officially connected to any gig, delivery, or rideshare platform referenced in the app. All product names, logos, and brand names are trademarks of their respective owners, used here only to describe compatibility. ControlMiles does not access, read, or store any data from those platforms' own apps, accounts, or servers -- it only knows the name of whichever app is currently on your screen.
 
 6. DATA RETENTION
 
@@ -73,27 +86,38 @@ You can delete your account at any time from Settings -- this is permanent and c
 You can revoke location, camera, or Usage Access permissions at any time from your device's system settings; doing so will limit or disable the corresponding features.
 You can turn Automatic Detection off at any time.
 
-8. CHILDREN'S PRIVACY
+8. YOUR PRIVACY RIGHTS (CALIFORNIA AND OTHER U.S. STATES)
+
+If you are a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives you the right to: know what personal information we collect and how we use it; request deletion of your personal information; correct inaccurate personal information; and not be discriminated against for exercising these rights. We do not sell or share your personal information for cross-context behavioral advertising.
+
+Residents of other U.S. states with comparable privacy laws (for example Virginia, Colorado, Connecticut, and Utah) have similar rights, which we honor on the same basis.
+
+To exercise any of these rights, contact privacy@controlmiles.com. We may need to verify your identity before responding.
+
+9. INTERNATIONAL USERS
+
+If you access ControlMiles from outside the United States, your information will be transferred to and processed in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, you may have additional rights under the GDPR or UK GDPR, including the right to access, correct, delete, or port your personal data, and the right to object to certain processing. Contact privacy@controlmiles.com to exercise these rights.
+
+10. CHILDREN'S PRIVACY
 
 ControlMiles is not directed at children and is not intended for use by anyone under the age of 18.
 
-9. SECURITY
+11. SECURITY
 
 We use industry-standard measures to protect your information, including encrypted network connections and access controls. No method of storage or transmission is 100% secure, and we cannot guarantee absolute security.
 
-10. CHANGES TO THIS POLICY
+12. CHANGES TO THIS POLICY
 
 We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last updated" date above.
 
-11. CONTACT US
+13. CONTACT US
 
 Questions about this policy: privacy@controlmiles.com
 ''';
 
 const String termsOfServiceEn = '''
 Last updated: $legalDocumentsLastUpdated
-
-This is a draft Terms of Service, published for transparency while it undergoes legal review. If you have questions, contact legal@controlmiles.com.
+© 2026 ControlMiles. All rights reserved.
 
 1. ACCEPTANCE OF TERMS
 
@@ -113,7 +137,7 @@ You must be at least 18 years old to use ControlMiles. You are responsible for m
 
 5. THIRD-PARTY GIG PLATFORMS -- NO AFFILIATION
 
-ControlMiles is an independent tool that lets you label your own trips with the name of a gig platform (Uber, Lyft, DoorDash, Instacart, Amazon Flex, Roadie, Shipt, Veho, Jitsu, Spark Driver, and others) and, optionally, detect when one of those apps is open on your device. ControlMiles is not affiliated with, endorsed by, or sponsored by any of these companies, and does not access their apps' data, accounts, or servers. You are responsible for complying with the terms of service of any gig, delivery, or rideshare platform you work with; nothing in ControlMiles is intended to help you violate those terms.
+ControlMiles is an independent tool that lets you label your own trips with the name of a gig platform and, optionally, detect when one of those apps is open on your device. ControlMiles is not affiliated with, endorsed by, or sponsored by any gig, delivery, or rideshare company, and does not access their apps' data, accounts, or servers. You are responsible for complying with the terms of service of any gig, delivery, or rideshare platform you work with; nothing in ControlMiles is intended to help you violate those terms.
 
 6. PREMIUM FEATURES AND SUBSCRIPTIONS
 
@@ -133,25 +157,55 @@ ControlMiles, its logo, and its original content are the property of Olympus Mon
 
 10. DISCLAIMER OF WARRANTIES
 
-ControlMiles is provided "as is" and "as available," without warranties of any kind, express or implied. We do not guarantee that GPS tracking, mileage calculations, or OCR odometer readings will be error-free or uninterrupted. You are responsible for reviewing your trip data for accuracy before relying on it.
+ControlMiles is provided "as is" and "as available," without warranties of any kind, express or implied. We do not guarantee that GPS tracking, mileage calculations, or odometer readings will be error-free or uninterrupted. You are responsible for reviewing your trip data for accuracy before relying on it.
 
 11. LIMITATION OF LIABILITY
 
 To the maximum extent permitted by law, Olympus Mont Systems LLC will not be liable for any indirect, incidental, special, or consequential damages, including lost income or lost tax deductions, arising from your use of ControlMiles.
 
-12. TERMINATION
+12. INDEMNIFICATION
+
+You agree to indemnify, defend, and hold harmless Olympus Mont Systems LLC, its officers, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable attorneys' fees) arising out of or related to: your use of ControlMiles; your violation of these Terms; your violation of any law or the rights of a third party; or any data, mileage, odometer, or trip information you submit that is inaccurate or fraudulent.
+
+13. DISPUTE RESOLUTION; BINDING ARBITRATION; CLASS ACTION WAIVER
+
+Please read this section carefully. It affects your legal rights.
+
+Informal resolution first. Before filing a claim against ControlMiles, you agree to first contact us at legal@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
+
+Binding arbitration. If a dispute is not resolved informally, you and Olympus Mont Systems LLC agree that it will be resolved by binding, individual arbitration administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules, rather than in court, except that either party may bring an individual claim in small claims court if it qualifies.
+
+Class action waiver. You and Olympus Mont Systems LLC agree that any arbitration or claim will be conducted on an individual basis only, not as a class, collective, or representative action, and the arbitrator may not consolidate more than one person's claims.
+
+Opt-out. You may opt out of this arbitration agreement by emailing legal@controlmiles.com within 30 days of first agreeing to these Terms, stating your name and that you opt out of arbitration.
+
+This section survives termination of your account and these Terms.
+
+14. TERMINATION
 
 You may stop using ControlMiles and delete your account at any time. We may suspend or terminate accounts that violate these Terms.
 
-13. GOVERNING LAW
+15. GOVERNING LAW
 
-[Placeholder -- to be finalized with counsel: state/jurisdiction whose law governs these Terms.]
+These Terms are governed by the laws of the State of Maryland, without regard to its conflict-of-laws principles.
 
-14. CHANGES TO THESE TERMS
+16. SEVERABILITY
+
+If any provision of these Terms is found unenforceable or invalid, that provision will be limited or eliminated to the minimum extent necessary, and the remaining provisions will remain in full force and effect.
+
+17. ENTIRE AGREEMENT
+
+These Terms, together with the Privacy Policy, are the entire agreement between you and Olympus Mont Systems LLC regarding ControlMiles, and supersede any prior agreements or understandings, written or oral, regarding that subject matter.
+
+18. ASSIGNMENT
+
+You may not assign or transfer these Terms without our prior written consent. We may assign these Terms without restriction, including in connection with a merger, acquisition, or sale of assets.
+
+19. CHANGES TO THESE TERMS
 
 We may update these Terms from time to time. Continued use of ControlMiles after a change constitutes acceptance of the updated Terms.
 
-15. CONTACT US
+20. CONTACT US
 
 Questions about these Terms: legal@controlmiles.com
 ''';
@@ -168,11 +222,10 @@ Questions about these Terms: legal@controlmiles.com
 // since that's what's actually relevant to a Fleet admin or a driver
 // operating under one -- shown instead of the individual versions
 // whenever AppState.isFleetAccount is true (see settings_screen.dart).
-// Same draft/pending-legal-review status as the individual versions.
+// Strengthened alongside the individual versions above, same date/reasons.
 const String privacyPolicyFleetEn = '''
 Last updated: $legalDocumentsLastUpdated
-
-This is a draft Privacy Policy for Fleet/organization accounts, published for transparency while it undergoes legal review. If you have questions, contact privacy@controlmiles.com.
+© 2026 ControlMiles. All rights reserved.
 
 1. WHO THIS APPLIES TO
 
@@ -214,7 +267,7 @@ Between organizations: a driver's data is only visible to the organization(s) th
 
 6. THIRD-PARTY GIG PLATFORMS -- NO AFFILIATION
 
-If drivers under an organization also label trips with a gig/delivery platform name (for example: Uber, Lyft, DoorDash, Instacart, Amazon Flex, Roadie, Shipt, Veho, Jitsu, Spark Driver, and others), ControlMiles is not affiliated with, endorsed by, or sponsored by any of those platforms. It does not access, read, or store any data from those platforms' own apps, accounts, or servers.
+If drivers under an organization also label trips with a gig/delivery platform name, ControlMiles is not affiliated with, endorsed by, or sponsored by any of those platforms. It does not access, read, or store any data from those platforms' own apps, accounts, or servers.
 
 7. DATA RETENTION
 
@@ -224,27 +277,34 @@ We retain an organization's driver, vehicle, trip, and inspection data for as lo
 
 A driver can delete individual trips they logged, subject to the organization's own record-keeping policies. A driver can revoke location, camera, or Usage Access permissions at any time from their device's system settings; doing so will limit or disable the corresponding features for trips logged under the organization.
 
-9. CHILDREN'S PRIVACY
+9. PRIVACY RIGHTS (CALIFORNIA AND OTHER U.S. STATES)
+
+If a driver is a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives them the right to know what personal information we collect and how we use it, request deletion, correct inaccurate information, and not be discriminated against for exercising these rights, subject to the organization's own record-keeping obligations for fleet/business records. We do not sell or share personal information for cross-context behavioral advertising. Residents of other U.S. states with comparable privacy laws have similar rights, honored on the same basis. Contact privacy@controlmiles.com to exercise these rights.
+
+10. INTERNATIONAL USERS
+
+If an organization or driver accesses ControlMiles from outside the United States, their information will be transferred to and processed in the United States. Organizations or drivers located in the European Economic Area, United Kingdom, or Switzerland may have additional rights under the GDPR or UK GDPR. Contact privacy@controlmiles.com to exercise these rights.
+
+11. CHILDREN'S PRIVACY
 
 ControlMiles is not directed at children and is not intended for use by anyone under the age of 18.
 
-10. SECURITY
+12. SECURITY
 
 We use industry-standard measures to protect this information, including encrypted network connections and access controls. No method of storage or transmission is 100% secure, and we cannot guarantee absolute security.
 
-11. CHANGES TO THIS POLICY
+13. CHANGES TO THIS POLICY
 
 We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last updated" date above.
 
-12. CONTACT US
+14. CONTACT US
 
 Questions about this policy: privacy@controlmiles.com
 ''';
 
 const String termsOfServiceFleetEn = '''
 Last updated: $legalDocumentsLastUpdated
-
-This is a draft Terms of Service for Fleet/organization accounts, published for transparency while it undergoes legal review. If you have questions, contact legal@controlmiles.com.
+© 2026 ControlMiles. All rights reserved.
 
 1. ACCEPTANCE OF TERMS
 
@@ -294,19 +354,49 @@ ControlMiles is provided "as is" and "as available," without warranties of any k
 
 To the maximum extent permitted by law, Olympus Mont Systems LLC will not be liable for any indirect, incidental, special, or consequential damages, including lost income, lost tax deductions, or employment-related disputes between an organization and its drivers, arising from use of ControlMiles.
 
-13. TERMINATION
+13. INDEMNIFICATION
+
+The organization agrees to indemnify, defend, and hold harmless Olympus Mont Systems LLC, its officers, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable attorneys' fees) arising out of or related to: the organization's or its drivers' use of ControlMiles; violation of these Terms; violation of any law, including employment or privacy law, in how the organization uses driver data; or any data submitted through the Fleet account that is inaccurate or fraudulent.
+
+14. DISPUTE RESOLUTION; BINDING ARBITRATION; CLASS ACTION WAIVER
+
+Please read this section carefully. It affects your legal rights.
+
+Informal resolution first. Before filing a claim against ControlMiles, the organization or driver agrees to first contact us at legal@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
+
+Binding arbitration. If a dispute is not resolved informally, the parties agree that it will be resolved by binding, individual arbitration administered by the American Arbitration Association (AAA) under its Commercial Arbitration Rules (for organizations) or Consumer Arbitration Rules (for individual drivers), rather than in court, except that either party may bring an individual claim in small claims court if it qualifies.
+
+Class action waiver. The parties agree that any arbitration or claim will be conducted on an individual or single-organization basis only, not as a class, collective, or representative action, and the arbitrator may not consolidate more than one party's claims.
+
+This section does not apply to, and does not limit, disputes between an organization and its own drivers regarding employment matters -- those remain governed by applicable employment law, not this Terms of Service.
+
+This section survives termination of the Fleet account and these Terms.
+
+15. TERMINATION
 
 An organization may cancel its Fleet account, and a driver may leave an organization, at any time. We may suspend or terminate a Fleet account that violates these Terms.
 
-14. GOVERNING LAW
+16. GOVERNING LAW
 
-[Placeholder -- to be finalized with counsel: state/jurisdiction whose law governs these Terms.]
+These Terms are governed by the laws of the State of Maryland, without regard to its conflict-of-laws principles.
 
-15. CHANGES TO THESE TERMS
+17. SEVERABILITY
+
+If any provision of these Terms is found unenforceable or invalid, that provision will be limited or eliminated to the minimum extent necessary, and the remaining provisions will remain in full force and effect.
+
+18. ENTIRE AGREEMENT
+
+These Terms, together with the Fleet Privacy Policy, are the entire agreement between the organization and Olympus Mont Systems LLC regarding ControlMiles, and supersede any prior agreements or understandings, written or oral, regarding that subject matter.
+
+19. ASSIGNMENT
+
+An organization may not assign or transfer these Terms without our prior written consent. We may assign these Terms without restriction, including in connection with a merger, acquisition, or sale of assets.
+
+20. CHANGES TO THESE TERMS
 
 We may update these Terms from time to time. Continued use of ControlMiles after a change constitutes acceptance of the updated Terms.
 
-16. CONTACT US
+21. CONTACT US
 
 Questions about these Terms: legal@controlmiles.com
 ''';

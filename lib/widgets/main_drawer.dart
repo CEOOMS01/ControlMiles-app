@@ -368,7 +368,10 @@ class MainDrawer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text('${appState.tr('copyright')} 2026 ControlMiles', style: TextStyle(color: faintColor, fontSize: 9)),
+          // BUG FIX (pedido explícito, 2026-09-09): el orden estaba al
+          // revés -- renderizaba "All rights reserved 2026 ControlMiles"
+          // en vez de "© 2026 ControlMiles. All rights reserved.".
+          Text('© 2026 ControlMiles. ${appState.tr('copyright')}.', style: TextStyle(color: faintColor, fontSize: 9)),
         ],
       ),
     );
