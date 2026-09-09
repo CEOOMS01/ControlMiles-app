@@ -476,7 +476,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 context: context,
                 firstDate:        DateTime(2024),
                 lastDate:         DateTime.now(),
-                initialDateRange: _dateRange,
+                // BUG FIX (pedido explícito): el picker abría con el rango
+                // actual (hasta 12 meses) ya resaltado en el calendario --
+                // esa selección previa quedaba "encima" confundiendo la
+                // vista. Ahora abre en blanco, listo para elegir un rango
+                // nuevo desde cero cada vez.
                 builder: (ctx, child) => Theme(
                   data: Theme.of(ctx).copyWith(
                     colorScheme: isDark
