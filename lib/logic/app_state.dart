@@ -154,10 +154,33 @@ class AppState extends ChangeNotifier {
     return DateTime.now().difference(_accountCreatedAt!).inDays > _freeTrialDays;
   }
 
-  /// null = unlimited (Premium, exempt, or Fleet). 1 for Free, 2 for Basic.
+  /// True while on the "Started" (free trial) tier -- never subscribed,
+  /// trial not yet expired. Explicit user requirement (2026-09-09): show
+  /// this state as its own named tier in the Subscription screen instead
+  /// of leaving it implicit.
+  bool get isOnFreeTrial {
+    if (isFleetAccount || _tierEnforcementExempt) return false;
+    if (_premiumEntitled || _baseEntitled) return false;
+    return !isFreeTrialExpired;
+  }
+
+  /// Days left in the Started trial, floored at 0. Null when not
+  /// applicable (subscribed, exempt, Fleet, or unknown account age).
+  int? get freeTrialDaysLeft {
+    if (!isOnFreeTrial || _accountCreatedAt == null) return null;
+    final elapsed = DateTime.now().difference(_accountCreatedAt!).inDays;
+    final remaining = _freeTrialDays - elapsed;
+    return remaining < 0 ? 0 : remaining;
+  }
+
+  /// null = unlimited (exempt or Fleet). 5 for Premium, 1 for Started
+  /// (trial) or Basic -- mirrors fn_enforce_vehicle_count_limit exactly
+  /// (explicit user requirement, 2026-09-09: Started/Basic both cap at 1,
+  /// Premium caps at 5 -- Premium used to be unlimited here, a real gap
+  /// since the server-side trigger enforced no cap for it either).
   int? get maxVehicles {
-    if (isFleetAccount || _tierEnforcementExempt || _premiumEntitled) return null;
-    return _baseEntitled ? 2 : 1;
+    if (isFleetAccount || _tierEnforcementExempt) return null;
+    return _premiumEntitled ? 5 : 1;
   }
   List<PendingInvite> get pendingInvites => _pendingInvites;
   bool get hasPendingInvites => _pendingInvites.isNotEmpty;

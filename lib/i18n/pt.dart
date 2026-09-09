@@ -345,9 +345,12 @@ const Map<String, String> ptTexts = {
   'trial_expired': 'Teste expirado',
   'subscription_active': 'Assinatura ativa',
   'subscription_required': 'Assinatura necessária',
-  'premium_plan_description': 'Desbloqueie a Detecção Automática e outros recursos premium.',
-  'base_plan_description': 'A experiência principal do ControlMiles.',
+  'premium_plan_description': 'Desbloqueie a Detecção Automática e outros recursos premium. Até 5 veículos.',
+  'base_plan_description': 'A experiência principal do ControlMiles. 1 veículo.',
   'current_plan': 'Plano atual',
+  'started_plan': 'Started (teste grátis)',
+  'started_plan_description': 'Seu teste grátis de 30 dias. 1 veículo.',
+  'trial_days_left': '{days} dias restantes',
   'subscriptions_not_configured': 'As assinaturas ainda não estão disponíveis.',
 
   // ============================================================

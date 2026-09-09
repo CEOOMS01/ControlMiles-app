@@ -453,9 +453,12 @@ const Map<String, String> enTexts = {
   'trial_expired': 'Trial expired',
   'subscription_active': 'Subscription active',
   'subscription_required': 'Subscription required',
-  'premium_plan_description': 'Unlock Automatic Detection and other premium features.',
-  'base_plan_description': 'The core ControlMiles experience.',
+  'premium_plan_description': 'Unlock Automatic Detection and other premium features. Up to 5 vehicles.',
+  'base_plan_description': 'The core ControlMiles experience. 1 vehicle.',
   'current_plan': 'Current plan',
+  'started_plan': 'Started (free trial)',
+  'started_plan_description': 'Your 30-day free trial. 1 vehicle.',
+  'trial_days_left': '{days} days left',
   'subscriptions_not_configured': 'Subscriptions are not available yet.',
 
   // ============================================================

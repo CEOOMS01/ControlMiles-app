@@ -2,13 +2,16 @@
 // lib/screens/subscription_screen.dart
 //
 // Real Stripe subscription management (see [[project_controlmiles]]).
-// Two real tiers (2026-08-28): Base ($5.99, core app usage -- no
-// enforcement built yet, see AppState.baseEntitled's own comment) and
-// Premium ($9.99, adds Automatic Detection on top of everything Base
-// has). This screen never collects a card number -- "Upgrade" and
-// "Manage subscription" both call a Supabase edge function that returns
-// a Stripe-hosted URL, opened externally via url_launcher. Payment
-// details go straight to Stripe; this screen only ever reflects
+// Three-tier model (updated 2026-09-09, price aligned with the
+// competitive research behind controlmiles-web's /pricing page):
+// Started (the automatic 30-day free trial, no purchase -- see
+// AppState.isFreeTrialExpired/_freeTrialDays -- 1 vehicle), Basic
+// ($4.99, 1 vehicle, no trial expiry), and Premium ($9.99, up to 5
+// vehicles, adds Automatic Detection on top of everything Basic has).
+// This screen never collects a card number -- "Upgrade" and "Manage
+// subscription" both call a Supabase edge function that returns a
+// Stripe-hosted URL, opened externally via url_launcher. Payment details
+// go straight to Stripe; this screen only ever reflects
 // AppState.baseEntitled/premiumEntitled, which stripe-webhook keeps in
 // sync server-side.
 
@@ -184,6 +187,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final baseEntitled = appState.baseEntitled;
     final premiumEntitled = appState.premiumEntitled;
+    final onFreeTrial = appState.isOnFreeTrial;
+    final trialDaysLeft = appState.freeTrialDaysLeft;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
@@ -195,12 +200,58 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          if (onFreeTrial) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        appState.tr('started_plan'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        ),
+                      ),
+                      Icon(Icons.verified_rounded, color: Colors.green, size: 18),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    appState.tr('started_plan_description'),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                    ),
+                  ),
+                  if (trialDaysLeft != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      appState.tr('trial_days_left').replaceFirst('{days}', '$trialDaysLeft'),
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           _buildTierCard(
             appState,
             isDark: isDark,
             titleKey: 'basic_plan',
             descriptionKey: 'base_plan_description',
-            priceLabel: '\$5.99/mo',
+            priceLabel: '\$4.99/mo',
             isCurrent: baseEntitled && !premiumEntitled,
             // Premium already includes Base -- no point offering a
             // downgrade-shaped "Upgrade to Base" button to a Premium

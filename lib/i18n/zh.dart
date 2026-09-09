@@ -345,9 +345,12 @@ const Map<String, String> zhTexts = {
   'trial_expired': '试用期已过期',
   'subscription_active': '订阅已激活',
   'subscription_required': '需要订阅',
-  'premium_plan_description': '解锁自动检测和其他高级功能。',
-  'base_plan_description': 'ControlMiles 核心体验。',
+  'premium_plan_description': '解锁自动检测和其他高级功能。最多5辆车。',
+  'base_plan_description': 'ControlMiles 核心体验。1辆车。',
   'current_plan': '当前套餐',
+  'started_plan': 'Started（免费试用）',
+  'started_plan_description': '您的30天免费试用。1辆车。',
+  'trial_days_left': '剩余{days}天',
   'subscriptions_not_configured': '订阅功能尚未开放。',
 
   // ============================================================

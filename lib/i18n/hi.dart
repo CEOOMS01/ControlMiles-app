@@ -318,6 +318,12 @@ const Map<String, String> hiTexts = {
   'trial_expired': 'ट्रायल समाप्त',
   'subscription_active': 'सब्सक्रिप्शन सक्रिय',
   'subscription_required': 'सब्सक्रिप्शन आवश्यक है',
+  'premium_plan_description': 'ऑटोमैटिक डिटेक्शन और अन्य प्रीमियम सुविधाएँ अनलॉक करें। 5 वाहनों तक।',
+  'base_plan_description': 'मुख्य ControlMiles अनुभव। 1 वाहन।',
+  'current_plan': 'वर्तमान प्लान',
+  'started_plan': 'Started (मुफ़्त ट्रायल)',
+  'started_plan_description': 'आपका 30-दिन का मुफ़्त ट्रायल। 1 वाहन।',
+  'trial_days_left': '{days} दिन शेष',
 
   // ============================================================
   // फ्लीट

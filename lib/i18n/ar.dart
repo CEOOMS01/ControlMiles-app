@@ -326,6 +326,12 @@ const Map<String, String> arTexts = {
   'trial_expired': 'انتهت الفترة التجريبية',
   'subscription_active': 'الاشتراك نشط',
   'subscription_required': 'الاشتراك مطلوب',
+  'premium_plan_description': 'افتح الكشف التلقائي وميزات مميزة أخرى. حتى 5 مركبات.',
+  'base_plan_description': 'تجربة ControlMiles الأساسية. مركبة واحدة.',
+  'current_plan': 'الباقة الحالية',
+  'started_plan': 'Started (تجربة مجانية)',
+  'started_plan_description': 'تجربتك المجانية لمدة 30 يومًا. مركبة واحدة.',
+  'trial_days_left': 'متبقٍ {days} يومًا',
 
   // ============================================================
   // FLEET
