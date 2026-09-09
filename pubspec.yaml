@@ -18,7 +18,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
-  # --- AI & OCR (Automatic Odometer Scanning) ---
+  # --- On-device OCR (odometer number recognition, google_mlkit --
+  # no cloud API, no AI branding: this is text recognition, not AI) ---
   google_mlkit_text_recognition: ^0.15.0
 
   # --- Local storage ---
@@ -44,6 +45,10 @@ dependencies:
   camera: ^0.12.0
   image_picker: ^1.1.0
   exif: ^3.3.0
+  # Client-side compression before upload (odometer evidence photos) --
+  # previously raw camera bytes went straight to Storage with only a
+  # post-hoc 50KB-8MB size gate that rejected instead of compressing.
+  flutter_image_compress: ^2.5.1
 
   # --- Supabase ---
   supabase_flutter: ^2.5.6

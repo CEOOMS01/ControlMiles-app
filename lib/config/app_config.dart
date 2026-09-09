@@ -108,7 +108,13 @@ class AppConfig {
   /// Validate file size
   static bool isValidFileSize(File file) {
 
-    final bytes = file.lengthSync();
+    return isValidByteSize(file.lengthSync());
+  }
+
+  /// Same bounds as [isValidFileSize], but against an in-memory byte count
+  /// -- used after client-side compression, where there's no longer a file
+  /// on disk matching the uploaded bytes.
+  static bool isValidByteSize(int bytes) {
 
     final maxBytes = maxPhotoSizeMb * 1024 * 1024;
     final minBytes = minPhotoSizeKb * 1024;

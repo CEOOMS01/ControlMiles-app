@@ -4,6 +4,7 @@
 
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:crypto/crypto.dart';
 import 'audit_service.dart';
@@ -12,6 +13,41 @@ import '../i18n/app_texts.dart';
 
 class OdometerCaptureService {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  // Client-side compression before upload (real production-readiness gap,
+  // found during the OCR/odometer review: raw camera bytes at
+  // ResolutionPreset.high went straight to Storage, with only a post-hoc
+  // 50KB-8MB size gate that REJECTS an oversized photo outright instead of
+  // shrinking it -- a real cost/reliability concern on a field app over
+  // cellular data). Files already reasonably small are left untouched --
+  // no point spending CPU compressing something that's already fine, and
+  // it avoids any risk of compression making a small/simple image bigger.
+  static const int _kCompressionSkipThresholdBytes = 900 * 1024; // ~900KB
+  static const int _kCompressionMinWidth = 1600;
+  static const int _kCompressionMinHeight = 1600;
+  static const int _kCompressionQuality = 80;
+
+  Future<Uint8List> _compressForUpload(Uint8List original) async {
+    if (original.lengthInBytes <= _kCompressionSkipThresholdBytes) {
+      return original;
+    }
+    try {
+      final compressed = await FlutterImageCompress.compressWithList(
+        original,
+        minWidth: _kCompressionMinWidth,
+        minHeight: _kCompressionMinHeight,
+        quality: _kCompressionQuality,
+      );
+      // Only trust the compressed result if it actually helped -- never
+      // upload something bigger than what we started with.
+      if (compressed.isNotEmpty && compressed.length < original.length) {
+        return compressed;
+      }
+    } catch (e) {
+      debugPrint('[ControlMiles] Odometer photo compression failed, uploading original: $e');
+    }
+    return original;
+  }
 
   /// Procesa la evidencia (foto + valor) y, si sessionId no es null,
   /// actualiza la sesión en Supabase.
@@ -110,16 +146,9 @@ class OdometerCaptureService {
       // BUG FIX: AppConfig.isValidFileSize / isValidExtension ya existían
       // con las reglas definidas (8MB máx, 50KB mín, jpg/jpeg/png) pero nada
       // las llamaba — cualquier archivo, de cualquier tamaño o formato, se
-      // subía directo a Storage sin chequeo. Se valida antes de leer los
-      // bytes completos a memoria.
-      if (!AppConfig.isValidFileSize(file)) {
-        throw Exception(
-          AppTexts.get('photo_size_out_of_range', language.code)
-              .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
-              .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
-        );
-      }
-
+      // subía directo a Storage sin chequeo. Extensión se valida antes de
+      // leer los bytes; el tamaño se valida DESPUÉS de comprimir (ver
+      // _compressForUpload), ya que ahora eso es lo que realmente se sube.
       if (!AppConfig.isValidExtension(file.path)) {
         throw Exception(
           AppTexts.get('photo_format_not_supported', language.code)
@@ -127,7 +156,17 @@ class OdometerCaptureService {
         );
       }
 
-      final bytes = await file.readAsBytes();
+      final rawBytes = await file.readAsBytes();
+      final bytes = await _compressForUpload(rawBytes);
+
+      if (!AppConfig.isValidByteSize(bytes.lengthInBytes)) {
+        throw Exception(
+          AppTexts.get('photo_size_out_of_range', language.code)
+              .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
+              .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
+        );
+      }
+
       final fileHash = sha256.convert(bytes).toString();
       final fileName = 'odo_${isStart ? 'start' : 'end'}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final storagePath = '$userId/$fileName';
@@ -326,14 +365,9 @@ class OdometerCaptureService {
     // hardcoded SPANISH exception text instead of going through
     // AppTexts.get(..., language.code) like processEvidence does -- a user
     // on any other language would see Spanish text here regardless of
-    // their app language setting.
-    if (!AppConfig.isValidFileSize(file)) {
-      throw Exception(
-        AppTexts.get('photo_size_out_of_range', language.code)
-            .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
-            .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
-      );
-    }
+    // their app language setting. Extension is checked before compression
+    // (fail fast); size is checked after, against the compressed bytes --
+    // same reasoning as processEvidence.
     if (!AppConfig.isValidExtension(file.path)) {
       throw Exception(
         AppTexts.get('photo_format_not_supported', language.code)
@@ -341,7 +375,16 @@ class OdometerCaptureService {
       );
     }
 
-    final bytes = await file.readAsBytes();
+    final rawBytes = await file.readAsBytes();
+    final bytes = await _compressForUpload(rawBytes);
+
+    if (!AppConfig.isValidByteSize(bytes.lengthInBytes)) {
+      throw Exception(
+        AppTexts.get('photo_size_out_of_range', language.code)
+            .replaceFirst('{min}', AppConfig.minPhotoSizeKb.toString())
+            .replaceFirst('{max}', AppConfig.maxPhotoSizeMb.toString()),
+      );
+    }
     final fileHash = sha256.convert(bytes).toString();
     final fileName = 'odo_weekly_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final storagePath = '${user.id}/$fileName';
