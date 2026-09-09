@@ -42,6 +42,13 @@ class TrackingActionButton extends StatefulWidget {
   final Future<bool> Function()? canStart;
   final String? cannotStartMessage;
 
+  // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): the
+  // vehicle a driver picked themselves via FleetVehiclePickerScreen when
+  // their org's vehicle_assignment_mode is 'open'. Threaded straight
+  // through to TrackingController.startTripFlow -- see its own doc
+  // comment. Always null for Gig and for 'fixed'-mode fleet drivers.
+  final String? preSelectedVehicleId;
+
   const TrackingActionButton({
     super.key,
     required this.selectedGigApp,
@@ -50,6 +57,7 @@ class TrackingActionButton extends StatefulWidget {
     this.onTripStarted,
     this.canStart,
     this.cannotStartMessage,
+    this.preSelectedVehicleId,
   });
 
   @override
@@ -130,6 +138,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             // in tracking_controller.dart for why this needs to be threaded
             // through at all (RLS visibility for fleet admins).
             organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
+            preSelectedVehicleId: appState.isFleetDriver ? widget.preSelectedVehicleId : null,
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {
             _pulseController.repeat();

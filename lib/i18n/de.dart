@@ -738,4 +738,9 @@ const Map<String, String> deTexts = {
   // Widerruf (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'Flottenzugriff entfernt',
   'org_access_revoked_body': 'Ihr Flottenadministrator hat Ihren Zugriff auf diese Organisation entfernt. Melden Sie sich ab, um fortzufahren.',
+
+  // Offene/rotierende Fahrzeugzuweisung (Fleet Sprint 4, 2026-09-09)
+  'fleet_select_vehicle_button': 'Fahrzeug auswählen',
+  'fleet_vehicle_picker_title': 'Fahrzeug wählen',
+  'fleet_vehicle_picker_empty': 'Derzeit sind keine Fahrzeuge verfügbar -- alle Flottenfahrzeuge werden gerade genutzt.',
 };

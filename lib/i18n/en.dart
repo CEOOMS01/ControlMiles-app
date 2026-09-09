@@ -802,4 +802,9 @@ const Map<String, String> enTexts = {
   // Revocation (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'Fleet access removed',
   'org_access_revoked_body': 'Your fleet admin has removed your access to this organization. Sign out to continue.',
+
+  // Open/rotating vehicle assignment (Fleet Sprint 4, 2026-09-09)
+  'fleet_select_vehicle_button': 'Select vehicle',
+  'fleet_vehicle_picker_title': 'Choose a vehicle',
+  'fleet_vehicle_picker_empty': 'No vehicles available right now -- every fleet vehicle is currently in use.',
 };

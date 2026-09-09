@@ -452,4 +452,9 @@ const Map<String, String> jaTexts = {
   // アクセス取り消し（Fleet Sprint 3、2026-09-09）
   'org_access_revoked_title': 'フリートへのアクセスが削除されました',
   'org_access_revoked_body': 'フリート管理者がこの組織へのあなたのアクセスを削除しました。続行するにはサインアウトしてください。',
+
+  // オープン／ローテーション車両割り当て（Fleet Sprint 4、2026-09-09）
+  'fleet_select_vehicle_button': '車両を選択',
+  'fleet_vehicle_picker_title': '車両を選んでください',
+  'fleet_vehicle_picker_empty': '現在利用可能な車両はありません -- すべてのフリート車両が使用中です。',
 };

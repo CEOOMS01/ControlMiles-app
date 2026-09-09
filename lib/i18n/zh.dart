@@ -738,4 +738,9 @@ const Map<String, String> zhTexts = {
   // 撤销访问权限（Fleet Sprint 3，2026-09-09）
   'org_access_revoked_title': '车队访问权限已移除',
   'org_access_revoked_body': '你的车队管理员已移除你对该组织的访问权限。请登出以继续。',
+
+  // 开放式/轮换车辆分配（Fleet Sprint 4，2026-09-09）
+  'fleet_select_vehicle_button': '选择车辆',
+  'fleet_vehicle_picker_title': '选择一辆车',
+  'fleet_vehicle_picker_empty': '目前没有可用车辆——所有车队车辆都在使用中。',
 };

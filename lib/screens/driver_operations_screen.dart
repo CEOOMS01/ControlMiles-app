@@ -31,6 +31,7 @@ import '../tracking/tracking_controller.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/org_mode_switcher.dart';
+import 'fleet_vehicle_picker_screen.dart';
 import 'vehicle_inspection_screen.dart';
 import 'inspection_detail_screen.dart';
 import 'report_incident_sheet.dart';
@@ -52,6 +53,16 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   bool _isLoadingVehicle = true;
   bool _tripIsActive = false;
   bool _revocationDialogShown = false;
+
+  // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): only
+  // relevant when the org's vehicle_assignment_mode is 'open' (web-admin
+  // configured) AND this driver has no fixed assignment. _openModeVehicleId
+  // is the driver's own per-trip pick (FleetVehiclePickerScreen), threaded
+  // into TrackingActionButton -- never written to
+  // vehicles.assigned_driver_id, and resets naturally each time this
+  // screen is recreated (after ShiftEndedScreen -> "Start next shift").
+  bool _openAssignmentMode = false;
+  String? _openModeVehicleId;
 
   @override
   void initState() {
@@ -125,12 +136,21 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   Future<void> _loadVehicle() async {
     final appState = context.read<AppState>();
     final userId = appState.currentUserId;
+    final orgId = appState.defaultOrgId;
     if (userId == null) return;
 
     final vehicle = await _vehicleService.getActiveOrAssignedVehicle(
       userId,
-      organizationId: appState.defaultOrgId,
+      organizationId: orgId,
     );
+
+    // Fleet Sprint 4: no fixed assignment found -- check whether this
+    // org even allows picking one before offering that UI at all.
+    var openMode = false;
+    if (vehicle == null && orgId != null) {
+      final assignmentMode = await _vehicleService.getVehicleAssignmentMode(orgId);
+      openMode = assignmentMode == 'open';
+    }
 
     // Read-only ("modo lectura del lado del conductor" -- explicit user
     // requirement): the last inspection on record for this vehicle,
@@ -144,6 +164,28 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
         _vehicle = vehicle;
         _latestInspection = latestInspection;
         _isLoadingVehicle = false;
+        _openAssignmentMode = openMode;
+      });
+    }
+  }
+
+  Future<void> _pickVehicle() async {
+    final appState = context.read<AppState>();
+    final orgId = appState.defaultOrgId;
+    if (orgId == null) return;
+
+    final picked = await Navigator.push<Vehicle>(
+      context,
+      MaterialPageRoute(builder: (_) => FleetVehiclePickerScreen(organizationId: orgId)),
+    );
+    if (picked == null || !mounted) return;
+
+    final latestInspection = await _inspectionService.getLatestForVehicle(picked.id);
+    if (mounted) {
+      setState(() {
+        _vehicle = picked;
+        _openModeVehicleId = picked.id;
+        _latestInspection = latestInspection;
       });
     }
   }
@@ -278,6 +320,27 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Fleet Sprint 4: only offered when this org is 'open'
+                  // mode and no fixed assignment resolved -- 'fixed'-mode
+                  // drivers and drivers with a real assignment never see
+                  // this button at all.
+                  if (_vehicle == null && _openAssignmentMode)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _pickVehicle,
+                        icon: const Icon(Icons.local_shipping_rounded, size: 18),
+                        label: Text(
+                          appState.tr('fleet_select_vehicle_button').toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
                   if (_vehicle != null)
                     SizedBox(
                       width: double.infinity,
@@ -345,6 +408,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       // that decision, not ask it via a different UI).
                       selectedGigApp: 'custom',
                       selectedIrsPurpose: 'business',
+                      preSelectedVehicleId: _openModeVehicleId,
                       canStart: _canStartTrip,
                       cannotStartMessage: appState.tr('dvir_required_before_start'),
                       onTripStarted: () => setState(() => _tripIsActive = true),

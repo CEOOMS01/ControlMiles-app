@@ -463,4 +463,9 @@ const Map<String, String> hiTexts = {
   // पहुंच रद्द करना (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'फ्लीट पहुंच हटा दी गई',
   'org_access_revoked_body': 'आपके फ्लीट व्यवस्थापक ने इस संगठन तक आपकी पहुंच हटा दी है। जारी रखने के लिए साइन आउट करें।',
+
+  // खुला/घूर्णन वाहन असाइनमेंट (Fleet Sprint 4, 2026-09-09)
+  'fleet_select_vehicle_button': 'वाहन चुनें',
+  'fleet_vehicle_picker_title': 'एक वाहन चुनें',
+  'fleet_vehicle_picker_empty': 'अभी कोई वाहन उपलब्ध नहीं है -- फ्लीट के सभी वाहन उपयोग में हैं।',
 };

@@ -163,6 +163,13 @@ class TrackingController {
     // trip through it, since the column was always null regardless of who
     // was driving.
     String? organizationId,
+    // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): only
+    // meaningful alongside organizationId, when that org's
+    // vehicle_assignment_mode is 'open' -- the driver picked this vehicle
+    // themselves via FleetVehiclePickerScreen just before calling this.
+    // null in 'fixed' mode (the existing assigned_driver_id lookup keeps
+    // deciding it, unchanged) and always null for Gig.
+    String? preSelectedVehicleId,
     // Premium auto-detect (explicit user requirement): when true AND a
     // shift-start odometer reading was already captured at activation
     // time, skip OdometerCaptureScreen entirely and carry that reading
@@ -191,8 +198,11 @@ class TrackingController {
       // Fleet Phase 3: getActiveOrAssignedVehicle() es el único punto de la
       // rama Gig/Fleet para "qué vehículo" -- ver su comentario en
       // VehicleService antes de reimplementar esta decisión en otro lado.
-      final activeVehicle = await VehicleService()
-          .getActiveOrAssignedVehicle(user.id, organizationId: organizationId);
+      final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
+        user.id,
+        organizationId: organizationId,
+        preSelectedVehicleId: preSelectedVehicleId,
+      );
 
       // Fleet Phase 5: live map needs these on every GPS tick (see
       // _smartSync) -- set once here, cleared in _resetState(), same
