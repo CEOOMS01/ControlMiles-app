@@ -233,7 +233,10 @@ class TrackingController {
       // no solo en State) es el guard correcto acá, ya que este método
       // estático no tiene su propio `mounted`.
       if (!context.mounted) {
-        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        await Supabase.instance.client
+            .from("sessions")
+            .delete()
+            .eq("id", sessionId);
         _resetState();
         return;
       }
@@ -244,9 +247,11 @@ class TrackingController {
       // vehicle's current week already has a start reading (fresh this
       // week, or rolled forward from a missed close last week), the trip
       // starts with zero odometer friction.
-      final needsWeekStart = activeVehicle != null &&
-          await OdometerCaptureService()
-              .needsCheckpointStartThisWeek(activeVehicle.id);
+      final needsWeekStart =
+          activeVehicle != null &&
+          await OdometerCaptureService().needsCheckpointStartThisWeek(
+            activeVehicle.id,
+          );
 
       if (needsWeekStart) {
         final cachedOdometer = AutoTripDetectionService.instance;
@@ -297,7 +302,10 @@ class TrackingController {
             // arrancar el viaje con un dato que el servidor rechazó.
             await AutoTripDetectionService.instance.clearShiftStartOdometer();
             if (!context.mounted) {
-              await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+              await Supabase.instance.client
+                  .from("sessions")
+                  .delete()
+                  .eq("id", sessionId);
               _resetState();
               return;
             }
@@ -313,7 +321,10 @@ class TrackingController {
               ),
             );
             if (result == null || result['success'] != true) {
-              await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+              await Supabase.instance.client
+                  .from("sessions")
+                  .delete()
+                  .eq("id", sessionId);
               _resetState();
               return;
             }
@@ -330,7 +341,10 @@ class TrackingController {
           // insert) -- needsCheckpointStartThisWeek's own await is a new
           // real gap this restructuring introduced.
           if (!context.mounted) {
-            await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+            await Supabase.instance.client
+                .from("sessions")
+                .delete()
+                .eq("id", sessionId);
             _resetState();
             return;
           }
@@ -347,7 +361,10 @@ class TrackingController {
           );
 
           if (result == null || result['success'] != true) {
-            await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+            await Supabase.instance.client
+                .from("sessions")
+                .delete()
+                .eq("id", sessionId);
             _resetState();
             return;
           }
@@ -390,7 +407,10 @@ class TrackingController {
       );
 
       if (!sectionStarted || activeSection == null) {
-        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        await Supabase.instance.client
+            .from("sessions")
+            .delete()
+            .eq("id", sessionId);
         _resetState();
         return;
       }
@@ -402,8 +422,14 @@ class TrackingController {
       // arriving, silently recording no miles for its entire duration.
       final gpsStarted = await BackgroundGpsService.startTracking();
       if (!gpsStarted) {
-        _logError('TRIP_START_GPS_ERROR', 'BackgroundGpsService.startTracking() did not confirm the engine is running');
-        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        _logError(
+          'TRIP_START_GPS_ERROR',
+          'BackgroundGpsService.startTracking() did not confirm the engine is running',
+        );
+        await Supabase.instance.client
+            .from("sessions")
+            .delete()
+            .eq("id", sessionId);
         _resetState();
         return;
       }
@@ -497,14 +523,13 @@ class TrackingController {
         sessionId: sessionId,
         sectionId: sectionId,
         eventType: "SECTION_START",
-        payload: {
-          "gig_app": gigApp,
-          "irs_purpose": irsPurpose,
-        },
+        payload: {"gig_app": gigApp, "irs_purpose": irsPurpose},
       );
 
-      _logDebug('SECTION_START_OK',
-          'Section started → gig_app: $gigApp, irs_purpose: $irsPurpose');
+      _logDebug(
+        'SECTION_START_OK',
+        'Section started → gig_app: $gigApp, irs_purpose: $irsPurpose',
+      );
       return true;
     } catch (e) {
       _logError('SECTION_START_ERROR', e.toString());
@@ -603,10 +628,7 @@ class TrackingController {
     try {
       await Supabase.instance.client
           .from('session_sections')
-          .update({
-            'section_status': 'active',
-            'end_time': null,
-          })
+          .update({'section_status': 'active', 'end_time': null})
           .eq('id', activeSection!.id);
 
       // Solo tras confirmar la DB se arranca GPS real y el reloj de
@@ -638,7 +660,10 @@ class TrackingController {
         } catch (e) {
           _logError('RESUME_REVERT_ERROR', e.toString());
         }
-        _logError('RESUME_ERROR', 'BackgroundGpsService.startTracking() did not confirm the engine is running');
+        _logError(
+          'RESUME_ERROR',
+          'BackgroundGpsService.startTracking() did not confirm the engine is running',
+        );
         return false;
       }
       _runSegmentStartedAt = DateTime.now();
@@ -711,16 +736,21 @@ class TrackingController {
   // mostraba "SWITCHED" de inmediato, sin saber si el RPC en verdad tuvo
   // éxito. Ahora devuelve bool para que el llamador pueda esperar la
   // confirmación real antes de tocar cualquier estado optimista en la UI.
-  static Future<bool> switchSection(String newGigApp, {String? irsPurpose}) async {
-    if (currentState != TrackingState.running || activeSessionId == null) return false;
+  static Future<bool> switchSection(
+    String newGigApp, {
+    String? irsPurpose,
+  }) async {
+    if (currentState != TrackingState.running || activeSessionId == null)
+      return false;
     if (activeSection?.gigApp == newGigApp) return false;
 
     final oldSection = activeSection;
     final newSectionId = const Uuid().v4();
 
     try {
-      final elapsedSeconds =
-          oldSection != null ? elapsedSectionDuration.inSeconds : null;
+      final elapsedSeconds = oldSection != null
+          ? elapsedSectionDuration.inSeconds
+          : null;
 
       final response = await Supabase.instance.client.rpc(
         'switch_gig_app_section',
@@ -751,7 +781,9 @@ class TrackingController {
       // Solo se toca el estado en memoria DESPUÉS de que el RPC confirmó
       // éxito atómico en DB — si algo falla arriba, ni activeSection ni
       // currentGigApp se mueven (ver catch abajo).
-      activeSection = SessionSection.fromMap(rows.first as Map<String, dynamic>);
+      activeSection = SessionSection.fromMap(
+        rows.first as Map<String, dynamic>,
+      );
       currentGigApp = newGigApp;
       _totalSectionMiles = 0.0;
       _runSegmentStartedAt = DateTime.now();
@@ -806,8 +838,10 @@ class TrackingController {
       // screen (a desync between currentState and activeSessionId), there
       // was zero trace of why "End Trip" did nothing. Logged now so a
       // future occurrence is diagnosable instead of a mystery report.
-      _logError('STOP_GUARD_REJECTED',
-          'currentState=$currentState activeSessionId=$activeSessionId');
+      _logError(
+        'STOP_GUARD_REJECTED',
+        'currentState=$currentState activeSessionId=$activeSessionId',
+      );
       return false;
     }
 
@@ -820,7 +854,10 @@ class TrackingController {
         // adentro -- mejor dejar todo como estaba (running/paused) que
         // marcar 'closed' sobre datos a medio cerrar. El usuario puede
         // reintentar End Trip.
-        _logError('STOP_ABORTED', 'endCurrentSection falló, sesión no se marca cerrada');
+        _logError(
+          'STOP_ABORTED',
+          'endCurrentSection falló, sesión no se marca cerrada',
+        );
         return false;
       }
 
@@ -837,19 +874,23 @@ class TrackingController {
 
         sessionDurationSeconds = (sections as List).fold<int>(
           0,
-          (sum, s) => sum + ((s['total_duration_seconds'] as num?)?.toInt() ?? 0),
+          (sum, s) =>
+              sum + ((s['total_duration_seconds'] as num?)?.toInt() ?? 0),
         );
       } catch (e) {
         _logError('SESSION_DURATION_SUM_ERROR', e.toString());
       }
 
-      await Supabase.instance.client.from('sessions').update({
-        'session_status': 'closed',
-        'is_closed': true,
-        'end_time': DateTime.now().toUtc().toIso8601String(),
-        'total_miles': _totalSessionMiles,
-        'total_duration_seconds': sessionDurationSeconds,
-      }).eq('id', activeSessionId!);
+      await Supabase.instance.client
+          .from('sessions')
+          .update({
+            'session_status': 'closed',
+            'is_closed': true,
+            'end_time': DateTime.now().toUtc().toIso8601String(),
+            'total_miles': _totalSessionMiles,
+            'total_duration_seconds': sessionDurationSeconds,
+          })
+          .eq('id', activeSessionId!);
 
       // CGC Core governance sealing (see cgc_governance_service.dart):
       // captured BEFORE _resetState() zeroes these, fired in the
@@ -939,7 +980,10 @@ class TrackingController {
       // debug). Esto solo ayuda a diagnosticar en desarrollo — no escribe
       // en la DB ni en el audit log, para no llenarlo de ruido.
       _rejectedGpsTicks++;
-      _logDebug('GPS_TICK_REJECTED', '${result.reason} (score: ${result.drivingSignatureScore})');
+      _logDebug(
+        'GPS_TICK_REJECTED',
+        '${result.reason} (score: ${result.drivingSignatureScore})',
+      );
       return;
     }
 
@@ -963,10 +1007,7 @@ class TrackingController {
       try {
         await Supabase.instance.client
             .from('session_sections')
-            .update({
-              'start_latitude': latitude,
-              'start_longitude': longitude,
-            })
+            .update({'start_latitude': latitude, 'start_longitude': longitude})
             .eq('id', activeSection!.id);
       } catch (e) {
         _logError('START_COORDS_SAVE_ERROR', e.toString());
@@ -983,7 +1024,10 @@ class TrackingController {
 
         activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
 
-        await LocalStorageService.updateTotalMiles(_totalSectionMiles, _totalSessionMiles);
+        await LocalStorageService.updateTotalMiles(
+          _totalSectionMiles,
+          _totalSessionMiles,
+        );
 
         final hasConnection = await _hasGoodConnection();
         if (!hasConnection) {
@@ -994,7 +1038,12 @@ class TrackingController {
           );
         }
 
-        await _smartSync(result.drivingSignatureScore, latitude: latitude, longitude: longitude, speed: speed);
+        await _smartSync(
+          result.drivingSignatureScore,
+          latitude: latitude,
+          longitude: longitude,
+          speed: speed,
+        );
       }
     }
   }
@@ -1100,7 +1149,10 @@ class TrackingController {
           await BackgroundGpsService.startTracking();
         }
         await _rescheduleForgottenTripReminderIfRunning();
-        _logDebug('RECOVERY_OK', 'Recovered 100% offline from local checkpoint');
+        _logDebug(
+          'RECOVERY_OK',
+          'Recovered 100% offline from local checkpoint',
+        );
         return;
       }
 
@@ -1115,7 +1167,10 @@ class TrackingController {
           await BackgroundGpsService.startTracking();
         }
         await _rescheduleForgottenTripReminderIfRunning();
-        _logDebug('RECOVERY_OK', 'Recovered from local storage (section hydrated via DB)');
+        _logDebug(
+          'RECOVERY_OK',
+          'Recovered from local storage (section hydrated via DB)',
+        );
         return;
       }
       // Ni la reconstrucción local ni la de DB funcionaron (sección cerrada
@@ -1140,15 +1195,18 @@ class TrackingController {
       activeSessionId = session['id'];
       _totalSessionMiles = (session['total_miles'] as num?)?.toDouble() ?? 0.0;
 
-      final activeSections = (session['session_sections'] as List?)
-          ?.where((s) => ['active', 'paused'].contains(s['section_status']))
-          .toList() ?? [];
+      final activeSections =
+          (session['session_sections'] as List?)
+              ?.where((s) => ['active', 'paused'].contains(s['section_status']))
+              .toList() ??
+          [];
 
       if (activeSections.isNotEmpty) {
         final sectionData = activeSections.first;
         activeSection = SessionSection.fromMap(sectionData);
         currentGigApp = activeSection?.gigApp;
-        _totalSectionMiles = (sectionData['total_miles'] as num?)?.toDouble() ?? 0.0;
+        _totalSectionMiles =
+            (sectionData['total_miles'] as num?)?.toDouble() ?? 0.0;
 
         currentState = sectionData['section_status'] == 'paused'
             ? TrackingState.paused
@@ -1157,8 +1215,9 @@ class TrackingController {
         // BUG FIX #3: igual que en _applyRecoveredCheckpointFields — el
         // reloj de manejo activo arranca de "ahora"; la base ya viene
         // correcta desde SessionSection.fromMap (total_duration_seconds).
-        _runSegmentStartedAt =
-            currentState == TrackingState.running ? DateTime.now() : null;
+        _runSegmentStartedAt = currentState == TrackingState.running
+            ? DateTime.now()
+            : null;
 
         if (currentState == TrackingState.running && startGps) {
           await BackgroundGpsService.startTracking();
@@ -1187,7 +1246,8 @@ class TrackingController {
           .eq('id', sectionId)
           .maybeSingle();
 
-      if (data == null || !['active', 'paused'].contains(data['section_status'])) {
+      if (data == null ||
+          !['active', 'paused'].contains(data['section_status'])) {
         return false;
       }
       activeSection = SessionSection.fromMap(data);
@@ -1208,7 +1268,9 @@ class TrackingController {
   /// Devuelve false (sin tocar `activeSection`) si el checkpoint es de una
   /// versión anterior a este fix y le faltan campos, o algo no calza — en
   /// ese caso el llamador cae al respaldo por DB.
-  static bool _hydrateSectionFromLocalCheckpoint(Map<String, dynamic> localState) {
+  static bool _hydrateSectionFromLocalCheckpoint(
+    Map<String, dynamic> localState,
+  ) {
     try {
       final sectionId = localState['sectionId'] as String?;
       final sessionId = localState['sessionId'] as String?;
@@ -1216,11 +1278,17 @@ class TrackingController {
       final gigApp = localState['gigApp'] as String?;
       final startTimeStr = localState['sectionStartTime'] as String?;
 
-      final hasAllFields = sectionId != null && sectionId.isNotEmpty &&
-          sessionId != null && sessionId.isNotEmpty &&
-          userId != null && userId.isNotEmpty &&
-          gigApp != null && gigApp.isNotEmpty &&
-          startTimeStr != null && startTimeStr.isNotEmpty;
+      final hasAllFields =
+          sectionId != null &&
+          sectionId.isNotEmpty &&
+          sessionId != null &&
+          sessionId.isNotEmpty &&
+          userId != null &&
+          userId.isNotEmpty &&
+          gigApp != null &&
+          gigApp.isNotEmpty &&
+          startTimeStr != null &&
+          startTimeStr.isNotEmpty;
 
       if (!hasAllFields) return false;
 
@@ -1257,8 +1325,9 @@ class TrackingController {
     // recuperar — no hace falta reconstruir pausas históricas porque la
     // base (activeSection.totalDurationSeconds) ya viene descontada, tanto
     // si se hidrató localmente como desde la DB.
-    _runSegmentStartedAt =
-        currentState == TrackingState.running ? DateTime.now() : null;
+    _runSegmentStartedAt = currentState == TrackingState.running
+        ? DateTime.now()
+        : null;
   }
 
   // BUG FIX (hallazgo nuevo, encontrado al arreglar stopTracking): antes
@@ -1312,6 +1381,26 @@ class TrackingController {
     }
   }
 
+  // BUG FIX (real crash found in production via CGC Core monitoring, 92
+  // occurrences in under an hour on 2026-09-10, "Null check operator used
+  // on a null value" at this method): this whole method reads the mutable
+  // static fields (activeSection, activeSessionId) repeatedly across
+  // multiple `await` points. processGpsTick fires on every GPS tick while
+  // a trip is running -- if the user pauses/ends the trip (or a recovery
+  // cycle resets state) WHILE one of this method's own awaited DB calls is
+  // still in flight, activeSection/activeSessionId can go null mid-
+  // function, and the next `!` on them throws. The first two blocks below
+  // (total_miles update, GPS_TICK audit log) also had NO try/catch at all
+  // -- unlike every other block in this method -- so both that race AND
+  // an ordinary network hiccup here were escaping uncaught (confirmed
+  // live: the same monitoring table is full of raw ClientException/
+  // SocketException reports pointing at this exact method for the plain
+  // network-flake case). Fix: snapshot both into local, non-null
+  // variables ONCE at entry, use only the locals for the rest of the
+  // method (immune to a concurrent state change), and wrap every DB call
+  // in try/catch, matching the "must never interrupt mileage tracking"
+  // discipline the later blocks already documented but the first two
+  // never actually followed.
   static Future<void> _smartSync(
     double score, {
     required double latitude,
@@ -1319,24 +1408,34 @@ class TrackingController {
     required double speed,
   }) async {
     final now = DateTime.now().toUtc();
-    if (activeSection == null) return;
+    final section = activeSection;
+    final sessionId = activeSessionId;
+    if (section == null || sessionId == null) return;
 
     if (now.difference(_lastDbUpdateTime).inSeconds >= 10) {
       _lastDbUpdateTime = now;
-      await Supabase.instance.client
-          .from("session_sections")
-          .update({"total_miles": _totalSectionMiles})
-          .eq("id", activeSection!.id);
+      try {
+        await Supabase.instance.client
+            .from("session_sections")
+            .update({"total_miles": _totalSectionMiles})
+            .eq("id", section.id);
+      } catch (e) {
+        _logError('MILES_SYNC_ERROR', e.toString());
+      }
     }
 
     if (now.difference(_lastAuditLogTime).inSeconds >= 30) {
       _lastAuditLogTime = now;
-      await AuditService.logEvent(
-        sessionId: activeSessionId!,
-        sectionId: activeSection!.id,
-        eventType: "GPS_TICK",
-        payload: {"score": score, "miles": _totalSessionMiles},
-      );
+      try {
+        await AuditService.logEvent(
+          sessionId: sessionId,
+          sectionId: section.id,
+          eventType: "GPS_TICK",
+          payload: {"score": score, "miles": _totalSessionMiles},
+        );
+      } catch (e) {
+        _logError('GPS_TICK_AUDIT_ERROR', e.toString());
+      }
     }
 
     // Fleet Phase 5: live map. Fleet-only (update_vehicle_location itself
@@ -1351,12 +1450,15 @@ class TrackingController {
         now.difference(_lastLocationUpdateTime).inSeconds >= 15) {
       _lastLocationUpdateTime = now;
       try {
-        await Supabase.instance.client.rpc('update_vehicle_location', params: {
-          'p_vehicle_id': activeVehicleId,
-          'p_latitude': latitude,
-          'p_longitude': longitude,
-          'p_speed': speed,
-        });
+        await Supabase.instance.client.rpc(
+          'update_vehicle_location',
+          params: {
+            'p_vehicle_id': activeVehicleId,
+            'p_latitude': latitude,
+            'p_longitude': longitude,
+            'p_speed': speed,
+          },
+        );
       } catch (e) {
         _logError('LIVE_LOCATION_SYNC_ERROR', e.toString());
       }
@@ -1377,8 +1479,8 @@ class TrackingController {
       _lastBreadcrumbTime = now;
       try {
         await Supabase.instance.client.from('session_gps_breadcrumbs').insert({
-          'session_id': activeSessionId,
-          'section_id': activeSection!.id,
+          'session_id': sessionId,
+          'section_id': section.id,
           'organization_id': activeOrganizationId,
           'vehicle_id': activeVehicleId,
           'user_id': Supabase.instance.client.auth.currentUser!.id,
@@ -1401,15 +1503,18 @@ class TrackingController {
     // already gated it (see processGpsTick's own early return), so no
     // extra validity check is needed here.
     if (activeOrganizationId != null && activeVehicleId != null) {
-      final safetyEvent = DriverSafetyMonitor.evaluate(speed: speed, timestamp: now);
+      final safetyEvent = DriverSafetyMonitor.evaluate(
+        speed: speed,
+        timestamp: now,
+      );
       if (safetyEvent != null) {
         try {
           await Supabase.instance.client.from('driver_safety_events').insert({
             'organization_id': activeOrganizationId,
             'vehicle_id': activeVehicleId,
             'user_id': Supabase.instance.client.auth.currentUser!.id,
-            'session_id': activeSessionId,
-            'section_id': activeSection!.id,
+            'session_id': sessionId,
+            'section_id': section.id,
             'event_type': safetyEvent.type,
             'speed_mps': safetyEvent.speedMps,
             'latitude': latitude,
@@ -1423,12 +1528,21 @@ class TrackingController {
     }
   }
 
-  static double _calculateHaversine(double lat1, double lon1, double lat2, double lon2) {
+  static double _calculateHaversine(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const r = 6371000.0;
     final dLat = (lat2 - lat1) * pi / 180.0;
     final dLon = (lon2 - lon1) * pi / 180.0;
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * sin(dLon / 2) * sin(dLon / 2);
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180.0) *
+            cos(lat2 * pi / 180.0) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
     return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 

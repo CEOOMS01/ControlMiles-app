@@ -29,7 +29,8 @@ class SettingsScreen extends StatefulWidget {
 // app lo leía. Ahora sigue el mismo patrón que el toggle de sistema métrico
 // (unas líneas abajo): lee y escribe a través de AppState, que es la única
 // fuente de verdad y la que a su vez conecta con NotificationService.
-class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
   final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
@@ -114,7 +115,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(appState.tr('cancel')),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: Text(appState.tr('save')),
@@ -123,7 +127,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ),
     );
 
-    if (!mounted || newName == null || newName.isEmpty || newName == _organization?.name) return;
+    if (!mounted ||
+        newName == null ||
+        newName.isEmpty ||
+        newName == _organization?.name)
+      return;
     final orgId = appState.defaultOrgId;
     if (orgId == null) return;
 
@@ -159,7 +167,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final canConfirm = orgName.isNotEmpty && controller.text.trim() == orgName;
+          final canConfirm =
+              orgName.isNotEmpty && controller.text.trim() == orgName;
           return AlertDialog(
             title: Text(appState.tr('org_delete_confirm_title')),
             content: Column(
@@ -170,13 +179,18 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 const SizedBox(height: 16),
                 Text(
                   '${appState.tr('org_delete_type_to_confirm')} ($orgName)',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: controller,
                   onChanged: (_) => setDialogState(() {}),
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ],
             ),
@@ -186,7 +200,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 child: Text(appState.tr('cancel')),
               ),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                ),
                 onPressed: canConfirm
                     ? () {
                         Navigator.pop(ctx);
@@ -214,7 +230,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(appState.tr('org_deleted_success'))),
       );
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.dashboard,
+        (route) => false,
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _isDeletingOrg = false);
@@ -283,13 +303,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF020617)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           appState.tr('settings').toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark
+            ? const Color(0xFF0F172A)
+            : const Color(0xFF1E293B),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -299,7 +326,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           _buildSectionHeader(appState, 'language', isDark),
           _buildLanguageSection(appState, isDark),
 
-          if (appState.isFleetAdmin && (_isLoadingOrg || _organization != null)) ...[
+          if (appState.isFleetAdmin &&
+              (_isLoadingOrg || _organization != null)) ...[
             _buildSectionHeader(appState, 'organization_section_title', isDark),
             _buildOrganizationSection(appState, isDark),
           ],
@@ -344,20 +372,41 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.red.shade900 : Colors.red.shade100),
-        ),
-        child: ListTile(
-          leading: _isDeletingAccount
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
-              : const Icon(Icons.delete_forever_rounded, color: Colors.red),
-          title: Text(
-            appState.tr('delete_account'),
-            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+          border: Border.all(
+            color: isDark ? Colors.red.shade900 : Colors.red.shade100,
           ),
-          onTap: _isDeletingAccount ? null : () => _showDeleteAccountDialog(appState),
+        ),
+        // BUG FIX (real, 183 occurrences in CGC Core monitoring): a
+        // ListTile paints its background/ink splashes on the nearest
+        // Material ancestor -- this Container's own BoxDecoration.color
+        // sits between the ListTile and that ancestor, silently hiding
+        // the tap ripple. Wrapping in a transparent Material gives the
+        // ListTile its own nearer surface to paint on, with zero visual
+        // change (the Container's color still shows through).
+        child: Material(
+          color: Colors.transparent,
+          child: ListTile(
+            leading: _isDeletingAccount
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  )
+                : const Icon(Icons.delete_forever_rounded, color: Colors.red),
+            title: Text(
+              appState.tr('delete_account'),
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onTap: _isDeletingAccount
+                ? null
+                : () => _showDeleteAccountDialog(appState),
+          ),
         ),
       ),
     );
@@ -382,13 +431,18 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 const SizedBox(height: 16),
                 Text(
                   '${appState.tr('delete_account_type_to_confirm')} ($confirmWord)',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: controller,
                   onChanged: (_) => setDialogState(() {}),
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ],
             ),
@@ -398,7 +452,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 child: Text(appState.tr('cancel')),
               ),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                ),
                 onPressed: canConfirm
                     ? () {
                         Navigator.pop(ctx);
@@ -431,7 +487,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(appState.tr('delete_account_success'))),
       );
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _isDeletingAccount = false);
@@ -467,7 +527,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             ),
           ),
           const SizedBox(height: 8),
-          Container(height: 2, width: 40, color: Theme.of(context).colorScheme.primary),
+          Container(
+            height: 2,
+            width: 40,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ],
       ),
     );
@@ -502,28 +566,45 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     final primary = Theme.of(context).colorScheme.primary;
     final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFE2E8F0);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected ? primary : borderColor,
-          width: 2,
-        ),
+        border: Border.all(color: isSelected ? primary : borderColor, width: 2),
         boxShadow: isSelected
-            ? [BoxShadow(color: primary.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))]
+            ? [
+                BoxShadow(
+                  color: primary.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
             : [],
       ),
-      child: ListTile(
-        leading: Text(language.flag, style: const TextStyle(fontSize: 22)),
-        title: Text(language.label, style: TextStyle(
-          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-          color: isSelected ? primary : textColor,
-        )),
-        trailing: isSelected ? Icon(Icons.check_circle, color: primary) : null,
-        onTap: onTap,
+      // BUG FIX (real, 183 occurrences in CGC Core monitoring -- this is
+      // the single biggest contributor, since it fires once per language
+      // row every time the picker renders): same DecoratedBox-hides-ink
+      // issue as _buildDangerZoneSection above, see that comment.
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Text(language.flag, style: const TextStyle(fontSize: 22)),
+          title: Text(
+            language.label,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+              color: isSelected ? primary : textColor,
+            ),
+          ),
+          trailing: isSelected
+              ? Icon(Icons.check_circle, color: primary)
+              : null,
+          onTap: onTap,
+        ),
       ),
     );
   }
@@ -532,7 +613,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFE2E8F0);
 
     if (_isLoadingOrg) {
       return const Padding(
@@ -553,16 +636,28 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               border: Border.all(color: borderColor),
             ),
             child: ListTile(
-              leading: Icon(Icons.local_shipping_rounded, color: Theme.of(context).colorScheme.primary),
+              leading: Icon(
+                Icons.local_shipping_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: Text(
                 _organization!.name,
                 style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
               ),
-              subtitle: Text(appState.tr('org_rename_hint'), style: TextStyle(fontSize: 12, color: subTextColor)),
+              subtitle: Text(
+                appState.tr('org_rename_hint'),
+                style: TextStyle(fontSize: 12, color: subTextColor),
+              ),
               trailing: _isRenamingOrg
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Icon(Icons.edit_rounded, color: subTextColor),
-              onTap: _isRenamingOrg ? null : () => _showRenameOrgDialog(appState),
+              onTap: _isRenamingOrg
+                  ? null
+                  : () => _showRenameOrgDialog(appState),
             ),
           ),
           const SizedBox(height: 10),
@@ -570,20 +665,31 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             decoration: BoxDecoration(
               color: cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? Colors.red.shade900 : Colors.red.shade100),
+              border: Border.all(
+                color: isDark ? Colors.red.shade900 : Colors.red.shade100,
+              ),
             ),
             child: ListTile(
               leading: _isDeletingOrg
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.red,
+                      ),
+                    )
                   : const Icon(Icons.delete_forever_rounded, color: Colors.red),
               title: Text(
                 appState.tr('org_delete_button'),
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              onTap: _isDeletingOrg ? null : () => _showDeleteOrgDialog(appState),
+              onTap: _isDeletingOrg
+                  ? null
+                  : () => _showDeleteOrgDialog(appState),
             ),
           ),
         ],
@@ -635,7 +741,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     final locked = !appState.premiumEntitled;
     final primary = Theme.of(context).colorScheme.primary;
 
-    final showUsageAccessRow = !locked &&
+    final showUsageAccessRow =
+        !locked &&
         appState.autoDetectEnabled &&
         GigAppDetectionService.instance.isSupported;
 
@@ -649,26 +756,40 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               borderRadius: BorderRadius.circular(16),
             ),
             child: ListTile(
-              leading: Icon(Icons.auto_awesome_rounded, color: locked ? subTextColor : primary),
+              leading: Icon(
+                Icons.auto_awesome_rounded,
+                color: locked ? subTextColor : primary,
+              ),
               title: Row(
                 children: [
                   Flexible(
                     child: Text(
                       appState.tr('auto_detect_toggle_title'),
-                      style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
                     ),
                   ),
                   if (locked) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
                         appState.tr('premium_badge'),
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: primary, letterSpacing: 0.5),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: primary,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ],
@@ -681,12 +802,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               trailing: locked
                   ? Icon(Icons.lock_outline_rounded, color: subTextColor)
                   : (_isTogglingAutoDetect
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Switch.adaptive(
-                          value: appState.autoDetectEnabled,
-                          onChanged: (v) => _handleAutoDetectToggle(appState, v),
-                          activeThumbColor: primary,
-                        )),
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Switch.adaptive(
+                            value: appState.autoDetectEnabled,
+                            onChanged: (v) =>
+                                _handleAutoDetectToggle(appState, v),
+                            activeThumbColor: primary,
+                          )),
               onTap: locked ? () => _showPremiumLockedDialog(appState) : null,
             ),
           ),
@@ -705,23 +831,33 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               ),
               child: ListTile(
                 leading: Icon(
-                  _hasUsageAccess ? Icons.check_circle_rounded : Icons.apps_rounded,
+                  _hasUsageAccess
+                      ? Icons.check_circle_rounded
+                      : Icons.apps_rounded,
                   color: _hasUsageAccess ? Colors.green.shade600 : subTextColor,
                 ),
                 title: Text(
                   appState.tr('gig_app_detection_title'),
-                  style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
                 ),
                 subtitle: Text(
-                  appState.tr(_hasUsageAccess
-                      ? 'gig_app_detection_subtitle_granted'
-                      : 'gig_app_detection_subtitle_not_granted'),
+                  appState.tr(
+                    _hasUsageAccess
+                        ? 'gig_app_detection_subtitle_granted'
+                        : 'gig_app_detection_subtitle_not_granted',
+                  ),
                   style: TextStyle(fontSize: 12, color: subTextColor),
                 ),
-                trailing: _hasUsageAccess ? null : Icon(Icons.chevron_right_rounded, color: subTextColor),
+                trailing: _hasUsageAccess
+                    ? null
+                    : Icon(Icons.chevron_right_rounded, color: subTextColor),
                 onTap: _hasUsageAccess
                     ? null
-                    : () => GigAppDetectionService.instance.openUsageAccessSettings(),
+                    : () => GigAppDetectionService.instance
+                          .openUsageAccessSettings(),
               ),
             ),
           ],
@@ -769,7 +905,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ),
       child: ListTile(
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF1E293B),
+          ),
+        ),
         trailing: Switch.adaptive(
           value: value,
           onChanged: onChanged,
@@ -795,9 +937,19 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             child: Column(
               children: [
                 _buildAboutRow(appState.tr('app_version'), 'v2.0.1', isDark),
-                Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
-                _buildAboutRow(appState.tr('company'), 'Olympus Mont Systems LLC', isDark),
-                Divider(height: 32, color: isDark ? const Color(0xFF1E293B) : null),
+                Divider(
+                  height: 32,
+                  color: isDark ? const Color(0xFF1E293B) : null,
+                ),
+                _buildAboutRow(
+                  appState.tr('company'),
+                  'Olympus Mont Systems LLC',
+                  isDark,
+                ),
+                Divider(
+                  height: 32,
+                  color: isDark ? const Color(0xFF1E293B) : null,
+                ),
                 // Explicit user request (legal risk mitigation, 2026-08-27):
                 // a short, always-visible non-affiliation disclaimer -- the
                 // full legal text lives in Privacy Policy/Terms below, but
@@ -806,7 +958,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 // from "implying a partnership" under nominative fair use.
                 Text(
                   appState.tr('trademark_disclaimer_short'),
-                  style: TextStyle(fontSize: 11.5, height: 1.4, color: subTextColor),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    color: subTextColor,
+                  ),
                 ),
               ],
             ),
@@ -836,7 +992,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   // obligations around driver data, which is the
                   // relationship that's actually live once isFleetAccount
                   // is true.
-                  body: appState.isFleetAccount ? privacyPolicyFleetEn : privacyPolicyEn,
+                  body: appState.isFleetAccount
+                      ? privacyPolicyFleetEn
+                      : privacyPolicyEn,
                 ),
               ),
             ),
@@ -851,7 +1009,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               MaterialPageRoute(
                 builder: (_) => LegalDocumentScreen(
                   titleKey: 'terms_conditions',
-                  body: appState.isFleetAccount ? termsOfServiceFleetEn : termsOfServiceEn,
+                  body: appState.isFleetAccount
+                      ? termsOfServiceFleetEn
+                      : termsOfServiceEn,
                 ),
               ),
             ),
@@ -878,7 +1038,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     final uri = Uri(
       scheme: 'mailto',
       path: 'contact@controlmiles.com',
-      query: 'subject=${Uri.encodeComponent(appState.tr('send_feedback_email_subject'))}',
+      query:
+          'subject=${Uri.encodeComponent(appState.tr('send_feedback_email_subject'))}',
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
@@ -908,17 +1069,28 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(Icons.request_quote_outlined, color: Theme.of(context).colorScheme.primary),
-        title: Text(appState.tr('mileage_method_label'),
-            style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+        leading: Icon(
+          Icons.request_quote_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        title: Text(
+          appState.tr('mileage_method_label'),
+          style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+        ),
         trailing: DropdownButton<String>(
           value: appState.mileageMethod,
           underline: const SizedBox.shrink(),
           style: TextStyle(color: subTextColor, fontSize: 13),
           dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           items: [
-            DropdownMenuItem(value: 'standard', child: Text(appState.tr('mileage_method_standard'))),
-            DropdownMenuItem(value: 'actual', child: Text(appState.tr('mileage_method_actual'))),
+            DropdownMenuItem(
+              value: 'standard',
+              child: Text(appState.tr('mileage_method_standard')),
+            ),
+            DropdownMenuItem(
+              value: 'actual',
+              child: Text(appState.tr('mileage_method_actual')),
+            ),
           ],
           onChanged: (v) {
             if (v != null) appState.setMileageMethod(v);
@@ -943,7 +1115,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ),
       child: ListTile(
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+        title: Text(
+          label,
+          style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+        ),
         trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
         onTap: onTap,
       ),
@@ -954,13 +1129,29 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E293B))),
-        Text(value, style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B), fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF1E293B),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: isDark ? Colors.white54 : const Color(0xFF64748B),
+            fontSize: 13,
+          ),
+        ),
       ],
     );
   }
 
-  void _showChangeConfirmation(BuildContext context, AppState appState, AppLanguage language) {
+  void _showChangeConfirmation(
+    BuildContext context,
+    AppState appState,
+    AppLanguage language,
+  ) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

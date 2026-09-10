@@ -29,7 +29,11 @@ class _DriverSettingsSheet extends StatelessWidget {
   Future<void> _signOut(BuildContext context, AppState appState) async {
     await appState.signOutAndClear();
     if (!context.mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.login,
+      (route) => false,
+    );
   }
 
   @override
@@ -38,7 +42,9 @@ class _DriverSettingsSheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFE2E8F0);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -46,67 +52,99 @@ class _DriverSettingsSheet extends StatelessWidget {
         color: bgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(color: borderColor, borderRadius: BorderRadius.circular(2)),
-            ),
-          ),
-          Text(
-            appState.tr('settings'),
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textColor),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.dark_mode_rounded, color: Theme.of(context).colorScheme.primary),
-            title: Text(appState.tr('dark_mode'), style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
-            trailing: Switch.adaptive(
-              value: appState.isDarkMode,
-              onChanged: (v) => appState.setDarkMode(v),
-              activeThumbColor: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          const Divider(),
-          Text(
-            appState.tr('language'),
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: AppLanguage.values.map((lang) {
-              final selected = appState.currentLanguage == lang;
-              return ChoiceChip(
-                label: Text('${lang.flag} ${lang.label}'),
-                selected: selected,
-                onSelected: (_) => appState.setLanguage(lang),
-                selectedColor: Theme.of(context).colorScheme.primary,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : textColor,
-                  fontWeight: FontWeight.w600,
+      // BUG FIX (real, found via CGC Core monitoring -- "ListTile
+      // background color or ink splashes may be invisible"): this
+      // Container's own BoxDecoration.color sat between the ListTile below
+      // and the nearest Material ancestor, hiding its tap ripple. Wrapping
+      // the content in a transparent Material gives it a nearer surface
+      // to paint on -- no visual change, the Container's color still
+      // shows through.
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: borderColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _signOut(context, appState),
-              icon: const Icon(Icons.logout_rounded, color: Colors.red),
-              label: Text(appState.tr('sign_out'), style: const TextStyle(color: Colors.red)),
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
+              ),
             ),
-          ),
-        ],
+            Text(
+              appState.tr('settings'),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.dark_mode_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(
+                appState.tr('dark_mode'),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+              ),
+              trailing: Switch.adaptive(
+                value: appState.isDarkMode,
+                onChanged: (v) => appState.setDarkMode(v),
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const Divider(),
+            Text(
+              appState.tr('language'),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: AppLanguage.values.map((lang) {
+                final selected = appState.currentLanguage == lang;
+                return ChoiceChip(
+                  label: Text('${lang.flag} ${lang.label}'),
+                  selected: selected,
+                  onSelected: (_) => appState.setLanguage(lang),
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _signOut(context, appState),
+                icon: const Icon(Icons.logout_rounded, color: Colors.red),
+                label: Text(
+                  appState.tr('sign_out'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

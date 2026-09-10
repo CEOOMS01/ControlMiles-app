@@ -11,8 +11,9 @@ import '../models/gig_app.dart';
 class GigAppSelector extends StatelessWidget {
   final String? selectedGigApp;
   final String? activeGigApp;
-  final Function(String) onAppSelected;           // Para apps normales
-  final Function(String, String?)? onCustomSelected; // Para Custom + IRS Purpose
+  final Function(String) onAppSelected; // Para apps normales
+  final Function(String, String?)?
+  onCustomSelected; // Para Custom + IRS Purpose
   // BUG FIX (pedido explícito, bug silencioso): dashboard_screen.dart solo
   // invoca TrackingController.switchSection() cuando el tracking está
   // corriendo (running) -- en pausa, el RPC nunca se llama. Sin este flag,
@@ -64,8 +65,9 @@ class GigAppSelector extends StatelessWidget {
     // encima de una caja distinta. Ahora ambos viven dentro del mismo
     // Container con borde, separados por un Divider de borde a borde,
     // mismo patrón que Vehicle/Stats/Summary.
-    final borderColor =
-        isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFE2E8F0);
 
     return Container(
       decoration: BoxDecoration(
@@ -86,13 +88,18 @@ class GigAppSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
-                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(
+                      alpha: 0.6,
+                    ),
                     letterSpacing: 1.2,
                   ),
                 ),
                 if (isTracking)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -105,135 +112,143 @@ class GigAppSelector extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  )
+                  ),
               ],
             ),
           ),
           Divider(height: 1, color: borderColor),
           Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: ShaderMask(
-            shaderCallback: (bounds) {
-              return const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.transparent,
-                  Colors.black,
-                  Colors.black,
-                  Colors.transparent,
-                ],
-                stops: [0.0, 0.06, 0.94, 1.0],
-              ).createShader(bounds);
-            },
-            blendMode: BlendMode.dstIn,
-            child: SizedBox(
-              height: 108,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                scrollDirection: Axis.horizontal,
-                itemCount: apps.length,
-                itemBuilder: (context, index) {
-              final app = apps[index];
-              final isSelected = selectedGigApp == app.id;
-              final isActive = activeGigApp == app.id;
-              final isCustom = app.id == 'custom';
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ShaderMask(
+              shaderCallback: (bounds) {
+                return const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black,
+                    Colors.black,
+                    Colors.transparent,
+                  ],
+                  stops: [0.0, 0.06, 0.94, 1.0],
+                ).createShader(bounds);
+              },
+              blendMode: BlendMode.dstIn,
+              child: SizedBox(
+                height: 108,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: apps.length,
+                  itemBuilder: (context, index) {
+                    final app = apps[index];
+                    final isSelected = selectedGigApp == app.id;
+                    final isActive = activeGigApp == app.id;
+                    final isCustom = app.id == 'custom';
 
-              final baseColor = app.color;
+                    final baseColor = app.color;
 
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
 
-                  // Si ya está activo, no hacer nada
-                  if (isTracking && isActive) return;
+                        // Si ya está activo, no hacer nada
+                        if (isTracking && isActive) return;
 
-                  // BUG FIX (pedido explícito, bug silencioso
-                  // carrusel+pausa): en pausa no existe un flujo real de
-                  // "cambiar de gig app" todavía -- bloqueamos el tap acá
-                  // mismo (antes de isCustom, para cubrir también el menú
-                  // IRS de Custom/Truck) en vez de dejar que la UI se
-                  // actualice sola y mienta con el banner "SWITCHED".
-                  if (isTracking && isPaused) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          appState.tr('resume_to_switch_app'),
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
+                        // BUG FIX (pedido explícito, bug silencioso
+                        // carrusel+pausa): en pausa no existe un flujo real de
+                        // "cambiar de gig app" todavía -- bloqueamos el tap acá
+                        // mismo (antes de isCustom, para cubrir también el menú
+                        // IRS de Custom/Truck) en vez de dejar que la UI se
+                        // actualice sola y mienta con el banner "SWITCHED".
+                        if (isTracking && isPaused) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                appState.tr('resume_to_switch_app'),
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
 
-                  if (isCustom) {
-                    _showIrsCategoryMenu(context, appState);
-                  } else {
-                    onAppSelected(app.id);
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: 95,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? baseColor
-                        : isSelected
-                            ? baseColor.withValues(alpha: 0.85)
-                            : (isDark ? const Color(0xFF1E293B) : Colors.grey.shade100),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isActive
-                          ? baseColor
-                          : isSelected
+                        if (isCustom) {
+                          _showIrsCategoryMenu(context, appState);
+                        } else {
+                          onAppSelected(app.id);
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 95,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: isActive
                               ? baseColor
-                              : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                      width: isActive ? 3 : 2,
-                    ),
-                    boxShadow: isActive
-                        ? [
-                            BoxShadow(
-                              color: baseColor.withValues(alpha: 0.5),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: Opacity(
-                    opacity: isActive ? 1.0 : (isSelected ? 0.9 : 0.65),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          app.icon,
-                          size: 32,
-                          color: (isActive || isSelected)
-                              ? Colors.white
-                              : (isDark ? Colors.white70 : baseColor.withValues(alpha: 0.6)),
+                              : isSelected
+                              ? baseColor.withValues(alpha: 0.85)
+                              : (isDark
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.grey.shade100),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isActive
+                                ? baseColor
+                                : isSelected
+                                ? baseColor
+                                : (isDark
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade300),
+                            width: isActive ? 3 : 2,
+                          ),
+                          boxShadow: isActive
+                              ? [
+                                  BoxShadow(
+                                    color: baseColor.withValues(alpha: 0.5),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ]
+                              : [],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          app.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: (isActive || isSelected)
-                                ? Colors.white
-                                : (isDark ? Colors.white70 : Colors.grey.shade600),
+                        child: Opacity(
+                          opacity: isActive ? 1.0 : (isSelected ? 0.9 : 0.65),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                app.icon,
+                                size: 32,
+                                color: (isActive || isSelected)
+                                    ? Colors.white
+                                    : (isDark
+                                          ? Colors.white70
+                                          : baseColor.withValues(alpha: 0.6)),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                app.name,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: (isActive || isSelected)
+                                      ? Colors.white
+                                      : (isDark
+                                            ? Colors.white70
+                                            : Colors.grey.shade600),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              );
-                },
               ),
             ),
-          ),
           ),
         ],
       ),
@@ -255,7 +270,7 @@ class GigAppSelector extends StatelessWidget {
       // Opción 1: Usar callback dedicado (recomendado)
       if (onCustomSelected != null) {
         onCustomSelected!('custom', selectedCategory);
-      } 
+      }
       // Opción 2: Fallback usando onAppSelected (mantener compatibilidad)
       else {
         onAppSelected('custom');
@@ -269,13 +284,21 @@ class GigAppSelector extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final categories = [
-      {'id': 'business',   'labelKey': 'business_purpose',   'icon': Icons.business_center},
-      {'id': 'work',       'labelKey': 'work_commute',       'icon': Icons.work},
-      {'id': 'medical',    'labelKey': 'medical',            'icon': Icons.local_hospital},
-      {'id': 'moving',     'labelKey': 'moving',             'icon': Icons.home_work},
-      {'id': 'charitable', 'labelKey': 'charitable',         'icon': Icons.volunteer_activism},
-      {'id': 'education',  'labelKey': 'education_study',    'icon': Icons.school},
-      {'id': 'personal',   'labelKey': 'personal_other',     'icon': Icons.person},
+      {
+        'id': 'business',
+        'labelKey': 'business_purpose',
+        'icon': Icons.business_center,
+      },
+      {'id': 'work', 'labelKey': 'work_commute', 'icon': Icons.work},
+      {'id': 'medical', 'labelKey': 'medical', 'icon': Icons.local_hospital},
+      {'id': 'moving', 'labelKey': 'moving', 'icon': Icons.home_work},
+      {
+        'id': 'charitable',
+        'labelKey': 'charitable',
+        'icon': Icons.volunteer_activism,
+      },
+      {'id': 'education', 'labelKey': 'education_study', 'icon': Icons.school},
+      {'id': 'personal', 'labelKey': 'personal_other', 'icon': Icons.person},
     ];
 
     return Container(
@@ -284,75 +307,96 @@ class GigAppSelector extends StatelessWidget {
         color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[700] : Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+      // BUG FIX (real, found via CGC Core monitoring -- "ListTile
+      // background color or ink splashes may be invisible"): this
+      // Container's own BoxDecoration.color sat between the category
+      // ListTiles below and the nearest Material ancestor, hiding their
+      // tap ripple. Wrapping the content in a transparent Material gives
+      // them a nearer surface to paint on -- no visual change.
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[700] : Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          Text(
-            appState.tr('select_trip_purpose'),
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.textTheme.titleLarge?.color,
+            Text(
+              appState.tr('select_trip_purpose'),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.titleLarge?.color,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            appState.tr('irs_deduction_note'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: categories.map((cat) => ListTile(
-                leading: Icon(
-                  cat['icon'] as IconData,
-                  color: theme.iconTheme.color,
-                  size: 24,
-                ),
-                title: Text(
-                  appState.tr(cat['labelKey'] as String),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: theme.textTheme.bodyLarge?.color,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () => Navigator.pop(context, cat['id'] as String),
-              )).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                appState.tr('cancel'),
-                style: const TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(height: 6),
+            Text(
+              appState.tr('irs_deduction_note'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: categories
+                    .map(
+                      (cat) => ListTile(
+                        leading: Icon(
+                          cat['icon'] as IconData,
+                          color: theme.iconTheme.color,
+                          size: 24,
+                        ),
+                        title: Text(
+                          appState.tr(cat['labelKey'] as String),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: theme.textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onTap: () =>
+                            Navigator.pop(context, cat['id'] as String),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  appState.tr('cancel'),
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
