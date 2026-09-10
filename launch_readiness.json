@@ -1,0 +1,8 @@
+{
+  "app_source": "controlmiles",
+  "generated_at": "2026-09-10T14:04:28.622585+00:00",
+  "signals": {
+    "android_package_placeholder": false,
+    "ios_platform_scaffolded": true
+  }
+}
