@@ -367,14 +367,47 @@ class TrackingController {
       // photo, no camera screen, trip starts immediately.
 
       // Iniciar primera sección
-      await startNewSection(
+      // BUG FIX (real, reportado por el usuario: "no se puede finalizar los
+      // viajes... cuando pausas no se reanuda"): startNewSection() atrapaba
+      // su propia excepción del INSERT y solo la logueaba -- este caller
+      // nunca chequeaba nada y seguía de largo hasta currentState = running
+      // pase lo que pase. Si el INSERT fallaba (red, RLS, lo que sea),
+      // quedaba un "viaje fantasma": currentState=running, activeSessionId
+      // seteado, pero activeSection=null para siempre. Eso rompía TODO lo
+      // que sigue: pauseTracking() "tenía éxito" (currentState pasa a
+      // paused) sin pausar nada real porque su bloque de DB solo corre
+      // `if (activeSection != null)`; resumeTracking() después SIEMPRE
+      // fallaba porque exige activeSection != null -- exactamente "pausas
+      // y no se reanuda". Ahora se verifica el resultado real antes de
+      // avanzar; si falla, se aborta igual que los demás puntos de fallo
+      // de este método (borra la sesión huérfana, resetea el estado, no
+      // deja currentState en running sobre una sección que no existe).
+      final sectionStarted = await startNewSection(
         sessionId: sessionId,
         gigApp: gigApp,
         irsPurpose: irsPurpose,
         organizationId: organizationId,
       );
 
-      await BackgroundGpsService.startTracking();
+      if (!sectionStarted || activeSection == null) {
+        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        _resetState();
+        return;
+      }
+
+      // Same "confirm the engine actually started" check as resumeTracking()
+      // just above -- same underlying bug class, just on the initial start
+      // instead of a resume: without it, a trip could go currentState=running
+      // with real session/section rows in DB but zero GPS ticks ever
+      // arriving, silently recording no miles for its entire duration.
+      final gpsStarted = await BackgroundGpsService.startTracking();
+      if (!gpsStarted) {
+        _logError('TRIP_START_GPS_ERROR', 'BackgroundGpsService.startTracking() did not confirm the engine is running');
+        await Supabase.instance.client.from("sessions").delete().eq("id", sessionId);
+        _resetState();
+        return;
+      }
+
       await _saveLocalCheckpoint();
 
       currentState = TrackingState.running;
@@ -395,7 +428,13 @@ class TrackingController {
   // ============================================================
   // START NEW SECTION (usado por startTripFlow — primera sección del viaje)
   // ============================================================
-  static Future<void> startNewSection({
+  // BUG FIX: devolvía Future<void> y se tragaba su propia excepción del
+  // INSERT -- el único caller (startTripFlow) nunca podía saber que la
+  // sección jamás se creó, y seguía de largo dejando currentState=running
+  // con activeSection=null para siempre (ver el comentario largo en
+  // startTripFlow, arriba). Ahora devuelve bool: true solo si el INSERT
+  // realmente confirmó y activeSection quedó seteado.
+  static Future<bool> startNewSection({
     required String sessionId,
     required String gigApp,
     String? irsPurpose,
@@ -410,7 +449,7 @@ class TrackingController {
     if (activeSection != null) await endCurrentSection();
 
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
 
     try {
       final sectionId = const Uuid().v4();
@@ -466,8 +505,11 @@ class TrackingController {
 
       _logDebug('SECTION_START_OK',
           'Section started → gig_app: $gigApp, irs_purpose: $irsPurpose');
+      return true;
     } catch (e) {
       _logError('SECTION_START_ERROR', e.toString());
+      activeSection = null;
+      return false;
     }
   }
 
@@ -573,7 +615,32 @@ class TrackingController {
       // este punto. Esto es justo lo que hace que la duración sobreviva un
       // reinicio real de la app: no hace falta reconstruir ninguna pausa
       // histórica, solo esta base ya persistida (local o en DB).
-      await BackgroundGpsService.startTracking();
+      //
+      // BUG FIX (real, reportado por el usuario: "cuando pausas no se
+      // reanuda el viaje"): startTracking() devuelve bool desde hace rato
+      // (ver su propio comentario en background_gps_service.dart sobre el
+      // motor de GPS fallando sin lanzar excepción -- permiso de ubicación
+      // revocado en segundo plano, plugin que no vuelve a arrancar limpio
+      // tras un stop() completo, etc.) pero este caller nunca chequeaba el
+      // resultado -- currentState pasaba a running igual, la UI mostraba
+      // "reanudado", y ningún tick de GPS volvía a llegar nunca. Ahora, si
+      // el motor real no confirma que arrancó, se revierte la sección a
+      // 'paused' en DB (deshacer el update de arriba, mismo criterio de
+      // "nada a medias" que ya usa el resto de este método) y se falla
+      // limpio en vez de fingir un resume que nunca ocurrió.
+      final gpsStarted = await BackgroundGpsService.startTracking();
+      if (!gpsStarted) {
+        try {
+          await Supabase.instance.client
+              .from('session_sections')
+              .update({'section_status': 'paused'})
+              .eq('id', activeSection!.id);
+        } catch (e) {
+          _logError('RESUME_REVERT_ERROR', e.toString());
+        }
+        _logError('RESUME_ERROR', 'BackgroundGpsService.startTracking() did not confirm the engine is running');
+        return false;
+      }
       _runSegmentStartedAt = DateTime.now();
 
       // BUG FIX (millas dormidas): AntifraudEngine retiene lastLat/lastLng
@@ -733,7 +800,16 @@ class TrackingController {
   // en la UI). Ahora aborta ahí si falla, y solo devuelve true cuando la
   // sesión de verdad quedó cerrada en DB.
   static Future<bool> stopTracking() async {
-    if (currentState == TrackingState.idle || activeSessionId == null) return false;
+    if (currentState == TrackingState.idle || activeSessionId == null) {
+      // BUG FIX: this guard used to return false completely silently --
+      // if this were ever hit for a trip the user could still see on
+      // screen (a desync between currentState and activeSessionId), there
+      // was zero trace of why "End Trip" did nothing. Logged now so a
+      // future occurrence is diagnosable instead of a mystery report.
+      _logError('STOP_GUARD_REJECTED',
+          'currentState=$currentState activeSessionId=$activeSessionId');
+      return false;
+    }
 
     try {
       await BackgroundGpsService.stopTracking();
