@@ -1,10 +1,12 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/tracking/engines/tracelet_engine.dart
 //
-// FREE background-location engine, active by default (2026-09-15) --
-// see location_engine_config.dart. Built specifically because
-// flutter_background_geolocation's ~$300 production license wasn't
-// affordable before launch, and this app's actual trip-start trigger
+// FREE background-location engine, the only one active (2026-09-15) --
+// flutter_background_geolocation was removed entirely, not just disabled
+// (see pubspec.yaml's own comment on the removed dependency line for why
+// and the exact reactivation steps). Built specifically because its ~$300
+// production license wasn't affordable before launch, and this app's
+// actual trip-start trigger
 // (AutoTripDetectionService's gig-app-foreground polling) never depended
 // on motion-based activity recognition to begin with -- the only thing
 // genuinely required here is: (1) reliable continuous background GPS

@@ -35,15 +35,29 @@ dependencies:
 
   # --- GPS + background tracking ---
   # flutter_background_geolocation is a PAID plugin (one-time ~$300 license
-  # for production release). Kept as a dependency and its integration code
-  # kept intact (lib/tracking/engines/bg_geolocation_engine.dart) so nothing
-  # has to be rebuilt once it's paid for -- but genuinely INACTIVE: see
-  # lib/tracking/engines/location_engine_config.dart, which selects
-  # `tracelet` (free, Apache-2.0, github.com/Ikolvi/Tracelet) as the active
-  # engine instead. flutter_background_geolocation's native `ready()`/
-  # `start()` are never called while inactive, so its license requirement
-  # is never triggered by having the package present.
-  flutter_background_geolocation: ^5.0.5
+  # for production release) -- REMOVED from this list 2026-09-15, not just
+  # disabled from Dart. First attempt kept the dependency and just never
+  # called its ready()/start(), assuming that made it inert -- WRONG,
+  # confirmed live: its native Android side shows a "LICENSE VALIDATION
+  # FAILURE" toast on every app launch regardless of whether Dart ever
+  # touches the plugin (the plugin author himself, in
+  # github.com/transistorsoft/flutter_background_geolocation issue #109:
+  # "The toast is normal and expected. It means the plugin is alive." /
+  # asked "Can I remove this toast in debug mode?" -- answer: "Not without
+  # purchasing a license."). Merely being a dependency is enough to trigger
+  # it, so the only real fix is removing the dependency, not gating it.
+  #
+  # The original integration (lib/tracking/engines/bg_geolocation_engine.dart)
+  # is preserved verbatim at reference/bg_geolocation_engine.dart.txt (a
+  # .txt extension keeps it out of `flutter analyze`/build entirely while
+  # the package isn't a dependency). To reactivate once the license is
+  # purchased: (1) uncomment the line below, (2) move
+  # reference/bg_geolocation_engine.dart.txt back to
+  # lib/tracking/engines/bg_geolocation_engine.dart, (3) restore the
+  # BgGeolocationEngine branch in background_gps_service.dart (see that
+  # file's own git history for the exact facade code), (4) flip
+  # location_engine_config.dart's useBackgroundGeolocationPaidEngine to true.
+  # flutter_background_geolocation: ^5.0.5
   tracelet: ^3.8.7
   geolocator:
   flutter_background_service: ^5.0.5
