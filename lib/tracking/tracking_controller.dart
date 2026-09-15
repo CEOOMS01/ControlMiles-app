@@ -426,6 +426,19 @@ class TrackingController {
           'TRIP_START_GPS_ERROR',
           'BackgroundGpsService.startTracking() did not confirm the engine is running',
         );
+        // REAL BUG FIX (2026-09-15, reportado en vivo: "toqué tracking, la
+        // notificación de tracking activo apareció, pero no se inició nada,
+        // no se movió"): si startTracking() lee un `enabled=false` falso
+        // negativo justo en el borde de cuándo el motor nativo (Tracelet)
+        // realmente terminó de arrancar -- una carrera real entre el
+        // método-channel y el foreground service nativo, no descartada --
+        // el servicio en primer plano y su notificación ya están vivos del
+        // lado nativo aunque Dart haya visto `false`. Sin este stopTracking()
+        // acá, ese motor quedaba huérfano corriendo (notificación incluida)
+        // mientras la app ya volvía a mostrarse como "sin tracking". No hace
+        // daño llamarlo si el motor nunca llegó a arrancar -- stopTracking()
+        // ya está diseñado para no lanzar en ese caso.
+        await BackgroundGpsService.stopTracking();
         await Supabase.instance.client
             .from("sessions")
             .delete()
@@ -447,6 +460,17 @@ class TrackingController {
       _logDebug('TRIP_START_OK', 'Session and section created successfully');
     } catch (e) {
       _logError('TRIP_FLOW_ERROR', e.toString());
+      // REAL BUG FIX (mismo hallazgo que arriba): esta rama se alcanza
+      // también cuando gpsStarted YA dio true -- BackgroundGpsService.
+      // startTracking() confirmó el motor arrancado (notificación real,
+      // visible) -- y DESPUÉS algo lanzó (_saveLocalCheckpoint, el
+      // recordatorio, lo que sea). _resetState() nunca tocaba el motor de
+      // GPS, así que quedaba corriendo huérfano -- notificación de
+      // "tracking activo" pegada en la barra mientras currentState ya
+      // volvía a idle y el dashboard mostraba "sin viaje". Detenerlo acá,
+      // incondicionalmente, es seguro pase lo que pase adentro del try: si
+      // nunca llegó a arrancar, stopTracking() no hace nada.
+      await BackgroundGpsService.stopTracking();
       _resetState();
     }
   }
@@ -659,6 +683,14 @@ class TrackingController {
       // limpio en vez de fingir un resume que nunca ocurrió.
       final gpsStarted = await BackgroundGpsService.startTracking();
       if (!gpsStarted) {
+        // Mismo hallazgo que en startTripFlow (2026-09-15): un `false`
+        // acá puede ser un falso negativo si hay una carrera real entre el
+        // method-channel y el foreground service nativo terminando de
+        // arrancar -- el motor (y su notificación) puede seguir vivo del
+        // lado nativo aunque Dart haya leído `enabled=false`. Detenerlo
+        // acá evita que quede huérfano mientras la sección se revierte a
+        // 'paused'. No hace nada si nunca llegó a arrancar.
+        await BackgroundGpsService.stopTracking();
         try {
           await Supabase.instance.client
               .from('session_sections')
@@ -715,6 +747,12 @@ class TrackingController {
       return true;
     } catch (e) {
       _logError('RESUME_ERROR', e.toString());
+      // Mismo hallazgo que en startTripFlow: si esta excepción llegó DESPUÉS
+      // de que gpsStarted ya diera true (p.ej. _runSegmentStartedAt/
+      // AntifraudEngine.reset/activeSection.copyWith más arriba), el motor
+      // de GPS quedaría corriendo huérfano con currentState nunca llegando
+      // a 'running'. Seguro llamarlo aunque GPS nunca haya arrancado.
+      await BackgroundGpsService.stopTracking();
       return false;
     }
   }
