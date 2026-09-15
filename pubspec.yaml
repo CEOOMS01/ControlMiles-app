@@ -34,7 +34,17 @@ dependencies:
   shared_preferences: ^2.5.4
 
   # --- GPS + background tracking ---
+  # flutter_background_geolocation is a PAID plugin (one-time ~$300 license
+  # for production release). Kept as a dependency and its integration code
+  # kept intact (lib/tracking/engines/bg_geolocation_engine.dart) so nothing
+  # has to be rebuilt once it's paid for -- but genuinely INACTIVE: see
+  # lib/tracking/engines/location_engine_config.dart, which selects
+  # `tracelet` (free, Apache-2.0, github.com/Ikolvi/Tracelet) as the active
+  # engine instead. flutter_background_geolocation's native `ready()`/
+  # `start()` are never called while inactive, so its license requirement
+  # is never triggered by having the package present.
   flutter_background_geolocation: ^5.0.5
+  tracelet: ^3.8.7
   geolocator:
   flutter_background_service: ^5.0.5
   permission_handler: ^12.0.1
