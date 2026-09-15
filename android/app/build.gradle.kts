@@ -41,7 +41,19 @@ android {
 
     defaultConfig {
         applicationId = "com.olimsys.controlmiles"
-        minSdk = flutter.minSdkVersion
+        // tracelet_android's native code (FusedLocationProvider/WorkManager
+        // APIs it relies on) requires API 26 (Android 8.0, 2017) --
+        // flutter.minSdkVersion defaults to 24, which the Gradle manifest
+        // merger correctly rejects rather than silently risk a runtime
+        // crash on those two API levels. By 2026, API 24/25 devices are a
+        // vanishing sliver of the active Android install base (Play
+        // Console's own distribution data puts it well under ~1-2%), so
+        // raising the floor here is the standard trade-off, not a
+        // workaround -- NOT using tools:overrideLibrary, which Gradle's own
+        // error suggests as an alternative: that only silences this check,
+        // it doesn't make tracelet's APIs exist on API 24/25, so it would
+        // still crash at runtime on exactly the devices it claims to support.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
