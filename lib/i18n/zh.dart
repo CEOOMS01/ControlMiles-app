@@ -430,6 +430,8 @@ const Map<String, String> zhTexts = {
   'auto_trip_started_body': '正在追踪：',
   'forgotten_trip_notification_title': '你的行程仍在进行中',
   'forgotten_trip_notification_body': '忘记结束行程了吗？打开 ControlMiles 暂停或结束。',
+  'pause_reminder_notification_title': '你的行程已暂停',
+  'pause_reminder_notification_body': '已暂停几分钟了 — 打开 ControlMiles 继续或结束行程。',
   'weekly_summary_notification_title': '你的每周摘要已就绪',
   'weekly_summary_notification_body': '查看本周记录的里程数。',
   'torch_suggestion': '太暗了？点击开启手电筒',

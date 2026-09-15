@@ -494,4 +494,7 @@ const Map<String, String> koTexts = {
   'generate_report_code_disclaimer': '최대 2회까지 사용 가능합니다. 이 앱이 보증하지 않습니다 -- 공제 목적으로만 사용하세요.',
   'report_portal_section': '리포트 포털',
   'report_portal_section_subtitle': '세무 담당자를 위한 코드를 생성하세요',
+
+  'pause_reminder_notification_title': '주행이 일시정지되었습니다',
+  'pause_reminder_notification_body': '몇 분 동안 일시정지 상태입니다 — ControlMiles를 열어 재개하거나 종료하세요.',
 };

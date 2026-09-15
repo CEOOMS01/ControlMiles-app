@@ -493,4 +493,7 @@ const Map<String, String> jaTexts = {
   'generate_report_code_disclaimer': '最大2回まで使用可能です。このアプリによる保証はありません -- 控除目的でご利用ください。',
   'report_portal_section': 'レポートポータル',
   'report_portal_section_subtitle': '税務担当者用のコードを生成',
+
+  'pause_reminder_notification_title': '旅行は一時停止中です',
+  'pause_reminder_notification_body': '数分間一時停止されています。ControlMilesを開いて再開または終了してください。',
 };

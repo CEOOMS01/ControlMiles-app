@@ -512,4 +512,7 @@ const Map<String, String> arTexts = {
   'generate_report_code_disclaimer': 'قابل للاستخدام حتى مرتين. غير مضمون من قبل هذا التطبيق -- لأغراض الخصم.',
   'report_portal_section': 'بوابة التقارير',
   'report_portal_section_subtitle': 'أنشئ رمزًا لمحاسب الضرائب الخاص بك',
+
+  'pause_reminder_notification_title': 'رحلتك متوقفة مؤقتًا',
+  'pause_reminder_notification_body': 'توقفت مؤقتًا لعدة دقائق — افتح ControlMiles لاستئنافها أو إنهائها.',
 };

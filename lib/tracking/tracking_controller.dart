@@ -595,6 +595,13 @@ class TrackingController {
             payload: {"miles": _totalSectionMiles},
           );
         }
+
+        // Recordatorio de pausa (pedido explícito, 2026-09-15): mismo
+        // mecanismo que scheduleForgottenTripReminder -- AlarmManager vía
+        // zonedSchedule, dispara aunque el proceso quede en background o
+        // el SO lo mate. Cancelado en resumeTracking/stopTracking/
+        // endCurrentSection de abajo; no debe tumbar la pausa si falla.
+        await NotificationService.instance.schedulePauseReminder();
       } catch (e) {
         _logError('PAUSE_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -698,6 +705,8 @@ class TrackingController {
           eventType: "TRACKING_RESUMED",
           payload: {"miles": _totalSectionMiles},
         );
+
+        await NotificationService.instance.cancelPauseReminder();
       } catch (e) {
         _logError('RESUME_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -847,6 +856,8 @@ class TrackingController {
 
     try {
       await BackgroundGpsService.stopTracking();
+      // No-op si no había ninguno pendiente (p.ej. End Trip desde 'running').
+      await NotificationService.instance.cancelPauseReminder();
 
       final sectionClosed = await endCurrentSection();
       if (!sectionClosed) {
@@ -1086,6 +1097,18 @@ class TrackingController {
     }
   }
 
+  /// Mismo criterio que _rescheduleForgottenTripReminderIfRunning justo
+  /// arriba, pero para el recordatorio de pausa: si la app se recupera con
+  /// currentState == paused (reinicio de app, headless, lo que sea), el
+  /// recordatorio programado antes de morir el proceso se perdió junto con
+  /// él -- re-armarlo desde AHORA en cada uno de los 3 puntos de
+  /// recuperación, igual que ya se hace para 'running'.
+  static Future<void> _reschedulePauseReminderIfPaused() async {
+    if (currentState == TrackingState.paused) {
+      await NotificationService.instance.schedulePauseReminder();
+    }
+  }
+
   static Future<bool> _hasGoodConnection() async {
     try {
       return Supabase.instance.client.auth.currentUser != null;
@@ -1149,6 +1172,7 @@ class TrackingController {
           await BackgroundGpsService.startTracking();
         }
         await _rescheduleForgottenTripReminderIfRunning();
+        await _reschedulePauseReminderIfPaused();
         _logDebug(
           'RECOVERY_OK',
           'Recovered 100% offline from local checkpoint',
@@ -1167,6 +1191,7 @@ class TrackingController {
           await BackgroundGpsService.startTracking();
         }
         await _rescheduleForgottenTripReminderIfRunning();
+        await _reschedulePauseReminderIfPaused();
         _logDebug(
           'RECOVERY_OK',
           'Recovered from local storage (section hydrated via DB)',
@@ -1223,6 +1248,7 @@ class TrackingController {
           await BackgroundGpsService.startTracking();
         }
         await _rescheduleForgottenTripReminderIfRunning();
+        await _reschedulePauseReminderIfPaused();
 
         await _saveLocalCheckpoint();
         _logDebug('RECOVERY_OK', 'Recovered from database');

@@ -528,6 +528,8 @@ const Map<String, String> esTexts = {
   'auto_trip_started_body': 'Ahora rastreando con',
   'forgotten_trip_notification_title': 'Tu viaje sigue activo',
   'forgotten_trip_notification_body': '¿Olvidaste terminarlo? Revisa ControlMiles para pausar o finalizar.',
+  'pause_reminder_notification_title': 'Tu viaje está en pausa',
+  'pause_reminder_notification_body': 'Lleva varios minutos en pausa — abre ControlMiles para reanudarlo o finalizarlo.',
   'weekly_summary_notification_title': 'Tu resumen semanal está listo',
   'weekly_summary_notification_body': 'Revisa cuántas millas registraste esta semana en ControlMiles.',
   'torch_suggestion': '¿Muy oscuro? Toca para usar el flash',

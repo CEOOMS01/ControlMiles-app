@@ -41,6 +41,7 @@ class NotificationService {
   static const int _midTripSwitchNotificationId = 1004;
   static const int _autoTripStartedNotificationId = 1005;
   static const int _autoDetectFailedNotificationId = 1006;
+  static const int _pauseReminderNotificationId = 1007;
 
   static const String _channelId = 'controlmiles_reminders';
   static const String _channelName = 'Recordatorios';
@@ -63,6 +64,16 @@ class NotificationService {
   static const String _switchConfirmChannelName = 'Cambio de app confirmado';
   static const String _switchConfirmChannelDescription =
       'Aviso visible cuando la detección automática cambia de app gig durante un viaje';
+
+  // Mismo criterio de Importance.high que _switchConfirmChannelId de
+  // arriba: el driver no está mirando la app mientras el viaje está en
+  // pausa (probablemente ni siquiera el teléfono), así que el recordatorio
+  // necesita empujarse por encima de lo que sea que esté en pantalla, no
+  // quedarse callado en la bandeja.
+  static const String _pauseReminderChannelId = 'controlmiles_pause_reminder';
+  static const String _pauseReminderChannelName = 'Recordatorio de pausa';
+  static const String _pauseReminderChannelDescription =
+      'Aviso cuando el tracking lleva varios minutos en pausa, por si se olvidó reanudar o finalizar el viaje';
 
   // Referencia opcional al GlobalKey<NavigatorState> de MaterialApp, seteada
   // desde main.dart — permite que tocar la notificación de resumen semanal
@@ -133,10 +144,18 @@ class NotificationService {
       importance: Importance.high,
     );
 
+    const pauseReminderChannel = AndroidNotificationChannel(
+      _pauseReminderChannelId,
+      _pauseReminderChannelName,
+      description: _pauseReminderChannelDescription,
+      importance: Importance.high,
+    );
+
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
     await androidPlugin?.createNotificationChannel(switchConfirmChannel);
+    await androidPlugin?.createNotificationChannel(pauseReminderChannel);
   }
 
   Future<void> _requestPermissions() async {
@@ -241,6 +260,50 @@ class NotificationService {
 
   Future<void> cancelForgottenTripReminder() async {
     await _plugin.cancel(_forgottenTripNotificationId);
+  }
+
+  // ============================================================
+  // TRACKING EN PAUSA
+  // ============================================================
+  /// Programa un recordatorio único, threshold minutos después de AHORA --
+  /// mismo mecanismo que scheduleForgottenTripReminder (AlarmManager vía
+  /// zonedSchedule, sobrevive backgrounding/kill del proceso). Se llama
+  /// desde TrackingController.pauseTracking() al pausar, y desde los 3
+  /// puntos de recuperación en frío (_recoverActiveState) si el estado
+  /// recuperado ya estaba en pausa -- mismo criterio que
+  /// _rescheduleForgottenTripReminderIfRunning ya usa para 'running'.
+  Future<void> schedulePauseReminder({
+    Duration threshold = const Duration(minutes: 5),
+  }) async {
+    if (!_initialized) return;
+    if (!await _isEnabledInPrefs()) return;
+
+    final scheduledDate = tz.TZDateTime.now(tz.local).add(threshold);
+    final title = await _tr('pause_reminder_notification_title');
+    final body = await _tr('pause_reminder_notification_body');
+
+    await _plugin.zonedSchedule(
+      _pauseReminderNotificationId,
+      title,
+      body,
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _pauseReminderChannelId,
+          _pauseReminderChannelName,
+          channelDescription: _pauseReminderChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  Future<void> cancelPauseReminder() async {
+    await _plugin.cancel(_pauseReminderNotificationId);
   }
 
   // ============================================================

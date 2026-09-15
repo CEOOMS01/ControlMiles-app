@@ -504,4 +504,7 @@ const Map<String, String> hiTexts = {
   'generate_report_code_disclaimer': '2 बार तक उपयोग करने योग्य। यह ऐप इसकी गारंटी नहीं देता -- कटौती के उद्देश्यों के लिए।',
   'report_portal_section': 'रिपोर्ट पोर्टल',
   'report_portal_section_subtitle': 'अपने टैक्स तैयारकर्ता के लिए एक कोड बनाएं',
+
+  'pause_reminder_notification_title': 'आपकी यात्रा रुकी हुई है',
+  'pause_reminder_notification_body': 'यह कुछ मिनटों से रुकी हुई है — इसे फिर से शुरू करने या समाप्त करने के लिए ControlMiles खोलें।',
 };

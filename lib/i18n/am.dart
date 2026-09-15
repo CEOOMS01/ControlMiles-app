@@ -480,4 +480,7 @@ const Map<String, String> amTexts = {
   'generate_report_code_disclaimer': 'እስከ 2 ጊዜ ጥቅም ላይ ሊውል ይችላል። በዚህ መተግበሪያ የተረጋገጠ አይደለም -- ለቅናሽ ዓላማዎች።',
   'report_portal_section': 'የሪፖርት በር',
   'report_portal_section_subtitle': 'ለግብር አዘጋጅዎ ኮድ ይፍጠሩ',
+
+  'pause_reminder_notification_title': 'ጉዞዎ ቆሟል',
+  'pause_reminder_notification_body': 'ለተወሰኑ ደቂቃዎች ቆሟል -- ለመቀጠል ወይም ለማጠናቀቅ ControlMiles ይክፈቱ።',
 };
