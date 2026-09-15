@@ -1,0 +1,29 @@
+-- CRITICAL SECURITY ITEM (2026-09-15, launch audit) -- REQUIRES DASHBOARD ACTION.
+--
+-- The `http` Postgres extension is installed in the `public` schema and its
+-- functions (http_get/http_post/http/...) are EXECUTE-granted to PUBLIC, so
+-- `anon` and `authenticated` can call them through PostgREST at
+-- /rest/v1/rpc/http_get. Anyone holding the public anon key (shipped in every
+-- app install) can make the database issue arbitrary outbound HTTP requests --
+-- a server-side request forgery (SSRF) surface. Confirmed live:
+--   has_function_privilege('anon','http_get(varchar)','EXECUTE') = true
+--
+-- Impact of removal: NONE for ControlMiles. An audit of every DB function/view
+-- found zero uses of the `http` extension (all outbound HTTP happens in the
+-- Deno edge functions via fetch, and pg_net is a separate extension). The
+-- `http` extension is simply unused.
+--
+-- Why this can't run as a normal migration: both `http` and `postgis` are owned
+-- by `supabase_admin`, and the `postgres` role used by migrations is NOT a
+-- member of it -- so `postgres` can neither REVOKE the supabase_admin-granted
+-- EXECUTE (a REVOKE by a non-grantor is a silent no-op) nor ALTER/DROP the
+-- extension. `SET ROLE supabase_admin` is also denied to postgres.
+--
+-- ACTION REQUIRED (Supabase Dashboard, project zuujwmcftycmdaxesdya):
+--   Database -> Extensions -> search "http" -> toggle OFF (disable).
+-- This drops the http* functions and closes the SSRF entirely. Nothing depends
+-- on it. (Optionally also relocate `postgis` out of `public` per advisor 0014,
+-- but that is a low-severity hygiene item, not a launch blocker.)
+--
+-- This file is a record of the required manual step; it intentionally contains
+-- no executable DDL because the migration role cannot perform it.
