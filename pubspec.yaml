@@ -145,6 +145,26 @@ dev_dependencies:
 # es seguro en la práctica aunque técnicamente "rompe" lo que declaró.
 dependency_overrides:
   timezone: ^0.11.0
+  # tracelet_platform_interface declares flutter_rust_bridge: ^2.12.0 (a
+  # caret constraint), which let pub resolve the newer 2.13.0 -- but
+  # flutter_rust_bridge requires EXACT version parity between the
+  # pre-generated Rust-bridge code baked into tracelet_android's native
+  # library (built against 2.12.0's codegen) and the Dart runtime package,
+  # not just semver-compatible. Real crash found live on a physical device
+  # (2026-09-15): "Bad state: tracelet_core's codegen version (2.12.0)
+  # should be the same as runtime version (2.13.0)" -- TraceletEngine.
+  # initialize() failed every time, so BackgroundGpsService.startTracking()
+  # never confirmed the engine running, the trip start was aborted, yet the
+  # native foreground-service notification could still appear from tracelet's
+  # own partial init -- exactly the reported "notification shows tracking
+  # active but nothing started." Pinning to the exact version the codegen
+  # was built against is the correct fix here, not a workaround: a caret
+  # constraint on a flutter_rust_bridge-based package is unsafe by
+  # construction (see the error's own link,
+  # cjycode.com/flutter_rust_bridge/guides/miscellaneous/upgrade/regular),
+  # this override just enforces what tracelet_platform_interface itself
+  # should have pinned exactly.
+  flutter_rust_bridge: 2.12.0
 
 # ============================================================
 # FLUTTER CONFIG
