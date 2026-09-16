@@ -100,6 +100,50 @@
             android:foregroundServiceType="location"
             android:exported="false"/>
 
+        <!-- ===================================================== -->
+        <!-- flutter_local_notifications scheduled-notification receivers -->
+        <!-- ===================================================== -->
+        <!--
+             BUG FIX (2026-09-16, reported live: "el recordatorio de pausa no
+             aparece, llevo 15+ minutos pausado y nada").
+
+             flutter_local_notifications 19.x ships an AndroidManifest that
+             declares ONLY permissions (VIBRATE, POST_NOTIFICATIONS) and NO
+             receivers - verified directly in the pub cache. From v19 the app
+             must register them itself. None of them were registered here, so
+             zonedSchedule() was setting a real AlarmManager alarm that
+             broadcast an Intent to a receiver that does not exist: the alarm
+             fired and went nowhere. The call itself never throws, which is why
+             nothing showed up in logs either.
+
+             This silently broke EVERY scheduled notification in the app -
+             pause reminder, forgotten-trip reminder and weekly summary.
+             Immediate .show() notifications (mid-trip switch, auto-detect
+             failure) were unaffected: they never touch AlarmManager.
+        -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+
+        <!-- Re-registers pending scheduled notifications after a reboot or an
+             app update; without it a paused trip's reminder is lost whenever
+             the phone restarts. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Delivers notification action-button taps back to the Dart side. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false"/>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
