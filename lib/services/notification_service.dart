@@ -313,25 +313,63 @@ class NotificationService {
     Duration(hours: 4),
   ];
 
-  Future<void> schedulePauseReminder() async {
+  /// Ancla de la escalera: timestamp (ms epoch) del momento en que se pausó.
+  static const String _pauseAnchorKey = 'controlmiles_pause_reminder_anchor_ms';
+
+  /// BUG FIX (2026-09-16, encontrado en vivo con dumpsys alarm): la primera
+  /// versión de esto programaba los peldaños como `now + offset` y cancelaba
+  /// la escalera anterior en cada llamada. Pero `_reschedulePauseReminderIfPaused`
+  /// corre desde `initializeOrRecover()`, que `AppLifecycleObserver` invoca
+  /// CADA VEZ que la app vuelve a primer plano. Efecto: cada vez que el
+  /// conductor abría la app, la escalera se reiniciaba desde cero y el
+  /// peldaño de 5 minutos se cancelaba y se reposponía antes de poder
+  /// dispararse. Se observó en vivo: las alarmas saltaron de 00:48:36 a
+  /// 00:54:25 sin que ninguna llegara a sonar.
+  ///
+  /// Ahora la escalera se ancla al INSTANTE REAL DE LA PAUSA, persistido en
+  /// disco, y los peldaños son horas absolutas (`anchor + offset`).
+  /// Reprogramar pasa a ser idempotente: recalcula exactamente las mismas
+  /// horas, así que abrir la app veinte veces no mueve nada. Los peldaños ya
+  /// vencidos simplemente no se re-programan.
+  ///
+  /// [restart] en true SOLO al pausar de verdad (arranca un ancla nueva);
+  /// en false desde los caminos de recuperación, que deben respetar el ancla
+  /// ya existente.
+  Future<void> schedulePauseReminder({bool restart = false}) async {
     if (!_initialized) return;
     if (!await _isEnabledInPrefs()) return;
 
-    // Limpia cualquier escalera anterior antes de armar la nueva, para que
-    // re-programar (p.ej. al recuperar estado en un arranque en frío) no deje
-    // avisos viejos sueltos apuntando a horas que ya no corresponden.
-    await cancelPauseReminder();
+    final prefs = await SharedPreferences.getInstance();
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
 
+    final int anchorMs;
+    if (restart || !prefs.containsKey(_pauseAnchorKey)) {
+      anchorMs = nowMs;
+      await prefs.setInt(_pauseAnchorKey, anchorMs);
+    } else {
+      anchorMs = prefs.getInt(_pauseAnchorKey)!;
+    }
+
+    // Solo cancela las ALARMAS (no el ancla): se re-arman abajo con las
+    // mismas horas absolutas, de modo que no hay deriva entre llamadas.
+    await _cancelPauseReminderAlarms();
+
+    final anchor = tz.TZDateTime.fromMillisecondsSinceEpoch(tz.local, anchorMs);
     final now = tz.TZDateTime.now(tz.local);
     final title = await _tr('pause_reminder_notification_title');
     final body = await _tr('pause_reminder_notification_body');
 
     for (var i = 0; i < _pauseReminderLadder.length; i++) {
+      final when = anchor.add(_pauseReminderLadder[i]);
+      // Peldaño ya vencido (la app se abrió cuando la pausa llevaba rato):
+      // no tiene sentido re-programarlo en el pasado.
+      if (!when.isAfter(now)) continue;
+
       await _plugin.zonedSchedule(
         _pauseReminderNotificationId + i,
         title,
         body,
-        now.add(_pauseReminderLadder[i]),
+        when,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             _pauseReminderChannelId,
@@ -349,12 +387,19 @@ class NotificationService {
     }
   }
 
-  /// Cancela la escalera COMPLETA, no solo el primer aviso: al reanudar o
-  /// cerrar el viaje no debe quedar ni uno pendiente.
-  Future<void> cancelPauseReminder() async {
+  Future<void> _cancelPauseReminderAlarms() async {
     for (var i = 0; i < _pauseReminderLadder.length; i++) {
       await _plugin.cancel(_pauseReminderNotificationId + i);
     }
+  }
+
+  /// Cancela la escalera COMPLETA y borra el ancla: al reanudar o cerrar el
+  /// viaje no debe quedar ni un aviso pendiente, y la próxima pausa tiene que
+  /// arrancar su propio conteo desde cero.
+  Future<void> cancelPauseReminder() async {
+    await _cancelPauseReminderAlarms();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pauseAnchorKey);
   }
 
   // ============================================================

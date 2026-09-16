@@ -625,7 +625,10 @@ class TrackingController {
         // zonedSchedule, dispara aunque el proceso quede en background o
         // el SO lo mate. Cancelado en resumeTracking/stopTracking/
         // endCurrentSection de abajo; no debe tumbar la pausa si falla.
-        await NotificationService.instance.schedulePauseReminder();
+        // restart: true -- esta es la pausa REAL, arranca un ancla nueva.
+        // Los caminos de recuperación llaman sin restart para respetar el
+        // ancla ya existente (ver schedulePauseReminder).
+        await NotificationService.instance.schedulePauseReminder(restart: true);
       } catch (e) {
         _logError('PAUSE_SIDE_EFFECT_ERROR', e.toString());
       }
