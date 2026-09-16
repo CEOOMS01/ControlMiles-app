@@ -70,25 +70,90 @@ async function isRateLimited(clientId: string): Promise<boolean> {
   return !data;
 }
 
+// Rediseño de marca (pedido explícito, 2026-09-16): antes era HTML genérico
+// azul-sobre-blanco sin logo, sin relación visual con la identidad real de
+// controlmiles.com (landing.css: fondo cream #faf6ee, tinta #211c14, azul
+// de marca #2c6c99, ámbar #bd5b26, serif Fraunces para titulares). Este
+// email ahora usa esa misma paleta y el logo real (servido públicamente
+// desde controlmiles-web/public/logo_controlmiles.png) para que sea
+// reconocible como ControlMiles desde el primer vistazo, no un correo
+// transaccional genérico. Tabla + estilos inline a propósito -- es lo único
+// que Outlook/Gmail/Apple Mail renderizan de forma consistente; CSS externo
+// o flexbox/grid no son opciones seguras en HTML de email.
 function buildEmailHtml(orgName: string, inviteUrl: string): string {
   const safeOrgName = orgName.replace(/[<>&]/g, '');
-  return `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2 style="color:#111827;">You've been invited to join ${safeOrgName} on ControlMiles</h2>
-      <p style="color:#374151; line-height:1.5;">
-        <strong>${safeOrgName}</strong> has invited you to join their fleet on ControlMiles
-        as a driver. Tap the link below to accept the invitation:
-      </p>
-      <p style="text-align:center; margin:32px 0;">
-        <a href="${inviteUrl}" style="background:#2563eb; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
-          Accept invitation
-        </a>
-      </p>
-      <p style="color:#9ca3af; font-size:13px;">
-        This link expires in 7 days. If you weren't expecting this invitation, you can safely ignore this email.
-      </p>
-    </div>
-  `;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ControlMiles</title>
+</head>
+<body style="margin:0; padding:0; background-color:#faf6ee; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf6ee; padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px; width:100%; background-color:#ffffff; border:1px solid #e3d9c4; border-radius:16px; overflow:hidden;">
+          <tr>
+            <td style="padding:32px 40px 0 40px;" align="left">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle; padding-right:10px;">
+                    <img src="https://controlmiles.com/logo_controlmiles.png" width="32" height="32" alt="ControlMiles" style="display:block; border-radius:8px;">
+                  </td>
+                  <td style="vertical-align:middle; font-size:19px; font-weight:700; color:#211c14;">
+                    Control<span style="color:#2c6c99;">Miles</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 40px 0 40px;">
+              <p style="margin:0; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#bd5b26;">
+                FLEET INVITE
+              </p>
+              <h1 style="margin:10px 0 0 0; font-size:26px; line-height:1.25; font-weight:700; color:#211c14;">
+                You've been invited to join<br>${safeOrgName}
+              </h1>
+              <p style="margin:16px 0 0 0; font-size:15px; line-height:1.6; color:#6b6250;">
+                <strong style="color:#211c14;">${safeOrgName}</strong> has invited you to join their fleet on ControlMiles as a driver — GPS trip tracking, odometer verification, and mileage records ready for tax season.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 40px 0 40px;" align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:999px; background-color:#2c6c99;">
+                    <a href="${inviteUrl}" style="display:inline-block; padding:13px 32px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
+                      Accept invitation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 40px 32px 40px;">
+              <p style="margin:0; font-size:12px; line-height:1.6; color:#9a9080; text-align:center;">
+                This link expires in 7 days. If you weren't expecting this invitation, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 40px; background-color:#faf6ee; border-top:1px solid #e3d9c4;" align="center">
+              <p style="margin:0; font-size:11px; color:#9a9080;">
+                ControlMiles by Olimsys
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 Deno.serve(async (req: Request) => {
