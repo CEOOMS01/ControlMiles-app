@@ -775,4 +775,16 @@ const Map<String, String> ptTexts = {
   'generate_report_code_disclaimer': 'Utilizável até 2 vezes. Não garantido por este aplicativo -- para fins de dedução.',
   'report_portal_section': 'Report Portal',
   'report_portal_section_subtitle': 'Gere um código para seu contador',
+
+  // 2026-09-16: claves que faltaban frente a en.dart (turno de cierre + errores de captura).
+  'end_shift': 'ENCERRAR TURNO',
+  'end_shift_tooltip': 'Toque para encerrar o seu turno de trabalho',
+  'end_shift_failed': 'Não foi possível encerrar o turno — o rastreamento continua ativo. Tente novamente.',
+  'session_already_closed': 'Esta sessão já está encerrada e não pode ser modificada.',
+  'session_not_found': 'Erro crítico: sessão ativa não encontrada.',
+  'session_already_finalized': 'Esta sessão já foi finalizada.',
+  'duplicate_capture': 'Já existe uma captura registrada para este evento.',
+  'photo_size_out_of_range': 'A foto está fora do tamanho permitido ({min}KB–{max}MB). Tente novamente.',
+  'photo_format_not_supported': 'Formato de foto não suportado. Formatos permitidos: {formats}.',
+
 };

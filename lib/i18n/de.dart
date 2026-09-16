@@ -775,4 +775,16 @@ const Map<String, String> deTexts = {
   'generate_report_code_disclaimer': 'Bis zu 2-mal verwendbar. Nicht von dieser App garantiert -- für Abzugszwecke.',
   'report_portal_section': 'Report Portal',
   'report_portal_section_subtitle': 'Erstellen Sie einen Code für Ihren Steuerberater',
+
+  // 2026-09-16: claves que faltaban frente a en.dart (turno de cierre + errores de captura).
+  'end_shift': 'SCHICHT BEENDEN',
+  'end_shift_tooltip': 'Tippen, um deine Arbeitsschicht zu beenden',
+  'end_shift_failed': 'Schicht konnte nicht beendet werden — Aufzeichnung läuft weiter. Bitte erneut versuchen.',
+  'session_already_closed': 'Diese Sitzung ist bereits geschlossen und kann nicht mehr geändert werden.',
+  'session_not_found': 'Kritischer Fehler: aktive Sitzung nicht gefunden.',
+  'session_already_finalized': 'Diese Sitzung wurde bereits abgeschlossen.',
+  'duplicate_capture': 'Für dieses Ereignis ist bereits eine Aufnahme registriert.',
+  'photo_size_out_of_range': 'Das Foto liegt außerhalb der zulässigen Größe ({min}KB–{max}MB). Bitte erneut versuchen.',
+  'photo_format_not_supported': 'Fotoformat nicht unterstützt. Zulässige Formate: {formats}.',
+
 };

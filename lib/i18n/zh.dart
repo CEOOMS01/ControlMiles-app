@@ -775,4 +775,16 @@ const Map<String, String> zhTexts = {
   'generate_report_code_disclaimer': '最多可使用2次。本应用不保证其有效性——仅供抵扣用途参考。',
   'report_portal_section': '报告门户',
   'report_portal_section_subtitle': '为你的报税员生成一个代码',
+
+  // 2026-09-16: claves que faltaban frente a en.dart (turno de cierre + errores de captura).
+  'end_shift': '结束轮班',
+  'end_shift_tooltip': '点击以结束您的工作轮班',
+  'end_shift_failed': '无法结束轮班——仍在记录中。请重试。',
+  'session_already_closed': '此会话已关闭，无法修改。',
+  'session_not_found': '严重错误：未找到进行中的会话。',
+  'session_already_finalized': '此会话已完成。',
+  'duplicate_capture': '此事件已登记过一次拍摄记录。',
+  'photo_size_out_of_range': '照片大小超出允许范围（{min}KB–{max}MB）。请重试。',
+  'photo_format_not_supported': '不支持该照片格式。允许的格式：{formats}。',
+
 };
