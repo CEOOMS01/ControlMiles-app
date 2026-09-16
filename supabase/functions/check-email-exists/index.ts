@@ -43,8 +43,17 @@ function respond(body: unknown, status = 200) {
   });
 }
 
-async function isRateLimited(client: ReturnType<typeof createClient>, clientId: string): Promise<boolean> {
-  const { data, error } = await client.rpc('check_rate_limit', {
+async function isRateLimited(clientId: string): Promise<boolean> {
+  // SECURITY (2026-09-16): this RPC is called with the SERVICE-ROLE key, not
+  // the anon/user key. check_rate_limit is EXECUTE-revoked from anon and
+  // authenticated so that nobody holding the public key can fill another
+  // user's bucket (a targeted lockout) or bloat edge_function_rate_limits at
+  // will. The service-role key never leaves the edge function.
+  const rlClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+  const { data, error } = await rlClient.rpc('check_rate_limit', {
     p_fn_name: 'check-email-exists',
     p_client_key: clientId,
     p_max_requests: RATE_LIMIT_MAX,
@@ -70,10 +79,8 @@ Deno.serve(async (req: Request) => {
       ?? 'unknown';
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const anonClient = createClient(supabaseUrl, anonKey);
 
-    if (await isRateLimited(anonClient, clientId)) {
+    if (await isRateLimited(clientId)) {
       return respond({ exists: false, reason: 'rate_limited' }, 429);
     }
 

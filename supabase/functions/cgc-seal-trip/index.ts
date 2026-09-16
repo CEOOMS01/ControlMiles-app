@@ -52,8 +52,17 @@ const CGC_TIMEOUT_MS = 10000; // Vercel cold starts on CGC Core (SCM/KMS,
 const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 
-async function isRateLimited(client: ReturnType<typeof createClient>, clientId: string): Promise<boolean> {
-  const { data, error } = await client.rpc('check_rate_limit', {
+async function isRateLimited(clientId: string): Promise<boolean> {
+  // SECURITY (2026-09-16): this RPC is called with the SERVICE-ROLE key, not
+  // the anon/user key. check_rate_limit is EXECUTE-revoked from anon and
+  // authenticated so that nobody holding the public key can fill another
+  // user's bucket (a targeted lockout) or bloat edge_function_rate_limits at
+  // will. The service-role key never leaves the edge function.
+  const rlClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+  const { data, error } = await rlClient.rpc('check_rate_limit', {
     p_fn_name: 'cgc-seal-trip',
     p_client_key: clientId,
     p_max_requests: RATE_LIMIT_MAX,
@@ -113,7 +122,7 @@ Deno.serve(async (req: Request) => {
       return respond({ sealed: false, reason: 'Invalid or expired session' }, 401);
     }
 
-    if (await isRateLimited(userClient, userData.user.id)) {
+    if (await isRateLimited(userData.user.id)) {
       return respond({ sealed: false, reason: 'rate_limited' }, 429);
     }
 
