@@ -9,7 +9,7 @@
 
   Why it has to go: the Android safe zone is already baked into the foreground
   ASSET itself. assets/images/logo_controlmiles_launcher_foreground.png is a
-  1024x1024 square whose glyph occupies 52% of the canvas height, centered --
+  1024x1024 square whose glyph occupies 52% of the canvas height, centered:
   comfortably inside the 72dp-of-108dp (66.7%) area every OEM mask is
   guaranteed to show. Applying the tool's inset on top of that padding would
   draw the glyph into only 68% of the canvas, shrinking it to ~35% of the icon
