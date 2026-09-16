@@ -51,3 +51,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Visual Studio workspace cache (ProjectSettings/VSWorkspaceState/slnx.sqlite)
+# -- per-machine IDE state, never project content.
+.vs/
+
+# Supabase CLI local cache (holds only a cli-latest version marker).
+supabase/.temp/
