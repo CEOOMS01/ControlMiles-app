@@ -796,4 +796,12 @@ const Map<String, String> zhTexts = {
   'notif_type_gig_app_switch': '已切换零工应用',
   'notif_type_auto_trip_started': '行程已自动开始',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': '应用使用情况访问权限',
+  'usage_access_desc': '让 ControlMiles 知道您打开了哪个零工应用，以便自动开始行程。',
+  'usage_access_onboarding_body': '自动行程检测需要“使用情况访问权限”。安卓只能在设置中授予，无法通过普通弹窗授予。您可以先跳过，之后在设置中开启。',
+  'usage_access_required_title': '需要使用情况访问权限',
+  'usage_access_required_body': '没有“使用情况访问权限”，自动检测无法知道哪个零工应用已打开。请在设置中授予，然后重新开启自动检测。',
+
 };

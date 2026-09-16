@@ -269,6 +269,54 @@ class AutoTripDetectionService {
 
     if (!context.mounted) return false;
 
+    // BUG FIX (2026-09-16, reportado en vivo: "al activarlo no está leyendo
+    // ninguna gig app de las ya integradas"). Armar solo comprobaba los
+    // permisos de UBICACIÓN. La detección de gig app depende de otro
+    // completamente distinto -- Usage Access (PACKAGE_USAGE_STATS) -- y sin
+    // él detectActiveGigAppId() devuelve null en cada sondeo, para siempre,
+    // en silencio absoluto.
+    //
+    // No es hipotético: la causa real de ese reporte fue el renombrado del
+    // paquete Android en 1c5aaeb (com.example.controlmiles ->
+    // com.olimsys.controlmiles, obligatorio antes de publicar en Play).
+    // Usage Access se concede POR NOMBRE DE PAQUETE, así que el renombrado
+    // lo revocó sin avisar y auto-detect quedó muerto una semana sin un
+    // solo error en ningún log. Confirmado en el dispositivo real: appops
+    // reportaba GET_USAGE_STATS como nunca concedido al paquete nuevo.
+    //
+    // El sitio normal donde se pide es el onboarding (welcome_page), una
+    // sola vez. Esto de aquí NO es repetir la pregunta: es la precondición
+    // de la función que el usuario acaba de encender. Se comprueba ANTES de
+    // la captura de odómetro para no hacerle fotografiar el odómetro y
+    // decirle después que falta un permiso.
+    if (GigAppDetectionService.instance.isSupported &&
+        !await GigAppDetectionService.instance.hasUsageAccess()) {
+      if (!context.mounted) return false;
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(appState.tr('usage_access_required_title')),
+          content: Text(appState.tr('usage_access_required_body')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(appState.tr('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(appState.tr('open_settings')),
+            ),
+          ],
+        ),
+      );
+      if (openSettings == true) {
+        await GigAppDetectionService.instance.openUsageAccessSettings();
+      }
+      // No se arma: "armado pero ciego" es exactamente el estado que este
+      // arreglo existe para impedir.
+      return false;
+    }
+
     // Weekly odometer checkpoint (explicit user request, 2026-09-03): if
     // this vehicle's current calendar week already has a start reading
     // (fresh this week, or rolled forward from a missed close last week),

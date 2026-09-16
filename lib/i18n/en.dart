@@ -852,4 +852,12 @@ const Map<String, String> enTexts = {
   'notif_type_gig_app_switch': 'Gig app switched',
   'notif_type_auto_trip_started': 'Trip started automatically',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'App usage access',
+  'usage_access_desc': 'Lets ControlMiles see which gig app you have open, so it can start your trip automatically.',
+  'usage_access_onboarding_body': 'Automatic trip detection needs "Usage access". Android only grants it from Settings, not from a normal prompt. You can skip this now and turn it on later from Settings.',
+  'usage_access_required_title': 'Usage access needed',
+  'usage_access_required_body': 'Automatic detection can\'t see which gig app is open without "Usage access". Grant it in Settings, then turn automatic detection on again.',
+
 };

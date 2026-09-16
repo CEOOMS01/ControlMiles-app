@@ -776,4 +776,12 @@ const Map<String, String> koTexts = {
   'notif_type_gig_app_switch': '긱 앱 전환됨',
   'notif_type_auto_trip_started': '운행 자동 시작됨',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': '앱 사용 정보 접근',
+  'usage_access_desc': '어떤 긱 앱을 열었는지 ControlMiles가 확인해 운행을 자동으로 시작할 수 있게 합니다.',
+  'usage_access_onboarding_body': '운행 자동 감지에는 "사용 정보 접근"이 필요합니다. 안드로이드는 일반 권한 요청이 아니라 설정에서만 허용할 수 있습니다. 지금 건너뛰고 나중에 설정에서 켤 수 있습니다.',
+  'usage_access_required_title': '사용 정보 접근이 필요합니다',
+  'usage_access_required_body': '"사용 정보 접근" 없이는 자동 감지가 어떤 긱 앱이 열려 있는지 알 수 없습니다. 설정에서 허용한 뒤 자동 감지를 다시 켜세요.',
+
 };

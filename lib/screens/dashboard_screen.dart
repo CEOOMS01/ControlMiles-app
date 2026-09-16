@@ -451,7 +451,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     try {
       final permissionsOk = await PermissionRecoveryService.hasCriticalPermissions();
       if (!permissionsOk && mounted) {
-        await PermissionRecoveryService.showRecoveryDialog(context);
+        // Limitado a propósito: esto salta en CADA vuelta a la app, no
+        // porque el usuario haya pedido nada. Ver
+        // showRecoveryDialogThrottled. Las comprobaciones al iniciar viaje
+        // o al armar auto-detect siguen siendo inmediatas y sin límite.
+        await PermissionRecoveryService.showRecoveryDialogThrottled(context);
       }
       await _loadActiveVehicle();
       _syncTrackingUiState();

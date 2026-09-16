@@ -771,4 +771,12 @@ const Map<String, String> amTexts = {
   'notif_type_gig_app_switch': 'የጊግ መተግበሪያ ተቀይሯል',
   'notif_type_auto_trip_started': 'ጉዞ በራስ-ሰር ተጀምሯል',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'የመተግበሪያ አጠቃቀም መዳረሻ',
+  'usage_access_desc': 'ControlMiles የትኛውን የጊግ መተግበሪያ እንደከፈቱ እንዲያውቅና ጉዞዎን በራስ-ሰር እንዲጀምር ያስችላል።',
+  'usage_access_onboarding_body': 'ራስ-ሰር የጉዞ ማወቂያ "የአጠቃቀም መዳረሻ" ይፈልጋል። Android የሚሰጠው ከቅንብሮች ብቻ ነው እንጂ በተለመደው ጥያቄ አይደለም። አሁን መዝለል እና በኋላ ከቅንብሮች ማብራት ይችላሉ።',
+  'usage_access_required_title': 'የአጠቃቀም መዳረሻ ያስፈልጋል',
+  'usage_access_required_body': 'ያለ "የአጠቃቀም መዳረሻ" ራስ-ሰር ማወቂያው የትኛው የጊግ መተግበሪያ እንደተከፈተ ማየት አይችልም። ከቅንብሮች ይፍቀዱና ራስ-ሰር ማወቂያውን እንደገና ያብሩ።',
+
 };

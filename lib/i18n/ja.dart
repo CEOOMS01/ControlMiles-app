@@ -775,4 +775,12 @@ const Map<String, String> jaTexts = {
   'notif_type_gig_app_switch': 'ギグアプリの切り替え',
   'notif_type_auto_trip_started': '走行の自動開始',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'アプリ使用状況へのアクセス',
+  'usage_access_desc': 'どのギグアプリを開いているかをControlMilesが把握し、走行を自動で開始できるようにします。',
+  'usage_access_onboarding_body': '走行の自動検知には「使用状況へのアクセス」が必要です。Androidでは通常の許可ダイアログではなく、設定からのみ付与できます。今はスキップして、後から設定でオンにすることもできます。',
+  'usage_access_required_title': '使用状況へのアクセスが必要です',
+  'usage_access_required_body': '「使用状況へのアクセス」がないと、自動検知はどのギグアプリが開いているか判別できません。設定で許可してから、自動検知をもう一度オンにしてください。',
+
 };

@@ -18,6 +18,7 @@ import 'package:permission_handler/permission_handler.dart';   // ← Importante
 // paquete sin ambigüedad.
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logic/app_state.dart';
 
@@ -38,6 +39,50 @@ class PermissionRecoveryService {
   /// Abre la configuración de la app
   static Future<void> openAppSettings() async {
     await ph.openAppSettings();
+  }
+
+  // ============================================================
+  // AVISO PASIVO LIMITADO
+  // ============================================================
+  /// BUG FIX (pedido explícito 2026-09-16: "que no se pidan los permisos una
+  /// y otra vez, una vez basta").
+  ///
+  /// DashboardScreen.didChangeAppLifecycleState llamaba a showRecoveryDialog
+  /// en CADA `resumed` -- es decir, cada vez que el conductor vuelve a la app
+  /// desde donde sea (Uber, el home, una llamada). Con un permiso crítico
+  /// revocado, eso significaba el mismo diálogo decenas de veces al día en la
+  /// pantalla principal. Insoportable, y encima entrena al usuario a
+  /// descartarlo sin leerlo, que es justo lo contrario de lo que se busca.
+  ///
+  /// Este aviso es PASIVO (nadie lo pidió, salta solo al volver a la app), así
+  /// que se limita: una vez por sesión de app y, además, una vez cada 24 h
+  /// aunque reinicie. Las comprobaciones que sí son PRECONDICIÓN de una acción
+  /// que el usuario acaba de iniciar -- arrancar un viaje, armar auto-detect,
+  /// terminar el onboarding -- siguen llamando a showRecoveryDialog directo,
+  /// sin límite: ahí no es una molestia, es la respuesta a lo que pidió hacer.
+  static const String _lastNagKey = 'controlmiles_permission_nag_last_ms';
+  static const Duration _nagCooldown = Duration(hours: 24);
+  static bool _nagShownThisSession = false;
+
+  static Future<void> showRecoveryDialogThrottled(BuildContext context) async {
+    if (_nagShownThisSession) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastMs = prefs.getInt(_lastNagKey) ?? 0;
+    final elapsed =
+        DateTime.now().millisecondsSinceEpoch - lastMs;
+    if (lastMs != 0 && elapsed < _nagCooldown.inMilliseconds) {
+      // Ya avisado hace poco: marcar la sesión igualmente para no volver a
+      // consultar prefs en cada resume de este mismo arranque.
+      _nagShownThisSession = true;
+      return;
+    }
+
+    _nagShownThisSession = true;
+    await prefs.setInt(_lastNagKey, DateTime.now().millisecondsSinceEpoch);
+
+    if (!context.mounted) return;
+    await showRecoveryDialog(context);
   }
 
   /// Muestra diálogo de recuperación de permisos con i18n

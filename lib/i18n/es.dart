@@ -819,4 +819,12 @@ const Map<String, String> esTexts = {
   'notif_type_gig_app_switch': 'Cambio de app gig',
   'notif_type_auto_trip_started': 'Viaje iniciado automáticamente',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'Acceso de uso de apps',
+  'usage_access_desc': 'Permite que ControlMiles vea qué app gig tienes abierta para iniciar tu viaje automáticamente.',
+  'usage_access_onboarding_body': 'La detección automática de viajes necesita el "Acceso de uso". Android solo lo concede desde Ajustes, no con un aviso normal. Puedes omitirlo ahora y activarlo más tarde desde Ajustes.',
+  'usage_access_required_title': 'Falta el acceso de uso',
+  'usage_access_required_body': 'Sin el "Acceso de uso", la detección automática no puede ver qué app gig está abierta. Concédelo en Ajustes y vuelve a activar la detección automática.',
+
 };

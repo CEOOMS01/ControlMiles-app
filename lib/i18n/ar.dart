@@ -779,4 +779,12 @@ const Map<String, String> arTexts = {
   'notif_type_gig_app_switch': 'تم تبديل تطبيق العمل',
   'notif_type_auto_trip_started': 'بدأت الرحلة تلقائياً',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'الوصول إلى استخدام التطبيقات',
+  'usage_access_desc': 'يتيح لـ ControlMiles معرفة تطبيق العمل المفتوح لديك لبدء رحلتك تلقائياً.',
+  'usage_access_onboarding_body': 'يحتاج الكشف التلقائي عن الرحلات إلى "الوصول إلى الاستخدام". لا يمنحه Android إلا من الإعدادات، وليس عبر طلب عادي. يمكنك تخطيه الآن وتفعيله لاحقاً من الإعدادات.',
+  'usage_access_required_title': 'مطلوب الوصول إلى الاستخدام',
+  'usage_access_required_body': 'بدون "الوصول إلى الاستخدام" لا يستطيع الكشف التلقائي معرفة تطبيق العمل المفتوح. امنحه من الإعدادات ثم أعد تفعيل الكشف التلقائي.',
+
 };

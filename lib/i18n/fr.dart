@@ -795,4 +795,12 @@ const Map<String, String> frTexts = {
   'notif_type_gig_app_switch': 'Changement d\'application gig',
   'notif_type_auto_trip_started': 'Trajet démarré automatiquement',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'Accès à l\'utilisation des applis',
+  'usage_access_desc': 'Permet à ControlMiles de voir quelle appli gig est ouverte pour démarrer votre trajet automatiquement.',
+  'usage_access_onboarding_body': 'La détection automatique des trajets nécessite l\'"accès à l\'utilisation". Android ne l\'accorde que depuis les Paramètres, pas via une demande normale. Vous pouvez passer cette étape et l\'activer plus tard dans les Paramètres.',
+  'usage_access_required_title': 'Accès à l\'utilisation requis',
+  'usage_access_required_body': 'Sans l\'"accès à l\'utilisation", la détection automatique ne peut pas voir quelle appli gig est ouverte. Accordez-le dans les Paramètres, puis réactivez la détection automatique.',
+
 };

@@ -796,4 +796,12 @@ const Map<String, String> deTexts = {
   'notif_type_gig_app_switch': 'Gig-App gewechselt',
   'notif_type_auto_trip_started': 'Fahrt automatisch gestartet',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'Zugriff auf Nutzungsdaten',
+  'usage_access_desc': 'Ermöglicht ControlMiles zu erkennen, welche Gig-App geöffnet ist, um deine Fahrt automatisch zu starten.',
+  'usage_access_onboarding_body': 'Die automatische Fahrterkennung benötigt den "Zugriff auf Nutzungsdaten". Android erteilt ihn nur über die Einstellungen, nicht über eine normale Abfrage. Du kannst das jetzt überspringen und später in den Einstellungen aktivieren.',
+  'usage_access_required_title': 'Zugriff auf Nutzungsdaten nötig',
+  'usage_access_required_body': 'Ohne den "Zugriff auf Nutzungsdaten" kann die automatische Erkennung nicht sehen, welche Gig-App geöffnet ist. Erteile ihn in den Einstellungen und aktiviere die automatische Erkennung erneut.',
+
 };

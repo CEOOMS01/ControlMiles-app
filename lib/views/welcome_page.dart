@@ -8,8 +8,11 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';   // ← IMPORT OBLIGATORIO
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
+import '../services/gig_app_detection_service.dart';
 import '../utils/permission_recovery_service.dart';
 
 class WelcomePage extends StatefulWidget {
@@ -62,7 +65,76 @@ class _WelcomePageState extends State<WelcomePage> {
     await Permission.activityRecognition.request();
     await Permission.notification.request();
 
+    await _requestUsageAccessOnce();
+
     return true;
+  }
+
+  /// Usage Access (PACKAGE_USAGE_STATS) -- lo que permite detectar qué gig
+  /// app está abierta. Pedido explícito (2026-09-16): que se pida AQUÍ, en
+  /// los permisos posteriores al lanzamiento, y una sola vez.
+  ///
+  /// Tres diferencias con los de arriba, y todas importan:
+  ///
+  /// 1. No es un permiso de runtime. No existe diálogo del sistema: la única
+  ///    forma de concederlo es abrir Ajustes > Acceso de uso. Por eso aquí se
+  ///    explica primero y se lleva al usuario allí, en vez de llamar a
+  ///    .request() como con los demás.
+  ///
+  /// 2. NO bloquea el onboarding. Solo hace falta para la detección
+  ///    automática (Premium); exigirlo para terminar el alta dejaría tirado a
+  ///    todo el que no la use. Se pregunta, se respeta la respuesta, y el
+  ///    flujo continúa igual.
+  ///
+  /// 3. Se pregunta UNA VEZ. La bandera se escribe pase lo que pase --
+  ///    concedido, rechazado o cerrado -- porque el usuario ya tomó su
+  ///    decisión y repetirla en cada arranque es justo lo que se pidió
+  ///    evitar. Si más tarde activa auto-detect sin haberlo concedido, ahí sí
+  ///    se le vuelve a plantear: no es insistir, es que la función que acaba
+  ///    de encender no puede funcionar sin esto (ver
+  ///    AutoTripDetectionService.requestEnable). Y siempre queda disponible
+  ///    en Ajustes > Detección de app activa.
+  static const String _usageAccessAskedKey = 'controlmiles_usage_access_asked';
+
+  Future<void> _requestUsageAccessOnce() async {
+    if (!GigAppDetectionService.instance.isSupported) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_usageAccessAskedKey) ?? false) return;
+    if (await GigAppDetectionService.instance.hasUsageAccess()) {
+      await prefs.setBool(_usageAccessAskedKey, true);
+      return;
+    }
+
+    if (!mounted) return;
+    final open = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final appState = context.read<AppState>();
+        return AlertDialog(
+          title: Text(appState.tr('usage_access')),
+          content: Text(appState.tr('usage_access_onboarding_body')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(appState.tr('later')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(appState.tr('open_settings')),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Marcada ANTES de abrir Ajustes a propósito: el usuario ya respondió.
+    // Si vuelve sin concederlo, no se le pregunta otra vez aquí.
+    await prefs.setBool(_usageAccessAskedKey, true);
+
+    if (open == true) {
+      await GigAppDetectionService.instance.openUsageAccessSettings();
+    }
   }
 
   Future<void> _completeOnboarding(AppState appState) async {
@@ -241,6 +313,12 @@ class _WelcomePageState extends State<WelcomePage> {
                     _PermissionTile(icon: Icons.camera_alt, title: appState.tr('camera'), desc: appState.tr('camera_desc')),
                     _PermissionTile(icon: Icons.directions_walk, title: appState.tr('motion_detection'), desc: appState.tr('motion_desc')),
                     _PermissionTile(icon: Icons.notifications, title: appState.tr('notifications'), desc: appState.tr('notifications_desc')),
+                    // Android-only: Usage Access no es un permiso de runtime,
+                    // se concede desde Ajustes del sistema. Se lista aquí para
+                    // que el cliente sepa qué se le va a pedir antes de que le
+                    // aparezca la pantalla de Ajustes.
+                    if (GigAppDetectionService.instance.isSupported)
+                      _PermissionTile(icon: Icons.apps_rounded, title: appState.tr('usage_access'), desc: appState.tr('usage_access_desc')),
                   ],
                 ),
               ),

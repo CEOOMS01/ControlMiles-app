@@ -777,4 +777,12 @@ const Map<String, String> hiTexts = {
   'notif_type_gig_app_switch': 'गिग ऐप बदली गई',
   'notif_type_auto_trip_started': 'यात्रा स्वतः शुरू हुई',
 
+
+  // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'usage_access': 'ऐप उपयोग पहुंच',
+  'usage_access_desc': 'ControlMiles को यह देखने देता है कि आपने कौन सी गिग ऐप खोली है, ताकि वह आपकी यात्रा स्वतः शुरू कर सके।',
+  'usage_access_onboarding_body': 'स्वचालित यात्रा पहचान के लिए "उपयोग पहुंच" चाहिए। Android इसे केवल सेटिंग्स से देता है, सामान्य अनुमति संवाद से नहीं। आप इसे अभी छोड़ सकते हैं और बाद में सेटिंग्स से चालू कर सकते हैं।',
+  'usage_access_required_title': 'उपयोग पहुंच आवश्यक है',
+  'usage_access_required_body': '"उपयोग पहुंच" के बिना स्वचालित पहचान यह नहीं देख सकती कि कौन सी गिग ऐप खुली है। इसे सेटिंग्स में दें और स्वचालित पहचान फिर से चालू करें।',
+
 };
