@@ -111,7 +111,14 @@ class TraceletEngine {
               channelId: 'controlmiles_tracking',
               notificationTitle: 'ControlMiles Tracking',
               notificationText: 'Recording miles securely',
-              notificationColor: '#2196F3',
+              // Azul de marca real (kBrandSeed, #3E93CA en app_colors.dart).
+              // Antes era '#2196F3', el azul genérico de Material: la
+              // notificación persistente del servicio en primer plano -- la
+              // que el conductor ve durante TODO el viaje -- salía de un azul
+              // distinto al del resto de la app y al de las otras
+              // notificaciones. Va como string porque tl.Config es const y
+              // recibe el color en texto, no como Color.
+              notificationColor: '#3E93CA',
               notificationSmallIcon: 'drawable/ic_stat_tracking',
             ),
           ),

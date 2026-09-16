@@ -1243,12 +1243,30 @@ class TrackingController {
 
     // Recuperar desde base de datos (fuente de verdad completa)
     try {
-      final session = await Supabase.instance.client
+      // BUG FIX (2026-09-16, hallazgo de auditoría): esto usaba
+      // .maybeSingle(), que LANZA excepción si la query devuelve más de una
+      // fila. Una cuenta puede acumular varias sesiones con is_closed=false
+      // (se verificó en vivo: la cuenta real tenía 8, la más vieja de 8 días,
+      // todas de 0 millas) porque stopTracking no siempre llega a cerrar la
+      // sesión si el proceso muere antes. Con 2+ sesiones abiertas este
+      // camino tiraba excepción -> el catch de abajo hacía _resetState() y el
+      // viaje en curso se perdía entero. Hoy no se notaba porque el
+      // checkpoint local resuelve antes y retorna, pero en cuanto el
+      // checkpoint falta (reinstalación, limpieza de datos, isolate headless
+      // sin prefs todavía) este era el único camino y reventaba.
+      //
+      // Ahora se pide explícitamente la MÁS RECIENTE y se toma la primera:
+      // misma semántica de "la sesión activa" sin depender de que haya
+      // exactamente una.
+      final sessions = await Supabase.instance.client
           .from('sessions')
           .select('*, session_sections(*)')
           .eq('user_id', user.id)
           .eq('is_closed', false)
-          .maybeSingle();
+          .order('start_time', ascending: false)
+          .limit(1);
+
+      final session = sessions.isNotEmpty ? sessions.first : null;
 
       if (session == null) {
         _resetState();

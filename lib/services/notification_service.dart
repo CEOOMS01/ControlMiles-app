@@ -42,6 +42,12 @@ class NotificationService {
   static const int _midTripSwitchNotificationId = 1004;
   static const int _autoTripStartedNotificationId = 1005;
   static const int _autoDetectFailedNotificationId = 1006;
+
+  // OJO: el recordatorio de pausa NO usa un id suelto sino el RANGO
+  // 1007..1012 (base + índice de _pauseReminderLadder, 6 avisos escalonados).
+  // No reutilizar ningún id entre 1007 y 1012 para nada más: colisionaría con
+  // un peldaño de la escalera y lo sobrescribiría silenciosamente. El próximo
+  // id libre para una notificación nueva es 1013.
   static const int _pauseReminderNotificationId = 1007;
 
   static const String _channelId = 'controlmiles_reminders';
@@ -282,39 +288,73 @@ class NotificationService {
   /// puntos de recuperación en frío (_recoverActiveState) si el estado
   /// recuperado ya estaba en pausa -- mismo criterio que
   /// _rescheduleForgottenTripReminderIfRunning ya usa para 'running'.
-  Future<void> schedulePauseReminder({
-    Duration threshold = const Duration(minutes: 5),
-  }) async {
+  /// Cadencia del recordatorio de pausa (pedido explícito, 2026-09-16: "me
+  /// gustaría que se repitiera"). Antes era UN solo aviso a los 5 minutos y
+  /// nada más -- si el conductor no lo veía en ese momento, el viaje se podía
+  /// quedar pausado horas sin que nada se lo recordara.
+  ///
+  /// Se programa una ESCALERA de avisos, cada uno como su propia alarma
+  /// one-shot con su propio id. Se eligió esto en vez de periodicallyShow()
+  /// porque RepeatInterval solo ofrece everyMinute/hourly/daily: por minuto es
+  /// spam y por hora llega tarde para el primer aviso. Los intervalos se van
+  /// ABRIENDO (5m, 15m, 30m, 1h, 2h, 4h) en vez de repetir cada 5 minutos:
+  /// insiste fuerte al principio, cuando lo más probable es un olvido real, y
+  /// va bajando el ritmo si el conductor deliberadamente dejó el viaje en
+  /// pausa. Tope a las ~8h acumuladas; más allá de eso el recordatorio de
+  /// "viaje olvidado" ya cubre el caso.
+  ///
+  /// Los tiempos son ACUMULADOS desde el momento de pausar, no incrementales.
+  static const List<Duration> _pauseReminderLadder = [
+    Duration(minutes: 5),
+    Duration(minutes: 15),
+    Duration(minutes: 30),
+    Duration(hours: 1),
+    Duration(hours: 2),
+    Duration(hours: 4),
+  ];
+
+  Future<void> schedulePauseReminder() async {
     if (!_initialized) return;
     if (!await _isEnabledInPrefs()) return;
 
-    final scheduledDate = tz.TZDateTime.now(tz.local).add(threshold);
+    // Limpia cualquier escalera anterior antes de armar la nueva, para que
+    // re-programar (p.ej. al recuperar estado en un arranque en frío) no deje
+    // avisos viejos sueltos apuntando a horas que ya no corresponden.
+    await cancelPauseReminder();
+
+    final now = tz.TZDateTime.now(tz.local);
     final title = await _tr('pause_reminder_notification_title');
     final body = await _tr('pause_reminder_notification_body');
 
-    await _plugin.zonedSchedule(
-      _pauseReminderNotificationId,
-      title,
-      body,
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _pauseReminderChannelId,
-          _pauseReminderChannelName,
-          channelDescription: _pauseReminderChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
+    for (var i = 0; i < _pauseReminderLadder.length; i++) {
+      await _plugin.zonedSchedule(
+        _pauseReminderNotificationId + i,
+        title,
+        body,
+        now.add(_pauseReminderLadder[i]),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _pauseReminderChannelId,
+            _pauseReminderChannelName,
+            channelDescription: _pauseReminderChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+            color: kBrandSeed,
+          ),
+          iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+          macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         ),
-        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
   }
 
+  /// Cancela la escalera COMPLETA, no solo el primer aviso: al reanudar o
+  /// cerrar el viaje no debe quedar ni uno pendiente.
   Future<void> cancelPauseReminder() async {
-    await _plugin.cancel(_pauseReminderNotificationId);
+    for (var i = 0; i < _pauseReminderLadder.length; i++) {
+      await _plugin.cancel(_pauseReminderNotificationId + i);
+    }
   }
 
   // ============================================================
