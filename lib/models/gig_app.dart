@@ -233,6 +233,24 @@ class GigAppCatalog {
       icon: Icons.miscellaneous_services_rounded,
       color: Color(0xFFBF5B2E),
     ),
+    // Curri (curri.com/drive) -- added 2026-09-16 at the user's explicit
+    // request, pointing at the real site. This is NOT the 2026-08-27
+    // mistake resurfacing: that 'curri' row was a misread of "Courial" and
+    // was correctly deleted the same day. Curri is a separate, real company
+    // (last-mile delivery for construction and building materials), so both
+    // entries now coexist on purpose -- don't "fix" one away again.
+    //
+    // Driver app is com.Curri.Driver, verified on the user's own device
+    // (v3.2.1), capitalisation included: detection resolves packages via an
+    // exact map lookup, so a lower-cased com.curri.driver would silently
+    // never match. A second, different app exists on Play
+    // (com.Curri.RouteDriver) and is deliberately not registered.
+    GigApp(
+      id: 'curri',
+      name: 'Curri',
+      icon: Icons.construction_rounded,
+      color: Color(0xFF1F7A54),
+    ),
     // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
     // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)
     // vs. gris pizarra #475569 en Dashboard/Reports/Historial. Se unificó

@@ -189,6 +189,10 @@
         <package android:name="com.hopskipdrive.driver"/>
         <package android:name="co.goshare.driverapp"/>
         <package android:name="live.courial.partner"/>
+        <!-- Curri (curri.com/drive). Capitalisation is real and required:
+             the package genuinely is com.Curri.Driver, verified on a real
+             device, and package visibility matching here is exact. -->
+        <package android:name="com.Curri.Driver"/>
     </queries>
 
 </manifest>
