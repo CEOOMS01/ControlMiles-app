@@ -61,8 +61,14 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
   bool _dragging = false;
   double _dragT = 0; // 0..1 while actively dragging
 
+  // Clave legada: marcaba "ya se abrió una vez". Se sigue LEYENDO para
+  // respetar a quien ya lo había visto, pero ya no se escribe.
   static const String _autoDetectIntroSeenKey =
       'controlmiles_auto_detect_intro_seen';
+
+  // Clave nueva: "el usuario pidió no volver a verlo" (el check).
+  static const String _autoDetectIntroDismissedKey =
+      'controlmiles_auto_detect_intro_dismissed';
 
   static const double _trackWidth = 220;
   static const double _trackHeight = 56;
@@ -103,28 +109,66 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final introSeen = prefs.getBool(_autoDetectIntroSeenKey) ?? false;
+    // CHANGED 2026-09-16 (pedido explícito: "cada aviso ... tenga un check
+    // donde el cliente toca no volver a mostrar este aviso"). Antes este
+    // explicador se auto-marcaba como visto en cuanto se abría UNA vez, sin
+    // preguntar: quien lo cerrara de golpe sin leerlo no volvía a verlo
+    // jamás. Ahora reaparece en cada activación hasta que el usuario decide
+    // explícitamente callarlo con el check.
+    //
+    // La clave vieja (`_seen`) se respeta como "ya descartado" para no
+    // resucitar el diálogo a quien ya lo había visto bajo las reglas
+    // anteriores.
+    final dismissed = (prefs.getBool(_autoDetectIntroDismissedKey) ??
+        prefs.getBool(_autoDetectIntroSeenKey) ??
+        false);
 
-    if (!introSeen) {
+    if (!dismissed) {
       if (!mounted) return;
+      var dontShowAgain = false;
       final proceed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('auto_detect_intro_title')),
-          content: Text(appState.tr('auto_detect_intro_body')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(appState.tr('cancel')),
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: Text(appState.tr('auto_detect_intro_title')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(appState.tr('auto_detect_intro_body')),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => setDialogState(() => dontShowAgain = !dontShowAgain),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: dontShowAgain,
+                        onChanged: (v) =>
+                            setDialogState(() => dontShowAgain = v ?? false),
+                      ),
+                      Expanded(child: Text(appState.tr('dont_show_again'))),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(appState.tr('continue')),
-            ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(appState.tr('cancel')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(appState.tr('continue')),
+              ),
+            ],
+          ),
         ),
       );
-      await prefs.setBool(_autoDetectIntroSeenKey, true);
+      // Solo se silencia si lo pidió; cancelar sin marcar deja el aviso vivo.
+      if (dontShowAgain) {
+        await prefs.setBool(_autoDetectIntroDismissedKey, true);
+      }
       if (proceed != true || !mounted) return;
     }
 

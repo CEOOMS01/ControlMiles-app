@@ -843,4 +843,13 @@ const Map<String, String> enTexts = {
   'generate_report_code_disclaimer': 'Usable up to 2 times. Not guaranteed by this app -- for deduction purposes.',
   'report_portal_section': 'Report Portal',
   'report_portal_section_subtitle': 'Generate a code for your tax preparer',
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'Don\'t show this again',
+  'notif_type_pause_reminder': 'Paused trip reminder',
+  'notif_type_forgotten_trip': 'Forgotten trip reminder',
+  'notif_type_weekly_summary': 'Weekly mileage summary',
+  'notif_type_gig_app_switch': 'Gig app switched',
+  'notif_type_auto_trip_started': 'Trip started automatically',
+
 };

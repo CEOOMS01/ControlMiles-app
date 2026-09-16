@@ -770,4 +770,13 @@ const Map<String, String> arTexts = {
   'generating_report_progress': 'جارٍ إنشاء التقرير...',
   'vehicle_switch_blocked_active_session': 'لا يمكنك تغيير مركبتك النشطة أثناء رحلة جارية. أنهِ الرحلة الحالية أولاً.',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'عدم إظهار هذا التنبيه مرة أخرى',
+  'notif_type_pause_reminder': 'تذكير برحلة متوقفة مؤقتاً',
+  'notif_type_forgotten_trip': 'تذكير برحلة منسية',
+  'notif_type_weekly_summary': 'ملخص الأميال الأسبوعي',
+  'notif_type_gig_app_switch': 'تم تبديل تطبيق العمل',
+  'notif_type_auto_trip_started': 'بدأت الرحلة تلقائياً',
+
 };

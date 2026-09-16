@@ -55,7 +55,23 @@ class MainActivity : FlutterActivity() {
     private fun getForegroundPackage(): String? {
         val usageManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val end = System.currentTimeMillis()
-        val start = end - 60_000
+        // BUG FIX (2026-09-16): this window used to be 60 seconds, which made
+        // detection miss the app far more often than it caught it.
+        // queryEvents() only returns events that happened INSIDE the window,
+        // and ACTIVITY_RESUMED fires once, at the moment the app comes to the
+        // front. A driver who opens Uber and then just drives generates no
+        // further events -- so 90 seconds later there was nothing in the
+        // 60-second window and this returned null, i.e. "no gig app open"
+        // while Uber was plainly on screen. The 30s poll only ever caught it
+        // if a tick happened to land in that first minute, and ticks are
+        // throttled once ControlMiles is backgrounded, which is exactly when
+        // this feature is supposed to work.
+        //
+        // A long lookback is still correct for "what is in front right now":
+        // the loop below keeps only the LAST resumed package, so switching
+        // back to ControlMiles (or to any other app) immediately wins over the
+        // older event and detection correctly stops reporting the gig app.
+        val start = end - 2 * 60 * 60 * 1000L // 2 hours
         val events = usageManager.queryEvents(start, end)
         val event = UsageEvents.Event()
         var currentPackage: String? = null

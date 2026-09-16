@@ -810,4 +810,13 @@ const Map<String, String> esTexts = {
   'generate_report_code_disclaimer': 'Usable hasta 2 veces. No garantizado por esta app -- para fines de deducción.',
   'report_portal_section': 'Report Portal',
   'report_portal_section_subtitle': 'Genera un código para tu contador',
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'No volver a mostrar este aviso',
+  'notif_type_pause_reminder': 'Recordatorio de viaje en pausa',
+  'notif_type_forgotten_trip': 'Recordatorio de viaje olvidado',
+  'notif_type_weekly_summary': 'Resumen semanal de millas',
+  'notif_type_gig_app_switch': 'Cambio de app gig',
+  'notif_type_auto_trip_started': 'Viaje iniciado automáticamente',
+
 };

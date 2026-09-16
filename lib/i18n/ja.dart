@@ -766,4 +766,13 @@ const Map<String, String> jaTexts = {
   'photo_size_out_of_range': '写真のサイズが許容範囲外です（{min}KB〜{max}MB）。もう一度お試しください。',
   'photo_format_not_supported': 'この写真形式には対応していません。対応形式：{formats}。',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'このお知らせを今後表示しない',
+  'notif_type_pause_reminder': '一時停止中の走行のお知らせ',
+  'notif_type_forgotten_trip': '終了し忘れた走行のお知らせ',
+  'notif_type_weekly_summary': '週間マイル数のまとめ',
+  'notif_type_gig_app_switch': 'ギグアプリの切り替え',
+  'notif_type_auto_trip_started': '走行の自動開始',
+
 };

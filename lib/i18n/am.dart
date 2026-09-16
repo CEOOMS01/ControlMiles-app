@@ -762,4 +762,13 @@ const Map<String, String> amTexts = {
   'photo_size_out_of_range': 'ፎቶው ከተፈቀደው መጠን ውጭ ነው ({min}KB–{max}MB)። እንደገና ይሞክሩ።',
   'photo_format_not_supported': 'የፎቶ ቅርጸቱ አይደገፍም። የተፈቀዱ ቅርጸቶች፦ {formats}።',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'ይህን ማሳወቂያ ዳግም አታሳይ',
+  'notif_type_pause_reminder': 'የቆመ ጉዞ ማስታወሻ',
+  'notif_type_forgotten_trip': 'የተረሳ ጉዞ ማስታወሻ',
+  'notif_type_weekly_summary': 'ሳምንታዊ የማይል ማጠቃለያ',
+  'notif_type_gig_app_switch': 'የጊግ መተግበሪያ ተቀይሯል',
+  'notif_type_auto_trip_started': 'ጉዞ በራስ-ሰር ተጀምሯል',
+
 };

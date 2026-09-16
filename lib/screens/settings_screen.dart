@@ -11,6 +11,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/organization_service.dart';
 import '../services/gig_app_detection_service.dart';
+import '../services/notification_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
@@ -40,6 +41,27 @@ class _SettingsScreenState extends State<SettingsScreen>
   // it on resume, since that's the only reliable moment to notice the
   // user just came back from granting it there.
   bool _hasUsageAccess = false;
+
+  /// Estado de los toggles por tipo de aviso (pedido explícito
+  /// 2026-09-16). La verdad vive en SharedPreferences vía
+  /// NotificationService; esto es solo la copia que pinta la UI.
+  /// Ausente = activado, igual que el default del servicio.
+  final Map<String, bool> _notifTypeEnabled = {};
+
+  Future<void> _loadNotificationTypePrefs() async {
+    const keys = [
+      NotificationService.prefPauseReminder,
+      NotificationService.prefForgottenTrip,
+      NotificationService.prefWeeklySummary,
+      NotificationService.prefGigAppSwitch,
+      NotificationService.prefAutoTripStarted,
+    ];
+    final loaded = <String, bool>{};
+    for (final k in keys) {
+      loaded[k] = await NotificationService.instance.isTypeEnabled(k);
+    }
+    if (mounted) setState(() => _notifTypeEnabled.addAll(loaded));
+  }
 
   @override
   void dispose() {
@@ -81,6 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (GigAppDetectionService.instance.isSupported) {
       _refreshUsageAccessStatus();
     }
+    _loadNotificationTypePrefs();
 
     final appState = context.read<AppState>();
     if (appState.isFleetAdmin) {
@@ -878,6 +901,21 @@ class _SettingsScreenState extends State<SettingsScreen>
             isDark: isDark,
             onChanged: (v) => appState.setNotificationsEnabled(v),
           ),
+
+          // Pedido explícito (2026-09-16): poder callar un aviso concreto
+          // sin apagar todos. Solo aparece con el interruptor maestro
+          // encendido -- con él apagado no hay nada que matizar.
+          //
+          // Lo que NO está aquí, a propósito: el aviso de error
+          // "auto-detect no pudo iniciar" (silenciarlo devuelve el fallo
+          // silencioso que costó una semana de detección muerta) y las
+          // capturas semanales de odómetro, que son acciones obligatorias,
+          // no avisos.
+          if (appState.notificationsEnabled) ...[
+            const SizedBox(height: 10),
+            _buildNotificationTypeToggles(appState, isDark),
+          ],
+
           const SizedBox(height: 10),
           _buildToggleSetting(
             icon: Icons.straighten_rounded,
@@ -886,6 +924,41 @@ class _SettingsScreenState extends State<SettingsScreen>
             isDark: isDark,
             onChanged: (v) => appState.setUseMetricSystem(v),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationTypeToggles(AppState appState, bool isDark) {
+    const types = <(String, String, IconData)>[
+      (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
+      (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
+      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
+      (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
+      (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: Column(
+        children: [
+          for (final (prefKey, labelKey, icon) in types) ...[
+            _buildToggleSetting(
+              icon: icon,
+              title: appState.tr(labelKey),
+              value: _notifTypeEnabled[prefKey] ?? true,
+              isDark: isDark,
+              onChanged: (v) async {
+                // Optimista en la UI, pero la fuente de verdad es el
+                // servicio: setTypeEnabled además CANCELA las alarmas ya
+                // programadas, para que apagar un toggle no deje uno
+                // pendiente disparando más tarde.
+                setState(() => _notifTypeEnabled[prefKey] = v);
+                await NotificationService.instance.setTypeEnabled(prefKey, v);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ],
       ),
     );

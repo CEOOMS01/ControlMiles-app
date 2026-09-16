@@ -767,4 +767,13 @@ const Map<String, String> koTexts = {
   'photo_size_out_of_range': '사진 크기가 허용 범위를 벗어났습니다({min}KB~{max}MB). 다시 시도해 주세요.',
   'photo_format_not_supported': '지원하지 않는 사진 형식입니다. 허용 형식: {formats}.',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': '이 알림 다시 표시하지 않기',
+  'notif_type_pause_reminder': '일시정지된 운행 알림',
+  'notif_type_forgotten_trip': '종료하지 않은 운행 알림',
+  'notif_type_weekly_summary': '주간 주행 거리 요약',
+  'notif_type_gig_app_switch': '긱 앱 전환됨',
+  'notif_type_auto_trip_started': '운행 자동 시작됨',
+
 };

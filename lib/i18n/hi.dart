@@ -768,4 +768,13 @@ const Map<String, String> hiTexts = {
   'generating_report_progress': 'रिपोर्ट बनाई जा रही है...',
   'vehicle_switch_blocked_active_session': 'यात्रा चलते समय आप अपना सक्रिय वाहन नहीं बदल सकते। पहले वर्तमान यात्रा समाप्त करें।',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'यह सूचना दोबारा न दिखाएं',
+  'notif_type_pause_reminder': 'रुकी हुई यात्रा का अनुस्मारक',
+  'notif_type_forgotten_trip': 'भूली हुई यात्रा का अनुस्मारक',
+  'notif_type_weekly_summary': 'साप्ताहिक माइलेज सारांश',
+  'notif_type_gig_app_switch': 'गिग ऐप बदली गई',
+  'notif_type_auto_trip_started': 'यात्रा स्वतः शुरू हुई',
+
 };

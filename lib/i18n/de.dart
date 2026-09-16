@@ -787,4 +787,13 @@ const Map<String, String> deTexts = {
   'photo_size_out_of_range': 'Das Foto liegt außerhalb der zulässigen Größe ({min}KB–{max}MB). Bitte erneut versuchen.',
   'photo_format_not_supported': 'Fotoformat nicht unterstützt. Zulässige Formate: {formats}.',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'Diesen Hinweis nicht mehr anzeigen',
+  'notif_type_pause_reminder': 'Erinnerung an pausierte Fahrt',
+  'notif_type_forgotten_trip': 'Erinnerung an vergessene Fahrt',
+  'notif_type_weekly_summary': 'Wöchentliche Kilometerübersicht',
+  'notif_type_gig_app_switch': 'Gig-App gewechselt',
+  'notif_type_auto_trip_started': 'Fahrt automatisch gestartet',
+
 };

@@ -787,4 +787,13 @@ const Map<String, String> zhTexts = {
   'photo_size_out_of_range': '照片大小超出允许范围（{min}KB–{max}MB）。请重试。',
   'photo_format_not_supported': '不支持该照片格式。允许的格式：{formats}。',
 
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': '不再显示此提示',
+  'notif_type_pause_reminder': '行程暂停提醒',
+  'notif_type_forgotten_trip': '忘记结束行程提醒',
+  'notif_type_weekly_summary': '每周里程汇总',
+  'notif_type_gig_app_switch': '已切换零工应用',
+  'notif_type_auto_trip_started': '行程已自动开始',
+
 };

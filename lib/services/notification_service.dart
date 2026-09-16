@@ -203,6 +203,54 @@ class NotificationService {
     return prefs.getBool('notifications_enabled') ?? true;
   }
 
+  // ============================================================
+  // PREFERENCIA POR TIPO DE AVISO
+  // ============================================================
+  /// Pedido explícito (2026-09-16): "cada aviso de notificación del
+  /// tracking o de la foto del odómetro tenga un check donde el cliente
+  /// toca no volver a mostrar este aviso." Hasta ahora solo existía el
+  /// interruptor MAESTRO (`notifications_enabled`): o todo o nada, así que
+  /// alguien a quien solo le molestaba el resumen semanal tenía que apagar
+  /// también los recordatorios que de verdad protegen su registro.
+  ///
+  /// Cada tipo informativo se puede silenciar por separado desde Ajustes.
+  /// Deliberadamente NO hay clave para `showAutoDetectFailedNotification`:
+  /// ese no es un aviso informativo sino un ERROR -- es exactamente el que
+  /// habría delatado que la detección llevaba una semana muerta tras el
+  /// renombrado del paquete. Silenciable = fallo silencioso otra vez.
+  ///
+  /// Las capturas semanales de odómetro tampoco aparecen aquí: son
+  /// acciones obligatorias, no avisos (ver tracking_action_button.dart).
+  static const String prefPauseReminder = 'notif_type_pause_reminder';
+  static const String prefForgottenTrip = 'notif_type_forgotten_trip';
+  static const String prefWeeklySummary = 'notif_type_weekly_summary';
+  static const String prefGigAppSwitch = 'notif_type_gig_app_switch';
+  static const String prefAutoTripStarted = 'notif_type_auto_trip_started';
+
+  /// Todos activados por defecto -- silenciar es siempre una decisión
+  /// explícita del usuario, nunca el estado inicial.
+  Future<bool> isTypeEnabled(String prefKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(prefKey) ?? true;
+  }
+
+  Future<void> setTypeEnabled(String prefKey, bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(prefKey, enabled);
+
+    // Los programados hay que cancelarlos de verdad: apagar el toggle no
+    // debe dejar una alarma ya puesta en AlarmManager esperando disparar.
+    if (!enabled) {
+      if (prefKey == prefPauseReminder) await cancelPauseReminder();
+      if (prefKey == prefForgottenTrip) await cancelForgottenTripReminder();
+      if (prefKey == prefWeeklySummary) {
+        await _plugin.cancel(_weeklySummaryNotificationId);
+      }
+    } else if (prefKey == prefWeeklySummary) {
+      await scheduleWeeklySummaryReminder();
+    }
+  }
+
   // BUG FIX (pedido explícito, encontrado en vivo -- notificaciones
   // aparecían en español con la app en inglés): las 3 notificaciones de
   // este servicio tenían su texto hardcodeado en español directamente en
@@ -248,6 +296,7 @@ class NotificationService {
   }) async {
     if (!_initialized) return;
     if (!await _isEnabledInPrefs()) return;
+    if (!await isTypeEnabled(prefForgottenTrip)) return;
 
     final scheduledDate = tz.TZDateTime.now(tz.local).add(threshold);
     final title = await _tr('forgotten_trip_notification_title');
@@ -338,6 +387,7 @@ class NotificationService {
   Future<void> schedulePauseReminder({bool restart = false}) async {
     if (!_initialized) return;
     if (!await _isEnabledInPrefs()) return;
+    if (!await isTypeEnabled(prefPauseReminder)) return;
 
     final prefs = await SharedPreferences.getInstance();
     final nowMs = DateTime.now().millisecondsSinceEpoch;
@@ -414,6 +464,7 @@ class NotificationService {
   Future<void> scheduleWeeklySummaryReminder() async {
     if (!_initialized) return;
     if (!await _isEnabledInPrefs()) return;
+    if (!await isTypeEnabled(prefWeeklySummary)) return;
 
     final scheduledDate = _nextInstanceOfSundayEightPm();
     final title = await _tr('weekly_summary_notification_title');
@@ -469,6 +520,7 @@ class NotificationService {
   /// driver is in the gig app, not ControlMiles).
   Future<void> showAutoTripStartedNotification({required String gigAppId}) async {
     if (!_initialized) return;
+    if (!await isTypeEnabled(prefAutoTripStarted)) return;
 
     final title = await _tr('auto_trip_started_title');
     final appName = GigAppCatalog.byId(gigAppId).name;
@@ -539,6 +591,7 @@ class NotificationService {
   /// happened by the time this fires, purely informational.
   Future<void> showMidTripAutoSwitchedNotification({required String gigAppId}) async {
     if (!_initialized) return;
+    if (!await isTypeEnabled(prefGigAppSwitch)) return;
 
     final title = await _tr('mid_trip_auto_switched_title');
     final appName = GigAppCatalog.byId(gigAppId).name;

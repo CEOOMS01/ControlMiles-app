@@ -786,4 +786,13 @@ const Map<String, String> frTexts = {
   'generate_report_code_disclaimer': "Utilisable jusqu'à 2 fois. Non garanti par cette application -- à des fins de déduction.",
   'report_portal_section': 'Report Portal',
   'report_portal_section_subtitle': 'Générez un code pour votre comptable',
+
+  // 2026-09-16: check 'no volver a mostrar' + toggles por tipo de aviso. Traducciones best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
+  'dont_show_again': 'Ne plus afficher cet avis',
+  'notif_type_pause_reminder': 'Rappel de trajet en pause',
+  'notif_type_forgotten_trip': 'Rappel de trajet oublié',
+  'notif_type_weekly_summary': 'Récapitulatif hebdomadaire des miles',
+  'notif_type_gig_app_switch': 'Changement d\'application gig',
+  'notif_type_auto_trip_started': 'Trajet démarré automatiquement',
+
 };
