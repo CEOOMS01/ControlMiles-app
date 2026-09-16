@@ -1,0 +1,428 @@
+<title>Document Intelligence Plan</title>
+<meta name="description" content="Technical plan for a shared OCR/receipt-reading service across ControlMiles and LedgiProof — what exists today, what to build, and the real cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --accent: #0978eb;
+    --accent-deep: #0154cf;
+    --accent-soft: #e8f1fd;
+    --bg: #f5f8fc;
+    --surface: #ffffff;
+    --surface-2: #eef3f9;
+    --border: #dde5f0;
+    --text: #10192b;
+    --text-muted: #5b6b84;
+    --text-faint: #8695ac;
+    --good: #1a8f5a;
+    --good-bg: #e7f6ee;
+    --warn: #b5730f;
+    --warn-bg: #fbf1de;
+    --bad: #c23b3b;
+    --bad-bg: #fbe9e9;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --shadow: 0 1px 2px rgba(16,25,43,0.04), 0 8px 24px rgba(16,25,43,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --accent: #4da3ff;
+      --accent-deep: #7fbcff;
+      --accent-soft: #16283f;
+      --bg: #0b1220;
+      --surface: #121b2e;
+      --surface-2: #182339;
+      --border: #223049;
+      --text: #e7ecf5;
+      --text-muted: #93a1b8;
+      --text-faint: #647089;
+      --good: #4fc98a;
+      --good-bg: #12281f;
+      --warn: #e0a84a;
+      --warn-bg: #2c2410;
+      --bad: #e57373;
+      --bad-bg: #2c1414;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --accent: #4da3ff;
+    --accent-deep: #7fbcff;
+    --accent-soft: #16283f;
+    --bg: #0b1220;
+    --surface: #121b2e;
+    --surface-2: #182339;
+    --border: #223049;
+    --text: #e7ecf5;
+    --text-muted: #93a1b8;
+    --text-faint: #647089;
+    --good: #4fc98a;
+    --good-bg: #12281f;
+    --warn: #e0a84a;
+    --warn-bg: #2c2410;
+    --bad: #e57373;
+    --bad-bg: #2c1414;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  header.top {
+    display: flex; flex-direction: column; gap: 14px; margin-bottom: 44px;
+    padding-bottom: 28px; border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 700; font-size: 33px; line-height: 1.18;
+    margin: 0; text-wrap: balance; letter-spacing: -0.01em;
+  }
+  .subtitle { color: var(--text-muted); font-size: 16px; max-width: 62ch; margin: 0; }
+  .meta-row { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-faint); font-family: var(--mono); }
+
+  h2 {
+    font-family: var(--sans); font-weight: 700; font-size: 21px; margin: 0 0 4px;
+    letter-spacing: -0.005em; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 600; font-size: 15.5px; margin: 0 0 10px;
+    color: var(--text);
+  }
+  section.block { margin-bottom: 40px; }
+  .section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+  .section-num {
+    font-family: var(--mono); font-size: 12.5px; color: var(--text-faint); font-weight: 600;
+    min-width: 22px;
+  }
+  p { margin: 0 0 12px; max-width: 68ch; }
+  p.lede { font-size: 16.5px; color: var(--text-muted); max-width: 66ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; max-width: 66ch; }
+  li { margin-bottom: 6px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono); font-size: 0.88em; background: var(--surface-2);
+    padding: 0.1em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+  }
+  a { color: var(--accent); }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .callout.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .callout-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 8px; display: block;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .pillrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
+  .pill {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600; padding: 3px 10px;
+    border-radius: 100px; border: 1px solid var(--border); color: var(--text-muted);
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .pill.good { background: var(--good-bg); color: var(--good); border-color: transparent; }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .cardgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .cardgrid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .card .card-title { font-weight: 600; font-size: 14px; }
+  .card .card-body { font-size: 13.5px; color: var(--text-muted); }
+  .card.recommended { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.8px; min-width: 640px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-faint); background: var(--surface-2); font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.rec { position: relative; }
+  tr.recommended-row td { background: var(--accent-soft); }
+
+  .phase {
+    display: grid; grid-template-columns: 84px 1fr; gap: 18px; padding: 18px 0;
+    border-top: 1px solid var(--border);
+  }
+  .phase:first-of-type { border-top: none; }
+  .phase-marker {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); padding-top: 3px;
+  }
+  .phase-marker .weeks { display: block; font-weight: 600; color: var(--accent); font-size: 13px; margin-top: 4px; }
+  .phase-body h3 { margin-bottom: 6px; }
+  .phase-body ul { margin-top: 8px; }
+
+  .schemabox {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; font-family: var(--mono); font-size: 12.8px; line-height: 1.7;
+    overflow-x: auto; color: var(--text);
+  }
+  .schemabox .key { color: var(--accent-deep); }
+  .schemabox .type { color: var(--text-faint); }
+  .schemabox .comment { color: var(--text-faint); font-style: italic; }
+
+  .decision {
+    border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: 8px;
+    padding: 14px 18px; background: var(--surface); margin-bottom: 12px;
+  }
+  .decision .q { font-weight: 600; margin-bottom: 4px; }
+  .decision .ctx { color: var(--text-muted); font-size: 13.5px; }
+
+  footer {
+    margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--text-faint); font-size: 12.5px; font-family: var(--mono);
+  }
+
+  .mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <span class="eyebrow">Olympus Mont Systems · Technical plan</span>
+    <h1>Document Intelligence: from odometer OCR to receipt reading</h1>
+    <p class="subtitle">A shared, purpose-built extraction service for ControlMiles (odometer readings today, expense receipts next) and LedgiProof / Tax Pro (receipts and invoices for deduction records) — built once, not twice.</p>
+    <div class="meta-row">
+      <span>Drafted 2026-09-16</span>
+      <span>Scope: ControlMiles + LedgiProof + LedgiProof Tax Pro</span>
+      <span>Status: awaiting 3 decisions below</span>
+    </div>
+  </header>
+
+  <section class="block">
+    <div class="callout accent">
+      <span class="callout-label">Recommendation</span>
+      <p><strong>Don't train a custom OCR/character-recognition model.</strong> Google ML Kit (already in ControlMiles, on-device, free) is the right text-detection engine — it already matches what MileIQ, Everlance, and every other serious mileage app use under the hood. The real, custom, defensible work is the layer <em>above</em> raw text detection: candidate scoring, validation, and — for receipts specifically — structured field extraction. ControlMiles' odometer reader already does this well for a single number; receipts need the same discipline applied to a whole document. Build that as <strong>one shared service</strong> both apps call, using a vision-capable LLM for the structured-extraction step (details in §4).</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">01</span><h2>Where this actually stands today</h2></div>
+    <p class="lede">Read <code>odometer_ocr_service.dart</code> (362 lines) before writing this plan — it's more capable than a first guess would assume.</p>
+    <div class="cardgrid">
+      <div class="card">
+        <div class="card-title">Engine</div>
+        <div class="card-body"><code>google_mlkit_text_recognition</code>, on-device, streamed per camera frame. Includes a hand-fixed NV21 buffer reconstruction (a real <code>camera_android_camerax</code> bug, not guessed) — the actual hard part of wiring ML Kit to a live camera stream is already solved.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Candidate scoring</div>
+        <div class="card-body">Every 4–7 digit run in the frame is scored on digit count, ML Kit's own line confidence, and relative bounding-box size — not "biggest number wins" (a real bug this already fixed once).</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stabilization</div>
+        <div class="card-body">Requires 3 consecutive frames to agree (±1%) before confirming a reading — rejects one-off misreads instead of trusting a single frame.</div>
+      </div>
+    </div>
+    <p style="margin-top:16px">This is a single-scalar extraction problem: find the one number the driver is centering in frame. It's solved, and solved well. Receipts are a different problem — extracting <em>several</em> structured fields (merchant, date, total, tax) from a document whose layout varies by vendor — and the existing heuristic approach won't scale to that without a fundamentally different design.</p>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">02</span><h2>The question you asked directly</h2></div>
+    <h3>"¿Podemos desarrollar nuestra propia función nativa de lectura por OCR?"</h3>
+    <p>Technically yes. Practically, no — and here's the actual reasoning, not a deflection:</p>
+    <ul>
+      <li>Google's and Apple's on-device text engines represent years of training on billions of real images, ship free, run with zero network latency, and improve with every OS update. Matching that from scratch is a multi-year ML research effort, not a sprint.</li>
+      <li>The <strong>real, ownable IP</strong> isn't character recognition — it's the domain logic wrapped around it. ControlMiles' scoring/stabilization layer <em>is</em> that custom function already. It's just currently scoped to one use case.</li>
+      <li>Receipts need a second capability text detection alone doesn't provide: <strong>document layout understanding</strong> — knowing that the number under "TOTAL" is the total, not the subtotal three lines above it. That's a different, harder problem than digit-finding, and it's where the plan below actually invests new engineering.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">03</span><h2>Two tracks, not one rebuild</h2></div>
+    <div class="phase">
+      <div class="phase-marker">TRACK A<span class="weeks">low risk</span></div>
+      <div class="phase-body">
+        <h3>Odometer — refine, don't replace</h3>
+        <p>Keep <code>odometer_ocr_service.dart</code> as-is. If accuracy issues show up in the field, the fix is tuning existing constants (<code>kMinConfidence</code>, <code>kStabilizeCount</code>, the digit-score curve) against a small set of real dashboard photos — not a new architecture.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-marker">TRACK B<span class="weeks">new build</span></div>
+      <div class="phase-body">
+        <h3>Receipts &amp; invoices — one shared service</h3>
+        <p>A small Supabase Edge Function (<code>extract-document</code>) that both ControlMiles and LedgiProof call with a receipt photo, returning structured JSON. Built once, tuned once, billed once — see §4–§6.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">04</span><h2>Architecture</h2></div>
+    <p>On-device text detection still runs first (fast, free, catches obvious non-receipts before anything gets uploaded) — but the structured-field extraction step, the actual hard problem, happens server-side so both apps share one tuned prompt/parser instead of maintaining two.</p>
+    <pre class="mermaid">
+flowchart TD
+    A["Camera capture<br/>(ControlMiles Fleet expense, or<br/>LedgiProof receipt upload)"] --> B["On-device pre-check<br/>ML Kit text detection<br/>(already in both apps)"]
+    B -->|"no text detected -- reject early, free"| X["Ask driver/user to retake"]
+    B -->|"text found"| C["Upload photo to<br/>extract-document Edge Function"]
+    C --> D["Vision-LLM structured extraction<br/>(one shared prompt + JSON schema)"]
+    D --> E["Validation layer<br/>(currency range, date sanity,<br/>total = subtotal + tax check)"]
+    E -->|"low confidence on a field"| F["Flag field for manual review<br/>in-app, never silently guessed"]
+    E -->|"high confidence"| G["Structured receipt record"]
+    G --> H["ControlMiles Fleet<br/>expense tracking"]
+    G --> I["LedgiProof / Tax Pro<br/>deduction record"]
+    </pre>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">05</span><h2>Extraction engine — the real decision</h2></div>
+    <p>Three real options, compared on what actually matters for this: accuracy across layouts you don't control, ongoing maintenance, and cost at your volume.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Approach</th><th>Layout coverage</th><th>Ongoing effort</th><th>Cost / receipt</th><th>Privacy</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>On-device heuristics</strong><br><span style="color:var(--text-faint)">ML Kit + hand-written rules, same style as odometer today</span></td>
+            <td>Narrow — every new receipt format needs new rules</td>
+            <td>High, forever — a standing maintenance burden</td>
+            <td class="num">$0.00</td>
+            <td>Best — never leaves the device</td>
+          </tr>
+          <tr>
+            <td><strong>Dedicated Document&nbsp;AI</strong><br><span style="color:var(--text-faint)">Google Document AI Expense Parser, AWS Textract, Mindee, Veryfi</span></td>
+            <td>Wide — trained on millions of real receipts</td>
+            <td>Low — no prompt tuning, but vendor lock-in on the schema</td>
+            <td class="num">~$0.01/page<sup>1</sup></td>
+            <td>Photo leaves the device to the vendor's API</td>
+          </tr>
+          <tr class="recommended-row">
+            <td><strong>Vision-LLM extraction</strong><br><span style="color:var(--text-faint)">Claude / Gemini / GPT-4o-class model, custom JSON schema prompt</span></td>
+            <td>Wide — general vision model, handles novel layouts without retraining</td>
+            <td>Low — the prompt <em>is</em> the "model," versioned in your own repo</td>
+            <td class="num">$0.002–$0.01<sup>2</sup></td>
+            <td>Photo leaves the device to your own Edge Function → chosen provider</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12.5px;color:var(--text-faint);margin-top:10px">1. Google Document AI Expense Parser, synchronous requests — <a href="https://cloud.google.com/document-ai/pricing" target="_blank" rel="noopener">cloud.google.com/document-ai/pricing</a>.<br>2. Per-receipt-image estimate for a compact vision model (Gemini Flash-tier or GPT-4o-mini-tier); a frontier-tier model (Claude Opus-class) runs meaningfully higher per image — see §6 for the actual math at your volume before picking a model.</p>
+    <p><strong>Recommended: vision-LLM extraction.</strong> It gives Document AI's layout flexibility without a second vendor contract, and the "model" is a prompt + JSON schema you own and can version in this same repo — the closest thing to the custom, tailored function you originally asked for, without reinventing character recognition.</p>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">06</span><h2>What it would cost you</h2></div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Monthly volume</th><th>Compact vision model</th><th>Frontier vision model</th><th>Document AI Expense Parser</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>500 receipts<br><span style="color:var(--text-faint)">early Fleet + LedgiProof pilot</span></td><td class="num">~$1–$5</td><td class="num">~$25</td><td class="num">~$5</td></tr>
+          <tr><td>2,000 receipts<br><span style="color:var(--text-faint)">small Fleet rollout</span></td><td class="num">~$4–$20</td><td class="num">~$100</td><td class="num">~$20</td></tr>
+          <tr><td>10,000 receipts<br><span style="color:var(--text-faint)">LedgiProof at real scale</span></td><td class="num">~$20–$100</td><td class="num">~$500</td><td class="num">~$100</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13px;color:var(--text-faint)">Rough order-of-magnitude, not a quote — actual per-image cost depends on image resolution/tokenization (varies significantly by provider, see §5 footnote) and which specific model you standardize on. Cheap enough at every volume shown here that model <em>accuracy</em> should drive the choice, not price.</p>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">07</span><h2>Data model</h2></div>
+    <p>One shared shape, returned by the Edge Function, stored once, read by both apps with their own display logic on top.</p>
+    <div class="schemabox">{<br>
+&nbsp;&nbsp;<span class="key">"document_id"</span>: <span class="type">string</span>,<br>
+&nbsp;&nbsp;<span class="key">"source_app"</span>: <span class="type">"controlmiles" | "ledgiproof" | "ledgiproof_taxpro"</span>,<br>
+&nbsp;&nbsp;<span class="key">"document_type"</span>: <span class="type">"receipt" | "invoice" | "odometer"</span>,<br>
+&nbsp;&nbsp;<span class="key">"merchant_name"</span>: <span class="type">string | null</span>,<br>
+&nbsp;&nbsp;<span class="key">"transaction_date"</span>: <span class="type">date | null</span>,<br>
+&nbsp;&nbsp;<span class="key">"subtotal"</span>: <span class="type">decimal | null</span>,<br>
+&nbsp;&nbsp;<span class="key">"tax"</span>: <span class="type">decimal | null</span>,<br>
+&nbsp;&nbsp;<span class="key">"total"</span>: <span class="type">decimal</span>,<br>
+&nbsp;&nbsp;<span class="key">"currency"</span>: <span class="type">string</span>, <span class="comment">// ISO 4217, default USD</span><br>
+&nbsp;&nbsp;<span class="key">"suggested_category"</span>: <span class="type">string | null</span>, <span class="comment">// e.g. "fuel", "tolls", "maintenance"</span><br>
+&nbsp;&nbsp;<span class="key">"line_items"</span>: <span class="type">[{ description, amount, quantity }] | null</span>,<br>
+&nbsp;&nbsp;<span class="key">"field_confidence"</span>: <span class="type">{ [field: string]: 0.0-1.0 }</span>, <span class="comment">// per-field, never one blended score</span><br>
+&nbsp;&nbsp;<span class="key">"needs_review"</span>: <span class="type">boolean</span>, <span class="comment">// true if any required field < threshold</span><br>
+&nbsp;&nbsp;<span class="key">"raw_extraction"</span>: <span class="type">object</span>, <span class="comment">// full model response, kept for audit/debugging</span><br>
+&nbsp;&nbsp;<span class="key">"image_url"</span>: <span class="type">string</span><br>
+}</div>
+    <p style="margin-top:14px"><code>field_confidence</code> as a per-field map (not one overall score) matters here specifically because it's what lets the UI ask "is this the right total?" only when the total is actually uncertain, instead of nagging the user on every scan — same principle the odometer reader already applies with its stabilization buffer.</p>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">08</span><h2>Security &amp; privacy — non-negotiable, not an afterthought</h2></div>
+    <ul>
+      <li><strong>Redact before storing, not after.</strong> A gas receipt or parking stub can carry a partial card number. The Edge Function's own prompt should instruct the model to omit any payment-card digits from the structured output entirely — don't rely on a downstream scrub step to catch what the extraction step already captured.</li>
+      <li><strong>Row-Level Security from day one</strong> on the new table (per-user, per-organization for Fleet), matching the RLS pattern already proven across this session's other work — no exceptions for a "just for now" launch.</li>
+      <li><strong>Rate-limit the endpoint</strong> the same way <code>/governance/decision</code> is rate-limited in CGC Core — an uploaded-image endpoint is a real cost/abuse surface if left open.</li>
+      <li><strong>Raw images get a retention window</strong>, not indefinite storage — keep the structured JSON (small, needed for tax records) longer than the source photo (large, only needed to re-verify a disputed extraction).</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">09</span><h2>Rollout</h2></div>
+    <div class="phase">
+      <div class="phase-marker">PHASE 1<span class="weeks">1–2 weeks</span></div>
+      <div class="phase-body">
+        <h3>Prototype against real receipts</h3>
+        <ul>
+          <li>10–15 of your own real receipts/gas stubs, deliberately messy (crumpled, faded thermal paper, angled)</li>
+          <li>One vision-LLM call, hand-written prompt, no infrastructure yet — just measure field-level accuracy</li>
+          <li><strong>Go/no-go gate:</strong> if total/date/merchant accuracy is below ~90% on this set, revisit the model choice before building anything else</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-marker">PHASE 2<span class="weeks">2–3 weeks</span></div>
+      <div class="phase-body">
+        <h3>Shared Edge Function</h3>
+        <ul>
+          <li><code>extract-document</code> function, the schema from §7, RLS-backed storage table</li>
+          <li>Confidence-threshold validation layer (§7) and the field-flagging UI pattern</li>
+          <li>Wired into ControlMiles Fleet expense capture first (smaller surface than LedgiProof)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-marker">PHASE 3<span class="weeks">2 weeks</span></div>
+      <div class="phase-body">
+        <h3>LedgiProof / Tax Pro integration</h3>
+        <ul>
+          <li>Same service, new caller — no new extraction logic, just LedgiProof's own category mapping and deduction rules on top of the shared schema</li>
+          <li>Real accountant review of a sample batch before this touches an actual client tax return</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><span class="section-num">10</span><h2>Three decisions only you can make</h2></div>
+    <div class="decision">
+      <div class="q">Which vision-LLM provider?</div>
+      <div class="ctx">Compact-tier (Gemini Flash-class or GPT-4o-mini-class) is cheapest and likely sufficient per §5–§6 — but the actual accuracy call needs Phase 1's real-receipt test, not a spec sheet. Also worth weighing: does keeping this on Anthropic's API (the same relationship this whole build already runs on) simplify billing/vendor count enough to be worth a possible cost difference?</div>
+    </div>
+    <div class="decision">
+      <div class="q">Where does <code>extract-document</code> live?</div>
+      <div class="ctx">A new Supabase Edge Function on ControlMiles' own project (fastest to ship, but LedgiProof would call across projects), a new function on whichever Supabase project LedgiProof already uses, or a third option: hosted inside CGC Core's existing FastAPI backend as a new endpoint, reusing its already-built rate-limiting/RLS/tenant patterns instead of rebuilding them in Deno. This last option has the most existing infrastructure to lean on.</div>
+    </div>
+    <div class="decision">
+      <div class="q">Confidence threshold for "needs review"?</div>
+      <div class="ctx">Too strict and every receipt gets flagged (defeats the automation); too loose and a wrong total silently reaches a tax record. Needs a real number, tuned against Phase 1's test set — not guessed in advance.</div>
+    </div>
+  </section>
+
+  <footer>
+    Olympus Mont Systems LLC · ControlMiles / LedgiProof / LedgiProof Tax Pro · this document lives at store_assets/document_intelligence_plan.html in the ControlMiles repo
+  </footer>
+
+</div>
