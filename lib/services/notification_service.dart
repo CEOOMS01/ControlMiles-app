@@ -23,6 +23,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../routes/app_routes.dart';
 import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
+import '../theme/app_colors.dart';
 
 class NotificationService {
   NotificationService._internal();
@@ -103,7 +104,15 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
+    // BUG FIX (2026-09-15): esto apuntaba a '@mipmap/launcher_icon' — el icono
+    // de launcher a todo color. Android 5.0+ ignora los colores del small icon
+    // y usa SOLO su canal alfa, y el launcher icon es un cuadrado 100% opaco:
+    // el resultado era un CUADRO BLANCO SÓLIDO en la barra de estado en cada
+    // notificación que emite la app. El icono correcto es la silueta blanca
+    // sobre transparente que ya existía (ic_stat_tracking, el mismo que el
+    // motor de tracking ya usaba en tracelet_engine.dart) — ahora ambos caminos
+    // usan el mismo asset.
+    const androidInit = AndroidInitializationSettings('@drawable/ic_stat_tracking');
     const darwinInit = DarwinInitializationSettings(
       requestAlertPermission: false, // se pide explícito más abajo
       requestBadgePermission: false,
@@ -250,6 +259,7 @@ class NotificationService {
           channelDescription: _channelDescription,
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(),
         macOS: DarwinNotificationDetails(),
@@ -294,6 +304,7 @@ class NotificationService {
           channelDescription: _pauseReminderChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
@@ -335,6 +346,7 @@ class NotificationService {
           channelDescription: _channelDescription,
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(),
         macOS: DarwinNotificationDetails(),
@@ -389,6 +401,7 @@ class NotificationService {
           channelDescription: _switchConfirmChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
@@ -424,6 +437,7 @@ class NotificationService {
           channelDescription: _switchConfirmChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
@@ -457,6 +471,7 @@ class NotificationService {
           channelDescription: _switchConfirmChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          color: kBrandSeed,
         ),
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),

@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  This 16% inset dated back to this repo's very first commit, never
-  touched by either logo redesign since (576e96f, 1aa22b4). Both of
-  those regenerated ic_launcher_foreground.png itself to already be
-  full bleed (measured: 99 to 100% of its own canvas is non transparent
-  content, deliberately edge to edge, no built in padding), but this
-  XML kept adding a SECOND, unrelated 16% margin on top of an image
-  that no longer needed one, which is exactly why the launcher icon
-  looked like it did not cover the edges even after the logo itself
-  was fixed. Removed (0% inset): the foreground PNG is already the
-  full intended icon.
+  NO <inset> HERE, ON PURPOSE.
+
+  flutter_launcher_icons (v0.14.4) re-adds a 16% inset to this file EVERY time
+  icons are regenerated (it is the tool's own default template, not something
+  added by hand). It has to be removed again after every
+  `dart run flutter_launcher_icons`. This is not a one-time fix.
+
+  Why it has to go: the Android safe zone is already baked into the foreground
+  ASSET itself. assets/images/logo_controlmiles_launcher_foreground.png is a
+  1024x1024 square whose glyph occupies 52% of the canvas height, centered --
+  comfortably inside the 72dp-of-108dp (66.7%) area every OEM mask is
+  guaranteed to show. Applying the tool's inset on top of that padding would
+  draw the glyph into only 68% of the canvas, shrinking it to ~35% of the icon
+  and leaving it visibly undersized in the launcher.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-  <background android:drawable="@color/ic_launcher_background"/>
+  <background android:drawable="@drawable/ic_launcher_background"/>
   <foreground android:drawable="@drawable/ic_launcher_foreground"/>
 </adaptive-icon>

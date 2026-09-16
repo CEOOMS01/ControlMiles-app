@@ -188,9 +188,50 @@ flutter_launcher_icons:
   # this tool's own warning the first time this ran against the newly
   # scaffolded ios/ project.
   remove_alpha_ios: true
-  image_path: "assets/images/logo_controlmiles.png"
-  adaptive_icon_background: "#F8FAFC"
-  adaptive_icon_foreground: "assets/images/logo_controlmiles.png"
+  # 2026-09-15: launcher icon regenerated from the new official app icon
+  # (originally provided as iconodelaaplicacion.png at the repo root,
+  # preserved at store_assets/iconodelaaplicacion_original.png). That
+  # source file already has its own background gradient + rounded
+  # corners baked in -- correct for a Play Store listing image, but
+  # wrong to feed directly into an adaptive-icon foreground (Android
+  # would mask it a second time). Derived 3 clean assets from it instead
+  # (glyph isolated by an R-channel ramp; the white corner artifacts
+  # outside the rounded square removed by connected-component labelling
+  # -- every white blob touching the image border is dropped, and the
+  # glyph never touches the border. NOT PIL's ImageDraw.floodfill: that
+  # is a silent no-op on a binary mask here, verified 2026-09-15 by
+  # counting pixels before/after (337321 both times), which had left the
+  # corner artifacts inside the "glyph"):
+  #   - logo_controlmiles_launcher_foreground.png: the white
+  #     pin+wheel+check glyph, transparent background, full detail
+  #     (wheel spokes/center, checkmark) preserved, on a SQUARE
+  #     1024x1024 canvas, glyph at 52% of canvas height, centered,
+  #     aspect ratio preserved. Both properties matter:
+  #       * square + aspect-preserved, because the tool resizes this
+  #         asset directly to a square target -- the previous 657x861
+  #         tight crop was STRETCHED to 432x432 (aspect 0.76 -> 1.00),
+  #         visibly widening the pin on every Android launcher.
+  #       * 52% of canvas, because Android only guarantees the central
+  #         72dp of the 108dp canvas survives the OEM mask. Full-bleed
+  #         (what it was before) got cropped by every circle mask.
+  #     Since the safe-zone padding now lives in the ASSET, the <inset>
+  #     that flutter_launcher_icons re-adds to
+  #     mipmap-anydpi-v26/launcher_icon.xml must be removed after every
+  #     regeneration -- see the comment in that file.
+  #   - logo_controlmiles_launcher_background.png: the same diagonal
+  #     blue gradient (sampled directly from the source, #0978EB to
+  #     #0154CF), full-bleed, no rounding baked in -- Android applies
+  #     its own adaptive-icon mask shape on top.
+  #   - logo_controlmiles_launcher_flattened.png: the two composited
+  #     together, opaque -- used for image_path (iOS + the legacy
+  #     non-adaptive Android icon, neither of which get a separate
+  #     foreground/background layer).
+  # Deliberately separate from assets/images/logo_controlmiles.png,
+  # which flutter_native_splash below still uses unchanged -- this was
+  # scoped to the launcher icon only, not the splash screen.
+  image_path: "assets/images/logo_controlmiles_launcher_flattened.png"
+  adaptive_icon_background: "assets/images/logo_controlmiles_launcher_background.png"
+  adaptive_icon_foreground: "assets/images/logo_controlmiles_launcher_foreground.png"
 
 # ============================================================
 # SPLASH SCREEN CONFIGURATION
