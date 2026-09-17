@@ -17,6 +17,7 @@ import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
 import 'driver_safety_monitor.dart';
+import '../services/speed_limit_service.dart';
 import 'background_gps_service.dart';
 import 'auto_trip_detection_service.dart';
 
@@ -1593,21 +1594,60 @@ class TrackingController {
         timestamp: now,
       );
       if (safetyEvent != null) {
-        try {
-          await Supabase.instance.client.from('driver_safety_events').insert({
-            'organization_id': activeOrganizationId,
-            'vehicle_id': activeVehicleId,
-            'user_id': Supabase.instance.client.auth.currentUser!.id,
-            'session_id': sessionId,
-            'section_id': section.id,
-            'event_type': safetyEvent.type,
-            'speed_mps': safetyEvent.speedMps,
-            'latitude': latitude,
-            'longitude': longitude,
-            'recorded_at': now.toIso8601String(),
-          });
-        } catch (e) {
-          _logError('SAFETY_EVENT_SYNC_ERROR', e.toString());
+        // Real fix (explicit user request, 2026-09-18): 'speeding' used
+        // to be logged purely off DriverSafetyMonitor's fixed ~75mph
+        // ceiling -- that ceiling now only marks a CANDIDATE. Confirm it
+        // against the real posted limit for this exact spot before
+        // deciding whether to actually write the event. Harsh
+        // braking/hard acceleration aren't road-limit events, so they
+        // skip this entirely and log exactly as before.
+        double? speedLimitMps;
+        String? speedLimitSource;
+        var shouldLog = true;
+
+        if (safetyEvent.type == 'speeding') {
+          final limitResult = await SpeedLimitService.lookup(
+            latitude: latitude,
+            longitude: longitude,
+          );
+          final confirmedLimitMps = limitResult.limitMps;
+          if (confirmedLimitMps != null) {
+            speedLimitMps = confirmedLimitMps;
+            speedLimitSource = limitResult.source;
+            // 10% tolerance over the real posted limit -- the same
+            // margin real-world speed-enforcement/telematics products
+            // use, so a driver doing 57 in a 55 doesn't get flagged for
+            // GPS/rounding noise while someone genuinely speeding still
+            // does.
+            shouldLog = safetyEvent.speedMps > confirmedLimitMps * 1.10;
+          } else {
+            // No tagged road found nearby, or the lookup failed/timed
+            // out -- never silently drop a real candidate just because
+            // enrichment didn't come back; fall back to the original
+            // fixed-threshold judgment, honestly labeled as such.
+            speedLimitSource = 'fixed_fallback';
+          }
+        }
+
+        if (shouldLog) {
+          try {
+            await Supabase.instance.client.from('driver_safety_events').insert({
+              'organization_id': activeOrganizationId,
+              'vehicle_id': activeVehicleId,
+              'user_id': Supabase.instance.client.auth.currentUser!.id,
+              'session_id': sessionId,
+              'section_id': section.id,
+              'event_type': safetyEvent.type,
+              'speed_mps': safetyEvent.speedMps,
+              'speed_limit_mps': speedLimitMps,
+              'speed_limit_source': speedLimitSource,
+              'latitude': latitude,
+              'longitude': longitude,
+              'recorded_at': now.toIso8601String(),
+            });
+          } catch (e) {
+            _logError('SAFETY_EVENT_SYNC_ERROR', e.toString());
+          }
         }
       }
     }

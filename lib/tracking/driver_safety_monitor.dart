@@ -17,11 +17,19 @@
 // AntifraudEngine already accepted (result.isValid), with its own
 // thresholds tuned for real driving behavior instead.
 //
-// Speeding uses a fixed, not road-aware, ceiling -- no maps/speed-limit
-// API is integrated. A known, documented simplification, not an
-// oversight; the same category of simplification most competitors'
-// entry tiers use too (see the competitor research in
-// [[project_controlmiles]]).
+// Speeding (2026-09-18, real fix): this class's fixed ~75mph/120km/h
+// ceiling is now only the CHEAP LOCAL PRE-FILTER -- a candidate over
+// this line gets confirmed against the real posted speed limit for that
+// exact spot (SpeedLimitService, OpenStreetMap Overpass API) by the
+// caller (tracking_controller.dart's _smartSync) before it's actually
+// logged. Kept here, unchanged, on purpose: a per-tick network round
+// trip for EVERY tick would be slow and risk rate-limiting a shared
+// public API, so this fixed check still does the job of "is this even
+// worth looking up" before any network call happens. When no tagged
+// road data is available nearby (common) or the lookup fails/times out,
+// the caller falls back to trusting this fixed threshold as-is -- a
+// missing real limit never suppresses a real event, only a CONFIRMED
+// real limit can.
 
 class SafetyEvent {
   final String type; // 'harsh_braking' | 'hard_acceleration' | 'speeding'
