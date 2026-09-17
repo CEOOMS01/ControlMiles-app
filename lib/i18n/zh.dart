@@ -377,6 +377,7 @@ const Map<String, String> zhTexts = {
   'role_fleet_driver_desc': '您的车队管理员已经为您创建了账户 —— 使用您的司机ID登录。',
   'fleet_driver_login_tab': '车队司机',
   'driver_id_label': '司机ID',
+  'fleet_driver_must_use_id_login': '车队司机需使用司机ID登录，不能使用邮箱。请切换上方的选项卡。',
   'role_fleet_admin_title': '车队管理员',
   'role_fleet_admin_desc': '管理您车队的司机、车辆和报告。',
   'role_chooser_have_account': '已有账户？登录',

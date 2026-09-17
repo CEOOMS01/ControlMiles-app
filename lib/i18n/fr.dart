@@ -385,6 +385,7 @@ const Map<String, String> frTexts = {
   'role_fleet_driver_desc': 'Votre administrateur de flotte a déjà configuré votre compte — connectez-vous avec votre ID de conducteur.',
   'fleet_driver_login_tab': 'Conducteur Fleet',
   'driver_id_label': 'ID de conducteur',
+  'fleet_driver_must_use_id_login': 'Les conducteurs Fleet se connectent avec leur ID de conducteur, pas leur e-mail. Changez d\'onglet ci-dessus.',
   'role_fleet_admin_title': 'Administrateur de flotte',
   'role_fleet_admin_desc': 'Gérez les chauffeurs, véhicules et rapports de votre flotte.',
   'role_chooser_have_account': 'Vous avez déjà un compte ? Connectez-vous',

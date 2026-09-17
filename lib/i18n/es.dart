@@ -475,6 +475,7 @@ const Map<String, String> esTexts = {
   'role_fleet_driver_desc': 'Tu administrador de flota ya configuró tu cuenta — inicia sesión con tu ID de conductor.',
   'fleet_driver_login_tab': 'Conductor Fleet',
   'driver_id_label': 'ID de conductor',
+  'fleet_driver_must_use_id_login': 'Los conductores Fleet inician sesión con su ID de conductor, no con correo. Cambia de pestaña arriba.',
   'role_fleet_admin_title': 'Administrador de flota',
   'role_fleet_admin_desc': 'Gestiona conductores, vehículos y reportes de tu flota.',
   'role_chooser_have_account': '¿Ya tienes una cuenta? Inicia sesión',

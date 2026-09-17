@@ -607,6 +607,7 @@ const Map<String, String> amTexts = {
   'role_fleet_driver_desc': 'የፍሊት አስተዳዳሪዎ አካውንትዎን አስቀድሞ አዘጋጅቷል — በአሽከርካሪ መታወቂያዎ ይግቡ።',
   'fleet_driver_login_tab': 'የፍሊት አሽከርካሪ',
   'driver_id_label': 'የአሽከርካሪ መታወቂያ',
+  'fleet_driver_must_use_id_login': 'የፍሊት አሽከርካሪዎች በኢሜይል ሳይሆን በአሽከርካሪ መታወቂያቸው ይገባሉ። ከላይ ያለውን ትር ይቀይሩ።',
   'role_fleet_admin_title': 'የፍሊት አስተዳዳሪ',
   'role_fleet_admin_desc': 'ለፍሊትዎ ሹፌሮችን፣ ተሽከርካሪዎችንና ሪፖርቶችን ያስተዳድሩ።',
   'role_chooser_have_account': 'አስቀድሞ መለያ አለዎት? ይግቡ',

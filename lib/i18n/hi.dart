@@ -622,6 +622,7 @@ const Map<String, String> hiTexts = {
   'role_fleet_driver_desc': 'आपके फ़्लीट एडमिन ने पहले ही आपका खाता बना दिया है — अपने ड्राइवर ID से लॉग इन करें।',
   'fleet_driver_login_tab': 'फ़्लीट ड्राइवर',
   'driver_id_label': 'ड्राइवर ID',
+  'fleet_driver_must_use_id_login': 'फ़्लीट ड्राइवर ईमेल से नहीं, अपने ड्राइवर ID से लॉग इन करते हैं। ऊपर टैब बदलें।',
   'role_fleet_admin_title': 'फ़्लीट एडमिन',
   'role_fleet_admin_desc': 'अपने फ़्लीट के ड्राइवर, वाहन और रिपोर्ट प्रबंधित करें।',
   'role_chooser_have_account': 'पहले से खाता है? साइन इन करें',

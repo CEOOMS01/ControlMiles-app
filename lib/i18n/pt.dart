@@ -377,6 +377,7 @@ const Map<String, String> ptTexts = {
   'role_fleet_driver_desc': 'Seu administrador de frota já configurou sua conta — entre com seu ID de motorista.',
   'fleet_driver_login_tab': 'Motorista Fleet',
   'driver_id_label': 'ID de motorista',
+  'fleet_driver_must_use_id_login': 'Motoristas Fleet entram com o ID de motorista, não com e-mail. Troque de aba acima.',
   'role_fleet_admin_title': 'Administrador de frota',
   'role_fleet_admin_desc': 'Gerencie motoristas, veículos e relatórios da sua frota.',
   'role_chooser_have_account': 'Já tem uma conta? Entrar',

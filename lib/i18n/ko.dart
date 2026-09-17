@@ -612,6 +612,7 @@ const Map<String, String> koTexts = {
   'role_fleet_driver_desc': '플릿 관리자가 이미 계정을 만들었습니다 — 운전자 ID로 로그인하세요.',
   'fleet_driver_login_tab': '플릿 운전자',
   'driver_id_label': '운전자 ID',
+  'fleet_driver_must_use_id_login': '플릿 운전자는 이메일이 아닌 운전자 ID로 로그인합니다. 위에서 탭을 전환하세요.',
   'role_fleet_admin_title': '플릿 관리자',
   'role_fleet_admin_desc': '플릿의 드라이버, 차량, 보고서를 관리합니다.',
   'role_chooser_have_account': '이미 계정이 있으신가요? 로그인',

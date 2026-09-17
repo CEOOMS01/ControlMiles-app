@@ -611,6 +611,7 @@ const Map<String, String> jaTexts = {
   'role_fleet_driver_desc': 'フリート管理者がすでにアカウントを作成済みです — ドライバーIDでログインしてください。',
   'fleet_driver_login_tab': 'フリートドライバー',
   'driver_id_label': 'ドライバーID',
+  'fleet_driver_must_use_id_login': 'フリートドライバーはメールではなくドライバーIDでログインします。上のタブを切り替えてください。',
   'role_fleet_admin_title': 'フリート管理者',
   'role_fleet_admin_desc': '自社フリートのドライバー、車両、レポートを管理します。',
   'role_chooser_have_account': 'すでにアカウントをお持ちですか？サインイン',

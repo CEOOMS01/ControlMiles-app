@@ -377,6 +377,7 @@ const Map<String, String> deTexts = {
   'role_fleet_driver_desc': 'Dein Flottenadmin hat dein Konto bereits eingerichtet — melde dich mit deiner Fahrer-ID an.',
   'fleet_driver_login_tab': 'Fleet-Fahrer',
   'driver_id_label': 'Fahrer-ID',
+  'fleet_driver_must_use_id_login': 'Fleet-Fahrer melden sich mit ihrer Fahrer-ID an, nicht mit E-Mail. Wechsle oben den Tab.',
   'role_fleet_admin_title': 'Flottenadministrator',
   'role_fleet_admin_desc': 'Verwalten Sie Fahrer, Fahrzeuge und Berichte Ihrer Flotte.',
   'role_chooser_have_account': 'Bereits ein Konto? Anmelden',

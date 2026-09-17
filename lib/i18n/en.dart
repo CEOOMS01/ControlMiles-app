@@ -485,6 +485,7 @@ const Map<String, String> enTexts = {
   'role_fleet_driver_desc': 'Your fleet admin already set up your account — log in with your driver ID.',
   'fleet_driver_login_tab': 'Fleet Driver',
   'driver_id_label': 'Driver ID',
+  'fleet_driver_must_use_id_login': 'Fleet drivers log in with their Driver ID, not email. Switch tabs above.',
   'role_fleet_admin_title': 'Fleet Admin',
   'role_fleet_admin_desc': 'Manage drivers, vehicles, and reports for your fleet.',
   'role_chooser_have_account': 'Already have an account? Sign in',

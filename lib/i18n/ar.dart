@@ -624,6 +624,7 @@ const Map<String, String> arTexts = {
   'role_fleet_driver_desc': 'مدير أسطولك أنشأ حسابك بالفعل — سجّل الدخول برقم هوية السائق الخاص بك.',
   'fleet_driver_login_tab': 'سائق الأسطول',
   'driver_id_label': 'رقم هوية السائق',
+  'fleet_driver_must_use_id_login': 'يسجّل سائقو الأسطول الدخول برقم هوية السائق، وليس بالبريد الإلكتروني. بدّل التبويب أعلاه.',
   'role_fleet_admin_title': 'مدير أسطول',
   'role_fleet_admin_desc': 'أدِر السائقين والمركبات والتقارير لأسطولك.',
   'role_chooser_have_account': 'لديك حساب بالفعل؟ سجّل الدخول',

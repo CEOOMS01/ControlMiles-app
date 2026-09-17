@@ -156,6 +156,46 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       if (_isLoginMode) {
         await _authService.signIn(email, password);
+
+        // BUG FIX (found live, 2026-09-18): the driver/email mode toggle
+        // above was only ever a UI default -- nothing stopped a plain
+        // 'driver' from just picking the Email tab and signing in with
+        // their real email/password anyway, which is exactly what the
+        // explicit user request ("eliminamos el login por correo para
+        // los driver fleet only") was supposed to prevent. Checked here,
+        // not server-side: this is a UX/process guardrail, not a
+        // security boundary -- a driver who got in this way ends up with
+        // the exact same RLS-scoped session (same auth.uid(), same
+        // organization_members.member_role) as if they'd used the
+        // correct Driver ID tab, so there's no extra access to gate at
+        // the RLS layer, only the login PATH to correct. Scoped to
+        // member_role == 'driver' specifically -- operator/admin/owner
+        // still need email (they use the web dashboard too), only the
+        // base driver tier is ID-only.
+        final justSignedIn = Supabase.instance.client.auth.currentUser;
+        if (justSignedIn != null) {
+          final profileRow = await Supabase.instance.client
+              .from('profiles')
+              .select('account_type, default_org_id')
+              .eq('id', justSignedIn.id)
+              .maybeSingle();
+          final orgId = profileRow?['default_org_id'] as String?;
+          if (profileRow?['account_type'] == 'fleet_driver' && orgId != null) {
+            final memberRow = await Supabase.instance.client
+                .from('organization_members')
+                .select('member_role')
+                .eq('user_id', justSignedIn.id)
+                .eq('organization_id', orgId)
+                .maybeSingle();
+            if (memberRow?['member_role'] == 'driver') {
+              await Supabase.instance.client.auth.signOut();
+              if (!mounted) return;
+              setState(() => _isLoading = false);
+              _showError(appState.tr('fleet_driver_must_use_id_login'));
+              return;
+            }
+          }
+        }
       } else {
         await _authService.signUp(
           email,
