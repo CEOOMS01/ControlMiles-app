@@ -26,6 +26,16 @@
 // this is the one legitimate place in this project's subscription code
 // that needs to write across users, since Stripe's own call is the
 // authority here, not any one user's session.
+//
+// FLEET SCOPE (2026-09-17): a subscription whose metadata.scope is
+// 'fleet' (stamped by create-checkout-session's own Fleet branch) is an
+// org-level subscription, not a personal one -- it updates
+// `organizations` (subscription_tier/status/vehicle_count) instead of
+// `subscriptions`/`profiles`, keyed by metadata.organization_id instead
+// of metadata.user_id. Handled as an early return inside the same
+// customer.subscription.* branches rather than a parallel copy of this
+// function, so the signature verification/idempotency-log/error-handling
+// wrapper above stays single-sourced for both scopes.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -179,6 +189,34 @@ Deno.serve(async (req: Request) => {
 
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
       const sub = event.data.object;
+
+      // FLEET SCOPE (2026-09-17): a Fleet checkout (create-checkout-
+      // session's isFleet branch) stamps metadata.scope='fleet' and
+      // metadata.organization_id instead of metadata.user_id -- this is
+      // how the same webhook event type tells a Fleet org subscription
+      // from an individual Gig one apart, without a second lookup table.
+      if (sub.metadata?.scope === 'fleet') {
+        const organizationId: string | undefined = sub.metadata?.organization_id;
+        const fleetTier: string = sub.metadata?.tier === 'growth' ? 'growth' : 'starter';
+        if (organizationId) {
+          const status = sub.status as string;
+          const vehicleCount = sub.items?.data?.[0]?.quantity ?? null;
+          await adminClient
+            .from('organizations')
+            .update({
+              stripe_customer_id: sub.customer,
+              subscription_tier: fleetTier,
+              subscription_status: status,
+              subscription_vehicle_count: vehicleCount,
+              subscription_updated_at: new Date().toISOString(),
+            })
+            .eq('id', organizationId);
+        } else {
+          console.warn(`[stripe-webhook] ${event.type} fleet scope with no metadata.organization_id, skipping`);
+        }
+        return respond({ received: true });
+      }
+
       const userId: string | undefined = sub.metadata?.user_id;
       // Older subscriptions created before the two-tier split (or a
       // caller that never sent one) default to premium -- matches
@@ -233,6 +271,18 @@ Deno.serve(async (req: Request) => {
       }
     } else if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object;
+
+      if (sub.metadata?.scope === 'fleet') {
+        const organizationId: string | undefined = sub.metadata?.organization_id;
+        if (organizationId) {
+          await adminClient
+            .from('organizations')
+            .update({ subscription_status: 'canceled', subscription_updated_at: new Date().toISOString() })
+            .eq('id', organizationId);
+        }
+        return respond({ received: true });
+      }
+
       const userId: string | undefined = sub.metadata?.user_id;
 
       await adminClient

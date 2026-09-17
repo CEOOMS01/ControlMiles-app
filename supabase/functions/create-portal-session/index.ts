@@ -6,6 +6,13 @@
 // same "ControlMiles never touches card data" principle as
 // create-checkout-session (see [[project_controlmiles]]). Powers the
 // existing "manage_subscription" i18n key's real action.
+//
+// FLEET SCOPE (2026-09-17): {"organization_id"} looks up that org's
+// stripe_customer_id (organizations.stripe_customer_id, set by
+// stripe-webhook's own Fleet branch) instead of the caller's personal
+// subscription row -- same admin/owner membership check as
+// create-checkout-session's Fleet branch, organization_id is never
+// trusted bare from the request body.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -86,23 +93,64 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Subscriptions not configured yet', configured: false }, 200);
     }
 
-    // RLS-gated -- subscriptions_select_own means this only ever returns
-    // the caller's own row(s).
-    const { data: subs, error: subError } = await userClient
-      .from('subscriptions')
-      .select('stripe_customer_id')
-      .eq('user_id', userData.user.id)
-      .not('stripe_customer_id', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No/invalid body -- falls through to the personal-subscription
+      // lookup below, same as before Fleet scope existed.
+    }
 
-    if (subError || !subs?.stripe_customer_id) {
-      return respond({ error: 'No subscription found for this account' }, 404);
+    let stripeCustomerId: string | null = null;
+
+    if (body?.organization_id) {
+      const organizationId = String(body.organization_id);
+
+      const { data: membership, error: membershipError } = await userClient
+        .from('organization_members')
+        .select('member_role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', userData.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (membershipError || !membership || !['owner', 'admin'].includes(membership.member_role)) {
+        return respond({ error: 'Not authorized for this organization' }, 403);
+      }
+
+      // RLS-gated (organizations_select_member) -- confirms the row is
+      // actually readable by this caller, not just that the membership
+      // check above passed.
+      const { data: org, error: orgError } = await userClient
+        .from('organizations')
+        .select('stripe_customer_id')
+        .eq('id', organizationId)
+        .maybeSingle();
+
+      if (orgError || !org?.stripe_customer_id) {
+        return respond({ error: 'No subscription found for this organization' }, 404);
+      }
+      stripeCustomerId = org.stripe_customer_id;
+    } else {
+      // RLS-gated -- subscriptions_select_own means this only ever returns
+      // the caller's own row(s).
+      const { data: subs, error: subError } = await userClient
+        .from('subscriptions')
+        .select('stripe_customer_id')
+        .eq('user_id', userData.user.id)
+        .not('stripe_customer_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (subError || !subs?.stripe_customer_id) {
+        return respond({ error: 'No subscription found for this account' }, 404);
+      }
+      stripeCustomerId = subs.stripe_customer_id;
     }
 
     const form = new URLSearchParams();
-    form.set('customer', subs.stripe_customer_id);
+    form.set('customer', stripeCustomerId!);
     form.set('return_url', PORTAL_RETURN_URL);
 
     const stripeRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {

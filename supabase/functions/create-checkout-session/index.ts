@@ -23,6 +23,25 @@
 // Security: user_id/email come from the caller's own verified JWT
 // (userClient.auth.getUser()), never trusted from a request body --
 // same discipline as delete-account and cgc-seal-trip in this repo.
+//
+// FLEET SCOPE (explicit user request, 2026-09-17, mitigating a real gap
+// the private Enterprise Brief flagged: the pricing page has always
+// advertised Starter/Growth per-vehicle billing with no live checkout
+// behind it). {"scope": "fleet", "organization_id", "tier": "starter" |
+// "growth", "vehicle_count"} creates an org-level subscription instead --
+// quantity scales with vehicle_count (Fleet pricing is per-vehicle, not
+// flat), and metadata carries organization_id instead of just user_id so
+// stripe-webhook can tell a Fleet event from a Gig one and update
+// `organizations` instead of `profiles`/`subscriptions` (see its own
+// updated header comment). The caller's org admin/owner membership is
+// verified here via the caller's own RLS-scoped client, exactly like
+// generate_report_access_code's own target-driver check elsewhere in
+// this project -- organization_id is never trusted bare from the request
+// body. STRIPE_PRICE_ID_FLEET_STARTER/_GROWTH are separate, real Stripe
+// Price objects that don't exist yet as of this commit -- until they're
+// created in the Stripe Dashboard and set as secrets here, this path
+// correctly falls through to the same "not configured yet" response the
+// Gig tiers already return when unconfigured, never a fake success.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -35,6 +54,8 @@ const corsHeaders = {
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
 const STRIPE_PRICE_ID_BASE = Deno.env.get('STRIPE_PRICE_ID_BASE') ?? '';
 const STRIPE_PRICE_ID_PREMIUM = Deno.env.get('STRIPE_PRICE_ID_PREMIUM') ?? '';
+const STRIPE_PRICE_ID_FLEET_STARTER = Deno.env.get('STRIPE_PRICE_ID_FLEET_STARTER') ?? '';
+const STRIPE_PRICE_ID_FLEET_GROWTH = Deno.env.get('STRIPE_PRICE_ID_FLEET_GROWTH') ?? '';
 
 // Cosmetic only -- Stripe requires a success/cancel URL, but the real
 // source of truth for whether a subscription is active is always
@@ -119,31 +140,76 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Too many requests, please try again shortly' }, 429);
     }
 
-    let tier = 'premium';
+    let body: any = {};
     try {
-      const body = await req.json();
-      if (body?.tier === 'base' || body?.tier === 'premium') tier = body.tier;
+      body = await req.json();
     } catch {
-      // No/invalid body -- default to premium (the only tier that existed
-      // before this became a two-tier system, keeps any existing caller
-      // working unchanged).
+      // No/invalid body -- falls through to the Gig default below, same
+      // as before Fleet scope existed.
     }
 
-    const priceId = tier === 'base' ? STRIPE_PRICE_ID_BASE : STRIPE_PRICE_ID_PREMIUM;
-    if (!STRIPE_SECRET_KEY || !priceId) {
-      return respond({ error: 'Subscriptions not configured yet', configured: false }, 200);
-    }
-
+    const isFleet = body?.scope === 'fleet';
     const form = new URLSearchParams();
     form.set('mode', 'subscription');
-    form.set('line_items[0][price]', priceId);
-    form.set('line_items[0][quantity]', '1');
-    form.set('client_reference_id', userData.user.id);
-    if (userData.user.email) form.set('customer_email', userData.user.email);
-    form.set('subscription_data[metadata][user_id]', userData.user.id);
-    form.set('subscription_data[metadata][tier]', tier);
     form.set('success_url', `${CHECKOUT_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`);
     form.set('cancel_url', CHECKOUT_CANCEL_URL);
+
+    if (isFleet) {
+      const organizationId = String(body?.organization_id ?? '');
+      const fleetTier = body?.tier === 'growth' ? 'growth' : 'starter';
+      const vehicleCount = Number(body?.vehicle_count);
+
+      if (!organizationId) {
+        return respond({ error: 'Missing organization_id' }, 400);
+      }
+      if (!Number.isInteger(vehicleCount) || vehicleCount < 1) {
+        return respond({ error: 'vehicle_count must be a positive integer' }, 400);
+      }
+
+      // Never trust organization_id bare from the request body -- verify
+      // via the caller's OWN RLS-scoped client that they're actually an
+      // admin/owner of that org, same discipline
+      // generate_report_access_code's target-driver path uses.
+      const { data: membership, error: membershipError } = await userClient
+        .from('organization_members')
+        .select('member_role')
+        .eq('organization_id', organizationId)
+        .eq('user_id', userData.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (membershipError || !membership || !['owner', 'admin'].includes(membership.member_role)) {
+        return respond({ error: 'Not authorized for this organization' }, 403);
+      }
+
+      const priceId = fleetTier === 'growth' ? STRIPE_PRICE_ID_FLEET_GROWTH : STRIPE_PRICE_ID_FLEET_STARTER;
+      if (!STRIPE_SECRET_KEY || !priceId) {
+        return respond({ error: 'Fleet subscriptions are not configured yet', configured: false }, 200);
+      }
+
+      form.set('line_items[0][price]', priceId);
+      form.set('line_items[0][quantity]', String(vehicleCount));
+      form.set('client_reference_id', organizationId);
+      if (userData.user.email) form.set('customer_email', userData.user.email);
+      form.set('subscription_data[metadata][organization_id]', organizationId);
+      form.set('subscription_data[metadata][scope]', 'fleet');
+      form.set('subscription_data[metadata][tier]', fleetTier);
+    } else {
+      let tier = 'premium';
+      if (body?.tier === 'base' || body?.tier === 'premium') tier = body.tier;
+
+      const priceId = tier === 'base' ? STRIPE_PRICE_ID_BASE : STRIPE_PRICE_ID_PREMIUM;
+      if (!STRIPE_SECRET_KEY || !priceId) {
+        return respond({ error: 'Subscriptions not configured yet', configured: false }, 200);
+      }
+
+      form.set('line_items[0][price]', priceId);
+      form.set('line_items[0][quantity]', '1');
+      form.set('client_reference_id', userData.user.id);
+      if (userData.user.email) form.set('customer_email', userData.user.email);
+      form.set('subscription_data[metadata][user_id]', userData.user.id);
+      form.set('subscription_data[metadata][tier]', tier);
+    }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
