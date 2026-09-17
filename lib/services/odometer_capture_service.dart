@@ -326,9 +326,27 @@ class OdometerCaptureService {
         : DateTime.parse((row?['created_at'] as String?) ?? date.toIso8601String());
     final anchorMonday = mondayOf(anchorDate);
 
-    final daysSinceAnchor = monday.difference(anchorMonday).inDays;
+    // BUG FIX (caught in the post-session audit, 2026-09-18): this used
+    // to compute `monday.difference(anchorMonday).inDays` and then
+    // `anchorMonday.add(Duration(days: blockIndex * 14))` on local-time
+    // DateTimes. Duration-based math measures actual elapsed wall-clock
+    // time, which is NOT a whole multiple of 24h across a DST transition
+    // (a real 14-calendar-day span becomes 14*24h-1h on the "spring
+    // forward" side) -- `.inDays` could silently truncate to 13 and put
+    // the client's boundary one 14-day block behind the server's
+    // (fn_odometer_cycle_start does pure DATE arithmetic in Postgres,
+    // which is DST-agnostic and was never affected). Doing the entire
+    // computation in UTC-normalized calendar-day numbers instead of
+    // local-time Durations makes this immune to DST the same way the
+    // server side always was -- a "cycle boundary" is a calendar
+    // concept, it was never supposed to depend on wall-clock time at
+    // all.
+    final anchorMondayUtc = DateTime.utc(anchorMonday.year, anchorMonday.month, anchorMonday.day);
+    final mondayUtc = DateTime.utc(monday.year, monday.month, monday.day);
+    final daysSinceAnchor = mondayUtc.difference(anchorMondayUtc).inDays;
     final blockIndex = (daysSinceAnchor / 14).floor();
-    return anchorMonday.add(Duration(days: blockIndex * 14));
+    final resultUtc = anchorMondayUtc.add(Duration(days: blockIndex * 14));
+    return DateTime(resultUtc.year, resultUtc.month, resultUtc.day);
   }
 
   static String _dateOnly(DateTime d) => d.toIso8601String().split('T')[0];

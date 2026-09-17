@@ -213,8 +213,29 @@ Deno.serve(async (req: Request) => {
       // gets its own 5-day free trial. premium_entitled flips true the
       // moment Stripe creates this trialing subscription -- stripe-webhook
       // already treats trialing the same as active, no change needed there.
+      //
+      // BUG FIX (post-session audit, 2026-09-18): trial_period_days used
+      // to be set unconditionally for every premium checkout -- a user
+      // could cancel and re-subscribe (or just re-open checkout after
+      // abandoning it) and get a fresh 5-day trial every time, since
+      // Stripe doesn't dedupe trial eligibility on its own unless
+      // `trial_settings` is explicitly configured on the Price/Subscription.
+      // `subscriptions` already has one row per user with the tier they
+      // were on (written by stripe-webhook on every status change) --
+      // if a 'premium' row already exists for this user, they've had the
+      // trial (or a real subscription) before, so no new trial is granted.
       if (tier === 'premium') {
-        form.set('subscription_data[trial_period_days]', '5');
+        const { data: priorPremium } = await userClient
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .eq('tier', 'premium')
+          .limit(1)
+          .maybeSingle();
+
+        if (!priorPremium) {
+          form.set('subscription_data[trial_period_days]', '5');
+        }
       }
     }
 
