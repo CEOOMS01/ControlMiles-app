@@ -635,6 +635,7 @@ const Map<String, String> esTexts = {
   'ifta_no_org': 'No se encontró organización para esta cuenta.',
   'ifta_no_mileage': 'No hay millas registradas en este rango',
   'ifta_disclaimer': 'Millas por estado, calculadas a partir del rastro GPS. Esto no es un reporte IFTA presentable -- el cálculo real del impuesto necesita galones de combustible por jurisdicción, algo que esta app no rastrea.',
+  'ifta_unattributed_warning': 'El {percent}% de las millas en este rango no se pudo asociar a un estado de EE. UU. y no aparece arriba. Revisa la cobertura GPS de ese periodo antes de usar esto para una declaración.',
 
   // ============================================================
   // REPORTES

@@ -100,6 +100,21 @@ class _FleetStateMileageScreenState extends State<FleetStateMileageScreen> {
 
   double get _totalMiles => _results.fold(0.0, (sum, r) => sum + r.miles);
 
+  // Real completeness fix (2026-09-17): compute_state_mileage already
+  // returns an 'UNKNOWN' bucket for any breadcrumb segment whose end point
+  // didn't land inside any state polygon (sparse GPS signal, a segment
+  // just outside the US, etc.) -- this screen used to render that bucket
+  // as just another anonymous-looking state card (a plain "UNKNOWN" badge
+  // in the same list), easy to miss and with nothing explaining what it
+  // means. For an admin using this to actually prep an IFTA filing, that's
+  // the one number that matters most to notice. Now pulled out of the
+  // per-state list and surfaced as its own explicit, hard-to-miss warning.
+  double get _unattributedMiles =>
+      _results.where((r) => r.stateCode == 'UNKNOWN').fold(0.0, (sum, r) => sum + r.miles);
+
+  List<StateMileage> get _attributedResults =>
+      _results.where((r) => r.stateCode != 'UNKNOWN').toList();
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -204,8 +219,34 @@ class _FleetStateMileageScreenState extends State<FleetStateMileageScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Text(appState.tr('ifta_no_mileage'), textAlign: TextAlign.center, style: TextStyle(color: subTextColor)),
                 )
-              else
-                ..._results.map((r) => Container(
+              else ...[
+                if (_unattributedMiles > 0 && _totalMiles > 0)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            appState.tr('ifta_unattributed_warning').replaceFirst(
+                                  '{percent}',
+                                  ((_unattributedMiles / _totalMiles) * 100).toStringAsFixed(1),
+                                ),
+                            style: TextStyle(fontSize: 12.5, color: textColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ..._attributedResults.map((r) => Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
@@ -238,6 +279,7 @@ class _FleetStateMileageScreenState extends State<FleetStateMileageScreen> {
                         ],
                       ),
                     )),
+              ],
               const SizedBox(height: 20),
               Text(
                 appState.tr('ifta_disclaimer'),

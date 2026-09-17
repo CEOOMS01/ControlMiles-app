@@ -750,6 +750,7 @@ const Map<String, String> amTexts = {
   'ifta_no_org': 'ለዚህ መለያ ድርጅት አልተገኘም።',
   'ifta_no_mileage': 'ለዚህ ክልል የተመዘገበ ማይል የለም',
   'ifta_disclaimer': 'ከGPS ዱካዎች የተሰላ በክፍለ ግዛት የማይል ብዛት። ይህ የሚቀርብ የIFTA ማቅረቢያ አይደለም — ለትክክለኛው የግብር ስሌት በየክፍለ ግዛቱ የነዳጅ ጋሎን ያስፈልጋል፤ በዚህ መተግበሪያ ውስጥ አይመዘገብም።',
+  'ifta_unattributed_warning': 'በዚህ ጊዜ ውስጥ {percent}% ማይሎች ከየትኛውም የአሜሪካ ክፍለ ግዛት ጋር ሊዛመዱ አልቻሉም እና ከላይ አልተካተቱም። ይህን ለማቅረቢያ ከመጠቀምዎ በፊት የዚያን ጊዜ የGPS ሽፋን ያረጋግጡ።',
   'generating_report_progress': 'ሪፖርት እየተፈጠረ ነው...',
   'vehicle_switch_blocked_active_session': 'ጉዞ በሂደት ላይ እያለ ንቁ ተሽከርካሪዎን መቀየር አይችሉም። መጀመሪያ የአሁኑን ጉዞ ይጨርሱ።',
   'end_shift': 'ፈረቃ ጨርስ',

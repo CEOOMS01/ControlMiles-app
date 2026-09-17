@@ -755,6 +755,7 @@ const Map<String, String> koTexts = {
   'ifta_no_org': '이 계정에 연결된 조직을 찾을 수 없습니다.',
   'ifta_no_mileage': '이 기간에 기록된 주행 거리가 없습니다',
   'ifta_disclaimer': 'GPS 이동 기록으로 계산한 주별 주행 거리입니다. 제출 가능한 IFTA 신고서가 아닙니다 — 실제 세액 계산에는 관할 구역별 연료 갤런 수가 필요하며 본 앱에서는 기록하지 않습니다.',
+  'ifta_unattributed_warning': '이 기간 주행 거리 중 {percent}%는 미국 주(state)와 매칭되지 않아 위 목록에서 제외되었습니다. 이 데이터를 신고에 사용하기 전에 해당 기간의 GPS 수신 상태를 확인하세요.',
   'generating_report_progress': '보고서를 생성하는 중...',
   'vehicle_switch_blocked_active_session': '운행 중에는 사용 중인 차량을 변경할 수 없습니다. 현재 운행을 먼저 종료하세요.',
   'end_shift': '근무 종료',

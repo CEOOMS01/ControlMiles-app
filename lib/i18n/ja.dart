@@ -754,6 +754,7 @@ const Map<String, String> jaTexts = {
   'ifta_no_org': 'このアカウントに紐づく組織が見つかりません。',
   'ifta_no_mileage': 'この期間に記録されたマイル数はありません',
   'ifta_disclaimer': 'GPSの走行履歴から算出した州別マイル数です。これは提出可能なIFTA申告ではありません。実際の税額計算には州ごとの燃料ガロン数が必要ですが、本アプリでは記録していません。',
+  'ifta_unattributed_warning': 'この期間の走行距離のうち{percent}%は米国の州に対応付けできず、上の一覧から除外されています。申告に使用する前に、その期間のGPSカバー状況を確認してください。',
   'generating_report_progress': 'レポートを作成中...',
   'vehicle_switch_blocked_active_session': '走行中は使用中の車両を変更できません。先に現在の走行を終了してください。',
   'end_shift': 'シフトを終了',

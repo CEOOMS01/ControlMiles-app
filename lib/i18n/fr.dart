@@ -542,6 +542,7 @@ const Map<String, String> frTexts = {
   'ifta_no_org': 'Aucune organisation trouvée pour ce compte.',
   'ifta_no_mileage': 'Aucun kilométrage enregistré pour cette période',
   'ifta_disclaimer': 'Miles par État, calculés à partir du tracé GPS. Ce n\'est pas une déclaration IFTA déposable -- le calcul réel de la taxe nécessite les gallons de carburant par juridiction, non suivis dans cette application.',
+  'ifta_unattributed_warning': '{percent} % des miles de cette période n\'ont pas pu être associés à un État américain et sont exclus ci-dessus. Vérifiez la couverture GPS de cette période avant d\'utiliser ceci pour une déclaration.',
 
   // ============================================================
   // RAPPORTS

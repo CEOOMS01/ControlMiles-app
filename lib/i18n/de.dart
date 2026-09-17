@@ -537,6 +537,7 @@ const Map<String, String> deTexts = {
   'ifta_no_org': 'Keine Organisation für dieses Konto gefunden.',
   'ifta_no_mileage': 'Keine Meilen für diesen Zeitraum erfasst',
   'ifta_disclaimer': 'Meilen pro Bundesstaat, berechnet aus der GPS-Spur. Dies ist keine einreichbare IFTA-Erklärung -- die tatsächliche Steuerberechnung benötigt Kraftstoffgallonen pro Zuständigkeitsbereich, die diese App nicht erfasst.',
+  'ifta_unattributed_warning': '{percent}% der Meilen in diesem Zeitraum konnten keinem US-Bundesstaat zugeordnet werden und sind oben ausgeschlossen. Prüfe die GPS-Abdeckung dieses Zeitraums, bevor du dies für eine Erklärung verwendest.',
 
   // ============================================================
   // BERICHTE

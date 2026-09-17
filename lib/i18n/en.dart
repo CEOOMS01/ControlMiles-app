@@ -659,6 +659,7 @@ const Map<String, String> enTexts = {
   'ifta_no_org': 'No organization found for this account.',
   'ifta_no_mileage': 'No mileage recorded for this range',
   'ifta_disclaimer': 'Miles per state, computed from GPS breadcrumbs. This is not a fileable IFTA return -- fuel gallons per jurisdiction are needed for the actual tax calculation and are not tracked in this app.',
+  'ifta_unattributed_warning': '{percent}% of miles in this range could not be matched to a US state and are excluded above. Check GPS coverage for that period before using this for a filing.',
 
   // ============================================================
   // REPORT EXTENSIONS
