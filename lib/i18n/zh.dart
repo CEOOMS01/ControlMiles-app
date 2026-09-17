@@ -539,6 +539,20 @@ const Map<String, String> zhTexts = {
   'ifta_disclaimer': '各州里程，根据GPS轨迹计算。这不是可提交的IFTA报告 -- 实际税额计算需要各辖区的燃油加仑数，本应用不追踪该数据。',
   'ifta_unattributed_warning': '此时间段内有 {percent}% 的里程无法归属到某个美国州，因此未包含在上方列表中。在用于申报前，请检查该时间段的GPS覆盖情况。',
 
+  'fuel_log_purchase_title': '记录加油',
+  'fuel_log_purchase_button': '记录加油',
+  'fuel_tap_to_scan_receipt': '点击扫描收据',
+  'fuel_retake_photo': '重新拍照',
+  'fuel_gallons_label': '加仑数',
+  'fuel_price_per_gallon_label': '每加仑价格',
+  'fuel_total_cost_label': '总花费',
+  'fuel_state_label': '州',
+  'fuel_state_hint': '选择州',
+  'fuel_date_label': '购买日期',
+  'fuel_save_purchase': '保存记录',
+  'fuel_receipt_photo_required': '请先拍摄收据照片。',
+  'fuel_gallons_required': '请输入购买的加仑数。',
+
   // ============================================================
   // 报告
   // ============================================================

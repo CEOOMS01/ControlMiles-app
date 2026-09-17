@@ -539,6 +539,20 @@ const Map<String, String> deTexts = {
   'ifta_disclaimer': 'Meilen pro Bundesstaat, berechnet aus der GPS-Spur. Dies ist keine einreichbare IFTA-Erklärung -- die tatsächliche Steuerberechnung benötigt Kraftstoffgallonen pro Zuständigkeitsbereich, die diese App nicht erfasst.',
   'ifta_unattributed_warning': '{percent}% der Meilen in diesem Zeitraum konnten keinem US-Bundesstaat zugeordnet werden und sind oben ausgeschlossen. Prüfe die GPS-Abdeckung dieses Zeitraums, bevor du dies für eine Erklärung verwendest.',
 
+  'fuel_log_purchase_title': 'Tankbeleg erfassen',
+  'fuel_log_purchase_button': 'Tanken erfassen',
+  'fuel_tap_to_scan_receipt': 'Tippen, um einen Beleg zu scannen',
+  'fuel_retake_photo': 'Foto erneut aufnehmen',
+  'fuel_gallons_label': 'Gallonen',
+  'fuel_price_per_gallon_label': 'Preis pro Gallone',
+  'fuel_total_cost_label': 'Gesamtkosten',
+  'fuel_state_label': 'Bundesstaat',
+  'fuel_state_hint': 'Bundesstaat auswählen',
+  'fuel_date_label': 'Kaufdatum',
+  'fuel_save_purchase': 'Kauf speichern',
+  'fuel_receipt_photo_required': 'Mach zuerst ein Foto vom Beleg.',
+  'fuel_gallons_required': 'Gib an, wie viele Gallonen du gekauft hast.',
+
   // ============================================================
   // BERICHTE
   // ============================================================

@@ -661,6 +661,24 @@ const Map<String, String> enTexts = {
   'ifta_disclaimer': 'Miles per state, computed from GPS breadcrumbs. This is not a fileable IFTA return -- fuel gallons per jurisdiction are needed for the actual tax calculation and are not tracked in this app.',
   'ifta_unattributed_warning': '{percent}% of miles in this range could not be matched to a US state and are excluded above. Check GPS coverage for that period before using this for a filing.',
 
+  // Fuel purchase capture -- the other half of a real IFTA calculation
+  // (gallons purchased per state; ifta_fuel_tax_rates has the tax rate
+  // side, which is public -- this side can only come from the driver's
+  // own receipt)
+  'fuel_log_purchase_title': 'Log fuel purchase',
+  'fuel_log_purchase_button': 'Log fuel',
+  'fuel_tap_to_scan_receipt': 'Tap to scan a receipt',
+  'fuel_retake_photo': 'Retake photo',
+  'fuel_gallons_label': 'Gallons',
+  'fuel_price_per_gallon_label': 'Price per gallon',
+  'fuel_total_cost_label': 'Total cost',
+  'fuel_state_label': 'State',
+  'fuel_state_hint': 'Select the state',
+  'fuel_date_label': 'Purchase date',
+  'fuel_save_purchase': 'Save purchase',
+  'fuel_receipt_photo_required': 'Take a photo of the receipt first.',
+  'fuel_gallons_required': 'Enter how many gallons you bought.',
+
   // ============================================================
   // REPORT EXTENSIONS
   // ============================================================

@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../models/vehicle.dart';
+import 'fuel_purchase_capture_screen.dart';
 import '../routes/app_routes.dart';
 import '../models/vehicle_inspection.dart';
 import '../services/vehicle_service.dart';
@@ -198,6 +199,13 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     _loadVehicle();
   }
 
+  Future<void> _logFuelPurchase(Vehicle vehicle) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => FuelPurchaseCaptureScreen(vehicle: vehicle)),
+    );
+  }
+
   void _viewLatestInspection() {
     if (_latestInspection == null) return;
     Navigator.push(
@@ -354,6 +362,21 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                         style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                       ),
                     ),
+                  if (_vehicle != null) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _logFuelPurchase(_vehicle!),
+                        icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                        label: Text(
+                          appState.tr('fuel_log_purchase_button').toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        ),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                      ),
+                    ),
+                  ],
                   if (_latestInspection != null) ...[
                     const SizedBox(height: 10),
                     InkWell(

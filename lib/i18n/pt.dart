@@ -539,6 +539,20 @@ const Map<String, String> ptTexts = {
   'ifta_disclaimer': 'Milhas por estado, calculadas a partir do rastro GPS. Isto não é uma declaração IFTA apresentável -- o cálculo real do imposto precisa de galões de combustível por jurisdição, que este app não rastreia.',
   'ifta_unattributed_warning': '{percent}% das milhas neste período não puderam ser associadas a um estado dos EUA e estão excluídas acima. Verifique a cobertura de GPS desse período antes de usar isto para uma declaração.',
 
+  'fuel_log_purchase_title': 'Registrar abastecimento',
+  'fuel_log_purchase_button': 'Registrar combustível',
+  'fuel_tap_to_scan_receipt': 'Toque para escanear um recibo',
+  'fuel_retake_photo': 'Tirar a foto novamente',
+  'fuel_gallons_label': 'Galões',
+  'fuel_price_per_gallon_label': 'Preço por galão',
+  'fuel_total_cost_label': 'Custo total',
+  'fuel_state_label': 'Estado',
+  'fuel_state_hint': 'Selecione o estado',
+  'fuel_date_label': 'Data da compra',
+  'fuel_save_purchase': 'Salvar compra',
+  'fuel_receipt_photo_required': 'Tire uma foto do recibo primeiro.',
+  'fuel_gallons_required': 'Informe quantos galões você comprou.',
+
   // ============================================================
   // RELATÓRIOS
   // ============================================================
