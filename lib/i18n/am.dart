@@ -467,6 +467,8 @@ const Map<String, String> amTexts = {
   // መዳረሻ ስረዛ (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'የመርከብ መዳረሻ ተወግዷል',
   'org_access_revoked_body': 'የመርከብ አስተዳዳሪዎ ወደዚህ ድርጅት ያለዎትን መዳረሻ አስወግደዋል። ለመቀጠል ይውጡ።',
+  'fleet_subscription_required_error': 'ይህ ድርጅት ንቁ የFleet ምዝገባ ያስፈልገዋል።',
+  'fleet_growth_required_error': 'ይህ ባህሪ የGrowth እቅድ ያስፈልገዋል። የመርከብ አስተዳዳሪዎ እንዲያሳድግ ይጠይቁ።',
 
   // ክፍት/የሚሽከረከር ተሽከርካሪ ምደባ (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'ተሽከርካሪ ይምረጡ',

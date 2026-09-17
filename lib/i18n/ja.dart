@@ -480,6 +480,8 @@ const Map<String, String> jaTexts = {
   // アクセス取り消し（Fleet Sprint 3、2026-09-09）
   'org_access_revoked_title': 'フリートへのアクセスが削除されました',
   'org_access_revoked_body': 'フリート管理者がこの組織へのあなたのアクセスを削除しました。続行するにはサインアウトしてください。',
+  'fleet_subscription_required_error': 'この組織には有効なFleetサブスクリプションが必要です。',
+  'fleet_growth_required_error': 'この機能にはGrowthプランが必要です。フリート管理者にアップグレードを依頼してください。',
 
   // オープン／ローテーション車両割り当て（Fleet Sprint 4、2026-09-09）
   'fleet_select_vehicle_button': '車両を選択',

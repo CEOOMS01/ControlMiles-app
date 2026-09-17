@@ -795,6 +795,8 @@ const Map<String, String> frTexts = {
   // Révocation (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'Accès à la flotte supprimé',
   'org_access_revoked_body': "L'administrateur de votre flotte a supprimé votre accès à cette organisation. Déconnectez-vous pour continuer.",
+  'fleet_subscription_required_error': "Cette organisation a besoin d'un abonnement Fleet actif pour cela.",
+  'fleet_growth_required_error': "Cette fonctionnalité nécessite le forfait Growth. Demandez à votre administrateur de flotte de le mettre à niveau.",
 
   // Attribution de véhicule ouverte/rotative (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Choisir un véhicule',

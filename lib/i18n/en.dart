@@ -854,6 +854,8 @@ const Map<String, String> enTexts = {
   // Revocation (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'Fleet access removed',
   'org_access_revoked_body': 'Your fleet admin has removed your access to this organization. Sign out to continue.',
+  'fleet_subscription_required_error': 'This organization needs an active Fleet subscription to do that.',
+  'fleet_growth_required_error': 'This feature needs the Growth plan. Ask your fleet admin to upgrade.',
 
   // Open/rotating vehicle assignment (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Select vehicle',

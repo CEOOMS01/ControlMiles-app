@@ -816,6 +816,8 @@ const Map<String, String> esTexts = {
   // Revocación (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': 'Acceso a la flota removido',
   'org_access_revoked_body': 'El administrador de tu flota removió tu acceso a esta organización. Cierra sesión para continuar.',
+  'fleet_subscription_required_error': 'Esta organización necesita una suscripción Fleet activa para eso.',
+  'fleet_growth_required_error': 'Esta función requiere el plan Growth. Pide a tu administrador de flota que lo actualice.',
 
   // Asignación de vehículo abierta/rotativa (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Seleccionar vehículo',

@@ -44,8 +44,10 @@ Implementations:
 | 401 | Email already exists | Sign-up with an email already registered |
 | 402 | Session expired | JWT/session no longer valid |
 | 410 | Vehicle limit reached | Tier's vehicle cap hit (1 for Started/Basic, 5 for Premium) |
-| 411 | Free trial expired | 30-day Started trial ran out, no subscription |
+| 411 | Free trial expired | 15-day Started trial ran out, no subscription |
 | 412 | Org membership revoked | A fleet admin removed this driver's access |
+| 413 | Fleet subscription required | Org has no active Starter+ subscription and its 5-day no-subscription trial expired (`fn_org_effective_tier` = 'none') |
+| 414 | Fleet Growth required | Action needs the Growth tier specifically (DVIR, geofencing, live map, open vehicle assignment) |
 | 420 | Rate limited | Too many attempts on a rate-limited action |
 | 430 | Duplicate entry | Unique-constraint violation |
 | 440 | Subscriptions not configured | Stripe not yet set up in this environment |

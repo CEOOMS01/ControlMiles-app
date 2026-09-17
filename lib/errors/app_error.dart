@@ -61,6 +61,8 @@ class AppError {
   static const vehicleLimitReached = AppError(410, 'vehicle_limit_reached_error');
   static const freeTrialExpired = AppError(411, 'free_trial_expired_body');
   static const orgMembershipRevoked = AppError(412, 'org_access_revoked_body');
+  static const fleetSubscriptionRequired = AppError(413, 'fleet_subscription_required_error');
+  static const fleetGrowthRequired = AppError(414, 'fleet_growth_required_error');
   static const rateLimited = AppError(420, 'rate_limited_error');
   static const duplicateEntry = AppError(430, 'duplicate_entry_error');
   static const subscriptionsNotConfigured = AppError(440, 'subscriptions_not_configured');
@@ -123,6 +125,8 @@ class AppError {
     if (text.contains('VEHICLE_LIMIT_REACHED')) return vehicleLimitReached;
     if (text.contains('FREE_TRIAL_EXPIRED')) return freeTrialExpired;
     if (text.contains('ORG_MEMBERSHIP_REVOKED')) return orgMembershipRevoked;
+    if (text.contains('FLEET_SUBSCRIPTION_REQUIRED')) return fleetSubscriptionRequired;
+    if (text.contains('FLEET_GROWTH_REQUIRED')) return fleetGrowthRequired;
     if (text.contains('Invalid login credentials') || text.contains('Invalid credentials')) {
       return invalidCredentials;
     }

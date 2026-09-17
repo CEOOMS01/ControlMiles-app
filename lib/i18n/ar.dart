@@ -495,6 +495,8 @@ const Map<String, String> arTexts = {
   // إلغاء الوصول (Fleet Sprint 3، 2026-09-09)
   'org_access_revoked_title': 'تمت إزالة الوصول إلى الأسطول',
   'org_access_revoked_body': 'قام مسؤول أسطولك بإزالة وصولك إلى هذه المؤسسة. سجّل الخروج للمتابعة.',
+  'fleet_subscription_required_error': 'تحتاج هذه المؤسسة إلى اشتراك Fleet نشط للقيام بذلك.',
+  'fleet_growth_required_error': 'تتطلب هذه الميزة خطة Growth. اطلب من مسؤول أسطولك الترقية.',
 
   // تخصيص مركبة مفتوح/دوّار (Fleet Sprint 4، 2026-09-09)
   'fleet_select_vehicle_button': 'اختر مركبة',

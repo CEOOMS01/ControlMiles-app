@@ -481,6 +481,8 @@ const Map<String, String> koTexts = {
   // 접근 권한 취소 (Fleet Sprint 3, 2026-09-09)
   'org_access_revoked_title': '플릿 접근 권한이 제거되었습니다',
   'org_access_revoked_body': '플릿 관리자가 이 조직에 대한 귀하의 접근 권한을 제거했습니다. 계속하려면 로그아웃하세요.',
+  'fleet_subscription_required_error': '이 작업을 하려면 활성 Fleet 구독이 필요합니다.',
+  'fleet_growth_required_error': '이 기능은 Growth 플랜이 필요합니다. 플릿 관리자에게 업그레이드를 요청하세요.',
 
   // 개방형/순환 차량 배정 (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': '차량 선택',
