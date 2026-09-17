@@ -51,6 +51,12 @@ class Vehicle {
   // re-adding the same real car with an artificially low starting mileage.
   final String? vin;
 
+  // Explicit user requirement (2026-09-18, Gig only): odometer checkpoint
+  // cycle is configurable per vehicle -- 'weekly' (default, unchanged
+  // behavior), 'biweekly', or 'monthly'. See fn_odometer_cycle_start and
+  // OdometerCaptureService's own mirrored boundary math.
+  final String odometerCycle;
+
   const Vehicle({
     required this.id,
     this.displayId,
@@ -71,6 +77,7 @@ class Vehicle {
     this.lastLocationAt,
     this.placedInServiceDate,
     this.vin,
+    this.odometerCycle = 'weekly',
   });
 
   bool get isFleetVehicle => organizationId != null;
@@ -111,6 +118,7 @@ class Vehicle {
           ? DateTime.tryParse(map['placed_in_service_date'] as String)
           : null,
       vin: map['vin'] as String?,
+      odometerCycle: map['odometer_cycle'] as String? ?? 'weekly',
     );
   }
 

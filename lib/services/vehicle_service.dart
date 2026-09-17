@@ -227,6 +227,20 @@ class VehicleService {
     await _supabase.rpc('set_active_vehicle', params: {'p_vehicle_id': vehicleId});
   }
 
+  // Explicit user requirement (2026-09-18, Gig only): odometer checkpoint
+  // cycle is a per-vehicle setting, not part of the "no vehicle edit"
+  // identity fields (make/model/color/vin) -- a direct table update is
+  // enough, same as vehicle_assignment_mode elsewhere in this project;
+  // vehicles_update RLS already allows the owner to write any column on
+  // their own vehicle.
+  Future<void> updateOdometerCycle(String vehicleId, String cycle) async {
+    assert(['weekly', 'biweekly', 'monthly'].contains(cycle));
+    await _supabase
+        .from('vehicles')
+        .update({'odometer_cycle': cycle})
+        .eq('id', vehicleId);
+  }
+
   Future<void> _clearActiveFlags(String userId) async {
     await _supabase
         .from('vehicles')

@@ -187,6 +187,53 @@ class _VehicleScreenState extends State<VehicleScreen>
     }
   }
 
+  // Explicit user requirement (2026-09-18, Gig only): odometer checkpoint
+  // cycle (weekly/biweekly/monthly) is a per-vehicle setting, changeable
+  // any time -- unlike make/model/color/vin, it's not vehicle identity,
+  // so it doesn't need the "no vehicle edit" archive-and-recreate flow
+  // (see this file's own header comment).
+  Future<void> _changeOdometerCycle(Vehicle v, AppState appState) async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(appState.tr('odometer_cycle_label')),
+        children: [
+          for (final cycle in const ['weekly', 'biweekly', 'monthly'])
+            RadioListTile<String>(
+              value: cycle,
+              groupValue: v.odometerCycle,
+              title: Text(appState.tr('odometer_cycle_$cycle')),
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+        ],
+      ),
+    );
+
+    if (selected == null || selected == v.odometerCycle) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _vehicleService.updateOdometerCycle(v.id, selected);
+      await _loadVehicles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appState.tr('odometer_cycle_updated'))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_friendlyVehicleError(e, appState)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _deleteVehicle(String vehicleId, AppState appState) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -555,6 +602,11 @@ class _VehicleScreenState extends State<VehicleScreen>
                 tooltip: appState.tr('mark_as_active'),
                 onPressed: _isLoading ? null : () => _setActiveVehicle(v.id, appState),
               ),
+            IconButton(
+              icon: const Icon(Icons.event_repeat_rounded, color: Color(0xFF475569)),
+              tooltip: appState.tr('odometer_cycle_label'),
+              onPressed: _isLoading ? null : () => _changeOdometerCycle(v, appState),
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
               onPressed: _isLoading ? null : () => _deleteVehicle(v.id, appState),

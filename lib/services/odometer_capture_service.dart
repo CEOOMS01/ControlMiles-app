@@ -270,17 +270,23 @@ class OdometerCaptureService {
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // WEEKLY ODOMETER CHECKPOINTS (explicit user request, 2026-09-03)
+  // ODOMETER CHECKPOINTS -- configurable cycle (explicit user request,
+  // 2026-09-03: weekly; widened 2026-09-18 to weekly/biweekly/monthly per
+  // vehicle, Gig only)
   // ══════════════════════════════════════════════════════════════════════
-  // Odometer evidence moves from "every session" to a fixed Mon-Sun
-  // calendar week per vehicle. The write path is the SECURITY DEFINER RPC
-  // submit_vehicle_odometer_checkpoint (migration
-  // 20260903120000_vehicle_weekly_odometer_checkpoints.sql) -- it enforces
-  // server-side, not just here, that a reading can never be entered below
-  // vehicles.odometer already on file (covers OCR failure -> manual entry
-  // just as much as a real OCR read), and it's the only thing that keeps
-  // vehicles.odometer itself current going forward (that column used to be
-  // written once at vehicle creation and frozen forever).
+  // Odometer evidence is captured once per cycle per vehicle, not once per
+  // session -- the cycle itself (vehicles.odometer_cycle) defaults to
+  // weekly and is configurable per vehicle. The write path is the
+  // SECURITY DEFINER RPC submit_vehicle_odometer_checkpoint (migrations
+  // 20260903120000 + 20260918150000) -- it enforces server-side, not just
+  // here, that a reading can never be entered below vehicles.odometer
+  // already on file (covers OCR failure -> manual entry just as much as a
+  // real OCR read), and it's the only thing that keeps vehicles.odometer
+  // itself current going forward. The `week_start_date` column name
+  // predates the multi-cycle support and was kept as-is (no destructive
+  // rename of live data) -- it now holds whatever cycle boundary
+  // fn_odometer_cycle_start resolves to (Monday/every-other-Monday/1st of
+  // the month), not necessarily a real Monday.
 
   /// Monday (ISO) of the calendar week containing [date] -- DateTime.weekday
   /// already uses the same Monday=1..Sunday=7 numbering as Postgres'
@@ -291,35 +297,72 @@ class OdometerCaptureService {
     return d.subtract(Duration(days: d.weekday - 1));
   }
 
-  /// True when this vehicle's current calendar week has no start reading
-  /// yet -- the trip-start flow uses this to decide whether to ask for a
-  /// photo at all. False means the week is already covered (whether via a
-  /// fresh capture earlier this week or a roll-forward from last week's
-  /// missed close) and starting a trip needs zero odometer friction.
+  /// Mirrors fn_odometer_cycle_start(vehicle_id, date) exactly -- same
+  /// weekly/monthly/biweekly boundary rules, same anchor-Monday math for
+  /// biweekly -- so the client can decide "do I need a photo" without a
+  /// round trip on every trip start/end. Fetches the vehicle's own
+  /// cycle+anchor+created_at (one row, cheap) rather than trusting a
+  /// cached value that could be stale if the cycle was just changed.
+  Future<DateTime> _cycleStartFor(String vehicleId, DateTime date) async {
+    final row = await _supabase
+        .from('vehicles')
+        .select('odometer_cycle, odometer_cycle_anchor, created_at')
+        .eq('id', vehicleId)
+        .maybeSingle();
+
+    final cycle = (row?['odometer_cycle'] as String?) ?? 'weekly';
+    final monday = mondayOf(date);
+
+    if (cycle == 'monthly') {
+      return DateTime(date.year, date.month, 1);
+    }
+    if (cycle != 'biweekly') {
+      return monday;
+    }
+
+    final anchorRaw = row?['odometer_cycle_anchor'] as String?;
+    final DateTime anchorDate = anchorRaw != null
+        ? DateTime.parse(anchorRaw)
+        : DateTime.parse((row?['created_at'] as String?) ?? date.toIso8601String());
+    final anchorMonday = mondayOf(anchorDate);
+
+    final daysSinceAnchor = monday.difference(anchorMonday).inDays;
+    final blockIndex = (daysSinceAnchor / 14).floor();
+    return anchorMonday.add(Duration(days: blockIndex * 14));
+  }
+
+  static String _dateOnly(DateTime d) => d.toIso8601String().split('T')[0];
+
+  /// True when this vehicle's current cycle has no start reading yet --
+  /// the trip-start flow uses this to decide whether to ask for a photo
+  /// at all. False means the cycle is already covered (whether via a
+  /// fresh capture earlier this cycle or a roll-forward from the last
+  /// cycle's missed close) and starting a trip needs zero odometer
+  /// friction.
   Future<bool> needsCheckpointStartThisWeek(String vehicleId) async {
-    final monday = mondayOf(DateTime.now());
+    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
     final row = await _supabase
         .from('vehicle_odometer_checkpoints')
         .select('start_odometer_value')
         .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .eq('week_start_date', _dateOnly(cycleStart))
         .maybeSingle();
     return row == null || row['start_odometer_value'] == null;
   }
 
-  /// This vehicle's already-captured reading for the current calendar
-  /// week (start value + its photo), or null if the week hasn't started
-  /// yet. Used to skip auto-detect's activation-time camera prompt when
-  /// this week is already covered -- see AutoTripDetectionService.requestEnable.
+  /// This vehicle's already-captured reading for the current cycle (start
+  /// value + its photo), or null if the cycle hasn't started yet. Used to
+  /// skip auto-detect's activation-time camera prompt when this cycle is
+  /// already covered -- see AutoTripDetectionService.requestEnable.
   Future<({double value, String imageUrl})?> currentWeekStartReading(
     String vehicleId,
   ) async {
-    final monday = mondayOf(DateTime.now());
+    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
     final row = await _supabase
         .from('vehicle_odometer_checkpoints')
         .select('start_odometer_value, start_odometer_image_url')
         .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .eq('week_start_date', _dateOnly(cycleStart))
         .maybeSingle();
     final value = row?['start_odometer_value'];
     final imageUrl = row?['start_odometer_image_url'] as String?;
@@ -327,18 +370,18 @@ class OdometerCaptureService {
     return (value: (value as num).toDouble(), imageUrl: imageUrl);
   }
 
-  /// True when this vehicle's current calendar week still has no closing
-  /// reading -- used to offer (never block on) the weekly closing photo
-  /// after a trip ends.
+  /// True when this vehicle's current cycle still has no closing reading --
+  /// the mandatory-closing-photo flow uses this to decide whether to force
+  /// the dialog after a trip ends.
   Future<bool> needsCheckpointEndThisWeek(String vehicleId) async {
-    final monday = mondayOf(DateTime.now());
+    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
     final row = await _supabase
         .from('vehicle_odometer_checkpoints')
         .select('start_odometer_value, end_odometer_value')
         .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', monday.toIso8601String().split('T')[0])
+        .eq('week_start_date', _dateOnly(cycleStart))
         .maybeSingle();
-    if (row == null) return false; // nothing started this week yet -- start takes priority, not end
+    if (row == null) return false; // nothing started this cycle yet -- start takes priority, not end
     return row['start_odometer_value'] != null && row['end_odometer_value'] == null;
   }
 
