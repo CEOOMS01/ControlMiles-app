@@ -358,11 +358,11 @@ const Map<String, String> frTexts = {
   'trial_expired': 'Essai expiré',
   'subscription_active': 'Abonnement actif',
   'subscription_required': 'Abonnement requis',
-  'premium_plan_description': 'Débloquez la Détection Automatique et d\'autres fonctionnalités premium. Jusqu\'à 5 véhicules.',
+  'premium_plan_description': 'Débloquez la Détection Automatique et d\'autres fonctionnalités premium. Jusqu\'à 5 véhicules. Inclut un essai gratuit de 5 jours.',
   'base_plan_description': 'L\'expérience ControlMiles de base. 1 véhicule.',
   'current_plan': 'Forfait actuel',
   'started_plan': 'Started (essai gratuit)',
-  'started_plan_description': 'Votre essai gratuit de 30 jours. 1 véhicule.',
+  'started_plan_description': 'Votre essai gratuit de 15 jours. 1 véhicule.',
   'trial_days_left': '{days} jours restants',
   'subscriptions_not_configured': 'Les abonnements ne sont pas encore disponibles.',
 

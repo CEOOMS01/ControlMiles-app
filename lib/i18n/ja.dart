@@ -325,11 +325,11 @@ const Map<String, String> jaTexts = {
   'trial_expired': 'トライアル期間が終了しました',
   'subscription_active': 'サブスクリプション有効',
   'subscription_required': 'サブスクリプションが必要です',
-  'premium_plan_description': '自動検出やその他のプレミアム機能をアンロック。最大5台の車両。',
+  'premium_plan_description': '自動検出やその他のプレミアム機能をアンロック。最大5台の車両。5日間の無料トライアル付き。',
   'base_plan_description': 'ControlMilesのコア体験。車両1台。',
   'current_plan': '現在のプラン',
   'started_plan': 'Started（無料トライアル）',
-  'started_plan_description': '30日間の無料トライアル。車両1台。',
+  'started_plan_description': '15日間の無料トライアル。車両1台。',
   'trial_days_left': '残り{days}日',
 
   // ============================================================

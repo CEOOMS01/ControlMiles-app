@@ -312,11 +312,11 @@ const Map<String, String> amTexts = {
   'trial_expired': 'ሙከራ አልቋል',
   'subscription_active': 'ምዝገባ ንቁ ነው',
   'subscription_required': 'ምዝገባ ያስፈልጋል',
-  'premium_plan_description': 'ራስ-ሰር ማወቂያን እና ሌሎች ፕሪሚየም ባህሪያትን ይክፈቱ። እስከ 5 ተሽከርካሪዎች።',
+  'premium_plan_description': 'ራስ-ሰር ማወቂያን እና ሌሎች ፕሪሚየም ባህሪያትን ይክፈቱ። እስከ 5 ተሽከርካሪዎች። የ5 ቀን ነፃ ሙከራን ያካትታል።',
   'base_plan_description': 'መሠረታዊ የControlMiles ተሞክሮ። 1 ተሽከርካሪ።',
   'current_plan': 'የአሁኑ እቅድ',
   'started_plan': 'Started (ነፃ ሙከራ)',
-  'started_plan_description': 'የ30 ቀን ነፃ ሙከራዎ። 1 ተሽከርካሪ።',
+  'started_plan_description': 'የ15 ቀን ነፃ ሙከራዎ። 1 ተሽከርካሪ።',
   'trial_days_left': '{days} ቀናት ቀርተዋል',
 
   // ============================================================

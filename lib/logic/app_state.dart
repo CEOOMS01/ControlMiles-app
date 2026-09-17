@@ -142,9 +142,14 @@ class AppState extends ChangeNotifier {
   // fn_enforce_vehicle_count_limit, check_and_log_pdf_export) -- these
   // getters are for instant client-side UX only, never the real floor.
   // ============================================================
-  static const int _freeTrialDays = 30;
+  // Explicit user requirement (2026-09-17): Started's free trial shortened
+  // from 30 to 15 days as part of the Gig tier restructuring (Basic
+  // $5.99, Premium $9.99 with its own separate 5-day trial -- see
+  // create-checkout-session's trial_period_days for that one, which is
+  // Stripe-side, not this client-side Started clock).
+  static const int _freeTrialDays = 15;
 
-  /// True once a Gig, non-exempt, non-subscribed account's 30-day trial
+  /// True once a Gig, non-exempt, non-subscribed account's 15-day trial
   /// has run out -- the ONLY thing this blocks is starting a NEW trip
   /// (see TrackingActionButton's canStart), never viewing existing data.
   bool get isFreeTrialExpired {

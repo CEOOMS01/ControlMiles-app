@@ -350,11 +350,11 @@ const Map<String, String> deTexts = {
   'trial_expired': 'Testphase abgelaufen',
   'subscription_active': 'Abonnement aktiv',
   'subscription_required': 'Abonnement erforderlich',
-  'premium_plan_description': 'Schalte die automatische Erkennung und weitere Premium-Funktionen frei. Bis zu 5 Fahrzeuge.',
+  'premium_plan_description': 'Schalte die automatische Erkennung und weitere Premium-Funktionen frei. Bis zu 5 Fahrzeuge. Beinhaltet eine 5-tägige kostenlose Testversion.',
   'base_plan_description': 'Das ControlMiles-Kernerlebnis. 1 Fahrzeug.',
   'current_plan': 'Aktueller Plan',
   'started_plan': 'Started (kostenlose Testversion)',
-  'started_plan_description': 'Deine 30-tägige kostenlose Testversion. 1 Fahrzeug.',
+  'started_plan_description': 'Deine 15-tägige kostenlose Testversion. 1 Fahrzeug.',
   'trial_days_left': 'Noch {days} Tage',
   'subscriptions_not_configured': 'Abonnements sind noch nicht verfügbar.',
 

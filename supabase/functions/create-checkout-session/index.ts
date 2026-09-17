@@ -209,6 +209,13 @@ Deno.serve(async (req: Request) => {
       if (userData.user.email) form.set('customer_email', userData.user.email);
       form.set('subscription_data[metadata][user_id]', userData.user.id);
       form.set('subscription_data[metadata][tier]', tier);
+      // Explicit user requirement (2026-09-17): Premium only (not Basic)
+      // gets its own 5-day free trial. premium_entitled flips true the
+      // moment Stripe creates this trialing subscription -- stripe-webhook
+      // already treats trialing the same as active, no change needed there.
+      if (tier === 'premium') {
+        form.set('subscription_data[trial_period_days]', '5');
+      }
     }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

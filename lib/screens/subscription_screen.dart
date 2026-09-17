@@ -2,12 +2,13 @@
 // lib/screens/subscription_screen.dart
 //
 // Real Stripe subscription management (see [[project_controlmiles]]).
-// Three-tier model (updated 2026-09-09, price aligned with the
-// competitive research behind controlmiles-web's /pricing page):
-// Started (the automatic 30-day free trial, no purchase -- see
+// Three-tier model (updated 2026-09-17, restructuring pass):
+// Started (the automatic 15-day free trial, no purchase -- see
 // AppState.isFreeTrialExpired/_freeTrialDays -- 1 vehicle), Basic
-// ($4.99, 1 vehicle, no trial expiry), and Premium ($9.99, up to 5
-// vehicles, adds Automatic Detection on top of everything Basic has).
+// ($5.99, 1 vehicle, no trial expiry), and Premium ($9.99, up to 5
+// vehicles, adds Automatic Detection on top of everything Basic has,
+// plus its own separate 5-day free trial handled Stripe-side via
+// create-checkout-session's trial_period_days).
 // This screen never collects a card number -- "Upgrade" and "Manage
 // subscription" both call a Supabase edge function that returns a
 // Stripe-hosted URL, opened externally via url_launcher. Payment details
@@ -260,7 +261,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             isDark: isDark,
             titleKey: 'basic_plan',
             descriptionKey: 'base_plan_description',
-            priceLabel: '\$4.99/mo',
+            priceLabel: '\$5.99/mo',
             isCurrent: baseEntitled && !premiumEntitled,
             // Premium already includes Base -- no point offering a
             // downgrade-shaped "Upgrade to Base" button to a Premium
