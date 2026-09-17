@@ -202,7 +202,14 @@ class _VehicleScreenState extends State<VehicleScreen>
             RadioListTile<String>(
               value: cycle,
               groupValue: v.odometerCycle,
+              // Explicit user requirement (2026-09-18): Basic stays fixed
+              // on weekly; only Premium can pick biweekly/monthly. Same
+              // lock pattern as AutoDetectAppsButton -- weekly itself is
+              // never locked (everyone already has it).
               title: Text(appState.tr('odometer_cycle_$cycle')),
+              secondary: (cycle != 'weekly' && !appState.premiumEntitled)
+                  ? const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey)
+                  : null,
               onChanged: (value) => Navigator.pop(context, value),
             ),
         ],
@@ -210,6 +217,31 @@ class _VehicleScreenState extends State<VehicleScreen>
     );
 
     if (selected == null || selected == v.odometerCycle) return;
+
+    if (selected != 'weekly' && !appState.premiumEntitled) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(appState.tr('premium_feature_locked_title')),
+          content: Text(appState.tr('premium_feature_locked_body')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(appState.tr('cancel')),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, AppRoutes.subscription);
+              },
+              child: Text(appState.tr('upgrade_plan')),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
