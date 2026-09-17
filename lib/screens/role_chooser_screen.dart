@@ -32,10 +32,20 @@ class _RoleChooserScreenState extends State<RoleChooserScreen> {
     try {
       await appState.chooseIntendedRole(role);
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: true);
+      Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: 'signup');
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  // Fleet driver ID login (explicit user request, 2026-09-17): a driver
+  // never self-signs-up anymore -- their fleet admin already created
+  // their invite before they ever open the app, so this card's job is
+  // getting them straight to the driver-ID login tab, not the signup
+  // form _chooseRole sends every other role to.
+  void _goToDriverLogin() {
+    if (_isProcessing) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: 'driver_id');
   }
 
   Future<void> _alreadyHaveAccount(AppState appState) async {
@@ -100,7 +110,7 @@ class _RoleChooserScreenState extends State<RoleChooserScreen> {
                       subTextColor: subTextColor,
                       accent: primary,
                       isLoading: _isProcessing,
-                      onTap: () => _chooseRole(appState, 'fleet_driver'),
+                      onTap: _goToDriverLogin,
                     ),
                     const SizedBox(height: 16),
                     _RoleCard(

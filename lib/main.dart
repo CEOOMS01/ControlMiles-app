@@ -285,8 +285,17 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         AppRoutes.splash: (_) => const SplashPage(),
         AppRoutes.roleChooser: (_) => const RoleChooserScreen(),
         AppRoutes.login: (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as bool?;
-          return LoginScreen(startInSignupMode: args ?? false);
+          // 'signup' / 'driver_id' -- extended (explicit user request,
+          // 2026-09-17) from a plain bool since RoleChooserScreen now
+          // needs to steer to one of TWO different starting modes, not
+          // just signup-vs-login. Every other call site in this project
+          // passes no arguments at all (verified by grep before this
+          // change), so this is a safe, non-breaking widening.
+          final args = ModalRoute.of(context)!.settings.arguments as String?;
+          return LoginScreen(
+            startInSignupMode: args == 'signup',
+            startInDriverIdMode: args == 'driver_id',
+          );
         },
         AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
         AppRoutes.resetPassword: (context) {

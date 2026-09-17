@@ -21,6 +21,49 @@ class AuthService {
     }
   }
 
+  // Fleet driver ID login (explicit user request, 2026-09-17): a
+  // fleet_driver account logs in with their CM-D#### id instead of email
+  // -- Supabase Auth itself only ever authenticates by email, so
+  // resolve-driver-login is the server-side translation layer (never
+  // exposes which email a display_id maps to, does the real password
+  // check itself, see its own header comment for the enumeration/rate-
+  // limit reasoning). This just hands the resulting token pair to the
+  // local SDK -- setSession() with BOTH tokens hydrates a real session
+  // immediately, without a second network round-trip to refresh one.
+  Future<void> signInWithDriverId(String displayId, String password) async {
+    try {
+      final response = await _supabase.functions.invoke(
+        'resolve-driver-login',
+        body: {'display_id': displayId, 'password': password},
+      );
+
+      final data = response.data;
+      if (data is! Map || data['access_token'] == null || data['refresh_token'] == null) {
+        throw Exception('Invalid driver ID or password');
+      }
+
+      await _supabase.auth.setSession(
+        data['refresh_token'] as String,
+        accessToken: data['access_token'] as String,
+      );
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } on FunctionsHttpException catch (e) {
+      // The edge function's real 401 error body -- functions.invoke throws
+      // for any non-2xx status rather than returning it, so this (not the
+      // inline check above) is what actually catches an invalid driver
+      // ID/password in practice. Same generic message regardless of the
+      // underlying reason, matching resolve-driver-login's own
+      // enumeration-resistance contract (see its header comment).
+      final details = e.details;
+      final message = (details is Map ? details['error'] as String? : null) ?? 'Invalid driver ID or password';
+      throw Exception(message);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Login failed: ${e.toString()}');
+    }
+  }
+
   // Crear cuenta con Email y Contraseña + Metadatos
   // BUG FIX (pedido explícito): antes, si no llegaba firstName, se
   // fabricaba uno con el prefijo del email (split_part) -- el signup real

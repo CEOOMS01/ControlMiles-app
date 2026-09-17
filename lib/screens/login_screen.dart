@@ -20,7 +20,13 @@ class LoginScreen extends StatefulWidget {
   // chooser already told us their intent.
   final bool startInSignupMode;
 
-  const LoginScreen({super.key, this.startInSignupMode = false});
+  // Set by RoleChooserScreen's "Fleet Driver" card (explicit user
+  // request, 2026-09-17): a driver never self-signs-up anymore -- their
+  // admin already created their invite, so this card's job now is
+  // getting them straight to the driver-ID login tab, not a signup form.
+  final bool startInDriverIdMode;
+
+  const LoginScreen({super.key, this.startInSignupMode = false, this.startInDriverIdMode = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -29,6 +35,17 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // Fleet driver ID login (explicit user request, 2026-09-17): a
+  // fleet_driver account no longer logs in with email/password at all --
+  // only this ID + the password THEY chose when confirming their invite
+  // (never set/known by their admin, see resolve-driver-login's own
+  // header comment). Everyone else (gig drivers, fleet admins) keeps the
+  // existing email login untouched -- this is a second, driver-only input
+  // mode on the SAME shared screen, not a separate screen, so it stays
+  // reachable from every existing entry point (splash, "forgot password"
+  // back-link, role chooser) without duplicating this whole form.
+  final _driverIdController = TextEditingController();
+  bool _isDriverIdMode = false;
   // BUG FIX (pedido explícito): el signup no pedía nombre real -- signUp()
   // fabricaba uno con el prefijo del email, y ese valor basura terminaba
   // en public.profiles.first_name (fuente del saludo del Dashboard).
@@ -58,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _isLoginMode = !widget.startInSignupMode;
+    _isDriverIdMode = widget.startInDriverIdMode;
   }
 
   @override
@@ -66,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _driverIdController.dispose();
     super.dispose();
   }
 
@@ -147,59 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (!mounted) return;
-
-      await appState.loadFromPrefs();
-      // BUG FIX (pedido explícito, user ID cruzado entre cuentas): sin
-      // esto, un login dentro del mismo proceso de la app (sin reiniciar)
-      // seguía mostrando el display_id cacheado de la sesión anterior --
-      // fetchUserProfile() solo se llamaba una vez en AppState._init().
-      // Acá se refresca contra la DB para la cuenta que acaba de
-      // autenticarse, así se pise cualquier valor viejo cacheado.
-      await appState.fetchUserProfile();
-      await appState.fetchAccountTypeChosen();
-      await appState.fetchPendingInvites();
-
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        // BUG FIX (missing key, hardcoded-string audit): 'auth_error' was
-        // referenced here but never added to any i18n dictionary -- tr()
-        // silently rendered the raw key string. Now added to all 11.
-        _showError(appState.tr('auth_error'));
-        return;
-      }
-
-      // BUG FIX (verificado en DB, 2026-08-24): welcome_seen vive en
-      // user_onboarding, NUNCA existió en profiles. Esta consulta apuntaba
-      // a la tabla equivocada -- PostgREST rechaza una columna que no
-      // existe, el .catchError((_) => null) lo silenciaba, y
-      // welcomeResponse siempre terminaba null. Resultado: hasSeenWelcome
-      // era SIEMPRE false, así que todo login (no solo el primero)
-      // redirigía a /welcome en vez de pasar directo al dashboard real.
-      final onboardingResponse = await Supabase.instance.client
-          .from('user_onboarding')
-          .select('welcome_seen')
-          .eq('user_id', user.id)
-          .maybeSingle()
-          .catchError((_) => null);
-
-      final hasSeenWelcome = onboardingResponse?['welcome_seen'] == true;
-
-      if (!mounted) return;
-
-      // Fleet Phase 2: la decisión de a dónde ir ahora vive en un solo
-      // lugar (AppRoutes.getInitialRoute) -- splash_page.dart y
-      // welcome_page.dart usan la misma llamada, en vez de cada uno
-      // mantener su propia copia del if/else (que fue exactamente lo que
-      // dejó a splash_page.dart sin enterarse de cuentas Fleet).
-      final targetRoute = AppRoutes.getInitialRoute(
-        isAuthenticated: true,
-        onboardingCompleted: hasSeenWelcome,
-        hasPendingInvites: appState.hasPendingInvites,
-        accountTypeChosen: appState.accountTypeChosen,
-        isFleetAdmin: appState.isFleetAdmin,
-        isFleetDriver: appState.isFleetDriver,
-      );
-      Navigator.pushReplacementNamed(context, targetRoute);
+      await _afterSuccessfulAuth(appState);
     } catch (e) {
       // BUG FIX (pedido explícito, 2026-09-09): esta rama antes mostraba
       // texto crudo de la excepción/base de datos al usuario (primeras 6
@@ -215,6 +182,92 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // Fleet driver ID login (explicit user request, 2026-09-17): same
+  // post-auth routing as _handleAuth (loadFromPrefs/fetchUserProfile/
+  // welcome-seen check/AppRoutes.getInitialRoute) once a real session
+  // exists -- factored out here so both entry points share it instead of
+  // duplicating it, since the sign-in call itself is the only thing that
+  // actually differs between the two modes.
+  Future<void> _handleDriverIdAuth(AppState appState) async {
+    final digits = _driverIdController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (digits.isEmpty || password.isEmpty) {
+      _showError(appState.tr('field_required'));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signInWithDriverId('CM-$digits'.toUpperCase(), password);
+      if (!mounted) return;
+      await _afterSuccessfulAuth(appState);
+    } catch (e) {
+      if (mounted) {
+        final appError = AppError.from(e);
+        _showError(appError.display(appState.tr(appError.messageKey)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _afterSuccessfulAuth(AppState appState) async {
+    await appState.loadFromPrefs();
+    // BUG FIX (pedido explícito, user ID cruzado entre cuentas): sin
+    // esto, un login dentro del mismo proceso de la app (sin reiniciar)
+    // seguía mostrando el display_id cacheado de la sesión anterior --
+    // fetchUserProfile() solo se llamaba una vez en AppState._init().
+    // Acá se refresca contra la DB para la cuenta que acaba de
+    // autenticarse, así se pise cualquier valor viejo cacheado.
+    await appState.fetchUserProfile();
+    await appState.fetchAccountTypeChosen();
+    await appState.fetchPendingInvites();
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      // BUG FIX (missing key, hardcoded-string audit): 'auth_error' was
+      // referenced here but never added to any i18n dictionary -- tr()
+      // silently rendered the raw key string. Now added to all 11.
+      _showError(appState.tr('auth_error'));
+      return;
+    }
+
+    // BUG FIX (verificado en DB, 2026-08-24): welcome_seen vive en
+    // user_onboarding, NUNCA existió en profiles. Esta consulta apuntaba
+    // a la tabla equivocada -- PostgREST rechaza una columna que no
+    // existe, el .catchError((_) => null) lo silenciaba, y
+    // welcomeResponse siempre terminaba null. Resultado: hasSeenWelcome
+    // era SIEMPRE false, así que todo login (no solo el primero)
+    // redirigía a /welcome en vez de pasar directo al dashboard real.
+    final onboardingResponse = await Supabase.instance.client
+        .from('user_onboarding')
+        .select('welcome_seen')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .catchError((_) => null);
+
+    final hasSeenWelcome = onboardingResponse?['welcome_seen'] == true;
+
+    if (!mounted) return;
+
+    // Fleet Phase 2: la decisión de a dónde ir ahora vive en un solo
+    // lugar (AppRoutes.getInitialRoute) -- splash_page.dart y
+    // welcome_page.dart usan la misma llamada, en vez de cada uno
+    // mantener su propia copia del if/else (que fue exactamente lo que
+    // dejó a splash_page.dart sin enterarse de cuentas Fleet).
+    final targetRoute = AppRoutes.getInitialRoute(
+      isAuthenticated: true,
+      onboardingCompleted: hasSeenWelcome,
+      hasPendingInvites: appState.hasPendingInvites,
+      accountTypeChosen: appState.accountTypeChosen,
+      isFleetAdmin: appState.isFleetAdmin,
+      isFleetDriver: appState.isFleetDriver,
+    );
+    Navigator.pushReplacementNamed(context, targetRoute);
   }
 
   void _showError(String message) {
@@ -249,17 +302,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _buildHeader(appState, isDark),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 32),
+                          if (_isLoginMode) ...[
+                            _buildLoginModeToggle(appState, isDark),
+                            const SizedBox(height: 20),
+                          ],
                           _buildForm(appState, isDark),
                           const SizedBox(height: 20),
                           if (!_isLoginMode) ...[
                             _buildAgeTermsCheckbox(appState, isDark),
                             const SizedBox(height: 8),
                           ],
-                          if (_isLoginMode) _buildForgotPasswordLink(appState),
+                          if (_isLoginMode && !_isDriverIdMode) _buildForgotPasswordLink(appState),
                           const SizedBox(height: 32),
                           _buildLoginButton(appState),
-                          _buildToggleMode(appState),
+                          if (!_isDriverIdMode) _buildToggleMode(appState),
                         ],
                       ),
                     ),
@@ -360,6 +417,39 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ====================== LOGIN MODE TOGGLE ======================
+  // Explicit user request, 2026-09-17: fleet_driver accounts stop using
+  // email login entirely -- everyone else (gig drivers, fleet admins)
+  // keeps it unchanged. Defaults to email (index 0) so existing users see
+  // no behavior change unless they deliberately switch.
+  Widget _buildLoginModeToggle(AppState appState, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ModeToggleChip(
+              label: appState.tr('email'),
+              selected: !_isDriverIdMode,
+              onTap: () => setState(() => _isDriverIdMode = false),
+            ),
+          ),
+          Expanded(
+            child: _ModeToggleChip(
+              label: appState.tr('fleet_driver_login_tab'),
+              selected: _isDriverIdMode,
+              onTap: () => setState(() => _isDriverIdMode = true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ====================== FORM ======================
   Widget _buildForm(AppState appState, bool isDark) {
     return Column(
@@ -409,25 +499,53 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 16),
         ],
-        TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: appState.tr('email'),
-            prefixIcon: const Icon(Icons.alternate_email_rounded),
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        if (_isLoginMode && _isDriverIdMode)
+          TextField(
+            controller: _driverIdController,
+            keyboardType: TextInputType.text,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: appState.tr('driver_id_label'),
+              // "CM-" is fixed/non-editable, matching the real display_id
+              // shape (CM-D####) every driver already has printed on
+              // their roster row -- they only ever type the digits the
+              // admin gave them, never the prefix.
+              prefixIcon: const Icon(Icons.badge_outlined),
+              prefixText: 'CM-',
+              hintText: 'D1234',
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+          )
+        else
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: appState.tr('email'),
+              prefixIcon: const Icon(Icons.alternate_email_rounded),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 16),
         TextField(
           controller: _passwordController,
@@ -521,11 +639,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ====================== LOGIN BUTTON ======================
   Widget _buildLoginButton(AppState appState) {
+    final useDriverIdAuth = _isLoginMode && _isDriverIdMode;
     return SizedBox(
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : () => _handleAuth(appState),
+        onPressed: _isLoading
+            ? null
+            : () => useDriverIdAuth ? _handleDriverIdAuth(appState) : _handleAuth(appState),
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -601,6 +722,44 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(fontSize: 10, color: Colors.grey),
         ),
       ],
+    );
+  }
+}
+
+class _ModeToggleChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ModeToggleChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.bold,
+                color: selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
