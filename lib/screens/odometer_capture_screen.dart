@@ -29,6 +29,8 @@ import '../services/odometer_capture_service.dart';
 
 import '../services/odometer_ocr_service.dart';
 
+import '../services/blur_detection_service.dart';
+
 import '../errors/app_error.dart';
 
 import '../utils/permission_recovery_service.dart';
@@ -121,6 +123,22 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
   final OdometerOcrService _ocrService = OdometerOcrService();
 
   final OdometerCaptureService _captureService = OdometerCaptureService();
+
+  final BlurDetectionService _blurService = BlurDetectionService();
+
+  // Review-before-upload state (explicit user requirement, 2026-09-18:
+  // "no se puede visualizar la foto tomada ni al inicio ni al cierre" /
+  // "no se puede Retake foto"). Before this, _capture() took the photo and
+  // uploaded it immediately -- there was never a moment where the driver
+  // actually SAW the photo they just took, and no way to reject and
+  // retry. Now takePicture() only fills these fields and stops here; the
+  // actual upload (previously the second half of _capture()) moved to
+  // _confirmReviewedPhoto(), triggered only by the "Use photo" button.
+  File? _reviewPhoto;
+  bool _reviewIsBlurry = false;
+  double? _pendingOdometerValue;
+  bool _pendingWasOcrSource = false;
+  double? _pendingOcrConfidence;
 
 
 
@@ -488,6 +506,8 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
       final XFile photo = await _cameraController!.takePicture();
 
+      final file = File(photo.path);
+
 
 
       final bool wasOcrSource = _ocrLocked && !_ocrFailed;
@@ -496,30 +516,97 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
 
 
+      // Real blur check (explicit user requirement, 2026-09-18), not
+      // cosmetic -- see BlurDetectionService's own header for the
+      // variance-of-Laplacian technique. Runs before the review screen
+      // even shows, so the warning is visible the instant the driver sees
+      // their photo, not after an extra tap.
+
+      final blurResult = await _blurService.analyze(file);
+
+
+
+      if (!mounted) return;
+
+      setState(() {
+
+        _isProcessing = false;
+
+        _reviewPhoto = file;
+
+        _reviewIsBlurry = blurResult.isBlurry;
+
+        _pendingOdometerValue = odometerValue;
+
+        _pendingWasOcrSource = wasOcrSource;
+
+        _pendingOcrConfidence = confidence;
+
+      });
+
+    } catch (e) {
+
+      setState(() => _isProcessing = false);
+
+      _ocrLocked = false;
+
+      _ocrFailed = false;
+
+      _lastOcrResult = null;
+
+      await _cameraController?.startImageStream(_onCameraFrame);
+
+      _startTorchSuggestionTimer();
+
+      _startOcrTimeoutTimer();
+
+      final appError = AppError.from(e);
+
+      _showError(appError.display(appState.tr(appError.messageKey)));
+
+    }
+
+  }
+
+
+
+  /// Uploads the reviewed photo -- this is the second half of what used
+  /// to be _capture() before the review-and-retake step existed. Only
+  /// reachable via the "Use photo" button in _buildReviewOverlay.
+  Future<void> _confirmReviewedPhoto(AppState appState) async {
+
+    if (_reviewPhoto == null || _pendingOdometerValue == null || _isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+
+
+    try {
+
       final result = widget.weeklyCheckpointMode
           ? await _captureService.processWeeklyCheckpoint(
               vehicleId: widget.vehicleId!,
-              file: File(photo.path),
-              odometerValue: odometerValue,
+              file: _reviewPhoto!,
+              odometerValue: _pendingOdometerValue!,
               language: appState.currentLanguage,
-              ocrSource: wasOcrSource,
-              ocrConfidence: confidence,
+              ocrSource: _pendingWasOcrSource,
+              ocrConfidence: _pendingOcrConfidence,
             )
           : await _captureService.processEvidence(
 
               sessionId: widget.sessionId,
 
-              file: File(photo.path),
+              file: _reviewPhoto!,
 
-              odometerValue: odometerValue,
+              odometerValue: _pendingOdometerValue!,
 
               isStart: widget.isStart,
 
               language: appState.currentLanguage,
 
-              ocrSource: wasOcrSource,
+              ocrSource: _pendingWasOcrSource,
 
-              ocrConfidence: confidence,
+              ocrConfidence: _pendingOcrConfidence,
 
             );
 
@@ -531,13 +618,23 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
     } catch (e) {
 
-      setState(() => _isProcessing = false);
+      if (!mounted) return;
 
-      _ocrLocked = false;
+      setState(() {
 
-      _ocrFailed = false;
+        _isProcessing = false;
 
-      _lastOcrResult = null;
+        _reviewPhoto = null;
+
+        _reviewIsBlurry = false;
+
+        _ocrLocked = false;
+
+        _ocrFailed = false;
+
+        _lastOcrResult = null;
+
+      });
 
       await _cameraController?.startImageStream(_onCameraFrame);
 
@@ -556,6 +653,37 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
       _showError(appError.display(appState.tr(appError.messageKey)));
 
     }
+
+  }
+
+
+
+  /// Discards the just-taken photo and returns to the live camera view --
+  /// explicit user requirement ("no se puede Retake foto"). Keeps
+  /// whatever odometer value is already in the text field (manually typed
+  /// or OCR-locked) since a retake is about the PHOTO, not the number --
+  /// fresh OCR frames will overwrite it again if a new value locks in.
+  Future<void> _retakePhoto() async {
+
+    setState(() {
+
+      _reviewPhoto = null;
+
+      _reviewIsBlurry = false;
+
+      _ocrLocked = false;
+
+      _ocrFailed = false;
+
+      _lastOcrResult = null;
+
+    });
+
+    await _cameraController?.startImageStream(_onCameraFrame);
+
+    _startTorchSuggestionTimer();
+
+    _startOcrTimeoutTimer();
 
   }
 
@@ -630,6 +758,8 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
             if (!_cameraError) _buildScanOverlay(),
 
             _buildUI(appState),
+
+            if (_reviewPhoto != null) _buildReviewOverlay(appState),
 
             if (_isProcessing) _buildProcessingLoader(appState),
 
@@ -1205,6 +1335,99 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
   }
 
 
+
+  /// Full-screen review step (explicit user requirement, 2026-09-18): the
+  /// driver sees the exact photo that would be uploaded, with a real blur
+  /// warning if BlurDetectionService flagged it, before it ever leaves the
+  /// device. "Retake" discards it and returns to the live camera; "Use
+  /// photo" uploads it. When blurry, the confirm button still works (see
+  /// its own comment) but is visually demoted so Retake is the obvious
+  /// choice -- never a hard dead end if the heuristic is wrong about a
+  /// genuinely usable photo.
+  Widget _buildReviewOverlay(AppState appState) {
+
+    return Container(
+      color: Colors.black,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    _reviewPhoto!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+            if (_reviewIsBlurry)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        appState.tr('photo_blurry_warning'),
+                        style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isProcessing ? null : _retakePhoto,
+                      icon: const Icon(Icons.replay_rounded),
+                      label: Text(appState.tr('retake_photo')),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: _reviewIsBlurry ? const Color(0xFF00E5A0) : Colors.white54,
+                          width: _reviewIsBlurry ? 2 : 1,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isProcessing ? null : () => _confirmReviewedPhoto(appState),
+                      icon: const Icon(Icons.check_rounded),
+                      label: Text(
+                        _reviewIsBlurry ? appState.tr('use_photo_anyway') : appState.tr('use_photo'),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _reviewIsBlurry ? Colors.white24 : const Color(0xFF00E5A0),
+                        foregroundColor: _reviewIsBlurry ? Colors.white70 : Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildProcessingLoader(AppState appState) {
 

@@ -562,6 +562,10 @@ const Map<String, String> enTexts = {
   'ocr_auto_badge': 'Auto-detected',
   'odometer_value': 'Odometer',
   'ocr_confirm_capture': 'Confirm & capture',
+  'photo_blurry_warning': 'This photo looks blurry. Retake it for a clear, usable record.',
+  'retake_photo': 'Retake',
+  'use_photo': 'Use photo',
+  'use_photo_anyway': 'Use anyway',
   // Mid-trip gig-app-switch detection (premium, explicit user follow-up).
   'mid_trip_auto_switched_title': 'Switched automatically',
   'mid_trip_auto_switched_body': 'Now tracking with',

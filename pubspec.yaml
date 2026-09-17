@@ -73,6 +73,11 @@ dependencies:
   # previously raw camera bytes went straight to Storage with only a
   # post-hoc 50KB-8MB size gate that rejected instead of compressing.
   flutter_image_compress: ^2.5.1
+  # Blur detection for odometer evidence photos (explicit user requirement,
+  # 2026-09-18) -- already resolved transitively (flutter_image_compress's
+  # own dependency chain) so this just makes it a direct, importable
+  # dependency instead of pinning a brand-new one.
+  image: ^4.9.2
 
   # --- Supabase ---
   supabase_flutter: ^2.5.6
