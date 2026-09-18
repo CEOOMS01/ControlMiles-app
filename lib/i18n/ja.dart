@@ -803,6 +803,8 @@ const Map<String, String> jaTexts = {
   'notif_type_weekly_summary': '週間マイル数のまとめ',
   'notif_type_gig_app_switch': 'ギグアプリの切り替え',
   'notif_type_auto_trip_started': '走行の自動開始',
+  'notification_types_manage_hint': 'タップして受け取る通知を選択',
+  'notification_types_sheet_title': '通知の種類',
 
 
   // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).

@@ -805,6 +805,8 @@ const Map<String, String> hiTexts = {
   'notif_type_weekly_summary': 'साप्ताहिक माइलेज सारांश',
   'notif_type_gig_app_switch': 'गिग ऐप बदली गई',
   'notif_type_auto_trip_started': 'यात्रा स्वतः शुरू हुई',
+  'notification_types_manage_hint': 'कौन से अलर्ट चाहिए, चुनने के लिए टैप करें',
+  'notification_types_sheet_title': 'अलर्ट के प्रकार',
 
 
   // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).

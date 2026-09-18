@@ -27,10 +27,16 @@ class _DriverSettingsSheet extends StatelessWidget {
   const _DriverSettingsSheet();
 
   Future<void> _signOut(BuildContext context, AppState appState) async {
+    // BUG FIX (pedido explícito, logout que no navega): capturar el
+    // Navigator raíz ANTES del await -- este context vive dentro de un
+    // bottom sheet, que el usuario puede cerrar (swipe/tap fuera) mientras
+    // signOutAndClear() todavía está en curso; si eso pasa, el context
+    // puntual del sheet se desmonta y `context.mounted` da false, saltando
+    // la navegación en silencio aunque la sesión ya se haya cerrado. Ver
+    // el mismo fix en main_drawer.dart para el detalle completo.
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     await appState.signOutAndClear();
-    if (!context.mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
+    rootNavigator.pushNamedAndRemoveUntil(
       AppRoutes.login,
       (route) => false,
     );

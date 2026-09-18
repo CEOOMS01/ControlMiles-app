@@ -25,9 +25,12 @@ class ShiftEndedScreen extends StatelessWidget {
   const ShiftEndedScreen({super.key});
 
   Future<void> _signOut(BuildContext context, AppState appState) async {
+    // BUG FIX (pedido explícito, logout que no navega): capturar el
+    // Navigator raíz ANTES del await -- ver main_drawer.dart para el
+    // detalle completo.
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     await appState.signOutAndClear();
-    if (!context.mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+    rootNavigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
   }
 
   @override

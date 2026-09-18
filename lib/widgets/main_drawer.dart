@@ -327,6 +327,23 @@ class MainDrawer extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
+              // BUG FIX (pedido explícito, "logout se queda en modo
+              // invernación, solo lleva a Login si se cierra la app por
+              // completo"): el `context` de este botón vive DENTRO del
+              // Drawer. `Navigator.pop(context)` dos líneas abajo cierra
+              // ese Drawer -- y con él, Flutter puede desmontar el
+              // subárbol del Drawer en cualquier momento del frame
+              // siguiente. Cuando eso pasaba ANTES de que el `await`
+              // terminara, `context.mounted` daba false y el
+              // `pushNamedAndRemoveUntil` de abajo se saltaba en
+              // silencio: la sesión SÍ se cerraba (signOutAndClear ya
+              // corrió), pero nadie navegaba a Login -- exactamente el
+              // síntoma reportado. Capturar el NavigatorState del
+              // navigator RAÍZ ANTES de cualquier pop/await lo hace
+              // inmune a que este context puntual se desmonte después;
+              // el Navigator raíz de la app vive mientras la app viva.
+              final rootNavigator = Navigator.of(context, rootNavigator: true);
+
               Navigator.pop(ctx);
               Navigator.pop(context);
 
@@ -338,9 +355,7 @@ class MainDrawer extends StatelessWidget {
               // nunca lanza y siempre limpia el estado cacheado.
               await appState.signOutAndClear();
 
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-              }
+              rootNavigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(appState.tr('logout'), style: const TextStyle(fontWeight: FontWeight.bold)),

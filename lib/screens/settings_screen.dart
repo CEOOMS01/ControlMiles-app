@@ -495,6 +495,13 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Future<void> _deleteAccount(AppState appState) async {
     setState(() => _isDeletingAccount = true);
+    // BUG FIX (pedido explícito, logout que no navega): capturado ANTES
+    // de los awaits de abajo, para que la navegación a Login nunca
+    // dependa de que este `context` puntual siga "mounted" -- ver
+    // main_drawer.dart para el detalle completo. El SnackBar sigue
+    // necesitando el context real (y su propio chequeo `mounted`), pero
+    // la navegación ya no depende de él.
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     try {
       await _authService.deleteAccount();
       // BUG FIX (implícito, reforzado por el bug de ID cruzado
@@ -506,12 +513,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       // siempre se ejecuta.
       await appState.signOutAndClear();
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appState.tr('delete_account_success'))),
-      );
-      Navigator.pushNamedAndRemoveUntil(
-        context,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appState.tr('delete_account_success'))),
+        );
+      }
+      rootNavigator.pushNamedAndRemoveUntil(
         AppRoutes.login,
         (route) => false,
       );
@@ -894,27 +901,30 @@ class _SettingsScreenState extends State<SettingsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
+          // BUG FIX (pedido explícito, 2026-09-18: "hay demasiados botones
+          // que viven dentro del botón notificaciones y se ve la pantalla
+          // de Settings demasiado cargada"). Antes los 5 toggles de tipo
+          // de aviso (_buildNotificationTypeToggles) se pintaban en línea,
+          // siempre visibles apenas el interruptor maestro estaba
+          // encendido -- 6 filas completas solo para notificaciones. Ahora
+          // esta fila es una sola: el switch maestro sigue prendiendo/
+          // apagando todo desde acá mismo, y tocar el resto de la fila
+          // (icono/título) abre los 5 tipos en un bottom sheet aparte, sin
+          // ocupar espacio en la pantalla principal cuando no se están
+          // editando.
           _buildToggleSetting(
             icon: Icons.notifications_active_outlined,
             title: appState.tr('notifications'),
+            subtitle: appState.notificationsEnabled
+                ? appState.tr('notification_types_manage_hint')
+                : null,
             value: appState.notificationsEnabled,
             isDark: isDark,
             onChanged: (v) => appState.setNotificationsEnabled(v),
+            onTap: appState.notificationsEnabled
+                ? () => _showNotificationTypesSheet(appState, isDark)
+                : null,
           ),
-
-          // Pedido explícito (2026-09-16): poder callar un aviso concreto
-          // sin apagar todos. Solo aparece con el interruptor maestro
-          // encendido -- con él apagado no hay nada que matizar.
-          //
-          // Lo que NO está aquí, a propósito: el aviso de error
-          // "auto-detect no pudo iniciar" (silenciarlo devuelve el fallo
-          // silencioso que costó una semana de detección muerta) y las
-          // capturas semanales de odómetro, que son acciones obligatorias,
-          // no avisos.
-          if (appState.notificationsEnabled) ...[
-            const SizedBox(height: 10),
-            _buildNotificationTypeToggles(appState, isDark),
-          ],
 
           const SizedBox(height: 10),
           _buildToggleSetting(
@@ -929,7 +939,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildNotificationTypeToggles(AppState appState, bool isDark) {
+  /// Bottom sheet con los 5 tipos de aviso individuales (pedido explícito,
+  /// 2026-09-16: poder callar un aviso concreto sin apagar todos). Vive
+  /// en un sheet aparte, no en línea en Settings -- ver el comentario en
+  /// _buildPreferencesSection.
+  ///
+  /// Lo que NO está acá, a propósito: el aviso de error "auto-detect no
+  /// pudo iniciar" (silenciarlo devuelve el fallo silencioso que costó una
+  /// semana de detección muerta) y las capturas semanales de odómetro, que
+  /// son acciones obligatorias, no avisos.
+  void _showNotificationTypesSheet(AppState appState, bool isDark) {
     const types = <(String, String, IconData)>[
       (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
       (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
@@ -938,29 +957,71 @@ class _SettingsScreenState extends State<SettingsScreen>
       (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 12),
-      child: Column(
-        children: [
-          for (final (prefKey, labelKey, icon) in types) ...[
-            _buildToggleSetting(
-              icon: icon,
-              title: appState.tr(labelKey),
-              value: _notifTypeEnabled[prefKey] ?? true,
-              isDark: isDark,
-              onChanged: (v) async {
-                // Optimista en la UI, pero la fuente de verdad es el
-                // servicio: setTypeEnabled además CANCELA las alarmas ya
-                // programadas, para que apagar un toggle no deje uno
-                // pendiente disparando más tarde.
-                setState(() => _notifTypeEnabled[prefKey] = v);
-                await NotificationService.instance.setTypeEnabled(prefKey, v);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      appState.tr('notification_types_sheet_title'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final (prefKey, labelKey, icon) in types) ...[
+                      _buildToggleSetting(
+                        icon: icon,
+                        title: appState.tr(labelKey),
+                        value: _notifTypeEnabled[prefKey] ?? true,
+                        isDark: isDark,
+                        onChanged: (v) async {
+                          // Optimista en la UI, pero la fuente de verdad es
+                          // el servicio: setTypeEnabled además CANCELA las
+                          // alarmas ya programadas, para que apagar un
+                          // toggle no deje uno pendiente disparando más
+                          // tarde. setSheetState refresca el sheet mismo;
+                          // setState refresca Settings por detrás para que
+                          // ambos queden en sync apenas se cierre el sheet.
+                          setSheetState(() => _notifTypeEnabled[prefKey] = v);
+                          setState(() => _notifTypeEnabled[prefKey] = v);
+                          await NotificationService.instance.setTypeEnabled(prefKey, v);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -970,6 +1031,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     required bool value,
     required bool isDark,
     required Function(bool) onChanged,
+    // Ambos opcionales (pedido explícito, 2026-09-18, consolidar el botón
+    // de notificaciones): `onTap` deja que la fila entera (icono/título)
+    // abra algo aparte -- el sheet de tipos de aviso, en el único call
+    // site que los usa -- sin interferir con el Switch, que sigue
+    // reaccionando a su propio tap independiente del ListTile.onTap.
+    String? subtitle,
+    VoidCallback? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -977,6 +1045,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
+        onTap: onTap,
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           title,
@@ -985,6 +1054,15 @@ class _SettingsScreenState extends State<SettingsScreen>
             color: isDark ? Colors.white : const Color(0xFF1E293B),
           ),
         ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                ),
+              )
+            : null,
         trailing: Switch.adaptive(
           value: value,
           onChanged: onChanged,

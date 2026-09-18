@@ -114,10 +114,13 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
             actions: [
               FilledButton(
                 onPressed: () async {
+                  // BUG FIX (pedido explícito, logout que no navega):
+                  // capturar el Navigator raíz ANTES del await, no el
+                  // context puntual del diálogo -- ver el mismo fix en
+                  // main_drawer.dart para el detalle completo del bug.
+                  final rootNavigator = Navigator.of(dialogContext, rootNavigator: true);
                   await appState.signOutAndClear();
-                  if (!dialogContext.mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    dialogContext,
+                  rootNavigator.pushNamedAndRemoveUntil(
                     AppRoutes.login,
                     (route) => false,
                   );

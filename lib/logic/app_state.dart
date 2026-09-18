@@ -715,11 +715,26 @@ class AppState extends ChangeNotifier {
   // reescriben para usar esto en vez de llamar AuthService directo.
   // ============================================================
   Future<void> signOutAndClear() async {
+    // BUG FIX (pedido explícito, "logout se queda en modo invernación"):
+    // defensa en profundidad además del fix de Navigator en cada pantalla
+    // -- si CUALQUIER await de acá abajo (la llamada de red de signOut,
+    // o alguno de los awaits de clearAll: AutoTripDetectionService,
+    // SharedPreferences) se quedara colgado sin lanzar ni resolver nunca,
+    // el `await appState.signOutAndClear()` en cada pantalla tampoco
+    // resolvería jamás, y ninguna navegación posterior a Login podría
+    // ejecutarse sin importar qué tan bien esté capturado el Navigator.
+    // Un timeout acota esto a un máximo real: la intención de salir del
+    // usuario se respeta (clearAll corre igual, con o sin timeout) y la
+    // navegación a Login nunca queda bloqueada indefinidamente.
     try {
-      await AuthService().signOut();
+      await AuthService().signOut().timeout(const Duration(seconds: 6));
     } catch (e) {
-      debugPrint('[AppState] signOut remoto falló (se limpia igual localmente): $e');
+      debugPrint('[AppState] signOut remoto falló o excedió el tiempo (se limpia igual localmente): $e');
     }
-    await clearAll();
+    try {
+      await clearAll().timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('[AppState] clearAll excedió el tiempo -- estado en memoria ya se limpió antes de los awaits de disco: $e');
+    }
   }
 }

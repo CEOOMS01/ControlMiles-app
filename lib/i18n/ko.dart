@@ -804,6 +804,8 @@ const Map<String, String> koTexts = {
   'notif_type_weekly_summary': '주간 주행 거리 요약',
   'notif_type_gig_app_switch': '긱 앱 전환됨',
   'notif_type_auto_trip_started': '운행 자동 시작됨',
+  'notification_types_manage_hint': '받을 알림을 선택하려면 탭하세요',
+  'notification_types_sheet_title': '알림 유형',
 
 
   // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).

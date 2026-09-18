@@ -76,10 +76,13 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
   }
 
   Future<void> _logout(AppState appState) async {
+    // BUG FIX (pedido explícito, logout que no navega): capturar el
+    // Navigator raíz ANTES del await -- ver main_drawer.dart para el
+    // detalle completo de por qué un context capturado antes de un await
+    // no es confiable después de él.
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     await appState.signOutAndClear();
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-    }
+    rootNavigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
   }
 
   @override

@@ -27,12 +27,27 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
     <!-- Local Notifications (recordatorio de viaje olvidado + resumen semanal) -->
-    <!-- Requerido en Android 13+ para mostrar notificaciones. Sin permiso de
-         alarma exacta a propósito: ambos recordatorios usan scheduling
-         inexacto (AndroidScheduleMode.inexactAllowWhileIdle), que no
-         requiere SCHEDULE_EXACT_ALARM ni review especial de Play Store —
-         ninguno de los dos es time-critical. -->
+    <!-- Requerido en Android 13+ para mostrar notificaciones. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- BUG FIX (pedido explícito, 2026-09-18): el recordatorio de tracking
+         pausado SÍ es time-critical -- existe exactamente para avisar a un
+         driver que dejó el teléfono y no está mirando la app. La versión
+         anterior de este comentario asumía que ningún recordatorio local
+         era time-critical y usaba solo scheduling inexacto
+         (AndroidScheduleMode.inexactAllowWhileIdle) para evitar este
+         permiso -- pero "inexacto" bajo Doze puede diferirse hasta que el
+         SO le dé una ventana de mantenimiento a la app, lo que en la
+         práctica significa "no se ve hasta que abres la app de nuevo",
+         justo el síntoma reportado. SCHEDULE_EXACT_ALARM se otorga
+         automáticamente al instalar en Android 12-12L; en 13+ el usuario
+         debe habilitarlo manualmente en Ajustes (mismo tipo de permiso
+         "especial" que PACKAGE_USAGE_STATS arriba, sin diálogo runtime) --
+         NotificationService pide activarlo y cae de vuelta a scheduling
+         inexacto si se niega, nunca falla en seco. El recordatorio de
+         viaje olvidado y el resumen semanal SIGUEN usando scheduling
+         inexacto a propósito -- no son time-critical de la misma forma. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
     <!-- Gig app detection (premium auto-detect, Android only): a
          "special access" permission, never a runtime dialog. The user

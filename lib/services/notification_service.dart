@@ -180,12 +180,46 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
 
+      // BUG FIX (pedido explícito, 2026-09-18): el recordatorio de pausa
+      // necesita alarma exacta para no diferirse bajo Doze (ver el
+      // comentario de SCHEDULE_EXACT_ALARM en AndroidManifest.xml). Este
+      // permiso "especial" no tiene diálogo runtime -- la llamada del
+      // plugin abre directamente la pantalla de Ajustes de Android donde
+      // el usuario lo activa (mismo patrón que
+      // PermissionRecoveryService.openAppSettings para otros permisos
+      // especiales). Best-effort a propósito: si el usuario la cierra sin
+      // activar nada, schedulePauseReminder() más abajo cae de vuelta a
+      // scheduling inexacto -- nunca bloquea el resto de la
+      // inicialización ni falla en seco.
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestExactAlarmsPermission();
+
       await _plugin
           .resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(alert: true, badge: true, sound: true);
     } catch (e) {
       debugPrint('[NotificationService] Permission request failed: $e');
+    }
+  }
+
+  /// True cuando el SO permite programar alarmas exactas para esta app
+  /// (Android 12-12L: automático; 13+: el usuario lo activó en Ajustes vía
+  /// requestExactAlarmsPermission de arriba). null/false en cualquier otro
+  /// caso (iOS, permiso no otorgado, API no disponible) -- tratado como
+  /// "no disponible", nunca como error.
+  Future<bool> _canScheduleExactAlarms() async {
+    try {
+      final result = await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.canScheduleExactNotifications();
+      return result ?? false;
+    } catch (e) {
+      debugPrint('[NotificationService] canScheduleExactNotifications check failed: $e');
+      return false;
     }
   }
 
@@ -409,6 +443,22 @@ class NotificationService {
     final title = await _tr('pause_reminder_notification_title');
     final body = await _tr('pause_reminder_notification_body');
 
+    // BUG FIX (pedido explícito, 2026-09-18: "esa notificación solo se
+    // visualiza... cuando entras a controlmiles, y no debería ser así").
+    // inexactAllowWhileIdle deja que Android difiera la alarma bajo Doze
+    // hasta la próxima ventana de mantenimiento del SO -- en la práctica,
+    // eso suele coincidir con el momento en que el usuario vuelve a abrir
+    // la app, no con el peldaño real de la escalera. Justo el escenario
+    // que este recordatorio existe para cubrir (el driver dejó el
+    // teléfono) es el que más Doze sufre. exactAllowWhileIdle dispara a
+    // la hora exacta incluso en Doze -- usado solo cuando el SO lo
+    // permite (ver _canScheduleExactAlarms); si no, cae de vuelta al modo
+    // inexacto de siempre en vez de fallar.
+    final exactMode = await _canScheduleExactAlarms();
+    final scheduleMode = exactMode
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
     for (var i = 0; i < _pauseReminderLadder.length; i++) {
       final when = anchor.add(_pauseReminderLadder[i]);
       // Peldaño ya vencido (la app se abrió cuando la pausa llevaba rato):
@@ -432,7 +482,7 @@ class NotificationService {
           iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
           macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: scheduleMode,
       );
     }
   }

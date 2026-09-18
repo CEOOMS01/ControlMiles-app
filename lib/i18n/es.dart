@@ -847,6 +847,8 @@ const Map<String, String> esTexts = {
   'notif_type_weekly_summary': 'Resumen semanal de millas',
   'notif_type_gig_app_switch': 'Cambio de app gig',
   'notif_type_auto_trip_started': 'Viaje iniciado automáticamente',
+  'notification_types_manage_hint': 'Toca para elegir qué avisos recibir',
+  'notification_types_sheet_title': 'Tipos de aviso',
 
 
   // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).

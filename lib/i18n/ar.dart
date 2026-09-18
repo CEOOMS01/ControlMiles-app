@@ -807,6 +807,8 @@ const Map<String, String> arTexts = {
   'notif_type_weekly_summary': 'ملخص الأميال الأسبوعي',
   'notif_type_gig_app_switch': 'تم تبديل تطبيق العمل',
   'notif_type_auto_trip_started': 'بدأت الرحلة تلقائياً',
+  'notification_types_manage_hint': 'اضغط لاختيار التنبيهات التي تتلقاها',
+  'notification_types_sheet_title': 'أنواع التنبيهات',
 
 
   // 2026-09-16: Usage Access en el onboarding de permisos + dialogo al activar auto-detect. Best-effort, no revisadas por nativos (hi/ar/ja/ko/am).
