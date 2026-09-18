@@ -503,6 +503,8 @@ const Map<String, String> jaTexts = {
 
   'pause_reminder_notification_title': '旅行は一時停止中です',
   'pause_reminder_notification_body': '数分間一時停止されています。ControlMilesを開いて再開または終了してください。',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': '走行を一時停止中 — タップして再開または終了。',
 
   // 2026-09-16: claves sincronizadas con en.dart. Traducción best-effort, NO revisada por hablante nativo.
   'id_label': 'ID',

@@ -120,6 +120,20 @@ class TraceletEngine {
               // recibe el color en texto, no como Color.
               notificationColor: '#3E93CA',
               notificationSmallIcon: 'drawable/ic_stat_tracking',
+              // Explícito a propósito (pedido explícito, 2026-09-18,
+              // investigando por qué "ControlMiles Tracking" parecía
+              // desaparecer): tracelet's own default for this field is
+              // already `true` (non-swipeable while the trip is
+              // running) -- confirmed by reading the package source
+              // (ForegroundServiceConfig.notificationOngoing getter).
+              // The real bug was elsewhere (pauseTracking() tears the
+              // whole foreground service down, taking this notification
+              // with it -- see notification_service.dart's
+              // showPausedTrackingNotification for the actual fix).
+              // Setting it here anyway removes any doubt for a future
+              // reader and survives a library version bump changing its
+              // default.
+              notificationOngoing: true,
             ),
           ),
           ios: tl.IosConfig(

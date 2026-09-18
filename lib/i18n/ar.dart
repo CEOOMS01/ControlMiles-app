@@ -518,6 +518,8 @@ const Map<String, String> arTexts = {
 
   'pause_reminder_notification_title': 'رحلتك متوقفة مؤقتًا',
   'pause_reminder_notification_body': 'توقفت مؤقتًا لعدة دقائق — افتح ControlMiles لاستئنافها أو إنهائها.',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'الرحلة متوقفة مؤقتًا — اضغط للاستئناف أو الإنهاء.',
 
   // 2026-09-16: claves sincronizadas con en.dart. Traducción best-effort, NO revisada por hablante nativo.
   'id_label': 'المعرّف',

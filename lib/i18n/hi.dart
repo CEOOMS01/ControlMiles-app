@@ -514,6 +514,8 @@ const Map<String, String> hiTexts = {
 
   'pause_reminder_notification_title': 'आपकी यात्रा रुकी हुई है',
   'pause_reminder_notification_body': 'यह कुछ मिनटों से रुकी हुई है — इसे फिर से शुरू करने या समाप्त करने के लिए ControlMiles खोलें।',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'यात्रा रुकी हुई है — फिर से शुरू करने या समाप्त करने के लिए टैप करें।',
 
   // 2026-09-16: claves sincronizadas con en.dart. Traducción best-effort, NO revisada por hablante nativo.
   'id_label': 'आईडी',

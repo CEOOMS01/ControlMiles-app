@@ -435,6 +435,8 @@ const Map<String, String> ptTexts = {
   'forgotten_trip_notification_body': 'Esqueceu de finalizá-la? Abra o ControlMiles para pausar ou finalizar.',
   'pause_reminder_notification_title': 'Sua viagem está pausada',
   'pause_reminder_notification_body': 'Está pausada há alguns minutos — abra o ControlMiles para retomar ou finalizar.',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'Viagem pausada — toque para retomar ou finalizar.',
   'weekly_summary_notification_title': 'Seu resumo semanal está pronto',
   'weekly_summary_notification_body': 'Veja quantas milhas você registrou esta semana.',
   'torch_suggestion': 'Muito escuro? Toque para a lanterna',

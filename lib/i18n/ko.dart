@@ -504,6 +504,8 @@ const Map<String, String> koTexts = {
 
   'pause_reminder_notification_title': '주행이 일시정지되었습니다',
   'pause_reminder_notification_body': '몇 분 동안 일시정지 상태입니다 — ControlMiles를 열어 재개하거나 종료하세요.',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': '운행이 일시정지됨 — 탭하여 재개하거나 종료하세요.',
 
   // 2026-09-16: claves sincronizadas con en.dart. Traducción best-effort, NO revisada por hablante nativo.
   'id_label': 'ID',

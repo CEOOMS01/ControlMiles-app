@@ -630,6 +630,15 @@ class TrackingController {
         // Los caminos de recuperación llaman sin restart para respetar el
         // ancla ya existente (ver schedulePauseReminder).
         await NotificationService.instance.schedulePauseReminder(restart: true);
+
+        // BUG FIX (pedido explícito, 2026-09-18): BackgroundGpsService.
+        // stopTracking() de arriba apaga el foreground-service real de
+        // TraceletEngine junto con SU notificación -- este es el
+        // reemplazo persistente para toda la ventana de pausa (ver el
+        // comentario del canal en notification_service.dart para el
+        // diagnóstico completo). Cancelado en resumeTracking/
+        // stopTracking de abajo, igual que el recordatorio de arriba.
+        await NotificationService.instance.showPausedTrackingNotification();
       } catch (e) {
         _logError('PAUSE_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -743,6 +752,7 @@ class TrackingController {
         );
 
         await NotificationService.instance.cancelPauseReminder();
+        await NotificationService.instance.cancelPausedTrackingNotification();
       } catch (e) {
         _logError('RESUME_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -900,6 +910,7 @@ class TrackingController {
       await BackgroundGpsService.stopTracking();
       // No-op si no había ninguno pendiente (p.ej. End Trip desde 'running').
       await NotificationService.instance.cancelPauseReminder();
+      await NotificationService.instance.cancelPausedTrackingNotification();
 
       final sectionClosed = await endCurrentSection();
       if (!sectionClosed) {
@@ -1148,6 +1159,11 @@ class TrackingController {
   static Future<void> _reschedulePauseReminderIfPaused() async {
     if (currentState == TrackingState.paused) {
       await NotificationService.instance.schedulePauseReminder();
+      // BUG FIX (pedido explícito, 2026-09-18): mismo motivo que arriba --
+      // si el proceso murió mientras estaba en pausa, la notificación
+      // persistente de pausa también se perdió con él y necesita
+      // re-armarse en cada uno de los mismos 3 puntos de recuperación.
+      await NotificationService.instance.showPausedTrackingNotification();
     }
   }
 

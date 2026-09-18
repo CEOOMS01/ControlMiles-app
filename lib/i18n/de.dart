@@ -435,6 +435,8 @@ const Map<String, String> deTexts = {
   'forgotten_trip_notification_body': 'Hast du vergessen, sie zu beenden? Öffne ControlMiles, um sie zu pausieren oder abzuschließen.',
   'pause_reminder_notification_title': 'Deine Fahrt ist pausiert',
   'pause_reminder_notification_body': 'Sie ist seit einigen Minuten pausiert — öffne ControlMiles, um sie fortzusetzen oder zu beenden.',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'Fahrt pausiert — tippen, um fortzusetzen oder zu beenden.',
   'weekly_summary_notification_title': 'Deine Wochenübersicht ist bereit',
   'weekly_summary_notification_body': 'Sieh nach, wie viele Meilen du diese Woche erfasst hast.',
   'torch_suggestion': 'Zu dunkel? Für Taschenlampe tippen',

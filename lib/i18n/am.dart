@@ -490,6 +490,8 @@ const Map<String, String> amTexts = {
 
   'pause_reminder_notification_title': 'ጉዞዎ ቆሟል',
   'pause_reminder_notification_body': 'ለተወሰኑ ደቂቃዎች ቆሟል -- ለመቀጠል ወይም ለማጠናቀቅ ControlMiles ይክፈቱ።',
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'ጉዞ ቆሟል -- ለመቀጠል ወይም ለማጠናቀቅ ይንኩ።',
 
   // 2026-09-16: claves sincronizadas con en.dart. Traducción best-effort, NO revisada por hablante nativo (amárico: la de menor confianza de las cinco).
   'id_label': 'መለያ',

@@ -549,6 +549,8 @@ const Map<String, String> enTexts = {
   'forgotten_trip_notification_body': 'Did you forget to end it? Check ControlMiles to pause or finish.',
   'pause_reminder_notification_title': 'Your trip is paused',
   'pause_reminder_notification_body': "It's been paused a few minutes — open ControlMiles to resume or end it.",
+  'paused_status_notification_title': 'ControlMiles',
+  'paused_status_notification_body': 'Trip paused — tap to resume or end it.',
   'weekly_summary_notification_title': 'Your weekly summary is ready',
   'weekly_summary_notification_body': 'Check how many miles you logged this week.',
   // BUG FIX (found live, screenshotted on a real device -- the odometer

@@ -46,9 +46,13 @@ class NotificationService {
   // OJO: el recordatorio de pausa NO usa un id suelto sino el RANGO
   // 1007..1012 (base + índice de _pauseReminderLadder, 6 avisos escalonados).
   // No reutilizar ningún id entre 1007 y 1012 para nada más: colisionaría con
-  // un peldaño de la escalera y lo sobrescribiría silenciosamente. El próximo
-  // id libre para una notificación nueva es 1013.
+  // un peldaño de la escalera y lo sobrescribiría silenciosamente.
   static const int _pauseReminderNotificationId = 1007;
+
+  // BUG FIX (pedido explícito, 2026-09-18: "la notificación ControlMiles
+  // Tracking debe persistir... le dice al driver que la app está activa").
+  // El próximo id libre es 1013 (usado acá).
+  static const int _pausedStatusNotificationId = 1013;
 
   static const String _channelId = 'controlmiles_reminders';
   static const String _channelName = 'Recordatorios';
@@ -81,6 +85,26 @@ class NotificationService {
   static const String _pauseReminderChannelName = 'Recordatorio de pausa';
   static const String _pauseReminderChannelDescription =
       'Aviso cuando el tracking lleva varios minutos en pausa, por si se olvidó reanudar o finalizar el viaje';
+
+  // BUG FIX (root cause found live, 2026-09-18): la notificación
+  // persistente "ControlMiles Tracking" (foreground-service de
+  // TraceletEngine, no de este archivo) desaparece por completo cuando el
+  // viaje se pausa -- pauseTracking() en tracking_controller.dart llama
+  // BackgroundGpsService.stopTracking(), que apaga el servicio en
+  // primer plano de verdad (correcto: el GPS no debe seguir sondeando
+  // mientras está en pausa, ahorra batería real). El problema no es que
+  // el usuario la deslice -- es que al pausar, CUALQUIER rastro de que
+  // ControlMiles sigue activo desaparece de la bandeja hasta que se
+  // vuelve a abrir la app. Esta es la notificación de reemplazo, propia
+  // de este archivo (no de TraceletEngine), que cubre exactamente esa
+  // ventana: aparece al pausar, se cancela al reanudar/finalizar el
+  // viaje -- Importance.low a propósito (visible en la bandeja, sin
+  // heads-up ni sonido, ya el recordatorio de pausa de arriba ya cubre
+  // "avisar de verdad" en la escalera de 5m/15m/30m/etc.).
+  static const String _pausedStatusChannelId = 'controlmiles_paused_status';
+  static const String _pausedStatusChannelName = 'Estado de viaje en pausa';
+  static const String _pausedStatusChannelDescription =
+      'Indicador persistente mientras un viaje está en pausa, para que la bandeja nunca quede sin ningún rastro de que ControlMiles sigue activo';
 
   // Referencia opcional al GlobalKey<NavigatorState> de MaterialApp, seteada
   // desde main.dart — permite que tocar la notificación de resumen semanal
@@ -166,11 +190,19 @@ class NotificationService {
       importance: Importance.high,
     );
 
+    const pausedStatusChannel = AndroidNotificationChannel(
+      _pausedStatusChannelId,
+      _pausedStatusChannelName,
+      description: _pausedStatusChannelDescription,
+      importance: Importance.low,
+    );
+
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
     await androidPlugin?.createNotificationChannel(switchConfirmChannel);
     await androidPlugin?.createNotificationChannel(pauseReminderChannel);
+    await androidPlugin?.createNotificationChannel(pausedStatusChannel);
   }
 
   Future<void> _requestPermissions() async {
@@ -500,6 +532,50 @@ class NotificationService {
     await _cancelPauseReminderAlarms();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_pauseAnchorKey);
+  }
+
+  // ============================================================
+  // INDICADOR PERSISTENTE DE "VIAJE EN PAUSA"
+  // ============================================================
+  // BUG FIX (pedido explícito, 2026-09-18, ver el comentario del canal
+  // más arriba para el diagnóstico completo): pauseTracking() apaga el
+  // foreground-service real de TraceletEngine (correcto, el GPS no debe
+  // seguir sondeando en pausa), lo que se lleva consigo la ÚNICA
+  // notificación que existía diciendo "ControlMiles sigue activo". Esta
+  // reemplaza esa señal durante la ventana de pausa exclusivamente --
+  // `ongoing: true` + `autoCancel: false` la hacen no deslizable, igual
+  // que el foreground-service que reemplaza mientras dura la pausa.
+  // Deliberadamente NO respeta el toggle de tipo-de-aviso del usuario
+  // (a diferencia de schedulePauseReminder) -- no es un recordatorio
+  // opcional, es el mismo tipo de indicador obligatorio que el propio
+  // foreground-service de Android ya es mientras el viaje corre.
+  Future<void> showPausedTrackingNotification() async {
+    if (!_initialized) return;
+    final title = await _tr('paused_status_notification_title');
+    final body = await _tr('paused_status_notification_body');
+
+    await _plugin.show(
+      _pausedStatusNotificationId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _pausedStatusChannelId,
+          _pausedStatusChannelName,
+          channelDescription: _pausedStatusChannelDescription,
+          importance: Importance.low,
+          priority: Priority.low,
+          ongoing: true,
+          autoCancel: false,
+          onlyAlertOnce: true,
+          color: kBrandSeed,
+        ),
+      ),
+    );
+  }
+
+  Future<void> cancelPausedTrackingNotification() async {
+    await _plugin.cancel(_pausedStatusNotificationId);
   }
 
   // ============================================================
