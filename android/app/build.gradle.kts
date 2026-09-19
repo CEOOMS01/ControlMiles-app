@@ -82,6 +82,19 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+
+            // BUG FIX (found live, 2026-09-19, first real release AAB build
+            // attempted for this app): R8 failed outright with "Missing
+            // classes" for google_mlkit_text_recognition's non-Latin script
+            // recognizers (Chinese/Devanagari/Japanese/Korean) -- this app
+            // never depends on those optional ML Kit modules (odometer OCR
+            // only needs Latin), so R8 has no class to resolve them against.
+            // See proguard-rules.pro's own header for the full explanation;
+            // this just wires that file in alongside AGP's default rules.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
