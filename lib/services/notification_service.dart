@@ -242,6 +242,31 @@ class NotificationService {
   /// requestExactAlarmsPermission de arriba). null/false en cualquier otro
   /// caso (iOS, permiso no otorgado, API no disponible) -- tratado como
   /// "no disponible", nunca como error.
+  /// Public read of exact-alarm status, for SettingsScreen's background-
+  /// reliability row (explicit user report, 2026-09-19: notifications
+  /// "solo aparecen al abrir la app" persisted even after the
+  /// exactAllowWhileIdle fix, because requestExactAlarmsPermission's
+  /// Settings redirect is silent -- nothing in the app ever confirmed the
+  /// user actually flipped it on). Settings shows this status live so the
+  /// user has a way to actually finish granting it post-install, without
+  /// reinstalling or re-running onboarding.
+  Future<bool> hasExactAlarmPermission() => _canScheduleExactAlarms();
+
+  /// Re-opens the same "Alarms & reminders" system settings screen
+  /// _requestPermissions already triggers once at init() -- exposed here
+  /// so SettingsScreen's CTA button can re-trigger it on demand for a
+  /// user who missed or dismissed it the first time.
+  Future<void> requestExactAlarmPermission() async {
+    try {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestExactAlarmsPermission();
+    } catch (e) {
+      debugPrint('[NotificationService] requestExactAlarmPermission failed: $e');
+    }
+  }
+
   Future<bool> _canScheduleExactAlarms() async {
     try {
       final result = await _plugin

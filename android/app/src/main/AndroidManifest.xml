@@ -49,6 +49,27 @@
          inexacto a propósito, ya que no son time-critical de igual forma. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
+    <!-- BUG FIX (real root cause, 2026-09-19, same symptom reported again
+         after the SCHEDULE_EXACT_ALARM fix above: "solo aparecen los
+         avisos al abrir la app, no en segundo plano"). SCHEDULE_EXACT_ALARM
+         only controls whether AlarmManager fires at the exact requested
+         time; it does NOT stop most Android OEMs (Samsung, Xiaomi/MIUI,
+         Huawei, Oppo, etc.) from freezing the app's process and deferring
+         or dropping its alarms/background work entirely once battery
+         optimization decides the app is "not in use." That OEM-level
+         freeze is the actual, far more common cause of "nothing happens
+         until I reopen the app" reports; exact alarms alone can't
+         override it. REQUEST_IGNORE_BATTERY_OPTIMIZATIONS lets the app ask
+         the user, via a real system dialog
+         (Permission.ignoreBatteryOptimizations.request() in
+         welcome_page.dart / settings_screen.dart), to be exempted from
+         that freeze. Google Play flags this as a sensitive permission for
+         apps that abuse it to run unnecessary background work; allowed
+         here because ControlMiles' whole purpose is mileage tracking that
+         must keep working while backgrounded, exactly the documented
+         legitimate use case. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
     <!-- Gig app detection (premium auto-detect, Android only): a
          "special access" permission, never a runtime dialog. The user
          must grant it manually from Settings (see

@@ -7,6 +7,7 @@ import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../i18n/app_texts.dart';
 import 'org_mode_switcher.dart';
+import 'app_version_text.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
@@ -377,7 +378,7 @@ class MainDrawer extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("v2.0.1", style: TextStyle(color: mutedColor, fontSize: 10)),
+              AppVersionText(style: TextStyle(color: mutedColor, fontSize: 10)),
               Text(appState.tr('app_version').toUpperCase(),
                   style: TextStyle(color: mutedColor, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
             ],

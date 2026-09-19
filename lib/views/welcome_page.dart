@@ -65,6 +65,18 @@ class _WelcomePageState extends State<WelcomePage> {
     await Permission.activityRecognition.request();
     await Permission.notification.request();
 
+    // BUG FIX (real root cause, 2026-09-19): "los avisos solo aparecen al
+    // abrir la app" persisted even with locationAlways + exact-alarm
+    // scheduling correctly granted, because most Android OEMs freeze a
+    // backgrounded app's process (and its pending alarms/notifications)
+    // under their own battery manager, independent of anything this app
+    // requests from AlarmManager. This shows the real system "allow
+    // ControlMiles to ignore battery optimizations?" dialog -- best-effort,
+    // like camera/activityRecognition/notification above: never blocks
+    // onboarding, and a user who denies it can still grant it later from
+    // Settings (see SettingsScreen's background-reliability row).
+    await Permission.ignoreBatteryOptimizations.request();
+
     await _requestUsageAccessOnce();
 
     return true;

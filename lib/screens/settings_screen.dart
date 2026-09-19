@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../models/organization.dart';
@@ -17,6 +18,7 @@ import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
 import 'generate_report_code_screen.dart';
 import '../errors/app_error.dart';
+import '../widgets/app_version_text.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -41,6 +43,30 @@ class _SettingsScreenState extends State<SettingsScreen>
   // it on resume, since that's the only reliable moment to notice the
   // user just came back from granting it there.
   bool _hasUsageAccess = false;
+
+  // BUG FIX (real root cause, 2026-09-19: notifications/reminders "solo
+  // aparecen al abrir la app" persisted even after the exact-alarm fix --
+  // most Android OEMs freeze a backgrounded app's process under their own
+  // battery manager regardless of AlarmManager settings). Both of these
+  // are "special access" permissions with no visible in-app confirmation
+  // of their own, so this screen is the only place a user who already
+  // installed the app can actually check and fix them -- same
+  // WidgetsBindingObserver-on-resume pattern _hasUsageAccess already uses,
+  // since returning from system Settings is the only reliable moment to
+  // notice either one changed.
+  bool? _ignoringBatteryOptimizations;
+  bool? _hasExactAlarmPermission;
+
+  Future<void> _refreshBackgroundReliabilityStatus() async {
+    final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    final exactAlarm = await NotificationService.instance.hasExactAlarmPermission();
+    if (mounted) {
+      setState(() {
+        _ignoringBatteryOptimizations = batteryStatus.isGranted;
+        _hasExactAlarmPermission = exactAlarm;
+      });
+    }
+  }
 
   /// Estado de los toggles por tipo de aviso (pedido explícito
   /// 2026-09-16). La verdad vive en SharedPreferences vía
@@ -71,9 +97,11 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        GigAppDetectionService.instance.isSupported) {
-      _refreshUsageAccessStatus();
+    if (state == AppLifecycleState.resumed) {
+      if (GigAppDetectionService.instance.isSupported) {
+        _refreshUsageAccessStatus();
+      }
+      _refreshBackgroundReliabilityStatus();
     }
   }
 
@@ -103,6 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (GigAppDetectionService.instance.isSupported) {
       _refreshUsageAccessStatus();
     }
+    _refreshBackgroundReliabilityStatus();
     _loadNotificationTypePrefs();
 
     final appState = context.read<AppState>();
@@ -371,6 +400,9 @@ class _SettingsScreenState extends State<SettingsScreen>
 
           _buildSectionHeader(appState, 'preferences', isDark),
           _buildPreferencesSection(appState, isDark),
+
+          _buildSectionHeader(appState, 'background_reliability_section', isDark),
+          _buildBackgroundReliabilitySection(appState, isDark),
 
           _buildSectionHeader(appState, 'about_app', isDark),
           _buildAboutSection(appState, isDark),
@@ -939,6 +971,108 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  /// BUG FIX (real root cause, 2026-09-19 -- see the field comments above):
+  /// the two OS-level switches that actually decide whether reminders and
+  /// the pause-status notification survive the app being backgrounded.
+  /// Both are "special access" permissions with no other in-app
+  /// confirmation, so this is the one place a user can check current
+  /// status and fix either one without reinstalling.
+  Widget _buildBackgroundReliabilitySection(AppState appState, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          _buildPermissionStatusRow(
+            appState: appState,
+            icon: Icons.battery_saver_outlined,
+            title: appState.tr('battery_optimization_title'),
+            subtitle: _ignoringBatteryOptimizations == null
+                ? appState.tr('checking_status')
+                : (_ignoringBatteryOptimizations!
+                    ? appState.tr('battery_optimization_granted')
+                    : appState.tr('battery_optimization_missing')),
+            granted: _ignoringBatteryOptimizations,
+            isDark: isDark,
+            onTap: () async {
+              await Permission.ignoreBatteryOptimizations.request();
+              await _refreshBackgroundReliabilityStatus();
+            },
+          ),
+          const SizedBox(height: 10),
+          _buildPermissionStatusRow(
+            appState: appState,
+            icon: Icons.alarm_outlined,
+            title: appState.tr('exact_alarm_title'),
+            subtitle: _hasExactAlarmPermission == null
+                ? appState.tr('checking_status')
+                : (_hasExactAlarmPermission!
+                    ? appState.tr('exact_alarm_granted')
+                    : appState.tr('exact_alarm_missing')),
+            granted: _hasExactAlarmPermission,
+            isDark: isDark,
+            onTap: () async {
+              await NotificationService.instance.requestExactAlarmPermission();
+              await _refreshBackgroundReliabilityStatus();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionStatusRow({
+    required AppState appState,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool? granted,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final statusColor = granted == null
+        ? (isDark ? Colors.white38 : const Color(0xFF94A3B8))
+        : (granted ? const Color(0xFF22C55E) : const Color(0xFFF59E0B));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF1E293B),
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Icon(
+              granted == true ? Icons.check_circle : Icons.error_outline,
+              size: 14,
+              color: statusColor,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                subtitle,
+                style: TextStyle(fontSize: 12, color: statusColor),
+              ),
+            ),
+          ],
+        ),
+        trailing: granted == true
+            ? null
+            : TextButton(
+                onPressed: onTap,
+                child: Text(appState.tr('fix_it')),
+              ),
+      ),
+    );
+  }
+
   /// Bottom sheet con los 5 tipos de aviso individuales (pedido explícito,
   /// 2026-09-16: poder callar un aviso concreto sin apagar todos). Vive
   /// en un sheet aparte, no en línea en Settings -- ver el comentario en
@@ -1087,7 +1221,24 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             child: Column(
               children: [
-                _buildAboutRow(appState.tr('app_version'), 'v2.0.1', isDark),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      appState.tr('app_version'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                      ),
+                    ),
+                    AppVersionText(
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
                 Divider(
                   height: 32,
                   color: isDark ? const Color(0xFF1E293B) : null,

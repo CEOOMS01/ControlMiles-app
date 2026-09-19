@@ -32,6 +32,12 @@ dependencies:
   uuid: ^4.5.2
   crypto: ^3.0.3
   shared_preferences: ^2.5.4
+  # BUG FIX (real bug found live, 2026-09-19): already pulled in
+  # transitively (used it before without declaring it -- worked by luck of
+  # the resolved version graph). Declared directly now that
+  # AppVersionText reads the real app version from it, instead of the two
+  # screens that used to hardcode "v2.0.1" by hand.
+  package_info_plus: ^9.0.1
 
   # --- GPS + background tracking ---
   # flutter_background_geolocation is a PAID plugin (one-time ~$300 license
