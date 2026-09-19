@@ -1083,12 +1083,26 @@ class _SettingsScreenState extends State<SettingsScreen>
   /// semana de detección muerta) y las capturas semanales de odómetro, que
   /// son acciones obligatorias, no avisos.
   void _showNotificationTypesSheet(AppState appState, bool isDark) {
-    const types = <(String, String, IconData)>[
+    // BUG FIX (real bug found live, 2026-09-19, testing Basic vs Premium
+    // gating on a real device): this sheet showed ALL 5 alert types to
+    // every gig user, Basic included -- but "Gig app switched" and "Trip
+    // started automatically" are notifications ONLY the auto-detect
+    // feature can ever fire (showMidTripAutoSwitchedNotification /
+    // showAutoTripStartedNotification), and auto-detect itself is
+    // correctly locked behind premiumEntitled everywhere else in this
+    // screen (see _buildAutoDetectSection's own `locked` check just
+    // above). A Basic user saw two toggles for alerts that could never
+    // reach them, with no indication either was Premium-only. Filtered
+    // out here instead of touching NotificationService or the toggles
+    // list's other 3 entries, which are correct for every tier as-is.
+    final types = <(String, String, IconData)>[
       (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
       (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
       (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
-      (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
-      (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
+      if (appState.premiumEntitled) ...[
+        (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
+        (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
+      ],
     ];
 
     showModalBottomSheet(
