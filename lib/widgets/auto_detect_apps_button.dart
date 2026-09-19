@@ -48,6 +48,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../tracking/auto_trip_detection_service.dart';
+import 'gig_app_shift_selector_sheet.dart';
 
 class AutoDetectAppsButton extends StatefulWidget {
   const AutoDetectAppsButton({super.key});
@@ -79,32 +80,48 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
   double get _innerWidth => _trackWidth - _outerPad * 2;
   double get _maxThumbTravel => _innerWidth - _thumbSize - _thumbInset * 2;
 
+  void _showPremiumLockDialog(AppState appState) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('premium_feature_locked_title')),
+        content: Text(appState.tr('premium_feature_locked_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(appState.tr('cancel')),
+          ),
+          // Real Stripe subscription flow now exists (see
+          // subscription_screen.dart) -- this used to be an OK-only
+          // dead end ("contact support"), now it goes straight to the
+          // real self-serve upgrade path.
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, AppRoutes.subscription);
+            },
+            child: Text(appState.tr('upgrade_plan')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Explicit user request (2026-09-18): "select app gig for working
+  // shift" entry point -- Premium-exclusive, same lock dialog the
+  // activation toggle above already uses, so a non-Premium driver sees
+  // the identical upgrade path from either control.
+  void _openShiftAppPicker(AppState appState) {
+    if (!appState.premiumEntitled) {
+      _showPremiumLockDialog(appState);
+      return;
+    }
+    showGigAppShiftSelectorSheet(context);
+  }
+
   Future<void> _activate(AppState appState) async {
     if (!appState.premiumEntitled) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('premium_feature_locked_title')),
-          content: Text(appState.tr('premium_feature_locked_body')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(appState.tr('cancel')),
-            ),
-            // Real Stripe subscription flow now exists (see
-            // subscription_screen.dart) -- this used to be an OK-only
-            // dead end ("contact support"), now it goes straight to the
-            // real self-serve upgrade path.
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(context, AppRoutes.subscription);
-              },
-              child: Text(appState.tr('upgrade_plan')),
-            ),
-          ],
-        ),
-      );
+      _showPremiumLockDialog(appState);
       return;
     }
 
@@ -384,6 +401,33 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
             color: isDark ? Colors.white54 : const Color(0xFF64748B),
             fontSize: 11,
             fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () => _openShiftAppPicker(appState),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (locked)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(
+                    Icons.lock_outline_rounded,
+                    size: 12,
+                    color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                  ),
+                ),
+              Text(
+                appState.tr('shift_apps_picker_link'),
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : const Color(0xFF3B82F6),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
           ),
         ),
       ],

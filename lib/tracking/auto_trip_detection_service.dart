@@ -77,6 +77,26 @@ class AutoTripDetectionService {
   static const String _shiftOdoValueKey = 'controlmiles_shift_odometer_value';
   static const String _shiftOdoImageKey = 'controlmiles_shift_odometer_image_url';
 
+  // Premium-exclusive "select gig apps for working shift" (explicit user
+  // request, 2026-09-18). Same key AppState.setSelectedGigAppIds persists
+  // to -- read directly here (same pattern this class already uses for
+  // _enabledPrefKey) instead of going through AppState, since this poll
+  // loop has no BuildContext/Provider access. Empty/missing list means
+  // "no filter", i.e. today's behavior of watching every catalog app.
+  static const String _selectedGigAppIdsPrefKey = 'controlmiles_selected_gig_app_ids';
+
+  /// Returns true when `gigAppId` should be treated as "not detected" for
+  /// auto-detect purposes because the driver narrowed their shift to a
+  /// specific subset of apps and this one isn't in it. A null id or an
+  /// empty selection always passes through unfiltered.
+  Future<bool> _isFilteredOutByShiftSelection(String? gigAppId) async {
+    if (gigAppId == null) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final selected = prefs.getStringList(_selectedGigAppIdsPrefKey) ?? [];
+    if (selected.isEmpty) return false;
+    return !selected.contains(gigAppId);
+  }
+
   // Polling interval for "is a gig app in the foreground right now" --
   // relies on the SAME foreground service flutter_background_geolocation
   // already keeps alive while armed (persistent notification, immune to
@@ -444,6 +464,11 @@ class AutoTripDetectionService {
       return;
     }
 
+    if (await _isFilteredOutByShiftSelection(gigAppId)) {
+      lastDetectedGigAppId = null;
+      return;
+    }
+
     lastDetectedGigAppId = gigAppId;
     if (gigAppId != null) {
       await _autoStartTrip(gigAppId);
@@ -468,6 +493,10 @@ class AutoTripDetectionService {
     // Same explicit guard as _pollForGigApp above -- 'custom' must never
     // be auto-selected, mid-trip switch included.
     if (gigAppId == null || gigAppId == currentGigApp || gigAppId == 'custom') {
+      return;
+    }
+
+    if (await _isFilteredOutByShiftSelection(gigAppId)) {
       return;
     }
 

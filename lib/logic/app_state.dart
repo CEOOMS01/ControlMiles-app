@@ -33,6 +33,7 @@ class AppState extends ChangeNotifier {
   // at all is premiumEntitled (server-verified, see profiles.premium_entitled)
   // -- this flag only tracks whether the user has chosen to turn it on.
   bool _autoDetectEnabled = false;
+  List<String> _selectedGigAppIds = [];
   bool _isInitialized = false;
   String? _currentSessionId;
 
@@ -118,6 +119,13 @@ class AppState extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;                    // ← Nuevo
   bool get notificationsEnabled => _notificationsEnabled;
   bool get autoDetectEnabled => _autoDetectEnabled;
+  // Explicit user requirement (2026-09-18, Premium-exclusive): empty list
+  // means "no filter" -- auto-detect watches every gig app in the
+  // catalog, exactly today's behavior. Only once a Premium driver
+  // explicitly picks a subset (their "shift" apps) does auto-detect
+  // narrow down to just those -- see AutoTripDetectionService's own
+  // filtering for where this actually gets enforced.
+  List<String> get selectedGigAppIds => List.unmodifiable(_selectedGigAppIds);
   bool get isInitialized => _isInitialized;
   String? get currentSessionId => _currentSessionId;
   String? get userDisplayId => _userDisplayId;
@@ -467,6 +475,26 @@ class AppState extends ChangeNotifier {
     return await AutoTripDetectionService.instance.setEnabled(value);
   }
 
+  // Explicit user requirement (2026-09-18): "select app gig for working
+  // shift" -- Premium-exclusive narrowing of which gig apps auto-detect
+  // actually reacts to. Caller is responsible for checking
+  // premiumEntitled before ever showing the picker UI that calls this,
+  // same division of responsibility setAutoDetectEnabled already uses --
+  // this setter itself doesn't re-check entitlement, it only persists a
+  // choice. An empty list is the safe default (watch everything, today's
+  // behavior) -- there is no separate "premium lapsed" cleanup needed the
+  // way autoDetectEnabled has one, because AutoTripDetectionService's
+  // filter is a no-op whenever this list is empty, and a lapsed Premium
+  // account already can't have auto-detect ON at all (see the
+  // premium-lapse block in fetchUserProfile above) for this to matter.
+  Future<void> setSelectedGigAppIds(List<String> ids) async {
+    _selectedGigAppIds = List.of(ids);
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('controlmiles_selected_gig_app_ids', _selectedGigAppIds);
+  }
+
   /// IRS Fase 3 (2026-08-28): writes straight to profiles.mileage_method
   /// -- no local device caching needed (unlike autoDetectEnabled/etc,
   /// this has no offline-critical read path, it's just report metadata).
@@ -608,6 +636,7 @@ class AppState extends ChangeNotifier {
 
       // Detección automática de viajes (premium, Gig-only)
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
+      _selectedGigAppIds = prefs.getStringList('controlmiles_selected_gig_app_ids') ?? [];
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
@@ -657,6 +686,7 @@ class AppState extends ChangeNotifier {
     // service must stop -- it has no idle account to attribute a
     // detected trip to once signed out.
     _autoDetectEnabled = false;
+    _selectedGigAppIds = [];
     await AutoTripDetectionService.instance.setEnabled(false);
     _pendingInvites = [];
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
@@ -673,6 +703,7 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_tier_enforcement_exempt');
     await prefs.remove('controlmiles_account_created_at');
     await prefs.remove('controlmiles_auto_detect_enabled');
+    await prefs.remove('controlmiles_selected_gig_app_ids');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');
