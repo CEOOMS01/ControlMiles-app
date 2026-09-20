@@ -16,8 +16,8 @@ import '../models/vehicle_inspection.dart';
 import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/vehicle_inspection_screen.dart';
+import '../data/irs_rates.dart';
 import '../widgets/main_drawer.dart';
-import '../widgets/mileage_deduction_badge.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
 import '../widgets/auto_detect_apps_button.dart';
@@ -80,6 +80,21 @@ class _DashboardScreenState extends State<DashboardScreen>
   double _todayMiles = 0.0;
   int _todayDurationSec = 0;
   bool _summaryLoading = true;
+
+  // ── NUEVO: total del MES calendario en curso, reemplaza MileageDeductionBadge
+  // (que era total del año) -- pedido explícito: "total miles de cada mes,
+  // no global". Mismo patrón que _todayMiles pero con el piso en el día 1
+  // del mes local en vez de la medianoche de hoy -- se resetea solo el
+  // día 1 de cada mes. Trae start_time (no solo total_miles/duration) igual
+  // que MileageDeductionBadge lo hacía para el año, porque el estimado IRS
+  // se calcula viaje por viaje (la tarifa cambia a mitad de año, ver
+  // irs_rates.dart) -- sumar millas primero y aplicar una tarifa única al
+  // total daría un estimado incorrecto para meses que cruzan el cambio de
+  // tarifa.
+  double _monthMiles = 0.0;
+  int _monthDurationSec = 0;
+  double _monthDeduction = 0.0;
+  bool _monthLoading = true;
 
   // Auto-detect start/stop flash (explicit user request, 2026-09-08):
   // consumes TrackingController.autoFlashEvent ('start'/'end'), plays a
@@ -469,6 +484,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     await TrackingController.initializeOrRecover();
     await _loadRecentSessions(); // ── NUEVO
     await _loadTodaySummary(); // ── NUEVO
+    await _loadMonthSummary(); // ── NUEVO
     if (mounted) {
       _syncTrackingUiState();
       setState(() => loading = false);
@@ -512,6 +528,52 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       debugPrint("[ControlMiles Today Summary Load Error] $e");
       if (mounted) setState(() => _summaryLoading = false);
+    }
+  }
+
+  // ── NUEVO: total del mes calendario en curso para la card Summary ──
+  Future<void> _loadMonthSummary() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        if (mounted) setState(() => _monthLoading = false);
+        return;
+      }
+
+      final nowLocal = DateTime.now();
+      final monthStartLocal = DateTime(nowLocal.year, nowLocal.month, 1);
+      final windowStartUtc = monthStartLocal.toUtc();
+
+      final rows = await _supabase
+          .from('sessions')
+          .select('total_miles, total_duration_seconds, start_time')
+          .eq('user_id', user.id)
+          .eq('is_closed', true)
+          .gte('start_time', windowStartUtc.toIso8601String());
+
+      final list = List<Map<String, dynamic>>.from(rows);
+      double milesSum = 0.0;
+      int durationSum = 0;
+      double deductionSum = 0.0;
+      for (final r in list) {
+        final miles = (r['total_miles'] as num?)?.toDouble() ?? 0.0;
+        final startTime = DateTime.tryParse(r['start_time'] as String? ?? '');
+        milesSum += miles;
+        durationSum += (r['total_duration_seconds'] as int?) ?? 0;
+        deductionSum += calculateIrsDeductionEstimate(miles, startTime ?? nowLocal);
+      }
+
+      if (mounted) {
+        setState(() {
+          _monthMiles = milesSum;
+          _monthDurationSec = durationSum;
+          _monthDeduction = deductionSum;
+          _monthLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("[ControlMiles Month Summary Load Error] $e");
+      if (mounted) setState(() => _monthLoading = false);
     }
   }
 
@@ -850,19 +912,32 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── NUEVO: card Summary (pedido explícito, batch de 4 bugs) ──
-  // Reemplaza el pedido original de "desglose en vivo por app" -- el
-  // usuario redirigió el pedido a esto: un total del DÍA CALENDARIO (no
-  // del rango seleccionado en ningún filtro), mismo dato/misma card en
-  // Dashboard y Reports. Ver _loadTodaySummary().
+  // BUG FIX (pedido explícito): reemplaza tanto el MileageDeductionBadge
+  // (millas del año + estimado IRS, ver git history) como la versión previa
+  // de esta card (solo hoy) -- ahora clona el layout de dos columnas de
+  // Reports (_buildSummaryCard en reports_screen.dart): TOTAL MILES a la
+  // izquierda y TODAY a la derecha, separados por un VerticalDivider. La
+  // diferencia con Reports es la columna izquierda: ahí es _periodTotalMiles
+  // (el rango de fechas que el usuario elija, por defecto ~12 meses); acá es
+  // el MES CALENDARIO en curso (_monthMiles, ver _loadMonthSummary), fijo,
+  // sin selector -- pedido explícito ("total miles de cada mes, no
+  // global"). TODAY sigue igual (_todayMiles/_todayDurationSec, se resetea
+  // a las 12am). Se agrega una 3ra fila con el estimado de deducción IRS
+  // del mes (_monthDeduction), con el mismo disclaimer-detrás-de-un-tap que
+  // tenía MileageDeductionBadge.
   Widget _buildSummaryCard(AppState appState, Color cardBg, Color borderColor,
       Color labelColor, Color textColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayMiles = appState.useMetricSystem
-        ? (_todayMiles * 1.60934).toStringAsFixed(2)
-        : _todayMiles.toStringAsFixed(2);
-    final unitLabel = appState.useMetricSystem
-        ? appState.tr('kilometer_short')
-        : appState.tr('mile_short');
+
+    String fmtMiles(double miles) {
+      final display = appState.useMetricSystem
+          ? (miles * 1.60934).toStringAsFixed(2)
+          : miles.toStringAsFixed(2);
+      final unit = appState.useMetricSystem
+          ? appState.tr('kilometer_short')
+          : appState.tr('mile_short');
+      return '$display $unit';
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -895,32 +970,134 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
           Divider(height: 1, color: borderColor),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            // BUG FIX (pedido explícito): las millas y el tiempo del día
-            // estaban "flotando" -- ícono y texto sueltos en un Row, sin
-            // caja propia. Ahora cada contador vive en su propio cuadrito
-            // (mismo chip que ya usa _buildSessionInfoChip en esta pantalla).
-            child: _summaryLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Row(
-                    children: [
-                      _buildSessionInfoChip(
-                        icon: Icons.speed_rounded,
-                        value: '$displayMiles $unitLabel',
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildSessionInfoChip(
-                        icon: Icons.timer_outlined,
-                        value: _formatDurationFromSeconds(_todayDurationSec),
-                        isDark: isDark,
-                      ),
-                    ],
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(appState.tr('total_miles').toUpperCase(),
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: labelColor)),
+                        const SizedBox(height: 8),
+                        _monthLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _buildSessionInfoChip(
+                                    icon: Icons.speed_rounded,
+                                    value: fmtMiles(_monthMiles),
+                                    isDark: isDark,
+                                  ),
+                                  _buildSessionInfoChip(
+                                    icon: Icons.timer_outlined,
+                                    value: _formatDurationFromSeconds(_monthDurationSec),
+                                    isDark: isDark,
+                                  ),
+                                ],
+                              ),
+                      ],
+                    ),
                   ),
+                ),
+                VerticalDivider(width: 1, thickness: 1, color: borderColor),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(appState.tr('today').toUpperCase(),
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: labelColor)),
+                        const SizedBox(height: 8),
+                        _summaryLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _buildSessionInfoChip(
+                                    icon: Icons.speed_rounded,
+                                    value: fmtMiles(_todayMiles),
+                                    isDark: isDark,
+                                  ),
+                                  _buildSessionInfoChip(
+                                    icon: Icons.timer_outlined,
+                                    value: _formatDurationFromSeconds(_todayDurationSec),
+                                    isDark: isDark,
+                                  ),
+                                ],
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!_monthLoading) ...[
+            Divider(height: 1, color: borderColor),
+            InkWell(
+              onTap: () => _showIrsEstimateDisclaimer(appState),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, size: 14, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      '≈\$${_monthDeduction.toStringAsFixed(0)} '
+                      '${appState.tr('year_miles_deduction_estimate')}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Mismo disclaimer que tenía MileageDeductionBadge (ahora eliminado del
+  // Dashboard) -- el estimado en dólares nunca debe leerse como la
+  // deducción oficial del IRS, así que el detalle completo (qué tarifa se
+  // usa, que ControlMiles no es el IRS ni está afiliado) vive detrás de
+  // este tap, nunca impreso en la card en sí.
+  void _showIrsEstimateDisclaimer(AppState appState) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('irs_estimate_title')),
+        content: Text(appState.tr('irs_estimate_disclaimer')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(appState.tr('ok')),
           ),
         ],
       ),
@@ -1030,19 +1207,18 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               const SizedBox(height: 10),
 
-              // BUG FIX (pedido explícito): reemplaza el badge "StandardCM"
-              // (Cloud Sync) — estaba roto, pegaba a una tabla/columna que
-              // no existen en la DB real, así que siempre mostraba
-              // "offline" sin importar la conexión real (ver
-              // CloudStatusService, ya no se usa acá). Ahora muestra millas
-              // del año + estimado de deducción IRS, con el disclaimer
-              // completo detrás de un tap (ver MileageDeductionBadge).
-              const MileageDeductionBadge(),
-
               _buildSwitchAppBanner(),
 
               const SizedBox(height: 20),
 
+              // BUG FIX (pedido explícito, "una misma card"): Vehicle y las
+              // estadísticas del viaje actual (millas + duración en vivo)
+              // vivían en dos cards separadas (esta + _buildStatsBox, ver
+              // git history) -- ahora son UNA sola card, mismo patrón visual
+              // que el resto del Dashboard (header + Divider + contenido).
+              // El total mensual que antes vivía en MileageDeductionBadge
+              // (año completo, ya eliminado) ahora vive en la card Summary
+              // más abajo, no acá -- ver _buildSummaryCard.
               _vehicleLoading
                   ? const CircularProgressIndicator()
                   : _buildVehicleCard(
@@ -1050,23 +1226,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       isDark: isDark,
                       cardBg: cardBg,
                       borderColor: bColor,
+                      tripMilesValue: displayValue,
+                      tripMilesUnit: unitLabel,
                     ),
-
-              const SizedBox(height: 20),
-
-              // BUG FIX (pedido explícito): antes eran dos cajas separadas
-              // (Expanded + SizedBox(width:12) + Expanded) -- ahora es UNA
-              // sola caja/cuadro con las dos estadísticas separadas
-              // adentro por un divisor vertical, no dos contenedores.
-              _buildStatsBox(
-                appState: appState,
-                value1: displayValue,
-                label1: unitLabel,
-                icon1: Icons.speed,
-                value2: _displayTime,
-                label2: appState.tr('duration'),
-                icon2: Icons.timer,
-              ),
 
               const SizedBox(height: 30),
 
@@ -1137,6 +1299,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 onTripEnded: () {
                   _loadRecentSessions();
                   _loadTodaySummary();
+                  _loadMonthSummary();
                 },
                 // Subscription-tier enforcement (explicit user requirement,
                 // 2026-09-04): reuses the exact canStart/cannotStartMessage
@@ -1253,6 +1416,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     required bool isDark,
     required Color cardBg,
     required Color borderColor,
+    required String tripMilesValue,
+    required String tripMilesUnit,
   }) {
     // BUG FIX (pedido explícito, "Full-width Divider"): la card de vehículo
     // no tenía separación entre título y contenido -- ahora sigue el mismo
@@ -1262,6 +1427,35 @@ class _DashboardScreenState extends State<DashboardScreen>
     // es un campo de la clase -- cada método que lo usa lo calcula local a
     // partir de isDark (mismo criterio que _buildRecentSessionsHistory).
     final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+
+    // BUG FIX (pedido explícito, "una misma card"): millas + duración del
+    // viaje EN VIVO (antes su propia card gradiente, _buildStatsBox) ahora
+    // viven como sección final de esta misma card, con los colores propios
+    // del tema (no el blanco fijo que tenía sentido sobre el gradiente
+    // azul) -- reusa _buildStatHalf con textColor/labelColor explícitos.
+    final tripStatsSection = Column(
+      children: [
+        Divider(height: 1, color: borderColor),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatHalf(tripMilesValue, tripMilesUnit,
+                    Icons.speed, textColor, labelColor),
+              ),
+              Container(width: 1, height: 40, color: borderColor),
+              Expanded(
+                child: _buildStatHalf(_displayTime, appState.tr('duration'),
+                    Icons.timer, textColor, labelColor),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
     final headerRow = Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Row(
@@ -1324,6 +1518,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ],
                       ),
               ),
+              tripStatsSection,
             ],
           ),
         ),
@@ -1391,6 +1586,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
             ],
+            tripStatsSection,
           ],
         ),
       ),
@@ -1462,71 +1658,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // BUG FIX (pedido explícito): MI y DURATION vivían en dos Container
-  // (Expanded) separados por un SizedBox -- ahora es una sola caja con
-  // gradiente (mismo azul de marca migrado en la tarea anterior) y un
-  // divisor vertical adentro que separa visualmente las dos estadísticas
-  // sin partir la caja en dos.
-  Widget _buildStatsBox({
-    required AppState appState,
-    required String value1,
-    required String label1,
-    required IconData icon1,
-    required String value2,
-    required String label2,
-    required IconData icon2,
-  }) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primary, Color.lerp(primary, Colors.black, 0.25)!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          // BUG FIX (pedido explícito, "Full-width Divider"): esta card no
-          // tenía título, solo dos mitades separadas por una línea vertical
-          // corta -- se le agregó un header + un divisor horizontal de
-          // borde a borde arriba, mismo patrón que Vehicle/Summary/carrusel.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-            child: Row(
-              children: [
-                const Icon(Icons.timeline_rounded, size: 14, color: Colors.white70),
-                const SizedBox(width: 8),
-                Text(
-                  appState.tr('current_trip').toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Colors.white24),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              children: [
-                Expanded(child: _buildStatHalf(value1, label1, icon1)),
-                Container(width: 1, height: 40, color: Colors.white24),
-                Expanded(child: _buildStatHalf(value2, label2, icon2)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatHalf(String value, String label, IconData icon) {
+  // BUG FIX (pedido explícito, "una misma card"): ya no es una card propia
+  // con gradiente -- ahora es la sección final de _buildVehicleCard (ver
+  // tripStatsSection ahí), así que toma textColor/labelColor del tema en
+  // vez del blanco fijo que tenía sentido sobre el gradiente azul anterior.
+  Widget _buildStatHalf(
+      String value, String label, IconData icon, Color textColor, Color labelColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -1534,17 +1671,17 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: Colors.white70),
+              Icon(icon, size: 14, color: labelColor),
               const SizedBox(width: 6),
               Text(label.toUpperCase(),
-                  style: const TextStyle(
-                      fontSize: 10, color: Colors.white70, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 10, color: labelColor, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
           Text(value,
-              style: const TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
+              style: TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.w900, color: textColor)),
         ],
       ),
     );
