@@ -18,7 +18,19 @@ import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
 
 class DriverLiveMapView extends StatefulWidget {
-  const DriverLiveMapView({super.key});
+  // BUG FIX (pedido explícito, "mapa en tiempo real al lado de la card de
+  // Vehicle"): esta clase ya existía pero no estaba wireada a ningún lado
+  // (dead code) -- se usaba a tamaño completo, con pan/zoom del usuario.
+  // `compact` la encoge para vivir como thumbnail dentro del header de
+  // _buildVehicleCard en dashboard_screen.dart: desactiva los gestos del
+  // mapa (el thumbnail vive dentro del InkWell de toda la card, que navega
+  // a VehicleScreen -- un mapa interactivo ahí competiría por el gesto y
+  // "atraparía" el tap en vez de dejarlo navegar) y cambia el estado vacío
+  // ("esperando GPS") de un bloque de texto centrado a un ícono simple,
+  // que es lo único que cabe en un cuadrito de ~64px.
+  final bool compact;
+
+  const DriverLiveMapView({super.key, this.compact = false});
 
   @override
   State<DriverLiveMapView> createState() => _DriverLiveMapViewState();
@@ -40,13 +52,16 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
           return Container(
             alignment: Alignment.center,
             color: Colors.black12,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                appState.tr('waiting_for_gps'),
-                style: const TextStyle(color: Colors.black54),
-              ),
-            ),
+            child: widget.compact
+                ? const Icon(Icons.location_searching_rounded,
+                    color: Colors.black38, size: 22)
+                : Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      appState.tr('waiting_for_gps'),
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ),
           );
         }
 
@@ -66,7 +81,17 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
           borderRadius: BorderRadius.circular(18),
           child: FlutterMap(
             mapController: _mapController,
-            options: MapOptions(initialCenter: point, initialZoom: 16),
+            options: MapOptions(
+              initialCenter: point,
+              initialZoom: 16,
+              // Thumbnail no debe competir por el gesto con el InkWell de
+              // la card que lo envuelve (ver comentario en `compact` arriba)
+              // -- sin esto, un drag sobre el thumbnail paneaba el mapa en
+              // vez de activar el tap de navegación de la card.
+              interactionOptions: widget.compact
+                  ? const InteractionOptions(flags: InteractiveFlag.none)
+                  : const InteractionOptions(),
+            ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -76,9 +101,10 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
                 markers: [
                   Marker(
                     point: point,
-                    width: 40,
-                    height: 40,
-                    child: Icon(Icons.navigation_rounded, color: primary, size: 34),
+                    width: widget.compact ? 22 : 40,
+                    height: widget.compact ? 22 : 40,
+                    child: Icon(Icons.navigation_rounded,
+                        color: primary, size: widget.compact ? 18 : 34),
                   ),
                 ],
               ),

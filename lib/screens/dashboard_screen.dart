@@ -17,6 +17,7 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/vehicle_inspection_screen.dart';
 import '../data/irs_rates.dart';
+import '../widgets/driver_live_map_view.dart';
 import '../widgets/main_drawer.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
@@ -1561,9 +1562,42 @@ class _DashboardScreenState extends State<DashboardScreen>
                           fontSize: 15, fontWeight: FontWeight.w900),
                     ),
                   ),
-                  if (!isFleetDriver)
+                  const SizedBox(width: 10),
+                  // BUG FIX (pedido explícito, "mapa en tiempo real al lado
+                  // de la card de Vehicle"): thumbnail de OpenStreetMap
+                  // (gratis, sin API key -- ver driver_live_map_view.dart)
+                  // con la posición GPS en vivo del conductor, la misma
+                  // fuente ya validada por el motor antifraude que alimenta
+                  // el viaje activo.
+                  //
+                  // BUG FIX (pedido explícito, "separaste la función de
+                  // vehículo del mapa"): el thumbnail vive DENTRO del
+                  // InkWell de toda la card (onTap: _goToVehicleProfile) --
+                  // aunque el mapa en sí tenga `compact: true` (pan/zoom
+                  // apagados), un tap sobre su área seguía burbujeando al
+                  // InkWell padre y navegaba a VehicleScreen, que no es la
+                  // función del mapa. Se envuelve en su propio InkWell con
+                  // un onTap propio (no-op por ahora, sin pantalla de mapa
+                  // completo todavía) -- eso lo separa como su propia zona
+                  // de gesto en el "arena" de Flutter, así el tap del mapa
+                  // ya NO dispara la navegación del vehículo.
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () {},
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(border: Border.all(color: borderColor)),
+                        child: const DriverLiveMapView(compact: true),
+                      ),
+                    ),
+                  ),
+                  if (!isFleetDriver) ...[
+                    const SizedBox(width: 4),
                     const Icon(Icons.chevron_right_rounded,
                         color: Color(0xFF94A3B8)),
+                  ],
                 ],
               ),
             ),
