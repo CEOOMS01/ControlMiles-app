@@ -1554,42 +1554,52 @@ class _DashboardScreenState extends State<DashboardScreen>
             // pares de datos (ver MI|Duration y Total Miles|Today más
             // abajo). El chevron se movió junto al nombre, DENTRO de la
             // zona de vehículo, no pegado al mapa.
+            // BUG FIX (pedido explícito, "el mapa tendría más presencia"):
+            // antes ambos lados competían por el mismo ancho (Expanded en
+            // el vehículo empujaba el chevron hasta el borde del divisor,
+            // el mapa se quedaba en un cuadrito fijo de 72x72). Ahora es al
+            // revés -- el bloque de vehículo (ícono + nombre + chevron) NO
+            // es Expanded, ocupa solo lo que su contenido necesita (nombre
+            // acotado a 130 de ancho con ellipsis para vehículos con
+            // nombres largos, chevron pegado inmediatamente después del
+            // texto) -- y el Expanded pasa al mapa, que ahora se estira a
+            // todo el ancho restante de la card en vez de un cuadrado fijo.
             IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: isFleetDriver ? null : _goToVehicleProfile,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle),
-                              child: const Icon(Icons.directions_car_filled_rounded,
-                                  color: Colors.white),
+                  InkWell(
+                    onTap: isFleetDriver ? null : _goToVehicleProfile,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle),
+                            child: const Icon(Icons.directions_car_filled_rounded,
+                                color: Colors.white),
+                          ),
+                          const SizedBox(width: 12),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 130),
+                            // Marca del vehículo activo (ej. Toyota, Nissan) + modelo.
+                            child: Text(
+                              _activeVehicle!.displayName,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w900),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              // Marca del vehículo activo (ej. Toyota, Nissan) + modelo.
-                              child: Text(
-                                _activeVehicle!.displayName,
-                                style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w900),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (!isFleetDriver) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right_rounded,
-                                  color: Color(0xFF94A3B8)),
-                            ],
+                          ),
+                          if (!isFleetDriver) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.chevron_right_rounded,
+                                color: Color(0xFF94A3B8)),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -1603,24 +1613,26 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // mapa real. El modo compact ahora arranca su PROPIO
                   // stream de Geolocator (ver driver_live_map_view.dart),
                   // independiente de si hay un viaje corriendo o no.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      // BUG FIX (pedido explícito, "separaste la función de
-                      // vehículo del mapa"): el thumbnail ya no vive dentro
-                      // del InkWell que navega a VehicleScreen (ver arriba,
-                      // ahora ese InkWell solo envuelve la mitad izquierda)
-                      // -- este InkWell propio (no-op, sin pantalla de mapa
-                      // completo todavía) solo evita que el tap se filtre
-                      // hacia el VerticalDivider/el resto de la card.
-                      child: InkWell(
-                        onTap: () {},
-                        child: Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(border: Border.all(color: borderColor)),
-                          child: const DriverLiveMapView(compact: true),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        // BUG FIX (pedido explícito, "separaste la función
+                        // de vehículo del mapa"): el thumbnail ya no vive
+                        // dentro del InkWell que navega a VehicleScreen (ver
+                        // arriba, ahora ese InkWell solo envuelve el bloque
+                        // de vehículo) -- este InkWell propio (no-op, sin
+                        // pantalla de mapa completo todavía) solo evita que
+                        // el tap se filtre hacia el resto de la card.
+                        child: InkWell(
+                          onTap: () {},
+                          child: Container(
+                            height: 84,
+                            width: double.infinity,
+                            decoration: BoxDecoration(border: Border.all(color: borderColor)),
+                            child: const DriverLiveMapView(compact: true),
+                          ),
                         ),
                       ),
                     ),
