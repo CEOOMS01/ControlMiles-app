@@ -1596,7 +1596,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                           if (!isFleetDriver) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.chevron_right_rounded,
+                            // BUG FIX (pedido explícito, "cambiar la
+                            // dirección del botón > hacia abajo tipo v"):
+                            // chevron_right (apunta a la derecha, sugiere
+                            // "ir a otra pantalla") reemplazado por uno que
+                            // apunta hacia abajo -- sigue siendo solo un
+                            // ícono decorativo dentro del InkWell que
+                            // navega a VehicleScreen, el tap no cambia.
+                            const Icon(Icons.keyboard_arrow_down_rounded,
                                 color: Color(0xFF94A3B8)),
                           ],
                         ],
