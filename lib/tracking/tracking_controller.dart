@@ -1566,30 +1566,36 @@ class TrackingController {
       }
     }
 
-    // Fleet Phase 6 (IFTA piece 1): continuous GPS trail for the trip.
-    // Fleet-only, same boundary as live-location -- a Gig driver's personal
-    // trips have no IFTA/state-mileage reporting need. Throttled looser
-    // than live-location (60s, not 15s) -- state-mileage attribution
-    // doesn't need the same freshness a live map does, and this halves
-    // write volume against what's already the busiest table this app
-    // writes to. Failures are swallowed for the same reason as the
-    // live-location block above: not trip-critical, must never interrupt
-    // mileage tracking itself.
-    if (activeOrganizationId != null &&
-        activeVehicleId != null &&
-        now.difference(_lastBreadcrumbTime).inSeconds >= 60) {
+    // Continuous GPS trail for the trip -- originally Fleet-only (IFTA
+    // state-mileage attribution, Phase 6), now extended to EVERY trip
+    // (explicit user request, 2026-09-20: "esto se va a extender a Gig
+    // también") to power live route-drawing on the map and the web
+    // Report Portal's per-trip route image. Throttled to 60s, same as
+    // before -- neither use case needs tighter resolution than that.
+    //
+    // BUG FIX / architecture change (same request): no longer a direct
+    // client insert into session_gps_breadcrumbs. Routed through the
+    // ingest-gps-breadcrumb edge function instead ("lanzar un servidor,
+    // que es el que recibirá estas coordenadas limpias y de allí se
+    // enviará a Supabase") -- it verifies the caller's JWT, looks up
+    // organization_id/vehicle_id from the session row server-side (never
+    // trusts them from the client), and drops obviously-invalid fixes
+    // before they ever reach the table. Failures are swallowed for the
+    // same reason as the blocks above: not trip-critical, must never
+    // interrupt mileage tracking itself.
+    if (now.difference(_lastBreadcrumbTime).inSeconds >= 60) {
       _lastBreadcrumbTime = now;
       try {
-        await Supabase.instance.client.from('session_gps_breadcrumbs').insert({
-          'session_id': sessionId,
-          'section_id': section.id,
-          'organization_id': activeOrganizationId,
-          'vehicle_id': activeVehicleId,
-          'user_id': Supabase.instance.client.auth.currentUser!.id,
-          'latitude': latitude,
-          'longitude': longitude,
-          'recorded_at': now.toIso8601String(),
-        });
+        await Supabase.instance.client.functions.invoke(
+          'ingest-gps-breadcrumb',
+          body: {
+            'session_id': sessionId,
+            'section_id': section.id,
+            'latitude': latitude,
+            'longitude': longitude,
+            'recorded_at': now.toIso8601String(),
+          },
+        );
       } catch (e) {
         _logError('BREADCRUMB_SYNC_ERROR', e.toString());
       }
