@@ -1541,63 +1541,90 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             headerRow,
             Divider(height: 1, color: borderColor),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            // BUG FIX (pedido explícito, batch de 3 -- "vehículo y mapa
+            // coexisten en una función, no se ven separados"): la versión
+            // anterior metía ícono+nombre+mapa+chevron en un único Row sin
+            // ninguna frontera visual real entre "navegar al vehículo" y
+            // "ver el mapa" -- el mapa (un cuadrito gris, ya que todavía no
+            // hay fix GPS) quedaba pegado al chevron y leía como un segundo
+            // botón, aunque solo el chevron navegaba. Ahora son dos
+            // secciones explícitas dentro de la misma card, con su propio
+            // Padding cada una y un VerticalDivider real entre ambas --
+            // mismo lenguaje visual que ya usa esta pantalla para separar
+            // pares de datos (ver MI|Duration y Total Miles|Today más
+            // abajo). El chevron se movió junto al nombre, DENTRO de la
+            // zona de vehículo, no pegado al mapa.
+            IntrinsicHeight(
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle),
-                    child: const Icon(Icons.directions_car_filled_rounded,
-                        color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
-                    // Marca del vehículo activo (ej. Toyota, Nissan) + modelo.
-                    child: Text(
-                      _activeVehicle!.displayName,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // BUG FIX (pedido explícito, "mapa en tiempo real al lado
-                  // de la card de Vehicle"): thumbnail de OpenStreetMap
-                  // (gratis, sin API key -- ver driver_live_map_view.dart)
-                  // con la posición GPS en vivo del conductor, la misma
-                  // fuente ya validada por el motor antifraude que alimenta
-                  // el viaje activo.
-                  //
-                  // BUG FIX (pedido explícito, "separaste la función de
-                  // vehículo del mapa"): el thumbnail vive DENTRO del
-                  // InkWell de toda la card (onTap: _goToVehicleProfile) --
-                  // aunque el mapa en sí tenga `compact: true` (pan/zoom
-                  // apagados), un tap sobre su área seguía burbujeando al
-                  // InkWell padre y navegaba a VehicleScreen, que no es la
-                  // función del mapa. Se envuelve en su propio InkWell con
-                  // un onTap propio (no-op por ahora, sin pantalla de mapa
-                  // completo todavía) -- eso lo separa como su propia zona
-                  // de gesto en el "arena" de Flutter, así el tap del mapa
-                  // ya NO dispara la navegación del vehículo.
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
                     child: InkWell(
-                      onTap: () {},
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(border: Border.all(color: borderColor)),
-                        child: const DriverLiveMapView(compact: true),
+                      onTap: isFleetDriver ? null : _goToVehicleProfile,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.directions_car_filled_rounded,
+                                  color: Colors.white),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              // Marca del vehículo activo (ej. Toyota, Nissan) + modelo.
+                              child: Text(
+                                _activeVehicle!.displayName,
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w900),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!isFleetDriver) ...[
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: Color(0xFF94A3B8)),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  if (!isFleetDriver) ...[
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: Color(0xFF94A3B8)),
-                  ],
+                  VerticalDivider(width: 1, thickness: 1, color: borderColor),
+                  // BUG FIX (pedido explícito, "no quiero que se active al
+                  // activar el tracking, quiero que se vea visible sin el
+                  // tracking"): antes usaba TrackingController.livePosition,
+                  // que solo se llena durante un viaje activo (ver su
+                  // comentario en tracking_controller.dart) -- por eso en
+                  // idle solo se veía el ícono de "buscando GPS", nunca el
+                  // mapa real. El modo compact ahora arranca su PROPIO
+                  // stream de Geolocator (ver driver_live_map_view.dart),
+                  // independiente de si hay un viaje corriendo o no.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      // BUG FIX (pedido explícito, "separaste la función de
+                      // vehículo del mapa"): el thumbnail ya no vive dentro
+                      // del InkWell que navega a VehicleScreen (ver arriba,
+                      // ahora ese InkWell solo envuelve la mitad izquierda)
+                      // -- este InkWell propio (no-op, sin pantalla de mapa
+                      // completo todavía) solo evita que el tap se filtre
+                      // hacia el VerticalDivider/el resto de la card.
+                      child: InkWell(
+                        onTap: () {},
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(border: Border.all(color: borderColor)),
+                          child: const DriverLiveMapView(compact: true),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
