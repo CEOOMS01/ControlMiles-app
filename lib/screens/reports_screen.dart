@@ -19,6 +19,18 @@ import '../services/report_service.dart';
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
+  // BUG FIX (pedido explícito, 2026-09-21): "tenemos un aviso [de resumen
+  // semanal] y al tocarlo no hay ningún resumen de la semana que lo
+  // respalde". La notificación de resumen semanal (notification_service.dart,
+  // domingos ~8pm) ya navegaba acá al tocarla, pero Reports abre por
+  // defecto con los ÚLTIMOS 12 MESES -- nada relacionado con "esta semana".
+  // Esta constante es el contrato compartido entre ambos archivos: pasada
+  // como `arguments` en el pushNamed, hace que ESTA apertura puntual arranque
+  // acotada al lunes-hoy de la semana en curso en vez del rango de 12 meses,
+  // sin tocar el comportamiento normal de Reports abierto desde el drawer/
+  // bottom nav (arguments es null ahí, cae al default de siempre).
+  static const String argThisWeek = 'this_week';
+
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
@@ -26,6 +38,8 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   bool    _isLoading       = false;
   String? _progressMessage;
+  bool    _isThisWeekView  = false;
+  bool    _routeArgsApplied = false;
 
   // BUG FIX (pedido explícito): el rango por defecto al abrir Reports pasa
   // de "últimos 3 meses" a "últimos 12 meses" -- mismo motivo que el fix
@@ -97,8 +111,38 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
+    // BUG FIX (ver ReportsScreen.argThisWeek arriba): la carga inicial ya
+    // no dispara acá -- depende de si esta apertura trae el argumento
+    // "esta semana" o no, y `ModalRoute.of(context)` solo está disponible
+    // una vez que el widget tiene un BuildContext adjunto al árbol de
+    // rutas, lo que pasa recién en didChangeDependencies, no en initState.
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeArgsApplied) return;
+    _routeArgsApplied = true;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args == ReportsScreen.argThisWeek) {
+      _isThisWeekView = true;
+      _dateRange = _thisWeekRange();
+    }
+
     _loadSessions();
     _loadTodaySummary();
+  }
+
+  /// Lunes (ISO) de la semana en curso hasta hoy -- mismo criterio de
+  /// "lunes=inicio de semana" que odometer_capture_service.dart's mondayOf()
+  /// ya usa para los checkpoints semanales de odómetro, para que "esta
+  /// semana" signifique lo mismo en toda la app.
+  static DateTimeRange _thisWeekRange() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    return DateTimeRange(start: monday, end: now);
   }
 
   Future<void> _loadTodaySummary() async {
@@ -459,12 +503,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         elevation: 0,
-        title: Text(
-          appState.tr('reports').toUpperCase(),
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              appState.tr('reports').toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            // Marca la apertura desde la notificación de resumen semanal
+            // (ver ReportsScreen.argThisWeek) -- sin esto, alguien que
+            // toca "tu resumen semanal está listo" y ve un rango que no
+            // reconoce ("¿por qué hasta hoy y no todo el mes?") no tiene
+            // forma de saber que SÍ es justo lo que pidió, solo acotado.
+            if (_isThisWeekView)
+              Text(
+                appState.tr('this_week'),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+          ],
         ),
         iconTheme: IconThemeData(
             color: isDark ? Colors.white : const Color(0xFF0F172A)),
@@ -493,7 +557,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
               );
               if (picked != null) {
-                setState(() => _dateRange = picked);
+                // El usuario eligió un rango a mano -- ya no es "la vista
+                // de esta semana" que abrió la notificación, aunque el
+                // rango elegido coincida por casualidad.
+                setState(() {
+                  _dateRange = picked;
+                  _isThisWeekView = false;
+                });
                 _loadSessions();
               }
             },

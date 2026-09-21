@@ -23,6 +23,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../routes/app_routes.dart';
 import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
+import '../screens/reports_screen.dart';
 import '../theme/app_colors.dart';
 
 class NotificationService {
@@ -282,8 +283,14 @@ class NotificationService {
 
   void _onNotificationTapped(NotificationResponse response) {
     if (response.id == _weeklySummaryNotificationId) {
+      // BUG FIX (pedido explícito, "no hay ningún resumen de la semana que
+      // lo respalde"): antes abría Reports en blanco (su default de 12
+      // meses), sin ninguna relación con "esta semana" que el aviso
+      // prometía. Ahora pasa el argumento que ReportsScreen usa para
+      // arrancar acotado a lunes-hoy de la semana en curso -- ver su
+      // propio comentario en ReportsScreen.argThisWeek.
       final nav = navigatorKey?.currentState;
-      nav?.pushNamed(AppRoutes.reports);
+      nav?.pushNamed(AppRoutes.reports, arguments: ReportsScreen.argThisWeek);
     }
     // La de "viaje olvidado" no navega a ningún lado en particular — el
     // usuario ya ve el estado de tracking apenas abre la app en Dashboard.
