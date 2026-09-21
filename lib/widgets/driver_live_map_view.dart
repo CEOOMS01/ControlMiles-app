@@ -23,6 +23,7 @@
 //     dispose -- lives only as long as this thumbnail is on screen.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -59,6 +60,25 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
   // Solo se usa en modo compact -- ver comentario de arriba.
   StreamSubscription<geo.Position>? _ownPositionSub;
   geo.Position? _ownPosition;
+
+  // BUG FIX (pedido explícito, "el puntero no sigue la dirección... y que
+  // ese seguimiento deje un rastro del viaje"): dos cosas separadas que el
+  // marcador no hacía --
+  //   1. Rotación: el ícono siempre apuntaba "hacia arriba" en el mapa sin
+  //      importar hacia dónde manejaba el driver. Geolocator.Position ya
+  //      trae `heading` (rumbo en grados, 0-360, desde el GPS
+  //      course-over-ground) -- se usa para rotar el ícono con
+  //      Transform.rotate. No disponible en modo full (TrackingController
+  //      .livePosition es solo {lat,lng}, sin heading) -- ese modo sigue
+  //      sin rotar, el resto de este archivo no lo toca.
+  //   2. Rastro: se acumulan los fixes del propio stream de compact en
+  //      _trail SOLO mientras hay un viaje activo (TrackingController
+  //      .currentState != idle) -- en idle (antes/después de un viaje) el
+  //      thumbnail es solo "dónde estoy ahora", sin rastro de un viaje ya
+  //      terminado. Se limpia al volver a idle para que el próximo viaje
+  //      arranque con un rastro vacío, no el del viaje anterior.
+  double? _heading;
+  final List<LatLng> _trail = [];
 
   @override
   void initState() {
@@ -101,7 +121,24 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
           distanceFilter: 15,
         ),
       ).listen((pos) {
-        if (mounted) setState(() => _ownPosition = pos);
+        if (!mounted) return;
+        setState(() {
+          _ownPosition = pos;
+
+          // heading == 0 legítimo (rumbo norte real) es indistinguible de
+          // "sin dato" con esta API, pero -1 sí es un sentinel explícito de
+          // "no disponible" en la mayoría de plugins de geolocalización --
+          // se descarta ese caso, se acepta el resto del rango 0-360.
+          if (pos.heading >= 0 && pos.heading <= 360) {
+            _heading = pos.heading;
+          }
+
+          if (TrackingController.currentState == TrackingState.idle) {
+            _trail.clear();
+          } else {
+            _trail.add(LatLng(pos.latitude, pos.longitude));
+          }
+        });
       });
     } catch (e) {
       debugPrint('[DriverLiveMapView] compact GPS stream error: $e');
@@ -131,7 +168,7 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
     );
   }
 
-  Widget _map(LatLng point, Color primary) {
+  Widget _map(LatLng point, Color primary, {double? heading, List<LatLng>? trail}) {
     // Re-center only once the map is actually built (mapController isn't
     // ready before the first frame) and then follow live --
     // WidgetsBinding.addPostFrameCallback avoids calling .move() during
@@ -162,14 +199,26 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.olympusmont.controlmiles',
           ),
+          if (trail != null && trail.length >= 2)
+            PolylineLayer(
+              polylines: [
+                Polyline(points: trail, color: primary, strokeWidth: 3),
+              ],
+            ),
           MarkerLayer(
             markers: [
               Marker(
                 point: point,
                 width: widget.compact ? 22 : 40,
                 height: widget.compact ? 22 : 40,
-                child: Icon(Icons.navigation_rounded,
-                    color: primary, size: widget.compact ? 18 : 34),
+                // Rotación por rumbo (pedido explícito): sin heading (null,
+                // full mode o compact antes del primer fix con rumbo real)
+                // se queda apuntando hacia arriba, igual que antes.
+                child: Transform.rotate(
+                  angle: (heading ?? 0) * math.pi / 180,
+                  child: Icon(Icons.navigation_rounded,
+                      color: primary, size: widget.compact ? 18 : 34),
+                ),
               ),
             ],
           ),
@@ -185,7 +234,12 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
     if (widget.compact) {
       final pos = _ownPosition;
       if (pos == null) return _emptyState();
-      return _map(LatLng(pos.latitude, pos.longitude), primary);
+      return _map(
+        LatLng(pos.latitude, pos.longitude),
+        primary,
+        heading: _heading,
+        trail: _trail,
+      );
     }
 
     return ValueListenableBuilder(
