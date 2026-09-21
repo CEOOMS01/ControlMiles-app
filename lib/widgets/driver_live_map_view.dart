@@ -122,6 +122,20 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
         ),
       ).listen((pos) {
         if (!mounted) return;
+
+        // BUG FIX (pedido explícito, "el mapa en coordinación con pausa/
+        // reanudar... es ruido visual si está pausado el tracking y el
+        // mapa sigue generando escritura"): el stream de GPS de este
+        // thumbnail es independiente del ciclo de vida del viaje a
+        // propósito (ver comentario de clase, "no quiero que se active
+        // al activar el tracking") -- pero eso significaba que en pausa
+        // el marcador seguía moviéndose y el rastro seguía creciendo,
+        // como si el viaje siguiera corriendo. Ahora, en pausa, el fix
+        // entrante se descarta por completo (ni posición, ni heading, ni
+        // rastro se actualizan) -- el mapa queda congelado exactamente
+        // donde estaba al pausar, y retoma en vivo solo al reanudar.
+        if (TrackingController.currentState == TrackingState.paused) return;
+
         setState(() {
           _ownPosition = pos;
 
