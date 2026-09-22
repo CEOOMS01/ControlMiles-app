@@ -17,13 +17,32 @@
 // later. One REST fetch still happens on open (_load(initial: true)) to
 // populate the initial state; Realtime only pushes CHANGES going forward,
 // it doesn't replace an initial snapshot read.
+//
+// MIGRATION (2026-09-22): flutter_map + raw tile.openstreetmap.org ->
+// MapLibre Native + the same self-hosted PMTiles basemap the web admin
+// dashboard already serves from Cloudflare R2 -- same OSM Tile Usage
+// Policy risk already closed on web (heavy commercial use of OSM's free
+// tile server isn't permitted and can be blocked without notice).
+// Annotations work differently under MapLibre: there's no declarative
+// MarkerLayer/CircleLayer widget list, everything is imperative calls on
+// MapLibreMapController (addCircle/addFill/clearCircles/clearFills),
+// re-synced by hand whenever the underlying vehicle/geofence lists
+// change instead of falling out of a widget rebuild. Vehicle markers are
+// now plain colored dots (matching fleet-map-inner.tsx's own web
+// markers) instead of a truck icon -- MapLibre's Symbol annotations need
+// a registered bitmap image for a custom icon, and a Circle keeps this
+// migration from also becoming an icon-asset-pipeline project. Geofence
+// radii are drawn via addFill on a real geodesic polygon (see
+// lib/util/geo_circle.dart), not Circle's pixel-based radius, so a 500m
+// zone is still actually 500m regardless of zoom -- same fix already
+// applied on the web dashboard's own geofence map.
 
 import 'dart:async';
+import 'dart:math' show Point;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -33,6 +52,9 @@ import '../models/vehicle_geofence.dart';
 import '../services/geofence_service.dart';
 import '../services/organization_service.dart';
 import '../errors/app_error.dart';
+import '../util/geo_circle.dart';
+
+const String _pmtilesStyleAsset = 'assets/map/pmtiles_style.json';
 
 class FleetLiveMapScreen extends StatefulWidget {
   const FleetLiveMapScreen({super.key});
@@ -44,7 +66,7 @@ class FleetLiveMapScreen extends StatefulWidget {
 class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
   final _organizationService = OrganizationService();
   final _geofenceService = GeofenceService();
-  final _mapController = MapController();
+  MapLibreMapController? _mapController;
 
   List<Vehicle> _vehicles = [];
   List<VehicleGeofence> _selectedVehicleGeofences = [];
@@ -52,6 +74,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
   Vehicle? _selectedVehicle;
   bool _isLoading = true;
   bool _isPlacingGeofence = false;
+  bool _didCenterOnce = false;
   RealtimeChannel? _channel;
 
   @override
@@ -107,6 +130,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
       if (index != -1) _vehicles[index] = updated;
       if (_selectedVehicle?.id == updated.id) _selectedVehicle = updated;
     });
+    _syncVehicleMarkers();
   }
 
   void _onGeofenceAlertRealtimeInsert(PostgresChangePayload payload) {
@@ -146,8 +170,14 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
         _isLoading = false;
       });
 
-      if (initial && selected != null && selected.hasLiveLocation) {
-        _mapController.move(LatLng(selected.lastLatitude!, selected.lastLongitude!), 13);
+      await _syncVehicleMarkers();
+      await _syncGeofenceFills();
+
+      if (initial && selected != null && selected.hasLiveLocation && !_didCenterOnce) {
+        _didCenterOnce = true;
+        await _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(selected.lastLatitude!, selected.lastLongitude!), 13),
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -159,12 +189,52 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
     final geofences = await _geofenceService.listForVehicle(vehicle.id);
     if (!mounted) return;
     setState(() => _selectedVehicleGeofences = geofences);
+    await _syncVehicleMarkers();
+    await _syncGeofenceFills();
     if (vehicle.hasLiveLocation) {
-      _mapController.move(LatLng(vehicle.lastLatitude!, vehicle.lastLongitude!), 13);
+      await _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(vehicle.lastLatitude!, vehicle.lastLongitude!), 13),
+      );
     }
   }
 
-  Future<void> _onMapTap(TapPosition tapPosition, LatLng point) async {
+  Future<void> _syncVehicleMarkers() async {
+    final controller = _mapController;
+    if (controller == null) return;
+    await controller.clearCircles();
+    final primary = Theme.of(context).colorScheme.primary;
+    for (final v in _vehicles.where((v) => v.hasLiveLocation)) {
+      final isSelected = v.id == _selectedVehicle?.id;
+      await controller.addCircle(
+        CircleOptions(
+          geometry: LatLng(v.lastLatitude!, v.lastLongitude!),
+          circleRadius: isSelected ? 9 : 7,
+          circleColor: isSelected ? '#B91C1C' : '#${primary.toARGB32().toRadixString(16).substring(2)}',
+          circleStrokeColor: '#FFFFFF',
+          circleStrokeWidth: 2,
+        ),
+        {'vehicleId': v.id},
+      );
+    }
+  }
+
+  Future<void> _syncGeofenceFills() async {
+    final controller = _mapController;
+    if (controller == null) return;
+    await controller.clearFills();
+    await controller.clearLines();
+    for (final g in _selectedVehicleGeofences.where((g) => g.isActive)) {
+      final ring = circlePolygon(g.centerLatitude, g.centerLongitude, g.radiusMeters);
+      await controller.addFill(
+        FillOptions(geometry: [ring], fillColor: '#2C6C99', fillOpacity: 0.12),
+      );
+      await controller.addLine(
+        LineOptions(geometry: ring, lineColor: '#2C6C99', lineWidth: 2),
+      );
+    }
+  }
+
+  Future<void> _onMapClick(Point<double> point, LatLng coordinates) async {
     if (!_isPlacingGeofence || _selectedVehicle == null) return;
     setState(() => _isPlacingGeofence = false);
 
@@ -180,13 +250,14 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
         vehicleId: _selectedVehicle!.id,
         organizationId: _selectedVehicle!.organizationId!,
         name: result['name'] as String,
-        centerLatitude: point.latitude,
-        centerLongitude: point.longitude,
+        centerLatitude: coordinates.latitude,
+        centerLongitude: coordinates.longitude,
         radiusMeters: result['radius'] as double,
       );
       final geofences = await _geofenceService.listForVehicle(_selectedVehicle!.id);
       if (!mounted) return;
       setState(() => _selectedVehicleGeofences = geofences);
+      await _syncGeofenceFills();
     } catch (e) {
       if (mounted) {
         final appError = AppError.from(e);
@@ -213,9 +284,11 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final primary = Theme.of(context).colorScheme.primary;
 
     final vehiclesWithLocation = _vehicles.where((v) => v.hasLiveLocation).toList();
+    final initialTarget = vehiclesWithLocation.isNotEmpty
+        ? LatLng(vehiclesWithLocation.first.lastLatitude!, vehiclesWithLocation.first.lastLongitude!)
+        : const LatLng(37.7749, -122.4194);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -283,53 +356,21 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
                 Expanded(
                   child: Stack(
                     children: [
-                      FlutterMap(
-                        mapController: _mapController,
-                        options: MapOptions(
-                          initialCenter: vehiclesWithLocation.isNotEmpty
-                              ? LatLng(vehiclesWithLocation.first.lastLatitude!, vehiclesWithLocation.first.lastLongitude!)
-                              : const LatLng(37.7749, -122.4194),
-                          initialZoom: vehiclesWithLocation.isNotEmpty ? 13 : 4,
-                          onTap: _onMapTap,
+                      MapLibreMap(
+                        styleString: _pmtilesStyleAsset,
+                        initialCameraPosition: CameraPosition(
+                          target: initialTarget,
+                          zoom: vehiclesWithLocation.isNotEmpty ? 13 : 4,
                         ),
-                        children: [
-                          TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.olympusmont.controlmiles',
-                          ),
-                          CircleLayer(
-                            circles: [
-                              for (final g in _selectedVehicleGeofences)
-                                if (g.isActive)
-                                  CircleMarker(
-                                    point: LatLng(g.centerLatitude, g.centerLongitude),
-                                    radius: g.radiusMeters,
-                                    useRadiusInMeter: true,
-                                    color: primary.withValues(alpha: 0.15),
-                                    borderStrokeWidth: 2,
-                                    borderColor: primary,
-                                  ),
-                            ],
-                          ),
-                          MarkerLayer(
-                            markers: [
-                              for (final v in vehiclesWithLocation)
-                                Marker(
-                                  point: LatLng(v.lastLatitude!, v.lastLongitude!),
-                                  width: 42,
-                                  height: 42,
-                                  child: GestureDetector(
-                                    onTap: () => _selectVehicle(v),
-                                    child: Icon(
-                                      Icons.local_shipping_rounded,
-                                      color: v.id == _selectedVehicle?.id ? Colors.red.shade700 : primary,
-                                      size: 34,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
+                        onMapClick: _onMapClick,
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                          controller.onCircleTapped.add(_onCircleTapped);
+                        },
+                        onStyleLoadedCallback: () async {
+                          await _syncVehicleMarkers();
+                          await _syncGeofenceFills();
+                        },
                       ),
                       if (_isPlacingGeofence)
                         Positioned(
@@ -363,6 +404,13 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
                   : appState.tr('fleet_live_map_add_geofence')),
             ),
     );
+  }
+
+  void _onCircleTapped(Circle circle) {
+    final vehicleId = circle.data?['vehicleId'] as String?;
+    if (vehicleId == null) return;
+    final vehicle = _vehicles.firstWhereOrNull((v) => v.id == vehicleId);
+    if (vehicle != null) _selectVehicle(vehicle);
   }
 }
 

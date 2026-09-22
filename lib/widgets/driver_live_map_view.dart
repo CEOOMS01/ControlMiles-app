@@ -21,18 +21,32 @@
 //     do. Compact mode instead opens its OWN Geolocator position stream,
 //     independent of trip state, started in initState and cancelled in
 //     dispose -- lives only as long as this thumbnail is on screen.
+//
+// MIGRATION (2026-09-22): flutter_map + raw tile.openstreetmap.org ->
+// MapLibre Native + the same self-hosted PMTiles basemap used everywhere
+// else in the app now (see fleet_live_map_screen.dart's own header
+// comment for the full OSM-policy reasoning). The rotating "you are
+// here" puck stays a plain Flutter Icon + Transform.rotate overlaid at
+// the map's fixed center -- NOT a MapLibre Symbol annotation -- since a
+// Symbol needs a registered bitmap icon and this widget only ever shows
+// one point (this driver, nowhere else), so a screen-fixed overlay that
+// the map recenters under is both simpler and the standard "my location
+// puck" pattern most nav UIs already use. The trip trail, which DOES
+// need to track real geography as the map pans, is a real MapLibre Line
+// annotation (controller.addLine), not a widget.
 
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
+
+const String _pmtilesStyleAsset = 'assets/map/pmtiles_style.json';
 
 class DriverLiveMapView extends StatefulWidget {
   // BUG FIX (pedido explícito, "mapa en tiempo real al lado de la card de
@@ -54,8 +68,9 @@ class DriverLiveMapView extends StatefulWidget {
 }
 
 class _DriverLiveMapViewState extends State<DriverLiveMapView> {
-  final _mapController = MapController();
+  MapLibreMapController? _mapController;
   bool _didCenterOnce = false;
+  Line? _trailLine;
 
   // Solo se usa en modo compact -- ver comentario de arriba.
   StreamSubscription<geo.Position>? _ownPositionSub;
@@ -114,6 +129,7 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
         ),
       );
       if (mounted) setState(() => _ownPosition = first);
+      _recenter(LatLng(first.latitude, first.longitude));
 
       _ownPositionSub = geo.Geolocator.getPositionStream(
         locationSettings: const geo.LocationSettings(
@@ -153,9 +169,34 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
             _trail.add(LatLng(pos.latitude, pos.longitude));
           }
         });
+        _recenter(LatLng(pos.latitude, pos.longitude));
+        _syncTrail();
       });
     } catch (e) {
       debugPrint('[DriverLiveMapView] compact GPS stream error: $e');
+    }
+  }
+
+  Future<void> _recenter(LatLng point) async {
+    final controller = _mapController;
+    if (controller == null) return;
+    if (!_didCenterOnce) {
+      _didCenterOnce = true;
+      await controller.moveCamera(CameraUpdate.newLatLngZoom(point, 16));
+    } else {
+      await controller.animateCamera(CameraUpdate.newLatLng(point));
+    }
+  }
+
+  Future<void> _syncTrail() async {
+    final controller = _mapController;
+    if (controller == null || _trail.length < 2) return;
+    if (_trailLine == null) {
+      _trailLine = await controller.addLine(
+        LineOptions(geometry: _trail, lineColor: '#2C6C99', lineWidth: 3),
+      );
+    } else {
+      await controller.updateLine(_trailLine!, LineOptions(geometry: _trail));
     }
   }
 
@@ -182,59 +223,49 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
     );
   }
 
-  Widget _map(LatLng point, Color primary, {double? heading, List<LatLng>? trail}) {
-    // Re-center only once the map is actually built (mapController isn't
-    // ready before the first frame) and then follow live --
-    // WidgetsBinding.addPostFrameCallback avoids calling .move() during
-    // this same build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _mapController.move(point, _didCenterOnce ? _mapController.camera.zoom : 16);
-      _didCenterOnce = true;
-    });
-
+  Widget _map(LatLng point, Color primary, {double? heading}) {
+    // Recentra en cada build con una posición nueva -- en modo compact ya
+    // lo hace el propio listener del stream (_recenter después de cada
+    // fix), pero en modo full (ValueListenableBuilder sobre
+    // TrackingController.livePosition) este es el único punto donde una
+    // posición nueva llega, así que el seguimiento en vivo tiene que
+    // salir de acá. postFrameCallback porque el controller de un mapa
+    // recién creado no está listo hasta después de este mismo build.
+    if (!widget.compact) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _recenter(point));
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: point,
-          initialZoom: 16,
-          // Thumbnail no debe competir por el gesto con el InkWell no-op
-          // que lo envuelve (ver dashboard_screen.dart) -- sin esto, un
-          // drag sobre el thumbnail paneaba el mapa en vez de quedarse
-          // quieto como una vista de solo lectura.
-          interactionOptions: widget.compact
-              ? const InteractionOptions(flags: InteractiveFlag.none)
-              : const InteractionOptions(),
-        ),
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.olympusmont.controlmiles',
+          MapLibreMap(
+            styleString: _pmtilesStyleAsset,
+            initialCameraPosition: CameraPosition(target: point, zoom: 16),
+            // Thumbnail no debe competir por el gesto con el InkWell no-op
+            // que lo envuelve (ver dashboard_screen.dart) -- sin esto, un
+            // drag sobre el thumbnail paneaba el mapa en vez de quedarse
+            // quieto como una vista de solo lectura.
+            rotateGesturesEnabled: !widget.compact,
+            scrollGesturesEnabled: !widget.compact,
+            tiltGesturesEnabled: !widget.compact,
+            zoomGesturesEnabled: !widget.compact,
+            doubleClickZoomEnabled: !widget.compact,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              _didCenterOnce = true;
+            },
+            onStyleLoadedCallback: _syncTrail,
           ),
-          if (trail != null && trail.length >= 2)
-            PolylineLayer(
-              polylines: [
-                Polyline(points: trail, color: primary, strokeWidth: 3),
-              ],
+          IgnorePointer(
+            // Rotación por rumbo (pedido explícito): sin heading (null,
+            // full mode o compact antes del primer fix con rumbo real)
+            // se queda apuntando hacia arriba, igual que antes.
+            child: Transform.rotate(
+              angle: (heading ?? 0) * math.pi / 180,
+              child: Icon(Icons.navigation_rounded,
+                  color: primary, size: widget.compact ? 18 : 34),
             ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: point,
-                width: widget.compact ? 22 : 40,
-                height: widget.compact ? 22 : 40,
-                // Rotación por rumbo (pedido explícito): sin heading (null,
-                // full mode o compact antes del primer fix con rumbo real)
-                // se queda apuntando hacia arriba, igual que antes.
-                child: Transform.rotate(
-                  angle: (heading ?? 0) * math.pi / 180,
-                  child: Icon(Icons.navigation_rounded,
-                      color: primary, size: widget.compact ? 18 : 34),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -248,12 +279,7 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
     if (widget.compact) {
       final pos = _ownPosition;
       if (pos == null) return _emptyState();
-      return _map(
-        LatLng(pos.latitude, pos.longitude),
-        primary,
-        heading: _heading,
-        trail: _trail,
-      );
+      return _map(LatLng(pos.latitude, pos.longitude), primary, heading: _heading);
     }
 
     return ValueListenableBuilder(

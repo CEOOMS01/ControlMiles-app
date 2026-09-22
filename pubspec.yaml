@@ -111,12 +111,18 @@ dependencies:
   # match the version already forced below in dependency_overrides.
   timezone: ^0.11.0
 
-  # --- Fleet Phase 5: live map (OpenStreetMap tiles -- no API key/billing
-  # account needed, unlike google_maps_flutter, which would have required
-  # an external Google Cloud credential from the user before this could
-  # even run) ---
-  flutter_map: ^8.1.1
-  latlong2: ^0.9.1
+  # --- Fleet live map (2026-09-22, replaces flutter_map + raw
+  # tile.openstreetmap.org): same OSM Tile Usage Policy risk already
+  # closed on the web dashboard (heavy commercial use of OSM's free tile
+  # server isn't allowed, can be blocked without notice) -- moved onto
+  # MapLibre Native + the same self-hosted PMTiles basemap the web admin
+  # dashboard already serves from Cloudflare R2 (assets/map/
+  # pmtiles_style.json, generated from the same @protomaps/basemaps style
+  # the web app uses, so both surfaces render identically). MapLibre
+  # Native handles the pmtiles:// protocol natively on Android/iOS as of
+  # its 2026 releases -- no custom protocol handler needed, unlike the
+  # web/JS build which needs the `pmtiles` npm package's Protocol shim.
+  maplibre_gl: ^0.26.0
   # Was already present transitively (via flutter_test etc.) but declaring
   # it directly since fleet_live_map_screen.dart imports it for firstOrNull
   # -- relying on an undeclared transitive resolution isn't guaranteed by
@@ -193,6 +199,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/map/
 
 # ============================================================
 # APP ICON CONFIGURATION
