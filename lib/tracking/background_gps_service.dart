@@ -25,5 +25,10 @@ class BackgroundGpsService {
 
   static Future<void> stopTracking() => TraceletEngine.stopTracking();
 
+  static Future<void> refreshNotificationDistance() =>
+      TraceletEngine.refreshNotificationDistance();
+
+  static Future<void> resyncNotification() => TraceletEngine.resyncNotification();
+
   static bool get isRunning => TraceletEngine.isRunning;
 }

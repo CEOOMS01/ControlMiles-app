@@ -29,6 +29,10 @@
     <!-- Local Notifications (recordatorio de viaje olvidado + resumen semanal) -->
     <!-- Requerido en Android 13+ para mostrar notificaciones. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Android 16+: lets the tracking notification be presented as a Live
+         Update (status-bar chip / lock-screen live notification / Now Bar).
+         Normal permission, no runtime prompt. Ignored on older versions. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
 
     <!-- BUG FIX (pedido explícito, 2026-09-18): el recordatorio de tracking
          pausado SÍ es time-critical; existe exactamente para avisar a un
@@ -129,6 +133,14 @@
                     android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
+
+        <!-- Starts the Live Update promoter with the app process (also when only
+             the background tracking service is brought back). Holds no data. -->
+        <provider
+            android:name=".LiveUpdateInitProvider"
+            android:authorities="${applicationId}.liveupdate-init"
+            android:exported="false"
+            android:initOrder="100"/>
 
         <!-- Geolocator Foreground Service -->
         <service

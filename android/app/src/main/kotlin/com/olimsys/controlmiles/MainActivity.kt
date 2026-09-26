@@ -19,9 +19,11 @@ import io.flutter.plugin.common.MethodChannel
 // reports this one as granted regardless of the real Settings toggle.
 class MainActivity : FlutterActivity() {
     private val channelName = "controlmiles/gig_app_detection"
+    private val liveUpdateChannelName = "controlmiles/live_update"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        registerLiveUpdateChannel(flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
@@ -32,6 +34,20 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
                     "getForegroundPackage" -> result.success(getForegroundPackage())
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun registerLiveUpdateChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, liveUpdateChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "ensureRunning" -> {
+                        LiveUpdatePromoter.ensureRunning(applicationContext)
+                        result.success(null)
+                    }
+                    "canPromote" -> result.success(LiveUpdatePromoter.canPromote(applicationContext))
                     else -> result.notImplemented()
                 }
             }

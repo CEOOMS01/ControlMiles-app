@@ -1487,23 +1487,27 @@ class _DashboardScreenState extends State<DashboardScreen>
     // that doesn't apply to them.
     final isFleetDriver = appState.isFleetDriver;
 
+    // BUG FIX (silencioso, reportado por el usuario): antes TODA la card
+    // estaba envuelta en un InkWell que navegaba a VehicleScreen, así que
+    // tocar el timer, las millas o el mapa también abría el menú de vehículo.
+    // Ahora la navegación vive SOLO en la zona de vehículo (aquí, la fila
+    // "agregar vehículo"); las estadísticas del viaje y el mapa no reaccionan.
     if (_activeVehicle == null) {
-      return InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: isFleetDriver ? null : _goToVehicleProfile,
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              headerRow,
-              Divider(height: 1, color: borderColor),
-              Padding(
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            headerRow,
+            Divider(height: 1, color: borderColor),
+            InkWell(
+              onTap: isFleetDriver ? null : _goToVehicleProfile,
+              child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: isFleetDriver
                     ? Text(appState.tr('fleet_no_vehicle_assigned'))
@@ -1519,24 +1523,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ],
                       ),
               ),
-              tripStatsSection,
-            ],
-          ),
+            ),
+            tripStatsSection,
+          ],
         ),
       );
     }
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: isFleetDriver ? null : _goToVehicleProfile,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor),
-        ),
-        child: Column(
+    // Sin InkWell exterior: solo el bloque de vehículo (más abajo) navega.
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             headerRow,
@@ -1669,7 +1671,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             tripStatsSection,
           ],
         ),
-      ),
     );
   }
 

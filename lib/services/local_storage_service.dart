@@ -37,6 +37,15 @@ class LocalStorageService {
   // borrando todo lo manejado antes del reinicio.
   static const String _keySectionDurationSeconds = '${_prefix}section_duration_seconds';
 
+  // BUG FIX (duración se reiniciaba al cerrar la app deslizándola): además de
+  // la base confirmada hace falta saber CUÁNDO empezó el tramo de manejo
+  // activo actual (epoch ms). Sin esto, al recuperar, el reloj arrancaba de
+  // "ahora" y se perdía todo lo manejado desde el último inicio/reanudación,
+  // mientras el cronómetro de la notificación (dibujado por Android desde el
+  // inicio real) seguía contando -- de ahí el desfase. Ausente mientras el
+  // viaje está en pausa. Ver tracking/run_segment_anchor.dart.
+  static const String _keyRunSegmentStartedAtMs = '${_prefix}run_segment_started_at_ms';
+
   // =============================================
   // GUARDAR CHECKPOINT (se llama frecuentemente)
   // =============================================
@@ -50,10 +59,14 @@ class LocalStorageService {
     required double totalSessionMiles,
     required double totalSectionMiles,
     required bool isPaused,
+    int? runSegmentStartedAtMs,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
     await Future.wait([
+      runSegmentStartedAtMs == null
+          ? prefs.remove(_keyRunSegmentStartedAtMs)
+          : prefs.setInt(_keyRunSegmentStartedAtMs, runSegmentStartedAtMs),
       prefs.setString(_keyActiveSessionId, sessionId),
       prefs.setString(_keyActiveSectionId, sectionId),
       prefs.setString(_keyUserId, userId),
@@ -130,6 +143,7 @@ class LocalStorageService {
         'totalSessionMiles': prefs.getDouble(_keyTotalSessionMiles) ?? 0.0,
         'totalSectionMiles': prefs.getDouble(_keyTotalSectionMiles) ?? 0.0,
         'isPaused': prefs.getBool(_keyIsPaused) ?? false,
+        'runSegmentStartedAtMs': prefs.getInt(_keyRunSegmentStartedAtMs),
         'lastSyncTime': prefs.getString(_keyLastSyncTime),
         'hasOfflineData': (await getOfflineBuffer()).isNotEmpty,
       };
@@ -151,6 +165,7 @@ class LocalStorageService {
       _keyGigApp,
       _keySectionStartTime,
       _keySectionDurationSeconds,
+      _keyRunSegmentStartedAtMs,
       _keyTotalSessionMiles,
       _keyTotalSectionMiles,
       _keyIsPaused,

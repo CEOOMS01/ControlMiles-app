@@ -1,3 +1,4 @@
+import 'dart:async';
 // Olympus Mont Systems LLC - ControlMiles
 // lib/tracking/tracking_controller.dart
 // VERSIÓN ALINEADA CON BASE DE DATOS v3 + SessionSection limpio
@@ -12,6 +13,7 @@ import '../services/audit_service.dart';
 import '../services/cgc_governance_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/vehicle_service.dart';
+import 'run_segment_anchor.dart';
 import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
@@ -853,6 +855,10 @@ class TrackingController {
 
       await _saveLocalCheckpoint();
 
+      // La sección nueva arranca en 00:00:00 / 0 mi: la notificación debe
+      // reiniciar su cronómetro y distancia junto con la tarjeta.
+      unawaited(BackgroundGpsService.resyncNotification());
+
       await AuditService.logEvent(
         sessionId: activeSessionId!,
         sectionId: activeSection!.id,
@@ -1013,7 +1019,7 @@ class TrackingController {
     // hay sesión activa, la recuperación deja todo en null/idle y el guard
     // de abajo descarta el tick igual, sin efectos secundarios.
     if (activeSection == null) {
-      await _recoverActiveState(startGps: false);
+      await _recoverActiveState(startGps: false, throttleDb: true);
     }
 
     if (activeSection == null || currentState != TrackingState.running) return;
@@ -1093,6 +1099,11 @@ class TrackingController {
           _totalSessionMiles,
         );
 
+        // Distancia en la notificación persistente (máx. 1 vez por minuto,
+        // ver tracking_notification.dart). No se espera: un fallo o demora
+        // acá nunca debe frenar el registro del viaje.
+        unawaited(BackgroundGpsService.refreshNotificationDistance());
+
         final hasConnection = await _hasGoodConnection();
         if (!hasConnection) {
           await LocalStorageService.saveOfflineBuffer(
@@ -1130,6 +1141,11 @@ class TrackingController {
       totalSessionMiles: _totalSessionMiles,
       totalSectionMiles: _totalSectionMiles,
       isPaused: currentState == TrackingState.paused,
+      // Cuándo arrancó el tramo de manejo activo (null en pausa): sin esto
+      // la duración se reinicia al recuperar tras cerrar la app.
+      runSegmentStartedAtMs: currentState == TrackingState.running
+          ? _runSegmentStartedAt?.millisecondsSinceEpoch
+          : null,
     );
   }
 
@@ -1207,7 +1223,23 @@ class TrackingController {
   // startGps: true) como reactivamente desde processGpsTick() cuando un
   // tick llega con activeSection == null (startGps: false, porque un tick
   // real ya es la prueba de que el plugin de GPS está corriendo).
-  static Future<void> _recoverActiveState({required bool startGps}) async {
+  // BUG FIX (bateria/datos con auto-detect armado): mientras auto-detect esta
+  // armado SIN viaje, el motor entrega un punto GPS cada ~10 m al conducir, y
+  // cada uno llegaba aqui con activeSection == null: sin checkpoint local se
+  // iba al respaldo de base de datos, una consulta de red por punto (y un
+  // clearAllCheckpoint) durante todo el trayecto, sin ningun viaje que
+  // recuperar. La recuperacion LOCAL (barata) sigue corriendo en cada tick;
+  // solo la consulta a la DB disparada por ticks se limita a una vez cada 2
+  // min cuando la ultima ya confirmo que no hay viaje. Un fallo de red NO
+  // arma la espera (se reintenta en el siguiente tick), y el arranque de la
+  // app (startGps: true) nunca se limita.
+  static DateTime? _lastTickDbNoTripAt;
+  static const Duration _tickDbRecoveryCooldown = Duration(minutes: 2);
+
+  static Future<void> _recoverActiveState({
+    required bool startGps,
+    bool throttleDb = false,
+  }) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       _resetState();
@@ -1261,6 +1293,14 @@ class TrackingController {
       // seguir al fallback de DB completo de abajo.
     }
 
+    if (throttleDb) {
+      final last = _lastTickDbNoTripAt;
+      if (last != null &&
+          DateTime.now().difference(last) < _tickDbRecoveryCooldown) {
+        return;
+      }
+    }
+
     // Recuperar desde base de datos (fuente de verdad completa)
     try {
       // BUG FIX (2026-09-16, hallazgo de auditoría): esto usaba
@@ -1289,9 +1329,13 @@ class TrackingController {
       final session = sessions.isNotEmpty ? sessions.first : null;
 
       if (session == null) {
+        // Confirmado: no hay viaje abierto. Los ticks no vuelven a preguntar
+        // durante _tickDbRecoveryCooldown.
+        _lastTickDbNoTripAt = DateTime.now();
         _resetState();
         return;
       }
+      _lastTickDbNoTripAt = null;
 
       activeSessionId = session['id'];
       _totalSessionMiles = (session['total_miles'] as num?)?.toDouble() ?? 0.0;
@@ -1316,8 +1360,15 @@ class TrackingController {
         // BUG FIX #3: igual que en _applyRecoveredCheckpointFields — el
         // reloj de manejo activo arranca de "ahora"; la base ya viene
         // correcta desde SessionSection.fromMap (total_duration_seconds).
+        // Sin checkpoint local no hay inicio de tramo guardado; para una
+        // sección que nunca se pausó (base 0) su propio start_time es el
+        // inicio exacto del tramo (ver run_segment_anchor.dart).
         _runSegmentStartedAt = currentState == TrackingState.running
-            ? DateTime.now()
+            ? restoreRunSegmentStart(
+                now: DateTime.now(),
+                sectionStart: activeSection?.startTime,
+                baseSeconds: activeSection?.totalDurationSeconds ?? 0,
+              )
             : null;
 
         if (currentState == TrackingState.running && startGps) {
@@ -1427,8 +1478,21 @@ class TrackingController {
     // recuperar — no hace falta reconstruir pausas históricas porque la
     // base (activeSection.totalDurationSeconds) ya viene descontada, tanto
     // si se hidrató localmente como desde la DB.
+    //
+    // BUG FIX (reportado en vivo: cerré la app deslizándola y el timer de la
+    // notificación y el de la app quedaron desincronizados): "ahora" a secas
+    // perdía todo el tiempo manejado desde el último inicio/reanudación --
+    // una duración de 3 h sin pausas volvía a 00:00:00. Ahora se restaura el
+    // inicio real del tramo guardado en el checkpoint (ver
+    // run_segment_anchor.dart), el mismo instante del que parte el cronómetro
+    // de la notificación.
     _runSegmentStartedAt = currentState == TrackingState.running
-        ? DateTime.now()
+        ? restoreRunSegmentStart(
+            now: DateTime.now(),
+            persistedMs: localState['runSegmentStartedAtMs'] as int?,
+            sectionStart: activeSection?.startTime,
+            baseSeconds: activeSection?.totalDurationSeconds ?? 0,
+          )
         : null;
   }
 
