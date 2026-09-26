@@ -23,6 +23,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/vehicle_makes.dart';
+import '../data/vehicle_models.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../models/maintenance_record.dart';
@@ -52,7 +53,10 @@ class _VehicleScreenState extends State<VehicleScreen>
   bool _isLoading = false;
   bool _addingVehicle = false;
 
+  // _modelController sigue existiendo: es donde acaba el modelo escrito a
+  // mano, tanto cuando la marca no tiene catálogo como cuando se elige "Otro".
   final TextEditingController _modelController = TextEditingController();
+  String? _selectedModel;
   final TextEditingController _colorController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
@@ -318,6 +322,53 @@ class _VehicleScreenState extends State<VehicleScreen>
     }
   }
 
+  /// El campo "modelo": desplegable cuando la marca tiene catálogo, texto
+  /// libre cuando no (marca sin lista, o la marca escrita a mano). Elegir
+  /// "Otro" dentro del desplegable abre el texto libre debajo, igual que hace
+  /// "Otra" con la marca.
+  Widget _buildModelField(AppState appState) {
+    final models = vehicleModelsFor(_selectedMake);
+
+    // Sin marca elegida todavía no hay nada que ofrecer: un desplegable vacío
+    // se vería roto, así que se deshabilita y lo dice.
+    if (_selectedMake == null) {
+      return DropdownButtonFormField<String>(
+        initialValue: null,
+        decoration: InputDecoration(labelText: appState.tr('vehicle_model')),
+        hint: Text(appState.tr('vehicle_model_pick_make_first')),
+        items: const [],
+        onChanged: null,
+      );
+    }
+
+    if (models.isEmpty) {
+      return TextField(
+        controller: _modelController,
+        decoration: InputDecoration(labelText: appState.tr('vehicle_model')),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedModel,
+      decoration: InputDecoration(labelText: appState.tr('vehicle_model')),
+      hint: Text(appState.tr('vehicle_model_hint')),
+      isExpanded: true,
+      items: [
+        ...models.map((m) => DropdownMenuItem(value: m, child: Text(m))),
+        // El centinela no se traduce en la lista de datos; aquí sí, igual que
+        // kOtherVehicleMake.
+        DropdownMenuItem(
+          value: kOtherVehicleModel,
+          child: Text(appState.tr('vehicle_model_other')),
+        ),
+      ],
+      onChanged: (v) => setState(() {
+        _selectedModel = v;
+        if (v != kOtherVehicleModel) _modelController.clear();
+      }),
+    );
+  }
+
   Future<void> _addVehicle(AppState appState) async {
     final userId = _userId;
     if (userId == null) return;
@@ -325,6 +376,14 @@ class _VehicleScreenState extends State<VehicleScreen>
     final resolvedMake = _selectedMake == kOtherVehicleMake
         ? _customMakeController.text.trim()
         : (_selectedMake ?? '');
+
+    // El modelo sale del desplegable salvo que se haya elegido "Otro" o que
+    // la marca no tenga catálogo; en ambos casos vale lo escrito a mano.
+    final hasModelCatalog = vehicleModelsFor(_selectedMake).isNotEmpty;
+    final resolvedModel =
+        (hasModelCatalog && _selectedModel != null && _selectedModel != kOtherVehicleModel)
+            ? _selectedModel!
+            : _modelController.text.trim();
 
     if (resolvedMake.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -370,7 +429,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       await _vehicleService.addVehicle(
         userId: userId,
         make: resolvedMake,
-        model: _modelController.text.trim(),
+        model: resolvedModel,
         color: _colorController.text.trim(),
         year: int.tryParse(_yearController.text.trim()),
         odometer: double.tryParse(_mileageController.text.trim()),
@@ -383,6 +442,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       );
 
       _selectedMake = null;
+      _selectedModel = null;
       _customMakeController.clear();
       _modelController.clear();
       _colorController.clear();
@@ -681,11 +741,16 @@ class _VehicleScreenState extends State<VehicleScreen>
                             child: Text(m == kOtherVehicleMake ? appState.tr('vehicle_make_other') : m),
                           ))
                       .toList(),
-                  onChanged: (v) => setState(() => _selectedMake = v),
+                  onChanged: (v) => setState(() {
+                    _selectedMake = v;
+                    // Un modelo de la marca anterior no vale para la nueva.
+                    _selectedModel = null;
+                    _modelController.clear();
+                  }),
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: TextField(controller: _modelController, decoration: InputDecoration(labelText: appState.tr('vehicle_model')))),
+              Expanded(child: _buildModelField(appState)),
             ],
           ),
           if (_selectedMake == kOtherVehicleMake) ...[
@@ -693,6 +758,13 @@ class _VehicleScreenState extends State<VehicleScreen>
             TextField(
               controller: _customMakeController,
               decoration: InputDecoration(labelText: appState.tr('specify_make')),
+            ),
+          ],
+          if (_selectedModel == kOtherVehicleModel) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _modelController,
+              decoration: InputDecoration(labelText: appState.tr('specify_model')),
             ),
           ],
           const SizedBox(height: 12),
