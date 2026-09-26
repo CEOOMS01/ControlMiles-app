@@ -492,6 +492,8 @@ const Map<String, String> deTexts = {
   'fleet_no_vehicle_assigned': 'Noch kein Fahrzeug zugewiesen',
   'fleet_invite_dialog_title': 'Fahrer einladen',
   'fleet_invite_send': 'Einladung senden',
+  'fleet_invite_sent': 'Einladung gesendet. Die Person erscheint als Fahrer, sobald sie annimmt.',
+  'fleet_invite_email_failed': 'Der Fahrer wurde hinzugefügt, aber die E-Mail wurde nicht gesendet. Senden Sie sie im Web-Dashboard erneut.',
   'fleet_assign_vehicle_title': 'Fahrzeug zuweisen',
   'fleet_vehicle_already_assigned': 'Bereits einem anderen Fahrer zugewiesen',
   'fleet_invite_driver': 'Fahrer einladen',

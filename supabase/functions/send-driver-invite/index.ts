@@ -80,8 +80,28 @@ async function isRateLimited(clientId: string): Promise<boolean> {
 // transaccional genérico. Tabla + estilos inline a propósito -- es lo único
 // que Outlook/Gmail/Apple Mail renderizan de forma consistente; CSS externo
 // o flexbox/grid no son opciones seguras en HTML de email.
-function buildEmailHtml(orgName: string, inviteUrl: string): string {
+// 2026-09-26: a fleet driver signs in on the app with their CM-D#### ID plus
+// the password they choose (not their email), yet the email never said what
+// that ID is -- the admin saw it on the roster, the driver did not. It is
+// printed here now (the slot is reserved when the invite is created), and the
+// wording follows the role actually invited instead of always saying "driver".
+function roleLabel(role: string | null | undefined): string {
+  return role === 'admin' ? 'an admin' : role === 'operator' ? 'an operator' : 'a driver';
+}
+
+function buildEmailHtml(
+  orgName: string,
+  inviteUrl: string,
+  driverId: string | null,
+  role: string | null,
+): string {
   const safeOrgName = orgName.replace(/[<>&]/g, '');
+  const safeDriverId = (driverId ?? '').replace(/[^A-Za-z0-9-]/g, '');
+  const idBlock = safeDriverId
+    ? `<p style="margin:16px 0 0 0; padding:12px 14px; background-color:#faf6ee; border:1px solid #e3d9c4; border-radius:10px; font-size:14px; line-height:1.5; color:#211c14;">
+                Your driver ID is <strong style="font-family:Menlo,Consolas,monospace; letter-spacing:0.04em;">${safeDriverId}</strong>. In the app you sign in with this ID and the password you choose when you accept.
+              </p>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,8 +137,9 @@ function buildEmailHtml(orgName: string, inviteUrl: string): string {
                 You've been invited to join<br>${safeOrgName}
               </h1>
               <p style="margin:16px 0 0 0; font-size:15px; line-height:1.6; color:#6b6250;">
-                <strong style="color:#211c14;">${safeOrgName}</strong> has invited you to join their fleet on ControlMiles as a driver — GPS trip tracking, odometer verification, and mileage records ready for tax season.
+                <strong style="color:#211c14;">${safeOrgName}</strong> has invited you to join their fleet on ControlMiles as ${roleLabel(role)} — GPS trip tracking, odometer verification, and mileage records ready for tax season.
               </p>
+              ${idBlock}
             </td>
           </tr>
           <tr>
@@ -221,7 +242,7 @@ Deno.serve(async (req: Request) => {
     // "authorized to send this specific invite".
     const { data: inviteRow, error: inviteRowError } = await adminClient
       .from('driver_invites')
-      .select('organization_id')
+      .select('organization_id, slot_id, intended_role')
       .eq('token_hash', await sha256Hex(token))
       .maybeSingle();
 
@@ -240,8 +261,30 @@ Deno.serve(async (req: Request) => {
       .eq('is_active', true)
       .maybeSingle();
 
-    if (!membership || !['owner', 'admin'].includes(membership.member_role)) {
-      return respond({ error: 'Only an org admin or owner can send this invite' }, 403);
+    // create_driver_invite / resend_driver_invite let an OPERATOR create and
+    // re-issue driver invitations, but this check only allowed owner/admin, so
+    // an operator's invitation was created and then the email failed with 403.
+    // Same hierarchy as those RPCs: operator or above; admin/operator
+    // invitations additionally need the same seniority they needed to create.
+    const senderRole = membership?.member_role;
+    if (!membership || !['owner', 'admin', 'operator'].includes(senderRole)) {
+      return respond({ error: 'Only an org admin, owner, or operator can send this invite' }, 403);
+    }
+    if (inviteRow.intended_role === 'admin' && senderRole !== 'owner') {
+      return respond({ error: 'Only the organization owner can send an admin invitation' }, 403);
+    }
+    if (inviteRow.intended_role === 'operator' && senderRole === 'operator') {
+      return respond({ error: 'Only an org admin or owner can send an operator invitation' }, 403);
+    }
+
+    let driverId: string | null = null;
+    if (inviteRow.slot_id) {
+      const { data: slot } = await adminClient
+        .from('fleet_driver_slots')
+        .select('display_id')
+        .eq('id', inviteRow.slot_id)
+        .maybeSingle();
+      driverId = slot?.display_id ?? null;
     }
 
     const inviteUrl = `${INVITE_LINK_BASE}/${token}`;
@@ -256,7 +299,7 @@ Deno.serve(async (req: Request) => {
         from: `ControlMiles <${INVITE_SENDER_EMAIL}>`,
         to: [resolved.email],
         subject: `${resolved.organization_name} invited you to ControlMiles`,
-        html: buildEmailHtml(resolved.organization_name, inviteUrl),
+        html: buildEmailHtml(resolved.organization_name, inviteUrl, driverId, inviteRow.intended_role),
       }),
     });
 

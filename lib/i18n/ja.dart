@@ -724,6 +724,8 @@ const Map<String, String> jaTexts = {
   'fleet_no_vehicle_assigned': '車両はまだ割り当てられていません',
   'fleet_invite_dialog_title': 'ドライバーを招待',
   'fleet_invite_send': '招待を送信',
+  'fleet_invite_sent': '招待を送信しました。承諾するとドライバーとして表示されます。',
+  'fleet_invite_email_failed': 'ドライバーは追加されましたが、メールが送信されませんでした。Webダッシュボードから再送してください。',
   'fleet_assign_vehicle_title': '車両を割り当て',
   'fleet_vehicle_already_assigned': 'すでに他のドライバーに割り当て済み',
   'fleet_invite_driver': 'ドライバーを招待',

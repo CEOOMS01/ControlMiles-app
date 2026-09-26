@@ -492,6 +492,8 @@ const Map<String, String> ptTexts = {
   'fleet_no_vehicle_assigned': 'Nenhum veículo atribuído ainda',
   'fleet_invite_dialog_title': 'Convidar motorista',
   'fleet_invite_send': 'Enviar convite',
+  'fleet_invite_sent': 'Convite enviado. A pessoa aparecerá como motorista assim que aceitar.',
+  'fleet_invite_email_failed': 'O motorista foi adicionado, mas o e-mail não foi enviado. Reenvie pelo painel web.',
   'fleet_assign_vehicle_title': 'Atribuir veículo',
   'fleet_vehicle_already_assigned': 'Já atribuído a outro motorista',
   'fleet_invite_driver': 'Convidar motorista',

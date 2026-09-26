@@ -1,9 +1,14 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/screens/fleet_roster_screen.dart
 //
-// Fleet Phase 2: admin/owner-only. Invite drivers by email (existing
-// ControlMiles accounts only -- see OrganizationService.inviteMemberByEmail)
-// and assign fleet vehicles to active drivers.
+// Fleet Phase 2: admin/owner-only. Invite drivers by email and assign fleet
+// vehicles to active drivers.
+//
+// 2026-09-26: inviting is the SAME flow as the web dashboard now (shared
+// database): name + email, and the invitation is emailed -- for people with or
+// without a ControlMiles account (OrganizationService.inviteDriver). It used
+// to call inviteMemberByEmail, which only worked for emails that already had
+// an account and sent nothing.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +17,7 @@ import '../logic/app_state.dart';
 import '../models/organization.dart';
 import '../models/vehicle.dart';
 import '../services/organization_service.dart';
+import '../utils/invite_validation.dart';
 
 class FleetRosterScreen extends StatefulWidget {
   const FleetRosterScreen({super.key});
@@ -59,50 +65,113 @@ class _FleetRosterScreenState extends State<FleetRosterScreen> {
   }
 
   Future<void> _showInviteDialog(AppState appState) async {
-    final controller = TextEditingController();
+    final firstController = TextEditingController();
+    final lastController = TextEditingController();
+    final emailController = TextEditingController();
     String? error;
+    var sending = false;
 
-    await showDialog(
+    final outcome = await showDialog<DriverInviteOutcome>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           title: Text(appState.tr('fleet_invite_dialog_title')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(hintText: appState.tr('email')),
-              ),
-              if (error != null) ...[
-                const SizedBox(height: 8),
-                Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: firstController,
+                  enabled: !sending,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(hintText: appState.tr('name')),
+                ),
+                TextField(
+                  controller: lastController,
+                  enabled: !sending,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(hintText: appState.tr('last_name')),
+                ),
+                TextField(
+                  controller: emailController,
+                  enabled: !sending,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(hintText: appState.tr('email')),
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ],
               ],
-            ],
+            ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
             TextButton(
-              onPressed: () async {
-                final email = controller.text.trim();
-                if (email.isEmpty) return;
-                try {
-                  final orgId = _orgId;
-                  if (orgId == null) return;
-                  await _organizationService.inviteMemberByEmail(orgId, email);
-                  if (context.mounted) Navigator.pop(ctx);
-                  await _load();
-                } catch (e) {
-                  setDialogState(() => error = e.toString());
-                }
-              },
-              child: Text(appState.tr('fleet_invite_send')),
+              onPressed: sending ? null : () => Navigator.pop(ctx),
+              child: Text(appState.tr('cancel')),
+            ),
+            TextButton(
+              onPressed: sending
+                  ? null
+                  : () async {
+                      final problem = validateInviteInput(
+                        firstName: firstController.text,
+                        lastName: lastController.text,
+                        email: emailController.text,
+                      );
+                      if (problem != null) {
+                        setDialogState(() => error = appState.tr(switch (problem) {
+                              InviteInputProblem.firstName ||
+                              InviteInputProblem.lastName =>
+                                'field_required',
+                              InviteInputProblem.email =>
+                                emailController.text.trim().isEmpty
+                                    ? 'field_required'
+                                    : 'invalid_email',
+                            }));
+                        return;
+                      }
+                      final orgId = _orgId;
+                      if (orgId == null) return;
+                      setDialogState(() {
+                        sending = true;
+                        error = null;
+                      });
+                      try {
+                        final result = await _organizationService.inviteDriver(
+                          organizationId: orgId,
+                          email: emailController.text,
+                          firstName: firstController.text,
+                          lastName: lastController.text,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx, result);
+                      } catch (e) {
+                        setDialogState(() {
+                          sending = false;
+                          error = inviteErrorMessage(e);
+                        });
+                      }
+                    },
+              child: sending
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(appState.tr('fleet_invite_send')),
             ),
           ],
         ),
       ),
     );
+
+    firstController.dispose();
+    lastController.dispose();
+    emailController.dispose();
+
+    if (outcome == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(appState.tr(outcome == DriverInviteOutcome.sent
+          ? 'fleet_invite_sent'
+          : 'fleet_invite_email_failed')),
+    ));
+    await _load();
   }
 
   Future<void> _showAssignVehicleDialog(AppState appState, OrganizationMember driver) async {

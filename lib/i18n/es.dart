@@ -590,6 +590,8 @@ const Map<String, String> esTexts = {
   'fleet_no_vehicle_assigned': 'Aún no tienes vehículo asignado',
   'fleet_invite_dialog_title': 'Invitar a un conductor',
   'fleet_invite_send': 'Enviar invitación',
+  'fleet_invite_sent': 'Invitación enviada. Aparecerá como conductor cuando la acepte.',
+  'fleet_invite_email_failed': 'Se agregó al conductor, pero el correo no salió. Reenvíalo desde el panel web.',
   'fleet_assign_vehicle_title': 'Asignar vehículo',
   'fleet_vehicle_already_assigned': 'Ya asignado a otro conductor',
   'fleet_invite_driver': 'Invitar conductor',

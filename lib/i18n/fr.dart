@@ -497,6 +497,8 @@ const Map<String, String> frTexts = {
   'fleet_no_vehicle_assigned': 'Aucun véhicule assigné pour le moment',
   'fleet_invite_dialog_title': 'Inviter un chauffeur',
   'fleet_invite_send': 'Envoyer l\'invitation',
+  'fleet_invite_sent': 'Invitation envoyée. Il apparaîtra comme chauffeur dès qu\'il l\'aura acceptée.',
+  'fleet_invite_email_failed': 'Le chauffeur a été ajouté, mais l\'e-mail n\'est pas parti. Renvoyez-le depuis le tableau de bord web.',
   'fleet_assign_vehicle_title': 'Assigner un véhicule',
   'fleet_vehicle_already_assigned': 'Déjà assigné à un autre chauffeur',
   'fleet_invite_driver': 'Inviter un chauffeur',

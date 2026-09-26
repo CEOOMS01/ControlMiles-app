@@ -735,6 +735,8 @@ const Map<String, String> hiTexts = {
   'fleet_no_vehicle_assigned': 'अभी तक कोई वाहन नहीं सौंपा गया',
   'fleet_invite_dialog_title': 'ड्राइवर को आमंत्रित करें',
   'fleet_invite_send': 'निमंत्रण भेजें',
+  'fleet_invite_sent': 'आमंत्रण भेज दिया गया। स्वीकार करते ही वे ड्राइवर के रूप में दिखेंगे।',
+  'fleet_invite_email_failed': 'ड्राइवर जोड़ा गया, लेकिन ईमेल नहीं भेजा जा सका। वेब डैशबोर्ड से दोबारा भेजें।',
   'fleet_assign_vehicle_title': 'वाहन सौंपें',
   'fleet_vehicle_already_assigned': 'पहले से किसी अन्य ड्राइवर को सौंपा गया',
   'fleet_invite_driver': 'ड्राइवर आमंत्रित करें',

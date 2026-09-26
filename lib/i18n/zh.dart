@@ -492,6 +492,8 @@ const Map<String, String> zhTexts = {
   'fleet_no_vehicle_assigned': '尚未分配车辆',
   'fleet_invite_dialog_title': '邀请司机',
   'fleet_invite_send': '发送邀请',
+  'fleet_invite_sent': '邀请已发送。对方接受后将显示为司机。',
+  'fleet_invite_email_failed': '司机已添加，但邮件未发送成功。请在网页后台重新发送。',
   'fleet_assign_vehicle_title': '分配车辆',
   'fleet_vehicle_already_assigned': '已分配给其他司机',
   'fleet_invite_driver': '邀请司机',

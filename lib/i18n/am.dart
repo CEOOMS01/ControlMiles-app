@@ -720,6 +720,8 @@ const Map<String, String> amTexts = {
   'fleet_no_vehicle_assigned': 'እስካሁን ተሽከርካሪ አልተመደበም',
   'fleet_invite_dialog_title': 'ሹፌር ጋብዝ',
   'fleet_invite_send': 'ግብዣ ላክ',
+  'fleet_invite_sent': 'ግብዣው ተልኳል። ሲቀበሉ እንደ ሹፌር ይታያሉ።',
+  'fleet_invite_email_failed': 'ሹፌሩ ተጨምሯል፣ ግን ኢሜይሉ አልተላከም። ከድር ዳሽቦርድ እንደገና ይላኩ።',
   'fleet_assign_vehicle_title': 'ተሽከርካሪ መድብ',
   'fleet_vehicle_already_assigned': 'አስቀድሞ ለሌላ ሹፌር ተመድቧል',
   'fleet_invite_driver': 'ሹፌር ጋብዝ',

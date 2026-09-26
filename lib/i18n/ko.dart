@@ -725,6 +725,8 @@ const Map<String, String> koTexts = {
   'fleet_no_vehicle_assigned': '아직 배정된 차량이 없습니다',
   'fleet_invite_dialog_title': '드라이버 초대',
   'fleet_invite_send': '초대 보내기',
+  'fleet_invite_sent': '초대를 보냈습니다. 수락하면 드라이버로 표시됩니다.',
+  'fleet_invite_email_failed': '드라이버가 추가되었지만 이메일이 전송되지 않았습니다. 웹 대시보드에서 다시 보내세요.',
   'fleet_assign_vehicle_title': '차량 배정',
   'fleet_vehicle_already_assigned': '이미 다른 드라이버에게 배정됨',
   'fleet_invite_driver': '드라이버 초대',

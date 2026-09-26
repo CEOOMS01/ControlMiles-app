@@ -611,6 +611,8 @@ const Map<String, String> enTexts = {
   'fleet_no_vehicle_assigned': 'No vehicle assigned yet',
   'fleet_invite_dialog_title': 'Invite a driver',
   'fleet_invite_send': 'Send invite',
+  'fleet_invite_sent': 'Invitation sent. They will show as a driver once they accept.',
+  'fleet_invite_email_failed': 'The driver was added, but the email did not go out. Resend it from the web dashboard.',
   'fleet_assign_vehicle_title': 'Assign a vehicle',
   'fleet_vehicle_already_assigned': 'Already assigned to another driver',
   'fleet_invite_driver': 'Invite driver',

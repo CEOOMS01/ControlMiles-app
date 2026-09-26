@@ -16,6 +16,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/organization.dart';
 import '../models/vehicle.dart';
 
+/// Resultado de invitar a un conductor por correo.
+enum DriverInviteOutcome { sent, emailFailed }
+
 class OrganizationService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -93,6 +96,40 @@ class OrganizationService {
       params: {'p_org_id': organizationId, 'p_email': email},
     );
     return result as String;
+  }
+
+  /// Invita a un conductor por correo (mismo flujo que el dashboard web, misma
+  /// base de datos): create_driver_invite crea la invitacion y reserva su ID
+  /// CM-D####, y send-driver-invite envia el correo con el enlace. Funciona
+  /// para personas SIN cuenta todavia -- a diferencia de inviteMemberByEmail
+  /// (arriba), que solo sirve para correos ya registrados y no envia ningun
+  /// correo. Si la invitacion se crea pero el correo falla, devuelve
+  /// [DriverInviteOutcome.emailFailed] (el conductor ya existe en la lista
+  /// del dashboard web, desde donde se puede reenviar); si la creacion misma
+  /// falla, lanza -- el mensaje del servidor ya es una frase legible.
+  Future<DriverInviteOutcome> inviteDriver({
+    required String organizationId,
+    required String email,
+    required String firstName,
+    required String lastName,
+  }) async {
+    final token = await _supabase.rpc(
+      'create_driver_invite',
+      params: {
+        'p_org_id': organizationId,
+        'p_email': email.trim(),
+        'p_first_name': firstName.trim(),
+        'p_last_name': lastName.trim(),
+        'p_intended_role': 'driver',
+      },
+    ) as String;
+
+    try {
+      await _supabase.functions.invoke('send-driver-invite', body: {'token': token});
+      return DriverInviteOutcome.sent;
+    } catch (_) {
+      return DriverInviteOutcome.emailFailed;
+    }
   }
 
   /// Acepta (accept=true) o rechaza (accept=false) una invitación

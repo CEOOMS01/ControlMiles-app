@@ -737,6 +737,8 @@ const Map<String, String> arTexts = {
   'fleet_no_vehicle_assigned': 'لم يتم تعيين مركبة بعد',
   'fleet_invite_dialog_title': 'دعوة سائق',
   'fleet_invite_send': 'إرسال الدعوة',
+  'fleet_invite_sent': 'تم إرسال الدعوة. سيظهر كسائق بعد قبولها.',
+  'fleet_invite_email_failed': 'تمت إضافة السائق لكن لم يُرسل البريد. أعد الإرسال من لوحة التحكم على الويب.',
   'fleet_assign_vehicle_title': 'تعيين مركبة',
   'fleet_vehicle_already_assigned': 'معيّنة بالفعل لسائق آخر',
   'fleet_invite_driver': 'دعوة سائق',
