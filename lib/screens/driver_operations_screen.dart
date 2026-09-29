@@ -17,6 +17,8 @@
 // different, deliberately restricted operational flow, not a
 // duplicate of Dashboard's gig-app-carousel/reports/settings surface.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,6 +30,8 @@ import '../routes/app_routes.dart';
 import '../models/vehicle_inspection.dart';
 import '../services/vehicle_service.dart';
 import '../services/inspection_service.dart';
+import '../services/shift_block_service.dart';
+import '../errors/app_error.dart';
 import '../tracking/tracking_controller.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
@@ -65,18 +69,236 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   bool _openAssignmentMode = false;
   String? _openModeVehicleId;
 
+  // Hourly classes (fleet shift blocks, 2026-09-29). Null until loaded, and
+  // empty (hasBlocks == false) for a fleet without a class schedule today --
+  // then this screen behaves exactly as before (one trip = one turno).
+  final _shiftService = ShiftBlockService();
+  ShiftDay? _shiftDay;
+  Timer? _shiftTicker;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _tripIsActive = TrackingController.currentState != TrackingState.idle;
     _loadVehicle();
+    _loadShiftDay();
+    // "Open to start" / "Missed" depend on the clock, not only on data.
+    _shiftTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && (_shiftDay?.hasBlocks ?? false)) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _shiftTicker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _loadShiftDay() async {
+    final orgId = context.read<AppState>().defaultOrgId;
+    if (orgId == null) return;
+    try {
+      final day = await _shiftService.getMyDay(orgId);
+      if (mounted) setState(() => _shiftDay = day);
+    } catch (e) {
+      debugPrint('[DriverOps] shift day load failed: $e');
+    }
+  }
+
+  /// TrackingActionButton.startShiftBlock: null = no class schedule (plain
+  /// trip); '' = nothing can start now (driver told why); else the class id.
+  Future<String?> _startShiftBlock() async {
+    final appState = context.read<AppState>();
+    await _loadShiftDay();
+    final day = _shiftDay;
+    if (day == null || !day.hasBlocks) return null;
+    final now = DateTime.now();
+    final block = day.openToStart(now);
+    if (block == null) {
+      final next = day.nextUpcoming(now);
+      final msg = next == null
+          ? appState.tr('shift_no_more_classes')
+          : appState.tr('shift_next_opens_at').replaceFirst('{time}', _clock(next.opensAt));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+      return '';
+    }
+    await _shiftService.start(block.id);
+    return block.id;
+  }
+
+  Future<void> _onShiftBlockStartFailed(String blockId) async {
+    try {
+      await _shiftService.abortStart(blockId);
+    } catch (e) {
+      debugPrint('[DriverOps] abort class start failed: $e');
+    }
+    await _loadShiftDay();
+  }
+
+  /// Class schedule: ending a trip ends the class and keeps the day open
+  /// (no GPS until the next class). Without a schedule: the old turno end.
+  Future<void> _onTripEnded() async {
+    final orgId = context.read<AppState>().defaultOrgId;
+    if (orgId != null) {
+      try {
+        final day = await _shiftService.getMyDay(orgId);
+        final current = day.inProgress;
+        if (current != null) await _shiftService.end(current.id);
+        if (day.hasBlocks) {
+          await _loadShiftDay();
+          if (mounted) setState(() => _tripIsActive = false);
+          return;
+        }
+      } catch (e) {
+        debugPrint('[DriverOps] ending class failed: $e');
+      }
+    }
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.shiftEnded, (route) => false);
+  }
+
+  Future<void> _endDay(AppState appState) async {
+    final orgId = appState.defaultOrgId;
+    if (orgId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('shift_end_day_confirm_title')),
+        content: Text(appState.tr('shift_end_day_confirm_body')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(appState.tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(appState.tr('shift_end_day'))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _shiftService.closeDay(orgId);
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.shiftEnded, (route) => false);
+    } catch (e) {
+      if (!mounted) return;
+      final err = AppError.from(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err.display(appState.tr(err.messageKey))), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  String _clock(DateTime t) {
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    return '$h:${t.minute.toString().padLeft(2, '0')} ${t.hour < 12 ? 'AM' : 'PM'}';
+  }
+
+  String _wallClock(String hhmmss) {
+    final parts = hhmmss.split(':');
+    final hour = int.parse(parts[0]);
+    final h = hour % 12 == 0 ? 12 : hour % 12;
+    return '$h:${parts[1]} ${hour < 12 ? 'AM' : 'PM'}';
+  }
+
+  Widget _buildClassesCard(
+    AppState appState,
+    Color cardColor,
+    Color textColor,
+    Color subTextColor,
+    Color borderColor,
+  ) {
+    final day = _shiftDay!;
+    final now = DateTime.now();
+    final primary = Theme.of(context).colorScheme.primary;
+
+    ({String label, Color color}) chip(ShiftBlock b) {
+      final late = (b.lateMinutes ?? 0) > 0
+          ? ' · ${appState.tr('shift_class_late').replaceFirst('{min}', '${b.lateMinutes}')}'
+          : '';
+      if (b.isInProgress) return (label: appState.tr('shift_class_in_progress') + late, color: primary);
+      if (b.isDone) return (label: appState.tr('shift_class_done') + late, color: Colors.green.shade700);
+      if (b.isMissed(now)) return (label: appState.tr('shift_class_missed'), color: Colors.red.shade700);
+      if (b.isOpenToStart(now)) return (label: appState.tr('shift_class_open'), color: Colors.orange.shade800);
+      return (label: appState.tr('shift_class_scheduled'), color: subTextColor);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appState.tr('shift_classes_today').toUpperCase(),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
+          ),
+          const SizedBox(height: 10),
+          for (final b in day.blocks)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_wallClock(b.startTime)} – ${_wallClock(b.endTime)}',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor),
+                        ),
+                        if ((b.note ?? '').isNotEmpty || b.vehicleText.isNotEmpty)
+                          Text(
+                            [b.note ?? '', b.vehicleText].where((x) => x.isNotEmpty).join(' · '),
+                            style: TextStyle(fontSize: 12, color: subTextColor),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Builder(builder: (_) {
+                    final c = chip(b);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: c.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        c.label,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.color),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          if (day.workdayOpen && !_tripIsActive) ...[
+            const SizedBox(height: 10),
+            Text(appState.tr('shift_between_classes'), style: TextStyle(fontSize: 12, color: subTextColor)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _endDay(appState),
+                icon: const Icon(Icons.logout_rounded),
+                label: Text(appState.tr('shift_end_day')),
+              ),
+            ),
+          ],
+          if (day.workdayClosed) ...[
+            const SizedBox(height: 10),
+            Text(
+              appState.tr('shift_day_closed'),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: subTextColor),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   // Fleet Sprint 3 (revocation, explicit user requirement, 2026-09-09):
@@ -424,7 +646,13 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       ),
                     ),
                   ],
+                  if (_shiftDay?.hasBlocks ?? false) ...[
+                    const SizedBox(height: 20),
+                    _buildClassesCard(appState, cardColor, textColor, subTextColor, borderColor),
+                  ],
                   const SizedBox(height: 28),
+                  // A closed day can't start anything (DB: WORKDAY_ALREADY_CLOSED).
+                  if (!(_shiftDay?.workdayClosed ?? false))
                   Center(
                     child: TrackingActionButton(
                       // A fleet-ops trip has no gig-platform to pick --
@@ -434,7 +662,11 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       // that decision, not ask it via a different UI).
                       selectedGigApp: 'custom',
                       selectedIrsPurpose: 'business',
-                      preSelectedVehicleId: _openModeVehicleId,
+                      // A class's own vehicle wins over the driver's pick.
+                      preSelectedVehicleId:
+                          _shiftDay?.openToStart(DateTime.now())?.vehicleId ?? _openModeVehicleId,
+                      startShiftBlock: _startShiftBlock,
+                      onShiftBlockStartFailed: _onShiftBlockStartFailed,
                       canStart: _canStartTrip,
                       cannotStartMessage: appState.tr('dvir_required_before_start'),
                       onTripStarted: () => setState(() => _tripIsActive = true),
@@ -445,13 +677,10 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       // already resolved (see tracking_action_button.dart's
                       // reordering of this exact callback). Gig's Dashboard
                       // never does this -- scoped to fleet_driver only.
-                      onTripEnded: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          AppRoutes.shiftEnded,
-                          (route) => false,
-                        );
-                      },
+                      // Hourly classes (2026-09-29): with a class schedule,
+                      // ending the trip ends the class and the day stays
+                      // open -- see _onTripEnded.
+                      onTripEnded: _onTripEnded,
                     ),
                   ),
                   if (_tripIsActive) ...[

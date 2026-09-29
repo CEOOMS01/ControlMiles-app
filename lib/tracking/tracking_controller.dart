@@ -177,6 +177,10 @@ class TrackingController {
     // trip through it, since the column was always null regardless of who
     // was driving.
     String? organizationId,
+    // Hourly class (fleet shift block, 2026-09-29): the class this trip
+    // belongs to. Already started server-side (start_shift_block); the
+    // insert trigger tr_sessions_link_shift_block ties the two together.
+    String? shiftBlockId,
     // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): only
     // meaningful alongside organizationId, when that org's
     // vehicle_assignment_mode is 'open' -- the driver picked this vehicle
@@ -230,6 +234,7 @@ class TrackingController {
         "user_id": user.id,
         "vehicle_id": activeVehicle?.id,
         "organization_id": organizationId,
+        if (shiftBlockId != null) "shift_block_id": shiftBlockId,
         "start_time": DateTime.now().toUtc().toIso8601String(),
         "session_status": "active",
         "is_closed": false,

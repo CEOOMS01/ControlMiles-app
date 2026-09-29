@@ -49,6 +49,18 @@ class TrackingActionButton extends StatefulWidget {
   // comment. Always null for Gig and for 'fixed'-mode fleet drivers.
   final String? preSelectedVehicleId;
 
+  // Hourly classes (fleet shift blocks, 2026-09-29): called right before
+  // the trip starts. Starts the class server-side (start_shift_block, which
+  // enforces the start window) and returns its id so the trip is tied to
+  // it; throws when the class can't start (shown like any other error).
+  // Returns null when there is no class schedule -- a plain fleet trip --
+  // and '' when no class can start right now (the caller already told the
+  // driver why), which cancels the start.
+  final Future<String?> Function()? startShiftBlock;
+  // The class was started but the trip then didn't (odometer/GPS step
+  // failed or was abandoned): undo it so the class can be started again.
+  final Future<void> Function(String blockId)? onShiftBlockStartFailed;
+
   const TrackingActionButton({
     super.key,
     required this.selectedGigApp,
@@ -58,6 +70,8 @@ class TrackingActionButton extends StatefulWidget {
     this.canStart,
     this.cannotStartMessage,
     this.preSelectedVehicleId,
+    this.startShiftBlock,
+    this.onShiftBlockStartFailed,
   });
 
   @override
@@ -130,6 +144,8 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             }
             if (!mounted) return;
           }
+          final shiftBlockId = await widget.startShiftBlock?.call();
+          if (!mounted || shiftBlockId == '') return;
           await TrackingController.startTripFlow(
             context: context,
             gigApp: gigApp,
@@ -139,10 +155,13 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             // through at all (RLS visibility for fleet admins).
             organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
             preSelectedVehicleId: appState.isFleetDriver ? widget.preSelectedVehicleId : null,
+            shiftBlockId: shiftBlockId,
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {
             _pulseController.repeat();
             widget.onTripStarted?.call();
+          } else if (shiftBlockId != null) {
+            await widget.onShiftBlockStartFailed?.call(shiftBlockId);
           }
           break;
 

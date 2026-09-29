@@ -49,6 +49,11 @@ Implementations:
 | 413 | Fleet subscription required | Org has no active Starter+ subscription and its 5-day no-subscription trial expired (`fn_org_effective_tier` = 'none') |
 | 414 | Fleet Growth required | Action needs the Growth tier specifically (DVIR, geofencing, live map, open vehicle assignment) |
 | 415 | Odometer below registered | `ODOMETER_BELOW_REGISTERED:<value>` from submit_vehicle_odometer_checkpoint: the reading is lower than the vehicle's recorded odometer (usually the wrong vehicle is selected). Mobile only. |
+| 416 | Class not open yet | `SHIFT_BLOCK_TOO_EARLY:<time>` from start_shift_block: before the class's start window (org `shift_start_window_minutes` before its start). |
+| 417 | Class window closed | `SHIFT_BLOCK_WINDOW_CLOSED`: more than the window after the class start; the admin reschedules it. |
+| 418 | Another class in progress | `SHIFT_BLOCK_ANOTHER_IN_PROGRESS`: the driver already has a class running. |
+| 419 | Workday already closed | `WORKDAY_ALREADY_CLOSED`: the driver ended their day; no more classes today. |
+| 422 | Class still in progress | `WORKDAY_BLOCK_IN_PROGRESS` from close_my_workday: end the current class before ending the day. |
 | 420 | Rate limited | Too many attempts on a rate-limited action |
 | 430 | Duplicate entry | Unique-constraint violation |
 | 440 | Subscriptions not configured | Stripe not yet set up in this environment |
