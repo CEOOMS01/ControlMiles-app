@@ -2,6 +2,7 @@
 // lib/screens/login_screen.dart - PRODUCTION READY + DARK MODE READY
 
 import 'package:flutter/gestures.dart';
+import '../services/login_prefs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -71,11 +72,37 @@ class _LoginScreenState extends State<LoginScreen> {
   // agreement in one checkbox rather than two separate ones.
   bool _agreedToTerms = false;
 
+  // "Remember my email" / "Stay signed in" (2026-09-29) -- see
+  // LoginPrefs' header for the researched rules (identifier only, never
+  // the password; staying signed in is on by default on the phone because
+  // background tracking and auto-detect need a live session).
+  bool _rememberId = false;
+  bool _staySignedIn = true;
+
   @override
   void initState() {
     super.initState();
     _isLoginMode = !widget.startInSignupMode;
     _isDriverIdMode = widget.startInDriverIdMode;
+    _loadLoginPrefs();
+  }
+
+  Future<void> _loadLoginPrefs() async {
+    final prefs = await LoginPrefs.load();
+    if (!mounted) return;
+    setState(() {
+      _rememberId = prefs.remember;
+      _staySignedIn = prefs.staySignedIn;
+      if (prefs.remember) {
+        if (prefs.email != null && _emailController.text.isEmpty) {
+          _emailController.text = prefs.email!;
+        }
+        final id = prefs.driverId;
+        if (id != null && _driverIdController.text.isEmpty) {
+          _driverIdController.text = id.replaceFirst(RegExp('^CM-', caseSensitive: false), '');
+        }
+      }
+    });
   }
 
   @override
@@ -256,6 +283,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _afterSuccessfulAuth(AppState appState) async {
+    if (_isLoginMode) {
+      await LoginPrefs.saveAfterSignIn(
+        remember: _rememberId,
+        email: _isDriverIdMode ? null : _emailController.text.trim(),
+        driverId: _isDriverIdMode ? _driverIdController.text.trim() : null,
+        staySignedIn: _staySignedIn,
+      );
+    }
     await appState.loadFromPrefs();
     // BUG FIX (pedido explícito, user ID cruzado entre cuentas): sin
     // esto, un login dentro del mismo proceso de la app (sin reiniciar)
@@ -352,6 +387,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (!_isLoginMode) ...[
                             _buildAgeTermsCheckbox(appState, isDark),
                             const SizedBox(height: 8),
+                          ],
+                          if (_isLoginMode) ...[
+                            _buildLoginPrefsCheckboxes(appState, isDark),
+                            const SizedBox(height: 4),
                           ],
                           if (_isLoginMode && !_isDriverIdMode) _buildForgotPasswordLink(appState),
                           const SizedBox(height: 32),
@@ -619,6 +658,50 @@ class _LoginScreenState extends State<LoginScreen> {
   // required before signup, combines the 18+ self-attestation the Terms
   // already state with actual agreement to the Terms/Privacy Policy --
   // neither existed as an enforced step before this.
+  Widget _buildLoginPrefsCheckboxes(AppState appState, bool isDark) {
+    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final hintColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
+    Widget row(bool value, ValueChanged<bool> onChanged, String label, [String? hint]) => InkWell(
+          onTap: () => onChanged(!value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: TextStyle(fontSize: 13.5, color: textColor)),
+                      if (hint != null)
+                        Text(hint, style: TextStyle(fontSize: 11.5, height: 1.35, color: hintColor)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return Column(
+      children: [
+        row(
+          _rememberId,
+          (v) => setState(() => _rememberId = v),
+          appState.tr(_isDriverIdMode ? 'remember_my_driver_id' : 'remember_my_email'),
+        ),
+        row(
+          _staySignedIn,
+          (v) => setState(() => _staySignedIn = v),
+          appState.tr('stay_signed_in'),
+          appState.tr('stay_signed_in_hint'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAgeTermsCheckbox(AppState appState, bool isDark) {
     final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
     final linkColor = Theme.of(context).colorScheme.primary;

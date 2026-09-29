@@ -2,6 +2,8 @@
 // lib/views/splash_page.dart
 
 import 'package:flutter/material.dart';
+import '../services/login_prefs.dart';
+import '../services/local_storage_service.dart';
 import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
@@ -44,6 +46,19 @@ class _SplashPageState extends State<SplashPage> {
         return;
       }
 
+      // 1b) "Stay signed in" off (2026-09-29): this splash only runs on a
+      // cold start of the app, i.e. the app was closed -- so the session
+      // ends here. Never while a trip is being recorded: that trip (and
+      // the background tracking behind it) must not be cut off.
+      if (appState.isAuthenticated &&
+          !await LoginPrefs.staySignedIn() &&
+          !await LocalStorageService.hasActiveTrip()) {
+        await appState.signOutAndClear();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        return;
+      }
+
       // 2) Splash SOLO resuelve ruta inicial (SIN permisos aquí)
       // BUG FIX (verificado en DB, Fleet Phase 2): antes esta llamada no
       // pasaba nada de Fleet -- un fleet_admin/fleet_driver que reabría la
@@ -61,6 +76,7 @@ class _SplashPageState extends State<SplashPage> {
         hasSeenRoleChooser: appState.hasSeenRoleChooser,
       );
 
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, targetRoute);
 
     } catch (e) {

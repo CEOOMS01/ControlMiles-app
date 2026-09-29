@@ -234,7 +234,7 @@ class TrackingController {
         "user_id": user.id,
         "vehicle_id": activeVehicle?.id,
         "organization_id": organizationId,
-        if (shiftBlockId != null) "shift_block_id": shiftBlockId,
+        "shift_block_id": ?shiftBlockId,
         "start_time": DateTime.now().toUtc().toIso8601String(),
         "session_status": "active",
         "is_closed": false,
