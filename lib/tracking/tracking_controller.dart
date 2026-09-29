@@ -1547,12 +1547,41 @@ class TrackingController {
       final endLat = AntifraudEngine.lastLat;
       final endLng = AntifraudEngine.lastLng;
 
+      // REAL BUG (found in prod data 2026-09-29): after a gig-app switch
+      // the last section was saved with the WHOLE trip's miles (e.g.
+      // sections 9.56 + 165.30 on a 165.30 mi trip), double-counting the
+      // switched sections in History and the per-app IRS breakdown. The
+      // switched sections' own miles are stored correctly by
+      // switch_gig_app_section, and _totalSessionMiles matches the trip
+      // total -- so the last section can never be more than the trip
+      // total minus what the earlier sections already hold.
+      var sectionMiles = _totalSectionMiles;
+      try {
+        final earlier = await Supabase.instance.client
+            .from('session_sections')
+            .select('total_miles')
+            .eq('session_id', activeSection!.sessionId)
+            .neq('id', activeSection!.id);
+        final earlierMiles = (earlier as List).fold<double>(
+          0,
+          (sum, s) => sum + ((s['total_miles'] as num?)?.toDouble() ?? 0),
+        );
+        if (earlier.isNotEmpty) {
+          final remaining = _totalSessionMiles - earlierMiles;
+          if (sectionMiles > remaining) {
+            sectionMiles = remaining < 0 ? 0 : remaining;
+          }
+        }
+      } catch (e) {
+        _logError('SECTION_MILES_CAP_ERROR', e.toString());
+      }
+
       await Supabase.instance.client
           .from("session_sections")
           .update({
             "section_status": "closed",
             "end_time": DateTime.now().toUtc().toIso8601String(),
-            "total_miles": _totalSectionMiles,
+            "total_miles": sectionMiles,
             "total_duration_seconds": elapsedSeconds,
             "end_latitude": endLat,
             "end_longitude": endLng,
