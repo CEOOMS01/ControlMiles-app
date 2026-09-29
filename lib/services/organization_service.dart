@@ -48,11 +48,23 @@ class OrganizationService {
   Future<List<OrganizationMember>> listMembers(String organizationId) async {
     final data = await _supabase
         .from('organization_members')
-        .select('*, profiles(first_name, last_name, full_name, email, display_id)')
+        .select('*, profiles(first_name, last_name, full_name, email)')
         .eq('organization_id', organizationId)
         .order('joined_at', ascending: true);
+    // Fleet login IDs live only on fleet_driver_slots (claimed_by).
+    final slots = await _supabase
+        .from('fleet_driver_slots')
+        .select('claimed_by, display_id')
+        .eq('organization_id', organizationId)
+        .not('claimed_by', 'is', null);
+    final fleetIds = {
+      for (final s in slots as List) s['claimed_by'] as String: s['display_id'] as String?,
+    };
     return List<Map<String, dynamic>>.from(data)
-        .map(OrganizationMember.fromMap)
+        .map((m) => OrganizationMember.fromMap({
+              ...m,
+              'fleet_display_id': fleetIds[m['user_id']],
+            }))
         .toList();
   }
 

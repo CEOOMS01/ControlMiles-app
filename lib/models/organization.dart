@@ -63,6 +63,12 @@ class OrganizationMember {
 
   bool get isOwnerOrAdmin => memberRole == 'owner' || memberRole == 'admin';
 
+  /// How a driver reads everywhere (user rule, 2026-09-29): "Name / ID".
+  String? get label {
+    if (name != null && displayId != null) return '$name / $displayId';
+    return name ?? displayId;
+  }
+
   static String? _profileName(dynamic profile) {
     if (profile is! Map) return null;
     final parts = [profile['first_name'], profile['last_name']]
@@ -86,7 +92,10 @@ class OrganizationMember {
           ? DateTime.parse(map['joined_at'] as String)
           : null,
       name: _profileName(map['profiles']),
-      displayId: (map['profiles'] as Map?)?['display_id'] as String?,
+      // Fleet login ID (CM-D####) -- set by listMembers from
+      // fleet_driver_slots. profiles.display_id is the personal gig ID
+      // and must not be shown as a fleet driver's ID.
+      displayId: map['fleet_display_id'] as String?,
     );
   }
 }

@@ -299,12 +299,10 @@ class _FleetRosterScreenState extends State<FleetRosterScreen> {
                                         ],
                                       ],
                                     ),
-                                    if (member.name != null) ...[
+                                    if (member.label != null) ...[
                                       const SizedBox(height: 4),
                                       Text(
-                                        member.displayId == null
-                                            ? member.name!
-                                            : '${member.name!} · ${member.displayId}',
+                                        member.label!,
                                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                                       ),
                                     ],
