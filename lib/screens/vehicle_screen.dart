@@ -684,7 +684,7 @@ class _VehicleScreenState extends State<VehicleScreen>
             ],
           ],
         ),
-        subtitle: Text("${v.year ?? ''} • ${v.color ?? ''}"),
+        subtitle: Text([v.year?.toString(), v.color].whereType<String>().where((x) => x.trim().isNotEmpty).join(' • ')),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

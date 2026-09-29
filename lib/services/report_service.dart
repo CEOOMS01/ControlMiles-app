@@ -558,7 +558,8 @@ class ReportService {
   static pw.Widget _buildTotalSummary(double totalMiles, double totalDeduction, String mileageMethod) {
     final totalStr   = totalMiles.toStringAsFixed(2);
     final deductStr  = '\$${totalDeduction.toStringAsFixed(2)}';
-    final methodStr  = mileageMethod == 'actual' ? 'Actual Expenses' : 'Standard Mileage Rate';
+    final isActual   = mileageMethod == 'actual';
+    final methodStr  = isActual ? 'Actual Expenses' : 'Standard Mileage Rate';
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -589,7 +590,14 @@ class ReportService {
                   pw.SizedBox(height: 6),
                   pw.Container(height: 0.5, width: 160, color: PdfColors.grey400),
                   pw.SizedBox(height: 8),
-                  pw.Row(
+                  // Found live 2026-09-29: with "Actual expenses" selected the
+                  // PDF still printed a dollar figure priced at the standard
+                  // mileage rate, under a note saying "Method: Actual
+                  // Expenses" -- contradictory on a tax document. Under the
+                  // actual-expense method the deduction comes from real car
+                  // costs times business use, which miles alone can't price,
+                  // so no dollar figure is shown for it.
+                  if (!isActual) pw.Row(
                     mainAxisSize: pw.MainAxisSize.min,
                     children: [
                       pw.Text('ESTIMATED DEDUCTION:',
@@ -618,7 +626,14 @@ class ReportService {
           pw.SizedBox(
             width: 260,
             child: pw.Text(
-              'Method: $methodStr. Estimated using the IRS 2026 standard mileage rates '
+              isActual
+                  ? 'Method: $methodStr. Under the actual-expense method the deduction is '
+                    'your vehicle costs (gas, repairs, insurance, depreciation...) times '
+                    'the business-use share of your miles; the business miles above are '
+                    'the evidence for that share. No dollar estimate is shown for this '
+                    'method. ControlMiles is not affiliated with or endorsed by the IRS '
+                    'or any official agency — consult a tax professional.'
+                  : 'Method: $methodStr. Estimated using the IRS 2026 standard mileage rates '
               '(\$${(kIrsMileageRateCentsPerMile2026H1 / 100).toStringAsFixed(3)}/mile '
               'Jan 1-Jun 30, \$${(kIrsMileageRateCentsPerMile2026H2 / 100).toStringAsFixed(2)}/mile '
               'Jul 1-Dec 31 — each trip priced at the rate in effect on its own '
