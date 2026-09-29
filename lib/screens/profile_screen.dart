@@ -169,7 +169,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w400,
-                color: Colors.white70,
+                // Was Colors.white70: invisible on the light app bar
+                // (found live 2026-09-29). Follow the app bar's own color.
+                color: (theme.appBarTheme.foregroundColor ??
+                        theme.colorScheme.onSurface)
+                    .withValues(alpha: 0.7),
                 letterSpacing: 1.2,
               ),
             ),
