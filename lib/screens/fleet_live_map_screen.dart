@@ -345,7 +345,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
                         final v = _vehicles[i];
                         final selected = v.id == _selectedVehicle?.id;
                         return ChoiceChip(
-                          label: Text(v.displayName.isEmpty ? v.id.substring(0, 6) : v.displayName),
+                          label: Text(v.label),
                           selected: selected,
                           onSelected: (_) => _selectVehicle(v),
                         );
@@ -510,7 +510,7 @@ class _AlertsSheet extends StatelessWidget {
                     final vehicle = vehicles.where((v) => v.id == alert.vehicleId).firstOrNull;
                     return ListTile(
                       leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                      title: Text(vehicle?.displayName ?? alert.vehicleId.substring(0, 6)),
+                      title: Text(vehicle?.label ?? alert.vehicleId.substring(0, 6)),
                       subtitle: Text('${alert.distanceMeters.round()}m — ${alert.createdAt.toLocal()}'),
                     );
                   },

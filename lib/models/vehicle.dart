@@ -124,4 +124,13 @@ class Vehicle {
 
   /// "Toyota Corolla" — usado en tarjetas/listas donde make+model van juntos.
   String get displayName => '$make $model'.trim();
+
+  /// Label for chips/lists. Found live 2026-09-29: a fleet vehicle with no
+  /// make/model showed as a raw UUID fragment ("3ef1c9"); its CM-T ID is
+  /// the identifier admins actually see everywhere else.
+  String get label {
+    final name = displayName;
+    if (name.isEmpty) return displayId ?? id.substring(0, 6);
+    return displayId == null ? name : '$name ($displayId)';
+  }
 }

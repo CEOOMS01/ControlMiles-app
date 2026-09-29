@@ -169,7 +169,7 @@ class _FleetStateMileageScreenState extends State<FleetStateMileageScreen> {
                       const SizedBox(width: 8),
                       for (final v in _vehicles) ...[
                         ChoiceChip(
-                          label: Text(v.displayName.isEmpty ? v.id.substring(0, 6) : v.displayName),
+                          label: Text(v.label),
                           selected: _selectedVehicleId == v.id,
                           onSelected: (_) {
                             setState(() => _selectedVehicleId = v.id);
