@@ -1,29 +1,23 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/screens/subscription_screen.dart
 //
-// Real Stripe subscription management (see [[project_controlmiles]]).
-// Three-tier model (updated 2026-09-17, restructuring pass):
-// Started (the automatic 15-day free trial, no purchase -- see
-// AppState.isFreeTrialExpired/_freeTrialDays -- 1 vehicle), Basic
-// ($5.99, 1 vehicle, no trial expiry), and Premium ($9.99, up to 5
-// vehicles, adds Automatic Detection on top of everything Basic has,
-// plus its own separate 5-day free trial handled Stripe-side via
-// create-checkout-session's trial_period_days).
-// This screen never collects a card number -- "Upgrade" and "Manage
-// subscription" both call a Supabase edge function that returns a
-// Stripe-hosted URL, opened externally via url_launcher. Payment details
-// go straight to Stripe; this screen only ever reflects
-// AppState.baseEntitled/premiumEntitled, which stripe-webhook keeps in
-// sync server-side.
+// Personal plans, billed natively through Google Play (user decision
+// 2026-09-29: no Stripe in the app; fleet plans stay on Stripe on
+// controlmiles.com). Three-tier model: Started (the automatic 15-day free
+// trial, no purchase -- AppState.isFreeTrialExpired), Basic and Premium
+// (Play subscriptions controlmiles_basic_monthly / _premium_monthly; any
+// Premium free trial is a Play Console offer). Prices shown are Google
+// Play's own, in the buyer's currency. This screen never grants anything:
+// PlayBillingService sends each purchase to verify-play-purchase, which
+// checks it with Google before turning Basic/Premium on.
 
 import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../errors/app_error.dart';
-
 import '../logic/app_state.dart';
+import '../services/play_billing_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -33,77 +27,106 @@ class SubscriptionScreen extends StatefulWidget {
 }
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
-  // Tracks which tier's button is spinning, so tapping Base doesn't
-  // disable Premium's button too (and vice versa).
+  final _billing = PlayBillingService.instance;
+  Map<String, ProductDetails> _products = {};
+  bool _storeAvailable = true;
+  bool _loadingProducts = true;
+  // Which tier's button is spinning while Google Play's sheet is open.
   String? _loadingTier;
 
-  Future<void> _upgrade(AppState appState, String tier) async {
-    if (!mounted) return;
-    setState(() => _loadingTier = tier);
+  @override
+  void initState() {
+    super.initState();
+    _billing.events.addListener(_onBillingEvent);
+    _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _billing.events.removeListener(_onBillingEvent);
+    super.dispose();
+  }
+
+  Future<void> _loadProducts() async {
     try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'create-checkout-session',
-        body: {'tier': tier},
+      final available = await _billing.isAvailable();
+      final products = available ? await _billing.loadProducts() : <String, ProductDetails>{};
+      if (!mounted) return;
+      setState(() {
+        _storeAvailable = available;
+        _products = products;
+        _loadingProducts = false;
+      });
+    } catch (e) {
+      debugPrint('[Subscription] loading Play products failed: $e');
+      if (mounted) setState(() => _loadingProducts = false);
+    }
+  }
+
+  void _onBillingEvent() {
+    final event = _billing.events.value;
+    if (!mounted || event == null) return;
+    final appState = context.read<AppState>();
+    if (event != PlayBillingEvent.pending) setState(() => _loadingTier = null);
+    final message = switch (event) {
+      PlayBillingEvent.verified => appState.tr('purchase_success'),
+      PlayBillingEvent.pending => appState.tr('purchase_pending'),
+      PlayBillingEvent.failed => appState.tr('purchase_failed'),
+      PlayBillingEvent.notConfigured => appState.tr('subscriptions_not_configured'),
+      PlayBillingEvent.canceled => null,
+    };
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(message),
+        backgroundColor: event == PlayBillingEvent.failed ? Colors.red : null,
+      ));
+    }
+  }
+
+  Future<void> _upgrade(AppState appState, String productId) async {
+    final product = _products[productId];
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appState.tr('subscriptions_not_configured'))),
       );
-      await _openReturnedUrl(appState, response.data);
-    } catch (e) {
-      _showError(appState, e);
-    } finally {
-      if (mounted) setState(() => _loadingTier = null);
-    }
-  }
-
-  Future<void> _manageSubscription(AppState appState) async {
-    if (!mounted) return;
-    setState(() => _loadingTier = 'manage');
-    try {
-      final response = await Supabase.instance.client.functions.invoke('create-portal-session');
-      await _openReturnedUrl(appState, response.data);
-    } catch (e) {
-      _showError(appState, e);
-    } finally {
-      if (mounted) setState(() => _loadingTier = null);
-    }
-  }
-
-  Future<void> _openReturnedUrl(AppState appState, dynamic data) async {
-    if (data is Map && data['configured'] == false) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appState.tr('subscriptions_not_configured'))),
-        );
-      }
       return;
     }
-
-    final url = data is Map ? data['url'] as String? : null;
-    if (url == null) {
-      throw Exception(data is Map ? data['error'] : 'no url returned');
-    }
-
-    final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    if (!launched && mounted) {
+    setState(() => _loadingTier = productId);
+    try {
+      await _billing.buy(product);
+    } catch (e) {
+      debugPrint('[Subscription] purchase launch failed: $e');
+      if (!mounted) return;
+      setState(() => _loadingTier = null);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${appState.tr('error')}: could not open browser')),
+        SnackBar(content: Text(appState.tr('purchase_failed')), backgroundColor: Colors.red),
       );
     }
   }
 
-  void _showError(AppState appState, Object e) {
-    if (!mounted) return;
-    // BUG FIX (pedido explícito, 2026-09-09): mostraba el objeto de
-    // excepción crudo ($e) directamente -- en un flujo de pago, texto
-    // crudo de Stripe/Supabase es exactamente lo que no debe verse.
-    // critical:true porque esto es la pantalla de suscripción/pago --
-    // un error no reconocido acá cae en el código 720 (no el 701
-    // genérico), fácil de encontrar en soporte.
-    final appError = AppError.from(e, critical: true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(appError.display(appState.tr(appError.messageKey))),
-        backgroundColor: Colors.red,
-      ),
+  Future<void> _restore(AppState appState) async {
+    setState(() => _loadingTier = 'restore');
+    try {
+      await _billing.restore();
+    } finally {
+      // Restored purchases arrive through the purchase stream; the spinner
+      // only covers the request itself.
+      if (mounted) setState(() => _loadingTier = null);
+    }
+  }
+
+  /// Google Play's own subscription page for this app (cancel, change
+  /// payment method, see renewal date).
+  Future<void> _manageSubscription() async {
+    final uri = Uri.parse(
+      'https://play.google.com/store/account/subscriptions?package=com.olimsys.controlmiles',
     );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  String _priceLabel(String productId, String fallback) {
+    final p = _products[productId];
+    return p == null ? fallback : '${p.price}/mo';
   }
 
   Widget _buildTierCard(
@@ -114,9 +137,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     required String priceLabel,
     required bool isCurrent,
     required bool showUpgrade,
-    required String tier,
+    required String productId,
   }) {
-    final isLoading = _loadingTier == tier;
+    final isLoading = _loadingTier == productId;
 
     return Container(
       width: double.infinity,
@@ -176,7 +199,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: isLoading ? null : () => _upgrade(appState, tier),
+                onPressed: (isLoading || _loadingProducts || !_storeAvailable)
+                    ? null
+                    : () => _upgrade(appState, productId),
                 child: isLoading
                     ? const SizedBox(
                         width: 18,
@@ -261,13 +286,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             isDark: isDark,
             titleKey: 'basic_plan',
             descriptionKey: 'base_plan_description',
-            priceLabel: '\$5.99/mo',
+            priceLabel: _priceLabel(PlayBillingService.basicProductId, '\$5.99/mo'),
             isCurrent: baseEntitled && !premiumEntitled,
             // Premium already includes Base -- no point offering a
             // downgrade-shaped "Upgrade to Base" button to a Premium
             // subscriber.
             showUpgrade: !premiumEntitled,
-            tier: 'base',
+            productId: PlayBillingService.basicProductId,
           ),
           const SizedBox(height: 16),
           _buildTierCard(
@@ -275,24 +300,30 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             isDark: isDark,
             titleKey: 'premium_plan',
             descriptionKey: 'premium_plan_description',
-            priceLabel: '\$9.99/mo',
+            priceLabel: _priceLabel(PlayBillingService.premiumProductId, '\$9.99/mo'),
             isCurrent: premiumEntitled,
             showUpgrade: !premiumEntitled,
-            tier: 'premium',
+            productId: PlayBillingService.premiumProductId,
           ),
+          if (!_loadingProducts && !_storeAvailable) ...[
+            const SizedBox(height: 16),
+            Text(
+              appState.tr('play_store_unavailable'),
+              style: TextStyle(fontSize: 12.5, color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+            ),
+          ],
           if (baseEntitled || premiumEntitled) ...[
             const SizedBox(height: 24),
             OutlinedButton(
-              onPressed: _loadingTier == 'manage' ? null : () => _manageSubscription(appState),
-              child: _loadingTier == 'manage'
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2.2),
-                    )
-                  : Text(appState.tr('manage_subscription')),
+              onPressed: _manageSubscription,
+              child: Text(appState.tr('manage_subscription')),
             ),
           ],
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _loadingTier == 'restore' ? null : () => _restore(appState),
+            child: Text(appState.tr('restore_purchases')),
+          ),
         ],
       ),
     );

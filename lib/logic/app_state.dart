@@ -57,9 +57,9 @@ class AppState extends ChangeNotifier {
   String _accountType = 'gig';
   String? _defaultOrgId;
   // Gates paid Gig features (starting with automatic trip detection).
-  // Real Stripe subscriptions now exist (see [[project_controlmiles]],
-  // stripe-webhook) -- this flag is kept in sync by that webhook, not
-  // manually toggled anymore.
+  // Kept in sync server-side from Google Play subscriptions
+  // (verify-play-purchase / play-rtdn -> recompute_personal_entitlements),
+  // never toggled by the app itself.
   bool _premiumEntitled = false;
   // Base tier ($5.99) -- prep only, per explicit user request
   // (2026-08-28): the schema/webhook track this now so it's ready, but
@@ -152,9 +152,8 @@ class AppState extends ChangeNotifier {
   // ============================================================
   // Explicit user requirement (2026-09-17): Started's free trial shortened
   // from 30 to 15 days as part of the Gig tier restructuring (Basic
-  // $5.99, Premium $9.99 with its own separate 5-day trial -- see
-  // create-checkout-session's trial_period_days for that one, which is
-  // Stripe-side, not this client-side Started clock).
+  // $5.99, Premium $9.99, whose own free trial is a Google Play offer --
+  // not this client-side Started clock).
   static const int _freeTrialDays = 15;
 
   /// True once a Gig, non-exempt, non-subscribed account's 15-day trial

@@ -2,6 +2,7 @@
 // lib/main.dart - PRODUCTION READY (ASSEMBLY POINT + DARK MODE)
 
 import 'dart:async';
+import 'services/play_billing_service.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -181,6 +182,11 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
     super.initState();
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
     _initDeepLinks();
+    // Google Play Billing (2026-09-29): listen from app start so a purchase
+    // finished while the app was closed is still verified and completed.
+    PlayBillingService.instance.start(
+      onVerified: () => context.read<AppState>().fetchUserProfile(),
+    );
   }
 
   Future<void> _initDeepLinks() async {

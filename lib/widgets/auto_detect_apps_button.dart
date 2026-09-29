@@ -91,7 +91,7 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(appState.tr('cancel')),
           ),
-          // Real Stripe subscription flow now exists (see
+          // Real self-serve subscription flow exists (Google Play, see
           // subscription_screen.dart) -- this used to be an OK-only
           // dead end ("contact support"), now it goes straight to the
           // real self-serve upgrade path.
