@@ -201,8 +201,8 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
   Future<void> _syncVehicleMarkers() async {
     final controller = _mapController;
     if (controller == null) return;
-    await controller.clearCircles();
     final primary = Theme.of(context).colorScheme.primary;
+    await controller.clearCircles();
     for (final v in _vehicles.where((v) => v.hasLiveLocation)) {
       final isSelected = v.id == _selectedVehicle?.id;
       await controller.addCircle(
