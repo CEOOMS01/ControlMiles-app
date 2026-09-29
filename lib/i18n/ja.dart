@@ -609,7 +609,7 @@ const Map<String, String> jaTexts = {
   'secure_audit_programs': 'セキュア / 監査 / プログラム',
   'permissions_description': 'ControlMilesが走行を追跡し、正確で証拠能力のあるマイル記録を残すには、これらの権限が必要です。',
   'location_access': '位置情報へのアクセス',
-  'location_desc': '走行の追跡とマイル数の自動計算に使用します。アプリがバックグラウンドにある間も含みます。',
+  'location_desc': "ControlMiles は、アプリが閉じているときや使用していないときも、走行の記録と走行距離の計算のために位置情報を収集します。",
   'camera': 'カメラ',
   'camera_desc': '各走行の証拠としてオドメーターの数値を撮影するために使用します。',
   'motion_detection': 'モーションとアクティビティ',

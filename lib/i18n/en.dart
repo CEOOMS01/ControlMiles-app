@@ -404,7 +404,7 @@ const Map<String, String> enTexts = {
   'secure_audit_programs': 'SECURE / AUDIT / PROGRAMS',
   'permissions_description': 'ControlMiles needs these permissions to track your trips and log accurate, defensible mileage evidence.',
   'location_access': 'Location Access',
-  'location_desc': 'Used to track your trips and calculate mileage automatically, including while the app is in the background.',
+  'location_desc': "ControlMiles collects location data to record your trips and calculate your mileage, even when the app is closed or not in use.",
   'camera': 'Camera',
   'camera_desc': 'Used to capture your odometer reading as evidence for each trip.',
   'motion_detection': 'Motion & Activity',

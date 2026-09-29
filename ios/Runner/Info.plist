@@ -37,7 +37,7 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Used to track your trips and calculate mileage automatically.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>Used to track your trips and calculate mileage automatically, including while the app is in the background.</string>
+		<string>ControlMiles collects location data to record your trips and calculate your mileage, even when the app is closed or not in use.</string>
 		<key>NSMotionUsageDescription</key>
 		<string>Used to detect when you start and stop driving.</string>
 		<key>UIBackgroundModes</key>

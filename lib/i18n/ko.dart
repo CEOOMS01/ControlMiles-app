@@ -610,7 +610,7 @@ const Map<String, String> koTexts = {
   'secure_audit_programs': '보안 / 감사 / 프로그램',
   'permissions_description': 'ControlMiles가 운행을 추적하고 정확하며 입증 가능한 주행 기록을 남기려면 다음 권한이 필요합니다.',
   'location_access': '위치 접근',
-  'location_desc': '운행을 추적하고 주행 거리를 자동으로 계산하는 데 사용되며, 앱이 백그라운드에 있을 때도 포함됩니다.',
+  'location_desc': "ControlMiles는 앱이 닫혀 있거나 사용 중이 아닐 때에도 운행을 기록하고 마일리지를 계산하기 위해 위치 데이터를 수집합니다.",
   'camera': '카메라',
   'camera_desc': '각 운행의 증빙으로 주행거리계 수치를 촬영하는 데 사용됩니다.',
   'motion_detection': '동작 및 활동',

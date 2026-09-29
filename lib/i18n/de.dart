@@ -277,7 +277,7 @@ const Map<String, String> deTexts = {
   'secure_audit_programs': 'SICHER / PRÜFUNG / PROGRAMME',
   'permissions_description': 'ControlMiles benötigt diese Berechtigungen, um deine Fahrten zu verfolgen und genaue, belastbare Kilometernachweise zu erstellen.',
   'location_access': 'Standortzugriff',
-  'location_desc': 'Wird verwendet, um deine Fahrten zu verfolgen und die Kilometer automatisch zu berechnen, auch wenn die App im Hintergrund läuft.',
+  'location_desc': "ControlMiles erfasst Standortdaten, um deine Fahrten aufzuzeichnen und deine Meilen zu berechnen, auch wenn die App geschlossen ist oder nicht verwendet wird.",
   'camera': 'Kamera',
   'camera_desc': 'Wird verwendet, um den Kilometerstand als Nachweis für jede Fahrt zu erfassen.',
   'motion_detection': 'Bewegung & Aktivität',

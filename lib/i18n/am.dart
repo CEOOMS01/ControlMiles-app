@@ -605,7 +605,7 @@ const Map<String, String> amTexts = {
   'secure_audit_programs': 'ደህንነት / ኦዲት / ፕሮግራሞች',
   'permissions_description': 'ControlMiles ጉዞዎችዎን ለመከታተልና ትክክለኛና ተቀባይነት ያለው የማይል ማስረጃ ለመመዝገብ እነዚህ ፈቃዶች ያስፈልጉታል።',
   'location_access': 'የአካባቢ መዳረሻ',
-  'location_desc': 'ጉዞዎችዎን ለመከታተልና ማይሎችን በራስ-ሰር ለማስላት ይጠቅማል፤ መተግበሪያው በጀርባ ሲሠራም ጭምር።',
+  'location_desc': "ControlMiles መተግበሪያው ተዘግቶ ወይም ጥቅም ላይ ሳይውል እንኳ ጉዞዎችዎን ለመመዝገብና ማይልዎን ለማስላት የአካባቢ መረጃ ይሰበስባል።",
   'camera': 'ካሜራ',
   'camera_desc': 'ለእያንዳንዱ ጉዞ ማስረጃ የኦዶሜትር ንባብዎን ለማንሳት ይጠቅማል።',
   'motion_detection': 'እንቅስቃሴና ተግባር',

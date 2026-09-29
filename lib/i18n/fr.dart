@@ -298,7 +298,7 @@ const Map<String, String> frTexts = {
   'secure_audit_programs': 'SÉCURITÉ / AUDIT / PROGRAMMES',
   'permissions_description': 'ControlMiles a besoin de ces permissions pour suivre vos trajets et enregistrer des preuves de kilométrage précises et défendables.',
   'location_access': 'Accès à la localisation',
-  'location_desc': 'Utilisé pour suivre vos trajets et calculer le kilométrage automatiquement, même quand l\'application est en arrière-plan.',
+  'location_desc': "ControlMiles collecte des données de localisation pour enregistrer vos trajets et calculer votre kilométrage, même lorsque l'application est fermée ou non utilisée.",
   'camera': 'Caméra',
   'camera_desc': 'Utilisée pour capturer le relevé du compteur kilométrique comme preuve pour chaque trajet.',
   'motion_detection': 'Mouvement et activité',

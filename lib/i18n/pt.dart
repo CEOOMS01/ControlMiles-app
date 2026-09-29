@@ -290,7 +290,7 @@ const Map<String, String> ptTexts = {
   'secure_audit_programs': 'SEGURANÇA / AUDITORIA / PROGRAMAS',
   'permissions_description': 'O ControlMiles precisa dessas permissões para rastrear suas viagens e registrar evidências de quilometragem precisas e defensáveis.',
   'location_access': 'Acesso à localização',
-  'location_desc': 'Usado para rastrear suas viagens e calcular a quilometragem automaticamente, mesmo com o app em segundo plano.',
+  'location_desc': "O ControlMiles coleta dados de localização para registrar suas viagens e calcular sua quilometragem, mesmo quando o app está fechado ou não está em uso.",
   'camera': 'Câmera',
   'camera_desc': 'Usada para capturar a leitura do odômetro como evidência de cada viagem.',
   'motion_detection': 'Movimento e atividade',

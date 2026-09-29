@@ -290,7 +290,7 @@ const Map<String, String> zhTexts = {
   'secure_audit_programs': '安全 / 审计 / 项目',
   'permissions_description': 'ControlMiles 需要这些权限来追踪您的行程，并记录准确、可靠的里程证据。',
   'location_access': '位置访问',
-  'location_desc': '用于追踪您的行程并自动计算里程，即使应用在后台运行时也是如此。',
+  'location_desc': "ControlMiles 会收集位置数据以记录你的行程并计算里程，即使应用已关闭或未在使用中。",
   'camera': '相机',
   'camera_desc': '用于拍摄里程表读数，作为每次行程的证据。',
   'motion_detection': '运动与活动',

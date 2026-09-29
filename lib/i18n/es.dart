@@ -394,7 +394,7 @@ const Map<String, String> esTexts = {
   'secure_audit_programs': 'SEGURO / AUDITORÍA / PROGRAMAS',
   'permissions_description': 'ControlMiles necesita estos permisos para rastrear tus viajes y registrar evidencia de millaje precisa y defendible.',
   'location_access': 'Acceso a ubicación',
-  'location_desc': 'Se usa para rastrear tus viajes y calcular el millaje automáticamente, incluso con la app en segundo plano.',
+  'location_desc': "ControlMiles recopila datos de ubicación para registrar tus viajes y calcular tus millas, incluso cuando la app está cerrada o no está en uso.",
   'camera': 'Cámara',
   'camera_desc': 'Se usa para capturar la lectura del odómetro como evidencia de cada viaje.',
   'motion_detection': 'Movimiento y actividad',
