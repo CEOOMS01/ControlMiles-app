@@ -33,6 +33,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   final Map<String, bool> _expandedSessions = {};
 
+  // Fleets where this user is owner/admin. Rule (user, 2026-09-29): a
+  // fleet trip can only be deleted by its fleet's owner or admin -- not
+  // the driver, not an operator (enforced by RLS sessions_delete; this
+  // only hides a button that would be refused anyway).
+  Set<String> _adminOrgIds = {};
+
+  bool _canDelete(TrackingSession session) =>
+      session.organizationId == null ||
+      _adminOrgIds.contains(session.organizationId);
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +67,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           .eq('user_id', userId)
           .gte('start_time', last12Months.toIso8601String())
           .order('start_time', ascending: false);
+
+      final adminRows = await Supabase.instance.client
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .inFilter('member_role', ['owner', 'admin']);
+      final adminOrgIds = {
+        for (final r in adminRows as List) r['organization_id'] as String,
+      };
 
       final sessions = <TrackingSession>[];
       final sectionsMap = <String, List<SessionSection>>{};
@@ -99,6 +119,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (mounted) {
         setState(() {
           _sessions = sessions;
+          _adminOrgIds = adminOrgIds;
           _sections = sectionsMap;
           _totalMiles = milesAccumulator;
           _totalDurationSeconds = durationAccumulator;
@@ -228,7 +249,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
       await Supabase.instance.client
           .from('sessions')
           .delete()
-          .eq('id', session.id);
+          .eq('id', session.id)
+          .select('id')
+          .then((rows) {
+        // RLS refuses by deleting nothing, not by erroring -- without this
+        // a refused delete would still show "Trip deleted".
+        if ((rows as List).isEmpty) {
+          throw const PostgrestException(message: 'Not allowed to delete this trip', code: '42501');
+        }
+      });
 
       if (!mounted) return;
 
@@ -465,12 +494,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               ],
                                             ),
                                           ),
-                                          IconButton(
-                                            icon: Icon(Icons.delete_outline_rounded,
-                                                size: 20, color: Colors.red.shade400),
-                                            tooltip: appState.tr('delete_trip'),
-                                            onPressed: () => _confirmDeleteTrip(session, index),
-                                          ),
+                                          if (_canDelete(session))
+                                            IconButton(
+                                              icon: Icon(Icons.delete_outline_rounded,
+                                                  size: 20, color: Colors.red.shade400),
+                                              tooltip: appState.tr('delete_trip'),
+                                              onPressed: () => _confirmDeleteTrip(session, index),
+                                            ),
                                           Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: labelCol),
                                         ],
                                       ),
