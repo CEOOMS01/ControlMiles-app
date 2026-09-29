@@ -102,6 +102,9 @@ Play Console → **Contenido de la app → Seguridad de los datos**.
 - **CGC Core** (sellado antifraude de viajes y monitoreo de errores) es un servicio **propio** del ecosistema del desarrollador (confirmado por el dueño el 2026-09-29). Por eso "Diagnóstico" y "Registros de fallos" se declaran **recogidos, no compartidos**.
 - **Servidores (Supabase, Cloudflare R2 para mapas, Vercel):** son proveedores que procesan los datos por cuenta nuestra, así que tampoco cuentan como "compartir".
 - **Único dato compartido con un tercero:** la ubicación aproximada que se manda a OpenStreetMap (Overpass) para consultar límites de velocidad.
+  - Decisión del dueño (2026-09-29): se mantiene para el lanzamiento porque no bloquea nada. Solo se consulta ante un posible exceso de velocidad (más de ~75 mph), espera como máximo 3 s y guarda el resultado 30 min por zona; si falla, el viaje sigue igual y el evento usa el umbral fijo.
+  - **Pendiente después del lanzamiento:** mover los límites de velocidad a infraestructura propia (Supabase/PostGIS o un paquete en R2). Cuando eso ocurra, esta fila pasa a **no compartido** y hay que actualizar el formulario.
+  - El mapa base (.pmtiles de OpenStreetMap, solo EE. UU.) ya está en Cloudflare R2, en la infraestructura de Olympus Mont Systems LLC: no es un tercero.
 
 ---
 
