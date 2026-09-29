@@ -98,6 +98,7 @@ const Map<String, String> enTexts = {
   'pause_failed': 'Could not pause — still tracking. Try again.',
   'resume_failed': 'Could not resume tracking. Try again.',
   'end_trip_failed': 'Could not end the trip — still tracking. Try again.',
+  'odometer_below_registered_error': "This reading is lower than the {value} mi already on record for this vehicle. Check that the right vehicle is selected.",
   'trip_discarded_no_miles': "No miles were tracked, so this trip wasn't saved.",
 
   // ============================================================

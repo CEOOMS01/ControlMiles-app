@@ -98,6 +98,7 @@ const Map<String, String> esTexts = {
   'pause_failed': 'No se pudo pausar — sigue en seguimiento. Intenta de nuevo.',
   'resume_failed': 'No se pudo reanudar el seguimiento. Intenta de nuevo.',
   'end_trip_failed': 'No se pudo terminar el viaje — sigue activo. Intenta de nuevo.',
+  'odometer_below_registered_error': "Esta lectura es menor que las {value} mi ya registradas para este vehículo. Revisa que tengas seleccionado el vehículo correcto.",
   'trip_discarded_no_miles': "No se registraron millas, así que este viaje no se guardó.",
 
   // ============================================================

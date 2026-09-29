@@ -26,6 +26,9 @@
 // own "if error.contains(...)" checks (see login_screen.dart's old
 // _getErrorMessage, being replaced by this).
 
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthException, PostgrestException;
+
 class AppError {
   final int code;
   final String messageKey; // i18n key -- resolve via appState.tr(messageKey)
@@ -34,15 +37,20 @@ class AppError {
   /// with no i18n entry of its own. When set, display() uses this
   /// directly instead of the localized messageKey lookup.
   final String? literalMessage;
+  /// Values substituted into the localized message ({value} -> '208,198').
+  final Map<String, String>? params;
 
-  const AppError(this.code, this.messageKey, {this.literalMessage});
+  const AppError(this.code, this.messageKey, {this.literalMessage, this.params});
 
   /// What's safe to show a user: "Something went wrong (720)" style,
   /// never the raw exception. Callers still run messageKey through
   /// AppState.tr() for localization; this only formats the code suffix
   /// (or substitutes literalMessage when set, ignoring the tr() result).
-  String display(String localizedMessage) =>
-      '${literalMessage ?? localizedMessage} ($code)';
+  String display(String localizedMessage) {
+    var text = literalMessage ?? localizedMessage;
+    params?.forEach((k, v) => text = text.replaceAll('{$k}', v));
+    return '$text ($code)';
+  }
 
   // ── LOCAL (1xx-3xx) ─────────────────────────────────────────
   // Reuses this codebase's existing i18n keys where one was already a
@@ -63,6 +71,12 @@ class AppError {
   static const orgMembershipRevoked = AppError(412, 'org_access_revoked_body');
   static const fleetSubscriptionRequired = AppError(413, 'fleet_subscription_required_error');
   static const fleetGrowthRequired = AppError(414, 'fleet_growth_required_error');
+  /// submit_vehicle_odometer_checkpoint: `ODOMETER_BELOW_REGISTERED:<value>`
+  /// -- the reading is lower than what this vehicle already has on record
+  /// (usually the wrong vehicle is selected). Found live 2026-09-29: it
+  /// reached the screen as a raw PostgrestException.
+  static AppError odometerBelowRegistered(String registered) =>
+      AppError(415, 'odometer_below_registered_error', params: {'value': registered});
   static const rateLimited = AppError(420, 'rate_limited_error');
   static const duplicateEntry = AppError(430, 'duplicate_entry_error');
   static const subscriptionsNotConfigured = AppError(440, 'subscriptions_not_configured');
@@ -120,7 +134,25 @@ class AppError {
   /// generic fallback. Only text that actually looks like a raw
   /// database/system error falls through to 701/720.
   static AppError from(Object error, {bool critical = false}) {
-    final text = error.toString().replaceFirst('Exception: ', '');
+    // REAL BUG (found live 2026-09-29): toString() of a PostgrestException
+    // is "PostgrestException(message: ..., code: ..., details: ...)" --
+    // short enough to pass _looksLikeRawDbError and be shown verbatim as a
+    // 450. Read the message itself.
+    final text = switch (error) {
+      PostgrestException(:final message) => message,
+      AuthException(:final message) => message,
+      _ => error.toString().replaceFirst('Exception: ', ''),
+    };
+
+    final belowRegistered = RegExp(r'ODOMETER_BELOW_REGISTERED:([\d.]+)').firstMatch(text);
+    if (belowRegistered != null) {
+      final v = double.tryParse(belowRegistered.group(1)!)?.round() ?? 0;
+      final grouped = v.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+$)'),
+        (m) => '${m[1]},',
+      );
+      return odometerBelowRegistered(grouped);
+    }
 
     if (text.contains('VEHICLE_LIMIT_REACHED')) return vehicleLimitReached;
     if (text.contains('FREE_TRIAL_EXPIRED')) return freeTrialExpired;

@@ -48,6 +48,7 @@ Implementations:
 | 412 | Org membership revoked | A fleet admin removed this driver's access |
 | 413 | Fleet subscription required | Org has no active Starter+ subscription and its 5-day no-subscription trial expired (`fn_org_effective_tier` = 'none') |
 | 414 | Fleet Growth required | Action needs the Growth tier specifically (DVIR, geofencing, live map, open vehicle assignment) |
+| 415 | Odometer below registered | `ODOMETER_BELOW_REGISTERED:<value>` from submit_vehicle_odometer_checkpoint: the reading is lower than the vehicle's recorded odometer (usually the wrong vehicle is selected). Mobile only. |
 | 420 | Rate limited | Too many attempts on a rate-limited action |
 | 430 | Duplicate entry | Unique-constraint violation |
 | 440 | Subscriptions not configured | Stripe not yet set up in this environment |

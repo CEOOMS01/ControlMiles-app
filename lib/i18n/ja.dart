@@ -517,6 +517,7 @@ const Map<String, String> jaTexts = {
   'pause_failed': '一時停止できませんでした。追跡は継続中です。もう一度お試しください。',
   'resume_failed': '追跡を再開できませんでした。もう一度お試しください。',
   'end_trip_failed': '走行を終了できませんでした。追跡は継続中です。もう一度お試しください。',
+  'odometer_below_registered_error': "この読み取り値は、この車両に記録済みの {value} mi より小さいです。正しい車両が選択されているか確認してください。",
   'trip_discarded_no_miles': "走行距離が記録されなかったため、この走行は保存されませんでした。",
   'last_30_days': '過去30日間',
   'last_12_months': '過去12か月',

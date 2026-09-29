@@ -658,6 +658,7 @@ const Map<String, String> ptTexts = {
   'delete_trip_success': 'Viagem excluída',
   'edit_note': 'Editar nota',
   'end_trip_failed': 'Não foi possível encerrar a viagem — o rastreamento continua ativo. Tente novamente.',
+  'odometer_below_registered_error': "Esta leitura é menor que as {value} mi já registradas para este veículo. Verifique se o veículo certo está selecionado.",
   'trip_discarded_no_miles': "Nenhuma milha foi registrada, então esta viagem não foi salva.",
   'enter_reset_code': 'Digite o código recebido por email',
   'forgot_password_body': 'Digite o email da sua conta e enviaremos um código para redefinir sua senha.',

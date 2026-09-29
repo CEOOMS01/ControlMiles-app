@@ -518,6 +518,7 @@ const Map<String, String> koTexts = {
   'pause_failed': '일시정지하지 못했습니다 — 계속 추적 중입니다. 다시 시도해 주세요.',
   'resume_failed': '추적을 재개하지 못했습니다. 다시 시도해 주세요.',
   'end_trip_failed': '운행을 종료하지 못했습니다 — 계속 추적 중입니다. 다시 시도해 주세요.',
+  'odometer_below_registered_error': "이 판독값은 이 차량에 이미 기록된 {value} mi보다 낮습니다. 올바른 차량이 선택되었는지 확인하세요.",
   'trip_discarded_no_miles': "기록된 마일이 없어 이 운행은 저장되지 않았습니다.",
   'last_30_days': '최근 30일',
   'last_12_months': '최근 12개월',
