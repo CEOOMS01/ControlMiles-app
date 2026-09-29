@@ -235,6 +235,12 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
 
     _pulseController.reset();
 
+    if (TrackingController.lastStopDiscarded && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appState.tr('trip_discarded_no_miles'))),
+      );
+    }
+
     // Explicit user request (2026-09-08, with a concrete example): the
     // Auto Detection toggle used to stay armed indefinitely after a trip
     // ended (by design, to keep listening for the next one) -- but the

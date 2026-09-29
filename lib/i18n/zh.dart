@@ -658,6 +658,7 @@ const Map<String, String> zhTexts = {
   'delete_trip_success': '行程已删除',
   'edit_note': '编辑备注',
   'end_trip_failed': '无法结束行程 — 仍在跟踪中。请重试。',
+  'trip_discarded_no_miles': "未记录任何里程，因此未保存此行程。",
   'enter_reset_code': '输入您邮箱收到的验证码',
   'forgot_password_body': '输入您账户的邮箱地址，我们会发送验证码以重置密码。',
   'generate_global_pdf': '生成全局 PDF',

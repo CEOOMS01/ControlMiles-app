@@ -504,6 +504,7 @@ const Map<String, String> amTexts = {
   'pause_failed': 'ማቆም አልተቻለም — ክትትሉ ቀጥሏል። እንደገና ይሞክሩ።',
   'resume_failed': 'ክትትሉን መቀጠል አልተቻለም። እንደገና ይሞክሩ።',
   'end_trip_failed': 'ጉዞውን መጨረስ አልተቻለም — ክትትሉ ቀጥሏል። እንደገና ይሞክሩ።',
+  'trip_discarded_no_miles': "ምንም ማይል አልተመዘገበም፣ ስለዚህ ይህ ጉዞ አልተቀመጠም።",
   'last_30_days': 'ያለፉት 30 ቀናት',
   'last_12_months': 'ያለፉት 12 ወራት',
   'generate_global_pdf': 'አጠቃላይ PDF ፍጠር',

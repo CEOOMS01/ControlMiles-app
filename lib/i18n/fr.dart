@@ -656,6 +656,7 @@ const Map<String, String> frTexts = {
   'delete_trip_success': 'Trajet supprimé',
   'edit_note': 'Modifier la note',
   'end_trip_failed': 'Impossible de terminer le trajet — suivi toujours actif. Réessayez.',
+  'trip_discarded_no_miles': "Aucun mile enregistré : ce trajet n'a pas été sauvegardé.",
   'enter_reset_code': 'Entrez le code reçu par email',
   'forgot_password_body': 'Entrez l\'email de votre compte et nous vous enverrons un code pour réinitialiser votre mot de passe.',
   'generate_global_pdf': 'Générer le PDF global',

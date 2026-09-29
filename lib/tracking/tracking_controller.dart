@@ -67,6 +67,17 @@ class TrackingController {
   // startTripFlow, cleared in _resetState).
   static bool startedViaAutoDetect = false;
 
+  // NEW RULE (user, 2026-09-29): a trip with no tracked miles is not kept.
+  // The DB enforces it (trigger trg_discard_zero_mile_trip deletes a
+  // session closed with < 0.05 mi, cascading its sections, breadcrumbs and
+  // per-trip audit chain); this mirrors the same threshold so the End Trip
+  // flow can tell the driver why the trip is not in their history.
+  static const double minTrackedMiles = 0.05;
+
+  /// True when the last successful stopTracking() closed a trip with no
+  /// tracked miles, which the DB then discarded.
+  static bool lastStopDiscarded = false;
+
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
@@ -936,16 +947,21 @@ class TrackingController {
       // duración real de todas las secciones ya cerradas de esta sesión —
       // así el tiempo pausado o entre cambios de gig app no cuenta de más.
       int sessionDurationSeconds = 0;
+      double sectionsMiles = 0;
       try {
         final sections = await Supabase.instance.client
             .from('session_sections')
-            .select('total_duration_seconds')
+            .select('total_duration_seconds, total_miles')
             .eq('session_id', activeSessionId!);
 
         sessionDurationSeconds = (sections as List).fold<int>(
           0,
           (sum, s) =>
               sum + ((s['total_duration_seconds'] as num?)?.toInt() ?? 0),
+        );
+        sectionsMiles = sections.fold<double>(
+          0,
+          (sum, s) => sum + ((s['total_miles'] as num?)?.toDouble() ?? 0),
         );
       } catch (e) {
         _logError('SESSION_DURATION_SUM_ERROR', e.toString());
@@ -962,17 +978,24 @@ class TrackingController {
           })
           .eq('id', activeSessionId!);
 
+      // Same test as the DB trigger: the update above just made the DB
+      // delete this trip. Nothing left to seal.
+      final discarded = _totalSessionMiles < minTrackedMiles &&
+          sectionsMiles < minTrackedMiles;
+
       // CGC Core governance sealing (see cgc_governance_service.dart):
       // captured BEFORE _resetState() zeroes these, fired in the
       // background (not awaited) -- sealing is evidentiary, done
       // best-effort after the fact, and must never delay the trip-close
       // UX the way a synchronous call to a Vercel cold start could.
-      CgcGovernanceService.sealTrip(
-        sessionId: activeSessionId!,
-        totalGpsTicks: _totalGpsTicks,
-        rejectedGpsTicks: _rejectedGpsTicks,
-        minDrivingSignatureScore: _minDrivingSignatureScore,
-      );
+      if (!discarded) {
+        CgcGovernanceService.sealTrip(
+          sessionId: activeSessionId!,
+          totalGpsTicks: _totalGpsTicks,
+          rejectedGpsTicks: _rejectedGpsTicks,
+          minDrivingSignatureScore: _minDrivingSignatureScore,
+        );
+      }
 
       // Captured BEFORE _resetState() clears the flag -- red flash only
       // for a trip that auto-detect itself started (explicit user
@@ -993,7 +1016,11 @@ class TrackingController {
         _logError('STOP_SIDE_EFFECT_ERROR', e.toString());
       }
 
-      _logDebug('TRACKING_STOP_OK', 'Session closed successfully');
+      lastStopDiscarded = discarded;
+      _logDebug(
+        'TRACKING_STOP_OK',
+        discarded ? 'No miles tracked, trip discarded' : 'Session closed successfully',
+      );
       return true;
     } catch (e) {
       _logError('STOP_ERROR', e.toString());

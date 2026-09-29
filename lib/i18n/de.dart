@@ -658,6 +658,7 @@ const Map<String, String> deTexts = {
   'delete_trip_success': 'Fahrt gelöscht',
   'edit_note': 'Notiz bearbeiten',
   'end_trip_failed': 'Fahrt konnte nicht beendet werden — Aufzeichnung läuft weiter. Bitte erneut versuchen.',
+  'trip_discarded_no_miles': "Keine Meilen erfasst – diese Fahrt wurde nicht gespeichert.",
   'enter_reset_code': 'Geben Sie den Code aus Ihrer E-Mail ein',
   'forgot_password_body': 'Geben Sie die E-Mail-Adresse Ihres Kontos ein, und wir senden Ihnen einen Code zum Zurücksetzen Ihres Passworts.',
   'generate_global_pdf': 'Gesamt-PDF erstellen',
