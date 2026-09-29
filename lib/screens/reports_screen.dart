@@ -196,7 +196,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       final sessionsRaw = await Supabase.instance.client
           .from('sessions')
-          .select()
+          // Sections embedded in the same request. REAL BUG (found live
+          // 2026-09-29, ~25 s on a Galaxy S24+): this used to fetch each
+          // trip's sections in its own sequential query -- 106 trips meant
+          // 106 network round trips before anything rendered.
+          .select('*, session_sections(*)')
           .eq('user_id', user.id)
           .eq('is_closed', true)
           .gte('start_time', _dateRange.start.toIso8601String())
@@ -204,17 +208,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
               _dateRange.end.add(const Duration(days: 1)).toIso8601String())
           .order('start_time', ascending: false);
 
-      final sessions = (sessionsRaw as List)
-          .map((s) => TrackingSession.fromMap(s as Map<String, dynamic>))
-          .toList();
+      final sessionRows = (sessionsRaw as List).cast<Map<String, dynamic>>();
+      final sessions = sessionRows.map(TrackingSession.fromMap).toList();
 
       final sectionsMap = <String, List<SessionSection>>{};
-      for (final session in sessions) {
-        final raw = await Supabase.instance.client
-            .from('session_sections')
-            .select()
-            .eq('session_id', session.id)
-            .order('start_time', ascending: true);
+      for (final row in sessionRows) {
+        final session = TrackingSession.fromMap(row);
+        final raw = List<Map<String, dynamic>>.from(
+          row['session_sections'] as List? ?? const [],
+        )..sort((a, b) => (a['start_time'] as String? ?? '')
+            .compareTo(b['start_time'] as String? ?? ''));
 
         // BUG FIX: este filtro pedía section_status='closed' directo a la
         // DB, ignorando el status 'switched' (secciones cerradas por
@@ -224,8 +227,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         // History); acá se filtraba aparte con una lista de statuses
         // distinta y desactualizada. Ahora usa la misma fuente de verdad
         // en vez de duplicarla, para no volver a desincronizarse.
-        sectionsMap[session.id] = (raw as List)
-            .map((s) => SessionSection.fromMap(s as Map<String, dynamic>))
+        sectionsMap[session.id] = raw
+            .map(SessionSection.fromMap)
             .where((s) => s.isClosed)
             .toList();
       }

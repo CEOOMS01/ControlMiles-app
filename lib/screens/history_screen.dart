@@ -409,11 +409,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     // ── DIVISOR DIARIO ──
                     final dayFmt = DateFormat('EEEE, MMMM d, yyyy', appState.currentLanguage.code);
                     final currentDate = session.startTime != null
-                        ? dayFmt.format(session.startTime!)
+                        ? dayFmt.format(session.startTime!.toLocal())
                         : '';
 
                     final previousDate = index > 0 && _sessions[index - 1].startTime != null
-                        ? dayFmt.format(_sessions[index - 1].startTime!)
+                        ? dayFmt.format(_sessions[index - 1].startTime!.toLocal())
                         : '';
 
                     final showDateDivider = index == 0 || currentDate != previousDate;
@@ -486,10 +486,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text('${appState.tr('trip_number_label').replaceFirst('{number}', '${index + 1}')}  ·  ${session.startTime != null ? DateFormat('MM/dd hh:mm a').format(session.startTime!) : '--'}',
+                                                Text('${appState.tr('trip_number_label').replaceFirst('{number}', '${index + 1}')}  ·  ${session.startTime != null ? DateFormat('MM/dd hh:mm a').format(session.startTime!.toLocal()) : '--'}',
                                                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B))),
                                                 const SizedBox(height: 2),
-                                                Text(appState.tr('trip_end_time_label').replaceFirst('{time}', session.endTime != null ? DateFormat('hh:mm a').format(session.endTime!) : '--'),
+                                                Text(appState.tr('trip_end_time_label').replaceFirst('{time}', session.endTime != null ? DateFormat('hh:mm a').format(session.endTime!.toLocal()) : '--'),
                                                     style: TextStyle(fontSize: 11, color: labelCol)),
                                               ],
                                             ),
