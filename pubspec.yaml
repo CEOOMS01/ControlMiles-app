@@ -142,6 +142,7 @@ dependencies:
   # Apple Developer Team ID. app_links over uni_links: actively maintained,
   # single package for both platforms, initial-link + stream in one API.
   app_links: ^6.4.0
+  google_sign_in: ^7.2.0
 
 # ============================================================
 # DEV DEPENDENCIES

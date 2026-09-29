@@ -356,69 +356,194 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ====================== GOOGLE ======================
+  Future<void> _handleGoogle(AppState appState) async {
+    setState(() => _isLoading = true);
+    try {
+      final signedIn = await _authService.signInWithGoogle();
+      if (!signedIn || !mounted) return;
+      await _afterSuccessfulAuth(appState);
+    } catch (e) {
+      debugPrint('[Login] Google sign-in failed: $e');
+      if (mounted) _showError(appState.tr('google_sign_in_failed'));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _submit(AppState appState) {
+    if (_isLoading) return;
+    if (_isLoginMode && _isDriverIdMode) {
+      _handleDriverIdAuth(appState);
+    } else {
+      _handleAuth(appState);
+    }
+  }
+
+  // ====================== LAYOUT ======================
+  // Redesign (2026-09-29, explicit user request "más fluido, menos soso"),
+  // after researching login/sign-up best practices (Authgear 2025 guide,
+  // Eleken, Cieden): social sign-in first, as few fields as possible,
+  // show-password toggle, autofill hints for password managers, errors that
+  // keep what was typed and offer a way out, sentence-case actions, a clear
+  // switch between sign-in and sign-up, and a busy state on the button.
+  // All auth logic above is unchanged.
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFF0F2A44),
       body: Stack(
         children: [
+          // Brand backdrop: navy gradient + the same soft route curve the
+          // website's hero uses, so the app and controlmiles.com feel like
+          // one product.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0F2A44), Color(0xFF1F5F8B)],
+                ),
+              ),
+              child: CustomPaint(painter: _RouteCurvePainter()),
+            ),
+          ),
           SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildHeader(appState, isDark),
-                          const SizedBox(height: 32),
-                          if (_isLoginMode) ...[
-                            _buildLoginModeToggle(appState, isDark),
-                            const SizedBox(height: 20),
-                          ],
-                          _buildForm(appState, isDark),
-                          const SizedBox(height: 20),
-                          if (!_isLoginMode) ...[
-                            _buildAgeTermsCheckbox(appState, isDark),
-                            const SizedBox(height: 8),
-                          ],
-                          if (_isLoginMode) ...[
-                            _buildLoginPrefsCheckboxes(appState, isDark),
-                            const SizedBox(height: 4),
-                          ],
-                          if (_isLoginMode && !_isDriverIdMode) _buildForgotPasswordLink(appState),
-                          const SizedBox(height: 32),
-                          _buildLoginButton(appState),
-                          if (!_isDriverIdMode) _buildToggleMode(appState),
-                        ],
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        _buildHero(appState),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                              boxShadow: const [
+                                BoxShadow(color: Color(0x33000000), blurRadius: 24, offset: Offset(0, -4)),
+                              ],
+                            ),
+                            padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                            child: AnimatedSize(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.topCenter,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 220),
+                                transitionBuilder: (child, anim) => FadeTransition(
+                                  opacity: anim,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero)
+                                        .animate(anim),
+                                    child: child,
+                                  ),
+                                ),
+                                child: KeyedSubtree(
+                                  key: ValueKey('$_isLoginMode-$_isDriverIdMode'),
+                                  child: _buildCardContent(appState, isDark),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                // Explicit user request: pinned to the actual bottom of the
-                // screen, not just wherever the scrollable form content
-                // happened to end -- was previously inline in the same
-                // scrollable/centered Column above, which on a tall screen
-                // left it floating mid-page instead of anchored at the
-                // bottom.
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildFooter(appState),
-                ),
-              ],
+              ),
             ),
           ),
-          Positioned(
-            top: 40,
-            right: 20,
-            child: _buildLanguagePicker(appState),
+          Positioned(top: 40, right: 16, child: _buildLanguagePicker(appState)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHero(AppState appState) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
+      child: Column(
+        children: [
+          Hero(
+            tag: 'logo',
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Image.asset(
+                'assets/images/logo_controlmiles.png',
+                height: 56,
+                errorBuilder: (_, _, _) => const Icon(Icons.route_rounded, size: 56, color: Colors.white),
+              ),
+            ),
           ),
+          const SizedBox(height: 14),
+          Text(
+            appState.tr('app_name'),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            appState.tr('login_tagline'),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.75)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardContent(AppState appState, bool isDark) {
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final showGoogle = !(_isLoginMode && _isDriverIdMode);
+
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            appState.tr(_isLoginMode ? 'login_welcome_back' : 'login_create_account_title'),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            appState.tr(_isLoginMode ? 'login_welcome_back_sub' : 'login_create_account_sub'),
+            style: TextStyle(fontSize: 13.5, color: subColor),
+          ),
+          const SizedBox(height: 20),
+          if (_isLoginMode) ...[
+            _buildLoginModeToggle(appState, isDark),
+            const SizedBox(height: 18),
+          ],
+          if (showGoogle) ...[
+            _buildGoogleButton(appState, isDark),
+            const SizedBox(height: 16),
+            _buildOrDivider(appState, isDark),
+            const SizedBox(height: 16),
+          ],
+          _buildForm(appState, isDark),
+          const SizedBox(height: 8),
+          if (_isLoginMode) _buildLoginOptions(appState, isDark) else _buildAgeTermsCheckbox(appState, isDark),
+          const SizedBox(height: 16),
+          _buildLoginButton(appState),
+          const SizedBox(height: 8),
+          if (!_isDriverIdMode || !_isLoginMode) _buildToggleMode(appState, isDark),
+          const SizedBox(height: 8),
+          _buildFooter(appState),
         ],
       ),
     );
@@ -428,79 +553,33 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLanguagePicker(AppState appState) {
     return PopupMenuButton<AppLanguage>(
       icon: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(100),
         ),
-        child: Text(
-          appState.currentLanguage.flag,
-          style: const TextStyle(fontSize: 20),
-        ),
+        child: Text(appState.currentLanguage.flag, style: const TextStyle(fontSize: 18)),
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (lang) => appState.setLanguage(lang),
-      itemBuilder: (context) => AppLanguage.values.map((lang) {
-        return PopupMenuItem<AppLanguage>(
-          value: lang,
-          child: Row(
-            children: [
-              Text(lang.flag),
-              const SizedBox(width: 10),
-              Text(lang.label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ====================== HEADER ======================
-  Widget _buildHeader(AppState appState, bool isDark) {
-    return Column(
-      children: [
-        Hero(
-          tag: 'logo',
-          child: Image.asset(
-            'assets/images/logo_controlmiles.png',
-            height: 140,
-            errorBuilder: (_, _, _) => Icon(
-              Icons.shield_rounded,
-              size: 100,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          appState.tr('app_name'),
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
-            letterSpacing: -1,
-          ),
-        ),
-        Text(
-          _isLoginMode
-              ? (appState.tr('sign_in')).toUpperCase()
-              : (appState.tr('sign_up')).toUpperCase(),
-          style: TextStyle(
-            color: isDark ? Colors.white70 : const Color(0xFF94A3B8),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
+      itemBuilder: (context) => AppLanguage.values
+          .map((lang) => PopupMenuItem<AppLanguage>(
+                value: lang,
+                child: Row(
+                  children: [
+                    Text(lang.flag),
+                    const SizedBox(width: 10),
+                    Text(lang.label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ))
+          .toList(),
     );
   }
 
   // ====================== LOGIN MODE TOGGLE ======================
-  // Explicit user request, 2026-09-17: fleet_driver accounts stop using
-  // email login entirely -- everyone else (gig drivers, fleet admins)
-  // keeps it unchanged. Defaults to email (index 0) so existing users see
-  // no behavior change unless they deliberately switch.
+  // Explicit user request, 2026-09-17: fleet_driver accounts sign in with
+  // their driver ID; everyone else (gig drivers, fleet admins) with email.
   Widget _buildLoginModeToggle(AppState appState, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -513,6 +592,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: _ModeToggleChip(
               label: appState.tr('email'),
+              icon: Icons.alternate_email_rounded,
               selected: !_isDriverIdMode,
               onTap: () => setState(() => _isDriverIdMode = false),
             ),
@@ -520,6 +600,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: _ModeToggleChip(
               label: appState.tr('fleet_driver_login_tab'),
+              icon: Icons.badge_outlined,
               selected: _isDriverIdMode,
               onTap: () => setState(() => _isDriverIdMode = true),
             ),
@@ -529,124 +610,213 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ====================== GOOGLE BUTTON ======================
+  Widget _buildGoogleButton(AppState appState, bool isDark) {
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton(
+        onPressed: _isLoading ? null : () => _handleGoogle(appState),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFDADCE0)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GoogleGPainter())),
+            const SizedBox(width: 12),
+            Text(
+              appState.tr('continue_with_google'),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF1F1F1F),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrDivider(AppState appState, bool isDark) {
+    final lineColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    return Row(
+      children: [
+        Expanded(child: Divider(color: lineColor)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            appState.tr('or_divider'),
+            style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFF94A3B8)),
+          ),
+        ),
+        Expanded(child: Divider(color: lineColor)),
+      ],
+    );
+  }
+
   // ====================== FORM ======================
+  InputDecoration _decoration(bool isDark, String label, IconData icon, {Widget? suffix, String? prefixText, String? hint}) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+    );
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixText: prefixText,
+      prefixIcon: Icon(icon, size: 20),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: border,
+      enabledBorder: border,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+      ),
+    );
+  }
+
   Widget _buildForm(AppState appState, bool isDark) {
     return Column(
       children: [
-        // BUG FIX (pedido explícito): campo de nombre real, solo visible
-        // en modo registro -- reemplaza el fallback de email.split('@')[0]
-        // que se mandaba antes sin que el usuario lo viera ni lo eligiera.
+        // Real name, sign-up only (replaces the old email.split('@') guess).
         if (!_isLoginMode) ...[
-          TextField(
-            controller: _firstNameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: appState.tr('name'),
-              prefixIcon: const Icon(Icons.person_outline_rounded),
-              filled: true,
-              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _firstNameController,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.givenName],
+                  decoration: _decoration(isDark, appState.tr('name'), Icons.person_outline_rounded),
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _lastNameController,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.familyName],
+                  decoration: _decoration(isDark, appState.tr('last_name'), Icons.person_outline_rounded),
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _lastNameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: appState.tr('last_name'),
-              prefixIcon: const Icon(Icons.person_outline_rounded),
-              filled: true,
-              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
         ],
         if (_isLoginMode && _isDriverIdMode)
           TextField(
             controller: _driverIdController,
             keyboardType: TextInputType.text,
             textCapitalization: TextCapitalization.characters,
-            decoration: InputDecoration(
-              labelText: appState.tr('driver_id_label'),
-              // "CM-" is fixed/non-editable, matching the real display_id
-              // shape (CM-D####) every driver already has printed on
-              // their roster row -- they only ever type the digits the
-              // admin gave them, never the prefix.
-              prefixIcon: const Icon(Icons.badge_outlined),
-              prefixText: 'CM-',
-              hintText: 'D1234',
-              filled: true,
-              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-              ),
-            ),
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username],
+            // "CM-" is fixed: drivers only type the part their admin gave them.
+            decoration: _decoration(isDark, appState.tr('driver_id_label'), Icons.badge_outlined,
+                prefixText: 'CM-', hint: 'D1234'),
           )
         else
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-              labelText: appState.tr('email'),
-              prefixIcon: const Icon(Icons.alternate_email_rounded),
-              filled: true,
-              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-              ),
-            ),
+            textInputAction: TextInputAction.next,
+            autocorrect: false,
+            autofillHints: const [AutofillHints.email, AutofillHints.username],
+            decoration: _decoration(isDark, appState.tr('email'), Icons.alternate_email_rounded),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            labelText: appState.tr('password'),
-            prefixIcon: const Icon(Icons.lock_person_rounded),
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+          textInputAction: TextInputAction.done,
+          autofillHints: [_isLoginMode ? AutofillHints.password : AutofillHints.newPassword],
+          onSubmitted: (_) => _submit(appState),
+          decoration: _decoration(
+            isDark,
+            appState.tr('password'),
+            Icons.lock_outline_rounded,
+            suffix: IconButton(
+              icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ====================== LOGIN OPTIONS ======================
+  // "Remember my email" + "Forgot password?" share one row; "Stay signed in"
+  // gets its own row with the reason (see LoginPrefs).
+  Widget _buildLoginOptions(AppState appState, bool isDark) {
+    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final hintColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => setState(() => _rememberId = !_rememberId),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberId,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: (v) => setState(() => _rememberId = v ?? false),
+                    ),
+                    Flexible(
+                      child: Text(
+                        appState.tr(_isDriverIdMode ? 'remember_my_driver_id' : 'remember_my_email'),
+                        style: TextStyle(fontSize: 13, color: textColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-            ),
+            if (!_isDriverIdMode)
+              TextButton(
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
+                child: Text(appState.tr('forgot_password'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+          ],
+        ),
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => setState(() => _staySignedIn = !_staySignedIn),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _staySignedIn,
+                visualDensity: VisualDensity.compact,
+                onChanged: (v) => setState(() => _staySignedIn = v ?? false),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(appState.tr('stay_signed_in'), style: TextStyle(fontSize: 13, color: textColor)),
+                      const SizedBox(height: 2),
+                      Text(appState.tr('stay_signed_in_hint'),
+                          style: TextStyle(fontSize: 11.5, height: 1.35, color: hintColor)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -655,53 +825,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ====================== AGE + TERMS CHECKBOX ======================
   // Explicit user requirement (legal risk mitigation, 2026-08-27):
-  // required before signup, combines the 18+ self-attestation the Terms
-  // already state with actual agreement to the Terms/Privacy Policy --
-  // neither existed as an enforced step before this.
-  Widget _buildLoginPrefsCheckboxes(AppState appState, bool isDark) {
-    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
-    final hintColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-
-    Widget row(bool value, ValueChanged<bool> onChanged, String label, [String? hint]) => InkWell(
-          onTap: () => onChanged(!value),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(label, style: TextStyle(fontSize: 13.5, color: textColor)),
-                      if (hint != null)
-                        Text(hint, style: TextStyle(fontSize: 11.5, height: 1.35, color: hintColor)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-
-    return Column(
-      children: [
-        row(
-          _rememberId,
-          (v) => setState(() => _rememberId = v),
-          appState.tr(_isDriverIdMode ? 'remember_my_driver_id' : 'remember_my_email'),
-        ),
-        row(
-          _staySignedIn,
-          (v) => setState(() => _staySignedIn = v),
-          appState.tr('stay_signed_in'),
-          appState.tr('stay_signed_in_hint'),
-        ),
-      ],
-    );
-  }
-
+  // required before signup -- 18+ self-attestation + Terms/Privacy.
   Widget _buildAgeTermsCheckbox(AppState appState, bool isDark) {
     final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
     final linkColor = Theme.of(context).colorScheme.primary;
@@ -711,11 +835,12 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Checkbox(
           value: _agreedToTerms,
+          visualDensity: VisualDensity.compact,
           onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 10),
             child: RichText(
               text: TextSpan(
                 style: TextStyle(fontSize: 12.5, height: 1.4, color: textColor),
@@ -760,72 +885,53 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ====================== LOGIN BUTTON ======================
+  // ====================== PRIMARY BUTTON ======================
   Widget _buildLoginButton(AppState appState) {
-    final useDriverIdAuth = _isLoginMode && _isDriverIdMode;
+    final label = appState.tr(_isLoginMode ? 'sign_in' : 'create_account');
     return SizedBox(
-      width: double.infinity,
-      height: 60,
-      child: ElevatedButton(
+      height: 54,
+      child: FilledButton(
+        onPressed: _isLoading ? null : () => _submit(appState),
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: _isLoading
+              ? const SizedBox(
+                  key: ValueKey('busy'),
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                )
+              : Text(label, key: ValueKey(label)),
+        ),
+      ),
+    );
+  }
+
+  // ====================== SIGN-IN / SIGN-UP SWITCH ======================
+  Widget _buildToggleMode(AppState appState, bool isDark) {
+    final muted = isDark ? Colors.white60 : const Color(0xFF64748B);
+    return Center(
+      child: TextButton(
         onPressed: _isLoading
             ? null
-            : () => useDriverIdAuth ? _handleDriverIdAuth(appState) : _handleAuth(appState),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-        ),
-        child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
-            : Text(
-                _isLoginMode
-                    ? (appState.tr('sign_in')).toUpperCase()
-                    : (appState.tr('sign_up')).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                ),
+            : () => setState(() {
+                  _isLoginMode = !_isLoginMode;
+                  if (!_isLoginMode) _isDriverIdMode = false;
+                }),
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(fontSize: 13.5, color: muted),
+            children: [
+              TextSpan(text: '${appState.tr(_isLoginMode ? 'no_account_prompt' : 'have_account_prompt')} '),
+              TextSpan(
+                text: appState.tr(_isLoginMode ? 'create_account' : 'sign_in'),
+                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700),
               ),
-      ),
-    );
-  }
-
-  // ====================== FORGOT PASSWORD ======================
-  // BUG FIX (pedido explícito): la ruta forgotPassword existía en
-  // AppRoutes y el string i18n también, pero no había ningún botón que la
-  // disparara -- código muerto. Ahora sí navega a ForgotPasswordScreen.
-  Widget _buildForgotPasswordLink(AppState appState) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
-        child: Text(
-          appState.tr('forgot_password'),
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ====================== TOGGLE MODE ======================
-  Widget _buildToggleMode(AppState appState) {
-    return TextButton(
-      onPressed: () => setState(() => _isLoginMode = !_isLoginMode),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Text(
-          _isLoginMode
-              ? (appState.tr('signup'))
-              : (appState.tr('sign_in')),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
+            ],
           ),
         ),
       ),
@@ -838,7 +944,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           appState.tr('Olympus Mont Systems LLC'),
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
         ),
         Text(
           appState.tr('powered_by_footer'),
@@ -851,38 +957,95 @@ class _LoginScreenState extends State<LoginScreen> {
 
 class _ModeToggleChip extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _ModeToggleChip({required this.label, required this.selected, required this.onTap});
+  const _ModeToggleChip({required this.label, required this.icon, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
+    final fg = selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B));
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected ? primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.bold,
-                color: selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: fg),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+/// The soft route line from the website hero, drawn over the backdrop.
+class _RouteCurvePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    final h = size.height * 0.28;
+    final path = Path()
+      ..moveTo(-20, h * 0.95)
+      ..cubicTo(size.width * 0.25, h * 0.35, size.width * 0.45, h * 1.15, size.width * 0.65, h * 0.6)
+      ..cubicTo(size.width * 0.8, h * 0.2, size.width * 0.95, h * 0.55, size.width + 20, h * 0.4);
+    canvas.drawPath(path, paint);
+    canvas.drawCircle(Offset(size.width * 0.65, h * 0.6), 5, Paint()..color = Colors.white.withValues(alpha: 0.18));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Google "G" mark drawn in its four brand colors (no image asset needed).
+class _GoogleGPainter extends CustomPainter {
+  const _GoogleGPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final stroke = s * 0.2;
+    final rect = Rect.fromLTWH(stroke / 2, stroke / 2, s - stroke, s - stroke);
+    Paint arc(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    const deg = 3.14159265 / 180;
+    canvas.drawArc(rect, -40 * deg, -100 * deg, false, arc(const Color(0xFFEA4335))); // red, top
+    canvas.drawArc(rect, -140 * deg, -90 * deg, false, arc(const Color(0xFFFBBC05))); // yellow, left
+    canvas.drawArc(rect, 130 * deg, -90 * deg, false, arc(const Color(0xFF34A853))); // green, bottom
+    canvas.drawArc(rect, 40 * deg, -80 * deg, false, arc(const Color(0xFF4285F4))); // blue, right
+    canvas.drawRect(
+      Rect.fromLTWH(s * 0.5, s * 0.5 - stroke / 2, s * 0.5 - stroke / 2 + stroke / 2, stroke),
+      Paint()..color = const Color(0xFF4285F4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

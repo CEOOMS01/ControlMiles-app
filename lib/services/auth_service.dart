@@ -1,6 +1,7 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/auth_service.dart - PRODUCTION READY
 
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
@@ -213,9 +214,59 @@ class AuthService {
     }
   }
 
+  // ════════════════════════════════════════════════════════════
+  // GOOGLE (2026-09-29, explicit user request). Native account picker
+  // (Android Credential Manager via google_sign_in), then the Google ID
+  // token is exchanged for a Supabase session -- Supabase's recommended
+  // Flutter path (auth-signinwithidtoken). serverClientId is the SAME web
+  // OAuth client the website already uses (Google Cloud project
+  // controlmiles-web-509308), so the token's audience is one Supabase's
+  // Google provider already accepts. Android also needs an Android OAuth
+  // client in that project for com.olimsys.controlmiles + the signing
+  // SHA-1s, or authenticate() fails with a developer/configuration error.
+  // Returns false when the driver closed the picker (not an error).
+  // ════════════════════════════════════════════════════════════
+  static const _googleWebClientId =
+      '961384108906-3a1jsdi3rp7ch003j1tjdq13bcfsuq6f.apps.googleusercontent.com';
+  static bool _googleInitialized = false;
+
+  Future<bool> signInWithGoogle() async {
+    final google = GoogleSignIn.instance;
+    if (!_googleInitialized) {
+      await google.initialize(serverClientId: _googleWebClientId);
+      _googleInitialized = true;
+    }
+    final GoogleSignInAccount account;
+    try {
+      account = await google.authenticate();
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled ||
+          e.code == GoogleSignInExceptionCode.interrupted) {
+        return false;
+      }
+      rethrow;
+    }
+    final idToken = account.authentication.idToken;
+    if (idToken == null) {
+      throw Exception('Google did not return an ID token');
+    }
+    await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+    );
+    return true;
+  }
+
   // Cerrar sesión
   Future<void> signOut() async {
     try {
+      // Also forget the Google account choice, so the next Google sign-in
+      // shows the picker instead of silently reusing the last account.
+      if (_googleInitialized) {
+        try {
+          await GoogleSignIn.instance.signOut();
+        } catch (_) {}
+      }
       await _supabase.auth.signOut();
     } catch (e) {
       throw Exception("Logout failed");
