@@ -405,7 +405,7 @@ const Map<String, String> enTexts = {
   'motion_detection': 'Motion & Activity',
   'motion_desc': 'Used to detect when you start and stop driving.',
   'notifications_desc': 'Used to remind you about active trips and send you weekly mileage summaries.',
-  'accept_terms': 'I have read and accept the Terms of Service and Privacy Policy.',
+  'accept_terms': "I confirm I am at least 18 years old and accept the Terms of Service and Privacy Policy.",
   'permission_required': 'Permission required',
   'location_always_needed': 'ControlMiles needs "Allow all the time" location access to keep tracking your trip even when the app isn\'t open. Please enable it in Settings.',
   'open_settings': 'Open Settings',

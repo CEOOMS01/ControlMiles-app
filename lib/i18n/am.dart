@@ -606,7 +606,7 @@ const Map<String, String> amTexts = {
   'motion_detection': 'እንቅስቃሴና ተግባር',
   'motion_desc': 'መንዳት መቼ እንደጀመሩና እንዳቆሙ ለመለየት ይጠቅማል።',
   'notifications_desc': 'ስለ ንቁ ጉዞዎች ለማስታወስና ሳምንታዊ የማይል ማጠቃለያ ለመላክ ይጠቅማል።',
-  'accept_terms': 'የአገልግሎት ውሉንና የግላዊነት ፖሊሲውን አንብቤ ተቀብያለሁ።',
+  'accept_terms': "ዕድሜዬ ቢያንስ 18 ዓመት መሆኑን አረጋግጣለሁ፣ የአገልግሎት ውሎችንና የግላዊነት መመሪያን እቀበላለሁ።",
   'add_vehicle_prompt': 'እስካሁን ተሽከርካሪ አልተጨመረም',
   'active_badge': 'ንቁ',
   'vehicle_make_hint': 'ለምሳሌ፦ Toyota፣ Nissan',

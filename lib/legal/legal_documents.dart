@@ -34,6 +34,11 @@
 
 const String legalDocumentsLastUpdated = 'September 9, 2026';
 
+/// Same date, machine form -- what accept_legal_terms() records next to
+/// the acceptance timestamp (profiles.legal_terms_version). Bump both
+/// together, and the website's copy (src/lib/legal-version.ts).
+const String legalTermsVersion = '2026-09-09';
+
 const String privacyPolicyEn = '''
 Last updated: $legalDocumentsLastUpdated
 © 2026 ControlMiles. All rights reserved.

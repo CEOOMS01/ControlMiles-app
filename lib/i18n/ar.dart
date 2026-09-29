@@ -623,7 +623,7 @@ const Map<String, String> arTexts = {
   'motion_detection': 'الحركة والنشاط',
   'motion_desc': 'يُستخدم لاكتشاف وقت بدء القيادة وتوقفها.',
   'notifications_desc': 'تُستخدم لتذكيرك بالرحلات النشطة وإرسال ملخصات أسبوعية للأميال.',
-  'accept_terms': 'لقد قرأت شروط الخدمة وسياسة الخصوصية وأوافق عليهما.',
+  'accept_terms': "أؤكد أن عمري 18 عامًا على الأقل وأوافق على شروط الخدمة وسياسة الخصوصية.",
   'add_vehicle_prompt': 'لم تتم إضافة أي مركبة بعد',
   'active_badge': 'نشطة',
   'vehicle_make_hint': 'مثال: Toyota، Nissan',

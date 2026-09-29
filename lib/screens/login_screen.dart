@@ -283,6 +283,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _afterSuccessfulAuth(AppState appState) async {
+    if (!_isLoginMode && Supabase.instance.client.auth.currentSession != null) {
+      try {
+        await Supabase.instance.client
+            .rpc('accept_legal_terms', params: {'p_version': legalTermsVersion});
+      } catch (e) {
+        debugPrint('[Login] recording legal acceptance failed: $e');
+      }
+    }
     if (_isLoginMode) {
       await LoginPrefs.saveAfterSignIn(
         remember: _rememberId,

@@ -4,6 +4,7 @@
 // ================================================================
 
 import 'package:flutter/material.dart';
+import '../legal/legal_documents.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';   // ← IMPORT OBLIGATORIO
@@ -160,6 +161,16 @@ class _WelcomePageState extends State<WelcomePage> {
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, AppRoutes.login);
         return;
+      }
+
+      // 18+ and Terms/Privacy acceptance, recorded server-side as evidence
+      // (2026-09-29): this screen is the one step every account passes
+      // through -- email sign-up, Google, fleet drivers alike.
+      try {
+        await Supabase.instance.client
+            .rpc('accept_legal_terms', params: {'p_version': legalTermsVersion});
+      } catch (e) {
+        debugPrint('[Welcome] recording legal acceptance failed: $e');
       }
 
       final permissionsOk = await _requestPermissionsFlow();

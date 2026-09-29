@@ -395,7 +395,7 @@ const Map<String, String> esTexts = {
   'motion_detection': 'Movimiento y actividad',
   'motion_desc': 'Se usa para detectar cuándo empiezas y dejas de manejar.',
   'notifications_desc': 'Se usa para recordarte viajes activos y enviarte resúmenes semanales de millaje.',
-  'accept_terms': 'He leído y acepto los Términos de Servicio y la Política de Privacidad.',
+  'accept_terms': "Confirmo que tengo al menos 18 años y acepto los Términos de Servicio y la Política de Privacidad.",
   'permission_required': 'Permiso requerido',
   'location_always_needed': 'ControlMiles necesita el acceso a ubicación "Permitir todo el tiempo" para seguir rastreando tu viaje incluso cuando la app no está abierta. Actívalo en Ajustes.',
   'open_settings': 'Abrir Ajustes',

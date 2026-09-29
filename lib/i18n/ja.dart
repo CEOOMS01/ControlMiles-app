@@ -610,7 +610,7 @@ const Map<String, String> jaTexts = {
   'motion_detection': 'モーションとアクティビティ',
   'motion_desc': '運転の開始と停止を検知するために使用します。',
   'notifications_desc': '進行中の走行のお知らせや、週間マイル数のまとめを送るために使用します。',
-  'accept_terms': '利用規約とプライバシーポリシーを読み、同意します。',
+  'accept_terms': "18歳以上であることを確認し、利用規約とプライバシーポリシーに同意します。",
   'add_vehicle_prompt': '車両がまだ登録されていません',
   'active_badge': '使用中',
   'vehicle_make_hint': '例：Toyota、Nissan',

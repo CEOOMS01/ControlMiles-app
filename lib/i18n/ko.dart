@@ -611,7 +611,7 @@ const Map<String, String> koTexts = {
   'motion_detection': '동작 및 활동',
   'motion_desc': '운전을 시작하고 멈추는 시점을 감지하는 데 사용됩니다.',
   'notifications_desc': '진행 중인 운행을 알려주고 주간 주행 요약을 보내는 데 사용됩니다.',
-  'accept_terms': '서비스 약관과 개인정보 처리방침을 읽고 동의합니다.',
+  'accept_terms': "만 18세 이상임을 확인하며 서비스 약관 및 개인정보처리방침에 동의합니다.",
   'add_vehicle_prompt': '아직 등록된 차량이 없습니다',
   'active_badge': '사용 중',
   'vehicle_make_hint': '예: Toyota, Nissan',

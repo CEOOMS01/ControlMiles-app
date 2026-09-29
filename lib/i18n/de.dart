@@ -283,7 +283,7 @@ const Map<String, String> deTexts = {
   'motion_detection': 'Bewegung & Aktivität',
   'motion_desc': 'Wird verwendet, um zu erkennen, wann du losfährst und anhältst.',
   'notifications_desc': 'Wird verwendet, um dich an aktive Fahrten zu erinnern und dir wöchentliche Kilometerzusammenfassungen zu senden.',
-  'accept_terms': 'Ich habe die Nutzungsbedingungen und die Datenschutzrichtlinie gelesen und akzeptiere sie.',
+  'accept_terms': "Ich bestätige, dass ich mindestens 18 Jahre alt bin, und akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung.",
   'permission_required': 'Berechtigung erforderlich',
   'location_always_needed': 'ControlMiles benötigt den Standortzugriff "Immer zulassen", um deine Fahrt auch dann weiter zu verfolgen, wenn die App nicht geöffnet ist. Bitte aktiviere dies in den Einstellungen.',
   'open_settings': 'Einstellungen öffnen',

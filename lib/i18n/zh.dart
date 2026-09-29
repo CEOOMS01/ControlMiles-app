@@ -296,7 +296,7 @@ const Map<String, String> zhTexts = {
   'motion_detection': '运动与活动',
   'motion_desc': '用于检测您何时开始和停止驾驶。',
   'notifications_desc': '用于提醒您正在进行的行程，并发送每周里程摘要。',
-  'accept_terms': '我已阅读并接受服务条款和隐私政策。',
+  'accept_terms': "我确认我已年满 18 岁，并接受服务条款和隐私政策。",
   'permission_required': '需要权限',
   'location_always_needed': 'ControlMiles 需要"始终允许"位置权限，以便在应用未打开时也能继续追踪您的行程。请在设置中启用此权限。',
   'open_settings': '打开设置',
