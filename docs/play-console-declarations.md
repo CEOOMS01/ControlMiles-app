@@ -98,9 +98,10 @@ Play Console → **Contenido de la app → Seguridad de los datos**.
 
 **No se recoge:** contactos, mensajes, calendario, salud/fitness (el reconocimiento de actividad no sale del teléfono), audio, archivos, historial web ni IDs de publicidad. **No hay publicidad.**
 
-### ⚠️ Confirma antes de enviar
-- **CGC Core / monitoreo** (sellado antifraude de viajes y registro de errores): lo marqué como servicio **propio**, es decir, no compartido. Si lo opera **otra empresa distinta** de la que publica la app, cambia "Diagnóstico" y "Registros de fallos" a **Compartido**.
-- **Servidores (Supabase, Cloudflare R2 para mapas, Vercel):** son proveedores que procesan por nuestra cuenta, así que no cuentan como "compartir" según Google.
+### Servicios propios y proveedores (no cuentan como "compartir")
+- **CGC Core** (sellado antifraude de viajes y monitoreo de errores) es un servicio **propio** del ecosistema del desarrollador (confirmado por el dueño el 2026-09-29). Por eso "Diagnóstico" y "Registros de fallos" se declaran **recogidos, no compartidos**.
+- **Servidores (Supabase, Cloudflare R2 para mapas, Vercel):** son proveedores que procesan los datos por cuenta nuestra, así que tampoco cuentan como "compartir".
+- **Único dato compartido con un tercero:** la ubicación aproximada que se manda a OpenStreetMap (Overpass) para consultar límites de velocidad.
 
 ---
 
