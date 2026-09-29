@@ -45,6 +45,10 @@ class OrganizationMember {
   final String memberRole; // 'owner' | 'admin' | 'driver'
   final bool isActive;
   final DateTime? joinedAt;
+  // From the embedded profiles row (listMembers). Found live 2026-09-29:
+  // the fleet roster showed only "OWNER" / "DRIVER" with no names.
+  final String? name;
+  final String? displayId;
 
   const OrganizationMember({
     required this.id,
@@ -53,9 +57,23 @@ class OrganizationMember {
     required this.memberRole,
     required this.isActive,
     this.joinedAt,
+    this.name,
+    this.displayId,
   });
 
   bool get isOwnerOrAdmin => memberRole == 'owner' || memberRole == 'admin';
+
+  static String? _profileName(dynamic profile) {
+    if (profile is! Map) return null;
+    final parts = [profile['first_name'], profile['last_name']]
+        .whereType<String>()
+        .where((p) => p.trim().isNotEmpty)
+        .join(' ');
+    if (parts.isNotEmpty) return parts;
+    final full = profile['full_name'] as String?;
+    if (full != null && full.trim().isNotEmpty) return full;
+    return profile['email'] as String?;
+  }
 
   factory OrganizationMember.fromMap(Map<String, dynamic> map) {
     return OrganizationMember(
@@ -67,6 +85,8 @@ class OrganizationMember {
       joinedAt: map['joined_at'] != null
           ? DateTime.parse(map['joined_at'] as String)
           : null,
+      name: _profileName(map['profiles']),
+      displayId: (map['profiles'] as Map?)?['display_id'] as String?,
     );
   }
 }

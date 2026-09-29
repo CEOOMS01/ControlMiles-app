@@ -299,9 +299,18 @@ class _FleetRosterScreenState extends State<FleetRosterScreen> {
                                         ],
                                       ],
                                     ),
+                                    if (member.name != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        member.displayId == null
+                                            ? member.name!
+                                            : '${member.name!} · ${member.displayId}',
+                                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
                                     const SizedBox(height: 4),
                                     Text(
-                                      assignedVehicle?.displayName ?? appState.tr('fleet_no_vehicle_assigned'),
+                                      assignedVehicle?.label ?? appState.tr('fleet_no_vehicle_assigned'),
                                       style: TextStyle(fontSize: 12.5, color: subTextColor),
                                     ),
                                   ],

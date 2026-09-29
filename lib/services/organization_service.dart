@@ -48,7 +48,7 @@ class OrganizationService {
   Future<List<OrganizationMember>> listMembers(String organizationId) async {
     final data = await _supabase
         .from('organization_members')
-        .select()
+        .select('*, profiles(first_name, last_name, full_name, email, display_id)')
         .eq('organization_id', organizationId)
         .order('joined_at', ascending: true);
     return List<Map<String, dynamic>>.from(data)
