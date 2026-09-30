@@ -97,11 +97,11 @@ If you are a California resident, the California Consumer Privacy Act (CCPA), as
 
 Residents of other U.S. states with comparable privacy laws (for example Virginia, Colorado, Connecticut, and Utah) have similar rights, which we honor on the same basis.
 
-To exercise any of these rights, contact account@controlmiles.com. We may need to verify your identity before responding.
+To exercise any of these rights, contact privacy@controlmiles.com. We may need to verify your identity before responding.
 
 9. INTERNATIONAL USERS
 
-If you access ControlMiles from outside the United States, your information will be transferred to and processed in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, you may have additional rights under the GDPR or UK GDPR, including the right to access, correct, delete, or port your personal data, and the right to object to certain processing. Contact account@controlmiles.com to exercise these rights.
+If you access ControlMiles from outside the United States, your information will be transferred to and processed in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, you may have additional rights under the GDPR or UK GDPR, including the right to access, correct, delete, or port your personal data, and the right to object to certain processing. Contact privacy@controlmiles.com to exercise these rights.
 
 10. CHILDREN'S PRIVACY
 
@@ -117,7 +117,7 @@ We may update this Privacy Policy from time to time. Material changes will be re
 
 13. CONTACT US
 
-Questions about this policy: account@controlmiles.com
+Questions about this policy: privacy@controlmiles.com
 ''';
 
 const String termsOfServiceEn = '''
@@ -284,11 +284,11 @@ A driver can delete individual trips they logged, subject to the organization's 
 
 9. PRIVACY RIGHTS (CALIFORNIA AND OTHER U.S. STATES)
 
-If a driver is a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives them the right to know what personal information we collect and how we use it, request deletion, correct inaccurate information, and not be discriminated against for exercising these rights, subject to the organization's own record-keeping obligations for fleet/business records. We do not sell or share personal information for cross-context behavioral advertising. Residents of other U.S. states with comparable privacy laws have similar rights, honored on the same basis. Contact account@controlmiles.com to exercise these rights.
+If a driver is a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives them the right to know what personal information we collect and how we use it, request deletion, correct inaccurate information, and not be discriminated against for exercising these rights, subject to the organization's own record-keeping obligations for fleet/business records. We do not sell or share personal information for cross-context behavioral advertising. Residents of other U.S. states with comparable privacy laws have similar rights, honored on the same basis. Contact privacy@controlmiles.com to exercise these rights.
 
 10. INTERNATIONAL USERS
 
-If an organization or driver accesses ControlMiles from outside the United States, their information will be transferred to and processed in the United States. Organizations or drivers located in the European Economic Area, United Kingdom, or Switzerland may have additional rights under the GDPR or UK GDPR. Contact account@controlmiles.com to exercise these rights.
+If an organization or driver accesses ControlMiles from outside the United States, their information will be transferred to and processed in the United States. Organizations or drivers located in the European Economic Area, United Kingdom, or Switzerland may have additional rights under the GDPR or UK GDPR. Contact privacy@controlmiles.com to exercise these rights.
 
 11. CHILDREN'S PRIVACY
 
@@ -304,7 +304,7 @@ We may update this Privacy Policy from time to time. Material changes will be re
 
 14. CONTACT US
 
-Questions about this policy: account@controlmiles.com
+Questions about this policy: privacy@controlmiles.com
 ''';
 
 const String termsOfServiceFleetEn = '''
