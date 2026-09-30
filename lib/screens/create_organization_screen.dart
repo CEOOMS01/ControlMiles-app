@@ -26,6 +26,9 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
   final _organizationService = OrganizationService();
   bool _isProcessing = false;
   String? _error;
+  // "What kind of fleet is it?" (2026-09-29): only a driving school gets
+  // hourly classes. Changeable later in Settings on controlmiles.com.
+  String _fleetType = 'general';
 
   @override
   void dispose() {
@@ -46,7 +49,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
     });
 
     try {
-      await _organizationService.createOrganization(name);
+      await _organizationService.createOrganization(name, industryTemplate: _fleetType);
 
       // El RPC ya promovió profiles.account_type a 'fleet_admin' server-side
       // -- esto solo refresca la copia en memoria/caché de AppState para
@@ -123,6 +126,59 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              Text(
+                appState.tr('fleet_type_question'),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textColor),
+              ),
+              const SizedBox(height: 8),
+              for (final option in const [
+                ('general', 'fleet_type_general', 'fleet_type_general_desc'),
+                ('driving_school', 'fleet_type_driving_school', 'fleet_type_driving_school_desc'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: _isProcessing ? null : () => setState(() => _fleetType = option.$1),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _fleetType == option.$1
+                              ? Theme.of(context).colorScheme.primary
+                              : borderColor,
+                          width: _fleetType == option.$1 ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _fleetType == option.$1
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_off_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(appState.tr(option.$2),
+                                    style: TextStyle(fontWeight: FontWeight.w700, color: textColor)),
+                                Text(appState.tr(option.$3),
+                                    style: TextStyle(fontSize: 12.5, color: subTextColor)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Text(appState.tr('fleet_type_hint'), style: TextStyle(fontSize: 11.5, color: subTextColor)),
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12.5)),

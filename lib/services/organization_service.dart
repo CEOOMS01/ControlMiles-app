@@ -24,10 +24,12 @@ class OrganizationService {
 
   /// Crea una organización nueva y promueve al llamador a fleet_admin,
   /// dueño de esa organización. Devuelve el id de la organización creada.
-  Future<String> createOrganization(String name) async {
+  /// [industryTemplate]: 'general' or 'driving_school' (2026-09-29, the
+  /// fleet type asked at creation; only driving schools get hourly classes).
+  Future<String> createOrganization(String name, {String industryTemplate = 'general'}) async {
     final result = await _supabase.rpc(
       'create_organization',
-      params: {'p_name': name},
+      params: {'p_name': name, 'p_industry_template': industryTemplate},
     );
     return result as String;
   }
