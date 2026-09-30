@@ -109,3 +109,9 @@ AS $function$
   select p in ('general', 'trucking', 'construction', 'passenger');
 $function$;
 update public.organizations set require_pretrip_inspection = false where industry_template = 'driving_school';
+
+-- A removed (archived) branch must not block re-creating one with the
+-- same name; names are unique among active branches, case-insensitive.
+-- Applied as branches_unique_active_name.
+alter table public.branches drop constraint if exists branches_organization_id_name_key;
+create unique index branches_org_active_name_key on public.branches (organization_id, lower(name)) where not is_archived;
