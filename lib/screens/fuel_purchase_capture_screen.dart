@@ -77,6 +77,9 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
   // jurisdiction from GPS. Always editable.
   String _fuelType = 'diesel';
   bool _stateFromLocation = false;
+  // Fleet profile (2026-09-30): the state only matters for IFTA; fleets
+  // whose profile doesn't use IFTA (e.g. a driving school) don't see it.
+  bool _showState = true;
   DateTime _purchaseDate = DateTime.now();
   bool _ocrSource = false;
   double? _ocrConfidence;
@@ -87,6 +90,25 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
   @override
   void initState() {
     super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final orgId = widget.vehicle.organizationId;
+    if (orgId != null) {
+      try {
+        final org = await Supabase.instance.client
+            .from('organizations')
+            .select('industry_template, show_all_modules')
+            .eq('id', orgId)
+            .maybeSingle();
+        final profile = org?['industry_template'] as String? ?? 'general';
+        final showAll = org?['show_all_modules'] as bool? ?? false;
+        final ifta = showAll || const ['general', 'trucking', 'construction'].contains(profile);
+        if (mounted) setState(() => _showState = ifta);
+        if (!ifta) return;
+      } catch (_) {}
+    }
     _prefillStateFromLocation();
   }
 
@@ -330,6 +352,7 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
               decoration: _inputDecoration('0.00', borderColor),
             ),
 
+            if (_showState) ...[
             const SizedBox(height: 14),
             _FieldLabel(appState.tr('fuel_state_label'), textColor),
             DropdownButtonFormField<String>(
@@ -358,6 +381,7 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
                 ),
               ),
 
+            ],
             const SizedBox(height: 14),
             _FieldLabel(appState.tr('fuel_vendor_label'), textColor),
             TextField(
