@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../routes/app_routes.dart';
+import 'driver_safety_score_screen.dart';
 
 Future<void> showDriverSettingsSheet(BuildContext context) {
   return showModalBottomSheet(
@@ -106,6 +107,24 @@ class _DriverSettingsSheet extends StatelessWidget {
                 onChanged: (v) => appState.setDarkMode(v),
                 activeThumbColor: Theme.of(context).colorScheme.primary,
               ),
+            ),
+            // The driver's own safety score lives here (2026-09-30), not
+            // on the main screen.
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.speed_rounded, color: Theme.of(context).colorScheme.primary),
+              title: Text(
+                appState.tr('safety_score_title'),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                // Capture the navigator before the sheet (and this
+                // context) closes.
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(MaterialPageRoute(builder: (_) => const DriverSafetyScoreScreen()));
+              },
             ),
             const Divider(),
             Text(

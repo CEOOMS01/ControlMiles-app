@@ -33,7 +33,8 @@ import '../services/inspection_service.dart';
 import '../services/shift_block_service.dart';
 import '../errors/app_error.dart';
 import '../tracking/tracking_controller.dart';
-import '../widgets/driver_safety_score_card.dart';
+import '../services/driver_notification_service.dart';
+import 'driver_notifications_screen.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/org_mode_switcher.dart';
@@ -74,6 +75,11 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   // empty (hasBlocks == false) for a fleet without a class schedule today --
   // then this screen behaves exactly as before (one trip = one turno).
   final _shiftService = ShiftBlockService();
+
+  // Driver messages (2026-09-30): after-trip safety notes + the 15-day
+  // summary, behind the bell in the app bar -- not a card on this screen.
+  final _notificationService = DriverNotificationService();
+  int _unreadMessages = 0;
   ShiftDay? _shiftDay;
   Timer? _shiftTicker;
 
@@ -84,6 +90,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     _tripIsActive = TrackingController.currentState != TrackingState.idle;
     _loadVehicle();
     _loadShiftDay();
+    _loadUnreadMessages();
     // "Open to start" / "Missed" depend on the clock, not only on data.
     _shiftTicker = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted && (_shiftDay?.hasBlocks ?? false)) setState(() {});
@@ -311,7 +318,10 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   // blocks the NEXT one.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkMembershipStillActive();
+    if (state == AppLifecycleState.resumed) {
+      _checkMembershipStillActive();
+      _loadUnreadMessages();
+    }
   }
 
   Future<void> _checkMembershipStillActive() async {
@@ -358,6 +368,20 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       // Fails open -- a lookup hiccup must never lock out a still-active
       // driver; the DB trigger remains the real floor regardless.
     }
+  }
+
+  Future<void> _loadUnreadMessages() async {
+    try {
+      final n = await _notificationService.unreadCount();
+      if (mounted) setState(() => _unreadMessages = n);
+    } catch (e) {
+      debugPrint('[DriverOps] unread messages failed: $e');
+    }
+  }
+
+  Future<void> _openMessages() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverNotificationsScreen()));
+    _loadUnreadMessages();
   }
 
   Future<void> _loadVehicle() async {
@@ -422,7 +446,113 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       context,
       MaterialPageRoute(builder: (_) => VehicleInspectionScreen(vehicle: vehicle)),
     );
-    _loadVehicle();
+    // Refresh only this vehicle's inspection. Reloading the whole screen
+    // (as before, 2026-09-30 fix) dropped a vehicle picked in 'open'
+    // assignment mode -- it isn't an assignment -- and left the driver
+    // with no vehicle and no way to start.
+    final latest = await _inspectionService.getLatestForVehicle(vehicle.id);
+    if (mounted) setState(() => _latestInspection = latest);
+  }
+
+  /// Today's latest inspection for this vehicle is a passing pre-trip.
+  bool get _preTripPassedToday {
+    final inspection = _latestInspection;
+    if (inspection == null || inspection.inspectionType != 'pre_trip' || !inspection.isPass) {
+      return false;
+    }
+    final today = DateTime.now();
+    final submitted = inspection.createdAt.toLocal();
+    return submitted.year == today.year && submitted.month == today.month && submitted.day == today.day;
+  }
+
+  /// Today's pre-trip found a defect.
+  bool get _preTripFailedToday {
+    final inspection = _latestInspection;
+    if (inspection == null || inspection.inspectionType != 'pre_trip' || inspection.isPass) return false;
+    final today = DateTime.now();
+    final submitted = inspection.createdAt.toLocal();
+    return submitted.year == today.year && submitted.month == today.month && submitted.day == today.day;
+  }
+
+  /// The step the driver must do before a trip, made visible (2026-09-30:
+  /// "no hay forma de hacer el pre-trip inspection, debe visualizarse").
+  /// No vehicle -> say so (fixed mode: the admin assigns one on the web);
+  /// vehicle but no passing pre-trip today -> the inspection is step 1.
+  Widget? _buildNextStepCard(AppState appState, Color textColor, Color subTextColor) {
+    if (_tripIsActive) return null;
+    if (_vehicle == null) {
+      if (_openAssignmentMode) return null; // the "Select vehicle" button is the step
+      return _stepCard(
+        icon: Icons.no_transfer_rounded,
+        color: const Color(0xFFB45309),
+        title: appState.tr('driver_no_vehicle_title'),
+        body: appState.tr('driver_no_vehicle_body'),
+        textColor: textColor,
+        subTextColor: subTextColor,
+      );
+    }
+    if (_preTripPassedToday) return null;
+    final failed = _preTripFailedToday;
+    return _stepCard(
+      icon: failed ? Icons.error_rounded : Icons.fact_check_rounded,
+      color: failed ? const Color(0xFFDC2626) : Theme.of(context).colorScheme.primary,
+      title: appState.tr(failed ? 'pretrip_failed_title' : 'pretrip_required_title'),
+      body: appState.tr(failed ? 'pretrip_failed_body' : 'pretrip_required_body'),
+      textColor: textColor,
+      subTextColor: subTextColor,
+      action: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => _startInspection(appState, _vehicle!),
+          icon: const Icon(Icons.checklist_rounded, size: 18),
+          label: Text(
+            appState.tr(failed ? 'pretrip_redo_button' : 'pretrip_start_button').toUpperCase(),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: failed ? const Color(0xFFDC2626) : Theme.of(context).colorScheme.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stepCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String body,
+    required Color textColor,
+    required Color subTextColor,
+    Widget? action,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: textColor)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(body, style: TextStyle(fontSize: 12.5, height: 1.35, color: subTextColor)),
+          if (action != null) ...[const SizedBox(height: 12), action],
+        ],
+      ),
+    );
   }
 
   Future<void> _logFuelPurchase(Vehicle vehicle) async {
@@ -497,6 +627,15 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: appState.tr('notif_title'),
+            onPressed: _openMessages,
+            icon: Badge(
+              isLabelVisible: _unreadMessages > 0,
+              label: Text('$_unreadMessages'),
+              child: const Icon(Icons.notifications_none_rounded),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => showDriverSettingsSheet(context),
           ),
@@ -554,6 +693,10 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_buildNextStepCard(appState, textColor, subTextColor) case final step?) ...[
+                    step,
+                    const SizedBox(height: 12),
+                  ],
                   // Fleet Sprint 4: only offered when this org is 'open'
                   // mode and no fixed assignment resolved -- 'fixed'-mode
                   // drivers and drivers with a real assignment never see
@@ -575,7 +718,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                         ),
                       ),
                     ),
-                  if (_vehicle != null)
+                  if (_vehicle != null && _preTripPassedToday)
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -647,18 +790,13 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       ),
                     ),
                   ],
-                  // Safety score (2026-09-30): never shown mid-trip.
-                  if (!_tripIsActive && appState.defaultOrgId != null) ...[
-                    const SizedBox(height: 16),
-                    DriverSafetyScoreCard(organizationId: appState.defaultOrgId!),
-                  ],
                   if (_shiftDay?.hasBlocks ?? false) ...[
                     const SizedBox(height: 20),
                     _buildClassesCard(appState, cardColor, textColor, subTextColor, borderColor),
                   ],
                   const SizedBox(height: 28),
                   // A closed day can't start anything (DB: WORKDAY_ALREADY_CLOSED).
-                  if (!(_shiftDay?.workdayClosed ?? false))
+                  if (!(_shiftDay?.workdayClosed ?? false) && (_vehicle != null || _tripIsActive))
                   Center(
                     child: TrackingActionButton(
                       // A fleet-ops trip has no gig-platform to pick --
