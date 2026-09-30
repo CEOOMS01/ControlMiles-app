@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -81,6 +82,15 @@ class TrackingController {
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
+
+  // Live-map heartbeat (found live 2026-09-30: a fleet trip started with
+  // the phone standing still never appeared on the admin's map -- the
+  // location was only sent from _smartSync, i.e. on a GPS tick, and the
+  // 10 m distance filter produces no ticks while stopped). Sends the
+  // position right when a fleet trip starts and then every 60 s when no
+  // tick has updated it. Only vehicles.last_* is touched -- never
+  // breadcrumbs, whose gaps are how idling is measured.
+  static Timer? _liveHeartbeat;
   static DateTime _lastBreadcrumbTime = DateTime.now();
 
   static double _totalSectionMiles = 0.0;
@@ -155,6 +165,8 @@ class TrackingController {
     _minDrivingSignatureScore = 1.0;
     _runSegmentStartedAt = null;
     livePosition.value = null;
+    _liveHeartbeat?.cancel();
+    _liveHeartbeat = null;
     startedViaAutoDetect = false;
     AntifraudEngine.reset();
     DriverSafetyMonitor.reset();
@@ -243,6 +255,7 @@ class TrackingController {
       });
 
       activeSessionId = sessionId;
+      _startLiveHeartbeat();
 
       // BUG FIX: context llega como parámetro desde el caller (un widget
       // State) y ya pasó por dos await reales (getActiveOrAssignedVehicle +
@@ -1295,6 +1308,7 @@ class TrackingController {
         }
         await _rescheduleForgottenTripReminderIfRunning();
         await _reschedulePauseReminderIfPaused();
+        unawaited(_resumeLiveHeartbeat());
         _logDebug(
           'RECOVERY_OK',
           'Recovered 100% offline from local checkpoint',
@@ -1314,6 +1328,7 @@ class TrackingController {
         }
         await _rescheduleForgottenTripReminderIfRunning();
         await _reschedulePauseReminderIfPaused();
+        unawaited(_resumeLiveHeartbeat());
         _logDebug(
           'RECOVERY_OK',
           'Recovered from local storage (section hydrated via DB)',
@@ -1410,6 +1425,7 @@ class TrackingController {
         await _reschedulePauseReminderIfPaused();
 
         await _saveLocalCheckpoint();
+        unawaited(_resumeLiveHeartbeat());
         _logDebug('RECOVERY_OK', 'Recovered from database');
       } else {
         // Sesión abierta pero sin ninguna sección activa/pausada — estado
@@ -1797,6 +1813,64 @@ class TrackingController {
           }
         }
       }
+    }
+  }
+
+  /// After a trip is recovered (app restarted, or the background GPS
+  /// isolate woke up): the vehicle/fleet of the trip were never restored,
+  /// so the live map and safety events silently stopped for the rest of
+  /// the trip (found 2026-09-30). Read them back from the session row,
+  /// then make sure the heartbeat runs.
+  static Future<void> _resumeLiveHeartbeat() async {
+    final sessionId = activeSessionId;
+    if (sessionId != null && (activeVehicleId == null || activeOrganizationId == null)) {
+      try {
+        final row = await Supabase.instance.client
+            .from('sessions')
+            .select('vehicle_id, organization_id')
+            .eq('id', sessionId)
+            .maybeSingle();
+        activeVehicleId ??= row?['vehicle_id'] as String?;
+        activeOrganizationId ??= row?['organization_id'] as String?;
+      } catch (e) {
+        _logError('RECOVER_TRIP_VEHICLE_ERROR', e.toString());
+      }
+    }
+    if (_liveHeartbeat?.isActive ?? false) return;
+    _startLiveHeartbeat();
+  }
+
+  static void _startLiveHeartbeat() {
+    _liveHeartbeat?.cancel();
+    if (activeOrganizationId == null || activeVehicleId == null) return;
+    _sendHeartbeatLocation(force: true);
+    _liveHeartbeat = Timer.periodic(const Duration(seconds: 60), (_) => _sendHeartbeatLocation());
+  }
+
+  static Future<void> _sendHeartbeatLocation({bool force = false}) async {
+    final vehicleId = activeVehicleId;
+    if (vehicleId == null || activeOrganizationId == null) return;
+    if (!force && DateTime.now().difference(_lastLocationUpdateTime).inSeconds < 55) return;
+    try {
+      final pos = await geo.Geolocator.getLastKnownPosition() ??
+          await geo.Geolocator.getCurrentPosition(
+            locationSettings: const geo.LocationSettings(
+              accuracy: geo.LocationAccuracy.high,
+              timeLimit: Duration(seconds: 15),
+            ),
+          );
+      _lastLocationUpdateTime = DateTime.now();
+      await Supabase.instance.client.rpc(
+        'update_vehicle_location',
+        params: {
+          'p_vehicle_id': vehicleId,
+          'p_latitude': pos.latitude,
+          'p_longitude': pos.longitude,
+          'p_speed': pos.speed < 0 ? 0 : pos.speed,
+        },
+      );
+    } catch (e) {
+      _logError('LIVE_LOCATION_HEARTBEAT_ERROR', e.toString());
     }
   }
 

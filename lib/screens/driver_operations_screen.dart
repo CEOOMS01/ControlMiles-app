@@ -39,6 +39,7 @@ import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/org_mode_switcher.dart';
 import 'fleet_vehicle_picker_screen.dart';
+import 'register_own_vehicle_screen.dart';
 import 'vehicle_inspection_screen.dart';
 import 'inspection_detail_screen.dart';
 import 'report_incident_sheet.dart';
@@ -70,6 +71,14 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   // screen is recreated (after ShiftEndedScreen -> "Start next shift").
   bool _openAssignmentMode = false;
   String? _openModeVehicleId;
+
+  // Shift schedule (2026-09-30): with no fixed assignment, today's
+  // scheduled shift (web Shifts page) supplies the vehicle -- from 60 min
+  // before it starts until it ends, in the fleet's timezone. _todayShift
+  // is shown on screen; 'upcoming' explains when the driver can start.
+  Map<String, dynamic>? _todayShift;
+  // Owner-operators: the fleet allows drivers to register their own truck.
+  bool _ownVehicleAllowed = false;
 
   // Hourly classes (fleet shift blocks, 2026-09-29). Null until loaded, and
   // empty (hasBlocks == false) for a fleet without a class schedule today --
@@ -395,10 +404,42 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       organizationId: orgId,
     );
 
+    // Today's scheduled shift: its vehicle when there's no fixed
+    // assignment; shown either way so the driver knows their hours.
+    Map<String, dynamic>? todayShift;
+    Vehicle? resolved = vehicle;
+    var ownAllowed = false;
+    if (orgId != null) {
+      try {
+        final rows = await Supabase.instance.client.rpc('my_shift_today', params: {'p_organization_id': orgId});
+        if (rows is List && rows.isNotEmpty) {
+          todayShift = Map<String, dynamic>.from(rows.first as Map);
+          final shiftVehicle = todayShift['vehicle_id'] as String?;
+          if (resolved == null && todayShift['status'] == 'open' && shiftVehicle != null) {
+            resolved = await _vehicleService.getActiveOrAssignedVehicle(
+              userId,
+              organizationId: orgId,
+              preSelectedVehicleId: shiftVehicle,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('[DriverOps] today shift lookup failed: $e');
+      }
+      try {
+        final org = await Supabase.instance.client
+            .from('organizations')
+            .select('allow_driver_owned_vehicles')
+            .eq('id', orgId)
+            .maybeSingle();
+        ownAllowed = (org?['allow_driver_owned_vehicles'] as bool?) ?? false;
+      } catch (_) {}
+    }
+
     // Fleet Sprint 4: no fixed assignment found -- check whether this
     // org even allows picking one before offering that UI at all.
     var openMode = false;
-    if (vehicle == null && orgId != null) {
+    if (resolved == null && orgId != null) {
       final assignmentMode = await _vehicleService.getVehicleAssignmentMode(orgId);
       openMode = assignmentMode == 'open';
     }
@@ -408,11 +449,16 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     // theirs or a previous driver's. RLS alone decides what this can
     // ever return -- see vehicle_inspections_select_assigned_vehicle_latest.
     final latestInspection =
-        vehicle != null ? await _inspectionService.getLatestForVehicle(vehicle.id) : null;
+        resolved != null ? await _inspectionService.getLatestForVehicle(resolved.id) : null;
 
     if (mounted) {
       setState(() {
-        _vehicle = vehicle;
+        _vehicle = resolved;
+        _todayShift = todayShift;
+        _ownVehicleAllowed = ownAllowed;
+        // A shift's vehicle rides into the trip the same way an
+        // open-mode pick does.
+        if (vehicle == null && resolved != null) _openModeVehicleId = resolved.id;
         _latestInspection = latestInspection;
         _isLoadingVehicle = false;
         _openAssignmentMode = openMode;
@@ -482,13 +528,34 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     if (_tripIsActive) return null;
     if (_vehicle == null) {
       if (_openAssignmentMode) return null; // the "Select vehicle" button is the step
+      final shift = _todayShift;
+      final upcoming = shift != null && shift['status'] == 'upcoming';
       return _stepCard(
-        icon: Icons.no_transfer_rounded,
+        icon: upcoming ? Icons.schedule_rounded : Icons.no_transfer_rounded,
         color: const Color(0xFFB45309),
-        title: appState.tr('driver_no_vehicle_title'),
-        body: appState.tr('driver_no_vehicle_body'),
+        title: appState.tr(upcoming ? 'driver_shift_upcoming_title' : 'driver_no_vehicle_title'),
+        body: upcoming
+            ? appState
+                .tr('driver_shift_upcoming_body')
+                .replaceFirst('{start}', _hhmm(shift['start_time']))
+                .replaceFirst('{end}', _hhmm(shift['end_time']))
+            : appState.tr('driver_no_vehicle_body'),
         textColor: textColor,
         subTextColor: subTextColor,
+        action: _ownVehicleAllowed && !upcoming
+            ? SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _registerOwnVehicle(),
+                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                  label: Text(
+                    appState.tr('own_vehicle_button').toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                  ),
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                ),
+              )
+            : null,
       );
     }
     if (_preTripPassedToday) return null;
@@ -517,6 +584,24 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
         ),
       ),
     );
+  }
+
+  String _hhmm(dynamic t) {
+    final s = (t as String?) ?? '';
+    return s.length >= 5 ? s.substring(0, 5) : s;
+  }
+
+  Future<void> _registerOwnVehicle() async {
+    final orgId = context.read<AppState>().defaultOrgId;
+    if (orgId == null) return;
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => RegisterOwnVehicleScreen(organizationId: orgId)),
+    );
+    if (created == true && mounted) {
+      setState(() => _isLoadingVehicle = true);
+      await _loadVehicle();
+    }
   }
 
   Widget _stepCard({
@@ -685,6 +770,14 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                                 Text(
                                   _vehicle!.displayId!,
                                   style: TextStyle(fontSize: 12, color: subTextColor),
+                                ),
+                              if (_todayShift != null)
+                                Text(
+                                  appState
+                                      .tr('driver_shift_today')
+                                      .replaceFirst('{start}', _hhmm(_todayShift!['start_time']))
+                                      .replaceFirst('{end}', _hhmm(_todayShift!['end_time'])),
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: subTextColor),
                                 ),
                             ],
                           ),
