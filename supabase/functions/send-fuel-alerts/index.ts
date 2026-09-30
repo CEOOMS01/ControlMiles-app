@@ -18,7 +18,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const SYNC_SECRET = Deno.env.get('IFTA_SYNC_SECRET') ?? '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const SENDER = Deno.env.get('INVITE_SENDER_EMAIL') ?? 'invites@controlmiles.com';
+// Sender: alert@ (alerts) -- public addresses set 2026-09-30.
+const SENDER = 'alert@controlmiles.com';
 const FUEL_PAGE_URL = 'https://controlmiles.com/admin/fuel';
 
 type Anomaly = {

@@ -1101,7 +1101,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     // esta pantalla.
     final uri = Uri(
       scheme: 'mailto',
-      path: 'contact@controlmiles.com',
+      path: 'support@controlmiles.com',
       query:
           'subject=${Uri.encodeComponent(appState.tr('send_feedback_email_subject'))}',
     );

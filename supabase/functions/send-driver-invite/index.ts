@@ -30,7 +30,8 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const INVITE_SENDER_EMAIL = Deno.env.get('INVITE_SENDER_EMAIL') ?? 'invites@controlmiles.com';
+// Sender: account@ (account center) -- public addresses set 2026-09-30.
+const INVITE_SENDER_EMAIL = 'account@controlmiles.com';
 const INVITE_LINK_BASE = 'https://controlmiles.com/invite';
 
 // Authenticated endpoint (org admin/owner only, in practice) -- keyed by
