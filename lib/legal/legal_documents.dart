@@ -97,11 +97,11 @@ If you are a California resident, the California Consumer Privacy Act (CCPA), as
 
 Residents of other U.S. states with comparable privacy laws (for example Virginia, Colorado, Connecticut, and Utah) have similar rights, which we honor on the same basis.
 
-To exercise any of these rights, contact legal@controlmiles.com. We may need to verify your identity before responding.
+To exercise any of these rights, contact account@controlmiles.com. We may need to verify your identity before responding.
 
 9. INTERNATIONAL USERS
 
-If you access ControlMiles from outside the United States, your information will be transferred to and processed in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, you may have additional rights under the GDPR or UK GDPR, including the right to access, correct, delete, or port your personal data, and the right to object to certain processing. Contact legal@controlmiles.com to exercise these rights.
+If you access ControlMiles from outside the United States, your information will be transferred to and processed in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, you may have additional rights under the GDPR or UK GDPR, including the right to access, correct, delete, or port your personal data, and the right to object to certain processing. Contact account@controlmiles.com to exercise these rights.
 
 10. CHILDREN'S PRIVACY
 
@@ -117,7 +117,7 @@ We may update this Privacy Policy from time to time. Material changes will be re
 
 13. CONTACT US
 
-Questions about this policy: legal@controlmiles.com
+Questions about this policy: account@controlmiles.com
 ''';
 
 const String termsOfServiceEn = '''
@@ -176,13 +176,13 @@ You agree to indemnify, defend, and hold harmless Olympus Mont Systems LLC, its 
 
 Please read this section carefully. It affects your legal rights.
 
-Informal resolution first. Before filing a claim against ControlMiles, you agree to first contact us at legal@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
+Informal resolution first. Before filing a claim against ControlMiles, you agree to first contact us at info@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
 
 Binding arbitration. If a dispute is not resolved informally, you and Olympus Mont Systems LLC agree that it will be resolved by binding, individual arbitration administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules, rather than in court, except that either party may bring an individual claim in small claims court if it qualifies.
 
 Class action waiver. You and Olympus Mont Systems LLC agree that any arbitration or claim will be conducted on an individual basis only, not as a class, collective, or representative action, and the arbitrator may not consolidate more than one person's claims.
 
-Opt-out. You may opt out of this arbitration agreement by emailing legal@controlmiles.com within 30 days of first agreeing to these Terms, stating your name and that you opt out of arbitration.
+Opt-out. You may opt out of this arbitration agreement by emailing info@controlmiles.com within 30 days of first agreeing to these Terms, stating your name and that you opt out of arbitration.
 
 This section survives termination of your account and these Terms.
 
@@ -212,7 +212,7 @@ We may update these Terms from time to time. Continued use of ControlMiles after
 
 20. CONTACT US
 
-Questions about these Terms: legal@controlmiles.com
+Questions about these Terms: info@controlmiles.com
 ''';
 
 // Explicit user request (2026-08-28): Fleet-mode accounts (an organization
@@ -284,11 +284,11 @@ A driver can delete individual trips they logged, subject to the organization's 
 
 9. PRIVACY RIGHTS (CALIFORNIA AND OTHER U.S. STATES)
 
-If a driver is a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives them the right to know what personal information we collect and how we use it, request deletion, correct inaccurate information, and not be discriminated against for exercising these rights, subject to the organization's own record-keeping obligations for fleet/business records. We do not sell or share personal information for cross-context behavioral advertising. Residents of other U.S. states with comparable privacy laws have similar rights, honored on the same basis. Contact legal@controlmiles.com to exercise these rights.
+If a driver is a California resident, the California Consumer Privacy Act (CCPA), as amended by the CPRA, gives them the right to know what personal information we collect and how we use it, request deletion, correct inaccurate information, and not be discriminated against for exercising these rights, subject to the organization's own record-keeping obligations for fleet/business records. We do not sell or share personal information for cross-context behavioral advertising. Residents of other U.S. states with comparable privacy laws have similar rights, honored on the same basis. Contact account@controlmiles.com to exercise these rights.
 
 10. INTERNATIONAL USERS
 
-If an organization or driver accesses ControlMiles from outside the United States, their information will be transferred to and processed in the United States. Organizations or drivers located in the European Economic Area, United Kingdom, or Switzerland may have additional rights under the GDPR or UK GDPR. Contact legal@controlmiles.com to exercise these rights.
+If an organization or driver accesses ControlMiles from outside the United States, their information will be transferred to and processed in the United States. Organizations or drivers located in the European Economic Area, United Kingdom, or Switzerland may have additional rights under the GDPR or UK GDPR. Contact account@controlmiles.com to exercise these rights.
 
 11. CHILDREN'S PRIVACY
 
@@ -304,7 +304,7 @@ We may update this Privacy Policy from time to time. Material changes will be re
 
 14. CONTACT US
 
-Questions about this policy: legal@controlmiles.com
+Questions about this policy: account@controlmiles.com
 ''';
 
 const String termsOfServiceFleetEn = '''
@@ -367,7 +367,7 @@ The organization agrees to indemnify, defend, and hold harmless Olympus Mont Sys
 
 Please read this section carefully. It affects your legal rights.
 
-Informal resolution first. Before filing a claim against ControlMiles, the organization or driver agrees to first contact us at legal@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
+Informal resolution first. Before filing a claim against ControlMiles, the organization or driver agrees to first contact us at info@controlmiles.com and attempt in good faith to resolve the dispute informally for at least 30 days.
 
 Binding arbitration. If a dispute is not resolved informally, the parties agree that it will be resolved by binding, individual arbitration administered by the American Arbitration Association (AAA) under its Commercial Arbitration Rules (for organizations) or Consumer Arbitration Rules (for individual drivers), rather than in court, except that either party may bring an individual claim in small claims court if it qualifies.
 
@@ -403,5 +403,5 @@ We may update these Terms from time to time. Continued use of ControlMiles after
 
 21. CONTACT US
 
-Questions about these Terms: legal@controlmiles.com
+Questions about these Terms: info@controlmiles.com
 ''';
