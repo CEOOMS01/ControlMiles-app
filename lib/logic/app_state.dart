@@ -18,7 +18,7 @@ class AppState extends ChangeNotifier {
   // ============================================================
   AppLanguage _currentLanguage = AppLanguage.en;
   bool _useMetricSystem = false;
-  bool _isDarkMode = true;           // ← Nuevo: Dark Mode por defecto
+  bool _isDarkMode = false;          // Light by default (user request, 2026-09-30)
   // BUG FIX (toggle de notificaciones inerte): antes esto solo vivía como
   // estado local de SettingsScreen — nada fuera de esa pantalla podía
   // leerlo, incluyendo el propio NotificationService. Ahora sigue el mismo
@@ -628,7 +628,7 @@ class AppState extends ChangeNotifier {
       _useMetricSystem = prefs.getBool('controlmiles_unit_system') ?? false;
 
       // Dark Mode (nuevo)
-      _isDarkMode = prefs.getBool('controlmiles_dark_mode') ?? true;
+      _isDarkMode = prefs.getBool('controlmiles_dark_mode') ?? false;
 
       // Notificaciones (misma clave que ya usaba SettingsScreen)
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;

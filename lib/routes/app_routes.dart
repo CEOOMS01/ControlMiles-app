@@ -394,7 +394,11 @@ class AppRoutes {
     // screen that assumes an assigned fleet vehicle exists.
     bool isFleetDriver = false,
   }) {
-    if (!isAuthenticated && !hasSeenRoleChooser) return roleChooser;
+    // "What brings you to ControlMiles?" is asked AFTER the account exists
+    // (explicit user request, 2026-09-30), not before sign-up: signed out
+    // always lands on login; a signed-in account with no type yet gets the
+    // role chooser below. hasSeenRoleChooser is kept for callers but no
+    // longer routes anywhere.
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
     if (hasPendingInvites) return pendingInvite;
@@ -415,7 +419,7 @@ class AppRoutes {
     // ever desyncs again for some other reason.
     if (isFleetAdmin) return fleetDashboard;
     if (isFleetDriver) return driverOperations;
-    if (!accountTypeChosen) return accountType;
+    if (!accountTypeChosen) return roleChooser;
     return dashboard;
   }
 

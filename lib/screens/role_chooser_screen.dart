@@ -26,33 +26,28 @@ class RoleChooserScreen extends StatefulWidget {
 class _RoleChooserScreenState extends State<RoleChooserScreen> {
   bool _isProcessing = false;
 
+  // Asked AFTER sign-up / sign-in now (2026-09-30, explicit user request),
+  // so each card goes straight to its next step for the signed-in account.
   Future<void> _chooseRole(AppState appState, String role) async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
       await appState.chooseIntendedRole(role);
+      await appState.clearPendingIntendedRole();
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: 'signup');
+      if (role == 'fleet_admin') {
+        Navigator.pushReplacementNamed(context, AppRoutes.createOrganization);
+      } else if (role == 'fleet_driver') {
+        // Joins a fleet with the code the fleet admin gave them.
+        Navigator.pushReplacementNamed(context, AppRoutes.claimDriverSlot);
+      } else {
+        await appState.completeAccountTypeChoice();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
-  }
-
-  // Fleet driver ID login (explicit user request, 2026-09-17): a driver
-  // never self-signs-up anymore -- their fleet admin already created
-  // their invite before they ever open the app, so this card's job is
-  // getting them straight to the driver-ID login tab, not the signup
-  // form _chooseRole sends every other role to.
-  void _goToDriverLogin() {
-    if (_isProcessing) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: 'driver_id');
-  }
-
-  Future<void> _alreadyHaveAccount(AppState appState) async {
-    if (_isProcessing) return;
-    await appState.skipRoleChooser();
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
   }
 
   @override
@@ -110,7 +105,7 @@ class _RoleChooserScreenState extends State<RoleChooserScreen> {
                       subTextColor: subTextColor,
                       accent: primary,
                       isLoading: _isProcessing,
-                      onTap: _goToDriverLogin,
+                      onTap: () => _chooseRole(appState, 'fleet_driver'),
                     ),
                     const SizedBox(height: 16),
                     _RoleCard(
@@ -126,15 +121,6 @@ class _RoleChooserScreenState extends State<RoleChooserScreen> {
                       onTap: () => _chooseRole(appState, 'fleet_admin'),
                     ),
                   ],
-                ),
-              ),
-              Center(
-                child: TextButton(
-                  onPressed: _isProcessing ? null : () => _alreadyHaveAccount(appState),
-                  child: Text(
-                    appState.tr('role_chooser_have_account'),
-                    style: TextStyle(color: primary, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
                 ),
               ),
             ],

@@ -87,7 +87,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: textColor),
-          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.accountType),
+          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.roleChooser),
         ),
       ),
       body: SafeArea(
