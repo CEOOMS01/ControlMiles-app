@@ -118,6 +118,7 @@ begin
   select exists (
     select 1 from public.fuel_purchases o
     where o.vehicle_id = p.vehicle_id and o.id <> p.id
+      and o.created_at < p.created_at  -- flag the later copy only
       and (o.file_hash = p.file_hash
            or (o.purchase_date = p.purchase_date and abs(o.gallons - p.gallons) < 0.01))
   ) into v_dup;
@@ -126,7 +127,7 @@ begin
     insert into public.fuel_anomalies (organization_id, purchase_id, vehicle_id, kind, severity, detail, metrics)
     values (p.organization_id, p.id, p.vehicle_id, 'duplicate', 'high',
       format('Looks like a duplicate: another receipt for this vehicle has the same %s.',
-        case when exists (select 1 from public.fuel_purchases o where o.vehicle_id = p.vehicle_id and o.id <> p.id and o.file_hash = p.file_hash)
+        case when exists (select 1 from public.fuel_purchases o where o.vehicle_id = p.vehicle_id and o.id <> p.id and o.created_at < p.created_at and o.file_hash = p.file_hash)
              then 'photo' else 'date and gallons' end),
       jsonb_build_object('gallons', p.gallons))
     on conflict (purchase_id, kind) do update set detail = excluded.detail, metrics = excluded.metrics;
@@ -134,8 +135,10 @@ begin
 
   -- 2. over_capacity (needs the tank size)
   if v.fuel_tank_capacity_gal is not null then
+    -- Up to and including this receipt: the one that goes over is flagged.
     select sum(gallons) into v_day_total from public.fuel_purchases
-    where vehicle_id = p.vehicle_id and purchase_date = p.purchase_date;
+    where vehicle_id = p.vehicle_id and purchase_date = p.purchase_date
+      and created_at <= p.created_at;
     if v_day_total > v.fuel_tank_capacity_gal * 1.05 then
       found_kinds := array_append(found_kinds, 'over_capacity');
       insert into public.fuel_anomalies (organization_id, purchase_id, vehicle_id, kind, severity, detail, metrics)
