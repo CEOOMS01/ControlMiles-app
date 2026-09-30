@@ -79,6 +79,9 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   Map<String, dynamic>? _todayShift;
   // Owner-operators: the fleet allows drivers to register their own truck.
   bool _ownVehicleAllowed = false;
+  // Fleet setting (defaulted by profile, 2026-09-30): car fleets don't
+  // require a daily pre-trip inspection; trucks/buses/construction do.
+  bool _pretripRequired = true;
 
   // Hourly classes (fleet shift blocks, 2026-09-29). Null until loaded, and
   // empty (hasBlocks == false) for a fleet without a class schedule today --
@@ -409,6 +412,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     Map<String, dynamic>? todayShift;
     Vehicle? resolved = vehicle;
     var ownAllowed = false;
+    var pretripRequired = true;
     if (orgId != null) {
       try {
         final rows = await Supabase.instance.client.rpc('my_shift_today', params: {'p_organization_id': orgId});
@@ -429,10 +433,11 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       try {
         final org = await Supabase.instance.client
             .from('organizations')
-            .select('allow_driver_owned_vehicles')
+            .select('allow_driver_owned_vehicles, require_pretrip_inspection')
             .eq('id', orgId)
             .maybeSingle();
         ownAllowed = (org?['allow_driver_owned_vehicles'] as bool?) ?? false;
+        pretripRequired = (org?['require_pretrip_inspection'] as bool?) ?? true;
       } catch (_) {}
     }
 
@@ -456,6 +461,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
         _vehicle = resolved;
         _todayShift = todayShift;
         _ownVehicleAllowed = ownAllowed;
+        _pretripRequired = pretripRequired;
         // A shift's vehicle rides into the trip the same way an
         // open-mode pick does.
         if (vehicle == null && resolved != null) _openModeVehicleId = resolved.id;
@@ -560,6 +566,8 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     }
     if (_preTripPassedToday) return null;
     final failed = _preTripFailedToday;
+    // Optional inspection: only surface a failed one (the defect matters).
+    if (!_pretripRequired && !failed) return null;
     return _stepCard(
       icon: failed ? Icons.error_rounded : Icons.fact_check_rounded,
       color: failed ? const Color(0xFFDC2626) : Theme.of(context).colorScheme.primary,
@@ -667,6 +675,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   // post-trip or a stale prior day's pass don't count, matching real DVIR
   // practice (a fresh pre-trip check each day/vehicle change).
   Future<bool> _canStartTrip() async {
+    if (!_pretripRequired) return true;
     final inspection = _latestInspection;
     if (inspection == null) return false;
     if (inspection.inspectionType != 'pre_trip') return false;
@@ -811,7 +820,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                         ),
                       ),
                     ),
-                  if (_vehicle != null && _preTripPassedToday)
+                  if (_vehicle != null && (_preTripPassedToday || !_pretripRequired))
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

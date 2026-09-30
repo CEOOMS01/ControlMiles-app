@@ -28,7 +28,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
   String? _error;
   // "What kind of fleet is it?" (2026-09-29): only a driving school gets
   // hourly classes. Changeable later in Settings on controlmiles.com.
-  String _fleetType = 'general';
+  String _fleetType = 'delivery';
 
   @override
   void dispose() {
@@ -132,9 +132,16 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textColor),
               ),
               const SizedBox(height: 8),
+              // Fleet profiles (2026-09-30): same list as the web onboarding.
               for (final option in const [
-                ('general', 'fleet_type_general', 'fleet_type_general_desc'),
+                ('delivery', 'fleet_profile_delivery', 'fleet_profile_delivery_desc'),
+                ('field_service', 'fleet_profile_field_service', 'fleet_profile_field_service_desc'),
+                ('trucking', 'fleet_profile_trucking', 'fleet_profile_trucking_desc'),
+                ('construction', 'fleet_profile_construction', 'fleet_profile_construction_desc'),
+                ('passenger', 'fleet_profile_passenger', 'fleet_profile_passenger_desc'),
+                ('sales', 'fleet_profile_sales', 'fleet_profile_sales_desc'),
                 ('driving_school', 'fleet_type_driving_school', 'fleet_type_driving_school_desc'),
+                ('general', 'fleet_profile_general', 'fleet_profile_general_desc'),
               ])
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
