@@ -33,6 +33,7 @@ import '../services/inspection_service.dart';
 import '../services/shift_block_service.dart';
 import '../errors/app_error.dart';
 import '../tracking/tracking_controller.dart';
+import '../widgets/driver_safety_score_card.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/org_mode_switcher.dart';
@@ -645,6 +646,11 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                         ),
                       ),
                     ),
+                  ],
+                  // Safety score (2026-09-30): never shown mid-trip.
+                  if (!_tripIsActive && appState.defaultOrgId != null) ...[
+                    const SizedBox(height: 16),
+                    DriverSafetyScoreCard(organizationId: appState.defaultOrgId!),
                   ],
                   if (_shiftDay?.hasBlocks ?? false) ...[
                     const SizedBox(height: 20),
