@@ -17,7 +17,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
@@ -65,9 +67,16 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
   final _gallonsController = TextEditingController();
   final _pricePerGallonController = TextEditingController();
   final _totalCostController = TextEditingController();
+  final _vendorController = TextEditingController();
 
   File? _receiptFile;
   String? _stateCode;
+  // Full IFTA return (2026-09-30): the return is filed per fuel type, and
+  // the state is pre-filled from where the phone is -- the driver is at
+  // the pump when logging, the same way Motive/Samsara fill the
+  // jurisdiction from GPS. Always editable.
+  String _fuelType = 'diesel';
+  bool _stateFromLocation = false;
   DateTime _purchaseDate = DateTime.now();
   bool _ocrSource = false;
   double? _ocrConfidence;
@@ -76,7 +85,46 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillStateFromLocation();
+  }
+
+  /// Only when location permission is already granted -- never prompts
+  /// from this screen. Any failure just leaves the picker empty.
+  Future<void> _prefillStateFromLocation() async {
+    try {
+      final permission = await geo.Geolocator.checkPermission();
+      if (permission != geo.LocationPermission.always &&
+          permission != geo.LocationPermission.whileInUse) {
+        return;
+      }
+      final pos = await geo.Geolocator.getLastKnownPosition() ??
+          await geo.Geolocator.getCurrentPosition(
+            locationSettings: const geo.LocationSettings(
+              accuracy: geo.LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 8),
+            ),
+          );
+      final code = await Supabase.instance.client.rpc(
+        'ifta_state_at_point',
+        params: {'p_lat': pos.latitude, 'p_lng': pos.longitude},
+      );
+      if (!mounted || _stateCode != null || code is! String) return;
+      if (_kIftaStates.any((s) => s.$1 == code)) {
+        setState(() {
+          _stateCode = code;
+          _stateFromLocation = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('[ControlMiles] fuel state prefill skipped: $e');
+    }
+  }
+
+  @override
   void dispose() {
+    _vendorController.dispose();
     _gallonsController.dispose();
     _pricePerGallonController.dispose();
     _totalCostController.dispose();
@@ -152,6 +200,8 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
         purchaseDate: _purchaseDate,
         gallons: gallons,
         stateCode: _stateCode,
+        fuelType: _fuelType,
+        vendorName: _vendorController.text.trim().isEmpty ? null : _vendorController.text.trim(),
         pricePerGallonUsd: double.tryParse(_pricePerGallonController.text.trim()),
         totalCostUsd: double.tryParse(_totalCostController.text.trim()),
         language: appState.currentLanguage,
@@ -253,6 +303,18 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
             ),
 
             const SizedBox(height: 14),
+            _FieldLabel(appState.tr('fuel_type_label'), textColor),
+            SegmentedButton<String>(
+              segments: [
+                ButtonSegment(value: 'diesel', label: Text(appState.tr('fuel_type_diesel'))),
+                ButtonSegment(value: 'gasoline', label: Text(appState.tr('fuel_type_gasoline'))),
+              ],
+              selected: {_fuelType},
+              showSelectedIcon: false,
+              onSelectionChanged: (v) => setState(() => _fuelType = v.first),
+            ),
+
+            const SizedBox(height: 14),
             _FieldLabel(appState.tr('fuel_price_per_gallon_label'), textColor),
             TextField(
               controller: _pricePerGallonController,
@@ -276,7 +338,32 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
               items: _kIftaStates
                   .map((s) => DropdownMenuItem(value: s.$1, child: Text('${s.$2} (${s.$1})')))
                   .toList(),
-              onChanged: (v) => setState(() => _stateCode = v),
+              onChanged: (v) => setState(() {
+                _stateCode = v;
+                _stateFromLocation = false;
+              }),
+            ),
+            if (_stateFromLocation)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Icon(Icons.my_location_rounded, size: 14, color: subTextColor),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(appState.tr('fuel_state_from_location'),
+                          style: TextStyle(fontSize: 11.5, color: subTextColor)),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 14),
+            _FieldLabel(appState.tr('fuel_vendor_label'), textColor),
+            TextField(
+              controller: _vendorController,
+              textCapitalization: TextCapitalization.words,
+              decoration: _inputDecoration(appState.tr('fuel_vendor_hint'), borderColor),
             ),
 
             const SizedBox(height: 14),

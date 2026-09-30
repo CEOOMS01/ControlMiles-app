@@ -60,6 +60,7 @@ class FuelPurchaseService {
     double? pricePerGallonUsd,
     double? totalCostUsd,
     String fuelType = 'diesel',
+    String? vendorName,
     required AppLanguage language,
     bool ocrSource = false,
     double? ocrConfidence,
@@ -109,6 +110,7 @@ class FuelPurchaseService {
       'p_file_hash': fileHash,
       'p_ocr_source': ocrSource,
       'p_ocr_confidence': ocrConfidence,
+      'p_vendor_name': vendorName,
     });
 
     return FuelPurchase.fromMap(Map<String, dynamic>.from(data as Map));

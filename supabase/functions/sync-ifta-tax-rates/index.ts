@@ -55,6 +55,10 @@
 //   than silently dropped. Folding surcharges into the real tax-due
 //   calculation is future work for whoever builds that calculation, not
 //   this sync step -- confirmed live against the real file, not assumed.
+//   UPDATE 2026-09-30 (full IFTA return): the tax-due calculation now
+//   exists, so "<STATE> SurChg" rows are stored on that state's code with
+//   kind='surcharge' (IFTA rule: surcharge = taxable gallons x rate, no
+//   tax-paid credit, never a refund).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -114,7 +118,7 @@ function stripFootnote(name: string): string {
   return name.replace(/\s*#\d+\s*$/, '').trim();
 }
 
-type ParsedRow = { jurisdictionName: string; rates: (number | null)[] };
+type ParsedRow = { jurisdictionName: string; kind: 'base' | 'surcharge'; rates: (number | null)[] };
 
 /** Every row whose currency column is exactly 'U.S.' is data; everything
  * else (the quarter title, both header lines, the repeated header block
@@ -130,11 +134,13 @@ function parseUsRows(csvText: string): ParsedRow[] {
     const currency = (cols[1] ?? '').trim();
     if (currency !== 'U.S.') continue;
 
-    const jurisdictionName = stripFootnote((cols[0] ?? '').trim());
+    const rawName = stripFootnote((cols[0] ?? '').trim());
+    const isSurcharge = /\s+surchg$/i.test(rawName);
+    const jurisdictionName = rawName.replace(/\s+surchg$/i, '').trim();
     if (!jurisdictionName) continue;
 
     const rates = FUEL_TYPES.map((_, i) => parseRate(cols[2 + i] ?? ''));
-    rows.push({ jurisdictionName, rates });
+    rows.push({ jurisdictionName, kind: isSurcharge ? 'surcharge' : 'base', rates });
   }
 
   return rows;
@@ -209,6 +215,7 @@ Deno.serve(async (req: Request) => {
       quarter: string;
       jurisdiction_code: string;
       fuel_type: string;
+      kind: 'base' | 'surcharge';
       rate_usd: number | null;
       source_quarter_label: string;
       fetched_at: string;
@@ -230,6 +237,7 @@ Deno.serve(async (req: Request) => {
           quarter: normalizedQuarter,
           jurisdiction_code: code,
           fuel_type: fuelType,
+          kind: row.kind,
           rate_usd: row.rates[i],
           source_quarter_label: quarterLabel,
           fetched_at: fetchedAt,
@@ -239,7 +247,7 @@ Deno.serve(async (req: Request) => {
 
     const { error: upsertError } = await adminClient
       .from('ifta_fuel_tax_rates')
-      .upsert(upsertRows, { onConflict: 'quarter,jurisdiction_code,fuel_type' });
+      .upsert(upsertRows, { onConflict: 'quarter,jurisdiction_code,fuel_type,kind' });
 
     if (upsertError) {
       return respond({ error: upsertError.message, quarter: quarterLabel }, 500);
