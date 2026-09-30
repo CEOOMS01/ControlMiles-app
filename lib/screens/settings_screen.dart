@@ -122,8 +122,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   // desynced. See organization_service.dart's own comment.
   Organization? _organization;
   bool _isLoadingOrg = false;
-  bool _isRenamingOrg = false;
-  bool _isDeletingOrg = false;
 
   @override
   void initState() {
@@ -153,162 +151,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _showRenameOrgDialog(AppState appState) async {
-    final controller = TextEditingController(text: _organization?.name ?? '');
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(appState.tr('org_rename_title')),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            labelText: appState.tr('org_name_label'),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(appState.tr('cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(appState.tr('save')),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted ||
-        newName == null ||
-        newName.isEmpty ||
-        newName == _organization?.name)
-      return;
-    final orgId = appState.defaultOrgId;
-    if (orgId == null) return;
-
-    setState(() => _isRenamingOrg = true);
-    try {
-      await _organizationService.renameOrganization(orgId, newName);
-      await _loadOrganization(appState);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appState.tr('org_renamed_success'))),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        final appError = AppError.from(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(appError.display(appState.tr(appError.messageKey))),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isRenamingOrg = false);
-    }
-  }
-
-  void _showDeleteOrgDialog(AppState appState) {
-    final controller = TextEditingController();
-    final orgName = _organization?.name ?? '';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final canConfirm =
-              orgName.isNotEmpty && controller.text.trim() == orgName;
-          return AlertDialog(
-            title: Text(appState.tr('org_delete_confirm_title')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(appState.tr('org_delete_confirm_body')),
-                const SizedBox(height: 16),
-                Text(
-                  '${appState.tr('org_delete_type_to_confirm')} ($orgName)',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: controller,
-                  onChanged: (_) => setDialogState(() {}),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(appState.tr('cancel')),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                ),
-                onPressed: canConfirm
-                    ? () {
-                        Navigator.pop(ctx);
-                        _deleteOrganization(appState);
-                      }
-                    : null,
-                child: Text(appState.tr('org_delete_button')),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _deleteOrganization(AppState appState) async {
-    final orgId = appState.defaultOrgId;
-    if (orgId == null) return;
-
-    setState(() => _isDeletingOrg = true);
-    try {
-      await _organizationService.deleteOrganization(orgId);
-      await appState.refreshAccountType();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appState.tr('org_deleted_success'))),
-      );
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.dashboard,
-        (route) => false,
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isDeletingOrg = false);
-        // critical:true -- org deletion is destructive/irreversible, gets
-        // its own 720 code range instead of a generic 701.
-        final appError = AppError.from(e, critical: true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(appError.display(appState.tr(appError.messageKey))),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
-    }
-  }
-
-  // Premium Gig feature: automatic trip detection. onboarding
-  // (welcome_page.dart) already requests locationAlways +
-  // activityRecognition for every user -- the plugin's own motion
-  // detection needs both -- but a user can still revoke either later
-  // from system settings, so this re-checks before actually arming.
   Future<void> _handleAutoDetectToggle(AppState appState, bool value) async {
     if (_isTogglingAutoDetect) return;
     setState(() => _isTogglingAutoDetect = true);
@@ -621,13 +463,14 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  // Fleet owner/admin (2026-09-30, explicit user request): the app keeps
+  // the minimum; renaming or deleting the fleet, drivers, vehicles and
+  // every other setting are managed on controlmiles.com.
   Widget _buildOrganizationSection(AppState appState, bool isDark) {
     final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final borderColor = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFE2E8F0);
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
 
     if (_isLoadingOrg) {
       return const Padding(
@@ -639,80 +482,35 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderColor),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: ListTile(
+            leading: Icon(Icons.desktop_windows_rounded, color: Theme.of(context).colorScheme.primary),
+            title: Text(
+              _organization!.name,
+              style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
             ),
-            child: ListTile(
-              leading: Icon(
-                Icons.local_shipping_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(
-                _organization!.name,
-                style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
-              ),
-              subtitle: Text(
-                appState.tr('org_rename_hint'),
-                style: TextStyle(fontSize: 12, color: subTextColor),
-              ),
-              trailing: _isRenamingOrg
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(Icons.edit_rounded, color: subTextColor),
-              onTap: _isRenamingOrg
-                  ? null
-                  : () => _showRenameOrgDialog(appState),
+            subtitle: Text(
+              appState.tr('owner_manage_on_web_body'),
+              style: TextStyle(color: subTextColor, fontSize: 12),
+            ),
+            trailing: Icon(Icons.open_in_new_rounded, color: subTextColor, size: 18),
+            onTap: () => launchUrl(
+              Uri.parse('https://controlmiles.com/admin/settings'),
+              mode: LaunchMode.externalApplication,
             ),
           ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? Colors.red.shade900 : Colors.red.shade100,
-              ),
-            ),
-            child: ListTile(
-              leading: _isDeletingOrg
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.red,
-                      ),
-                    )
-                  : const Icon(Icons.delete_forever_rounded, color: Colors.red),
-              title: Text(
-                appState.tr('org_delete_button'),
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onTap: _isDeletingOrg
-                  ? null
-                  : () => _showDeleteOrgDialog(appState),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  // Explicit user requirement (2026-09-09): a driver generates their own
-  // Report Portal access code straight from the app now -- see
-  // GenerateReportCodeScreen's own header comment for why this moved
-  // here instead of staying web-only.
   Widget _buildReportPortalSection(AppState appState, bool isDark) {
     final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);

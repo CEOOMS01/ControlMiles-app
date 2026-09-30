@@ -85,6 +85,56 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+  // Test mode (pre-launch check, 2026-09-30): {"test_org_id": "..."} sends
+  // a sample digest, marked [TEST], to that fleet's owners/admins only --
+  // proves Resend delivery end to end without touching real alerts.
+  let body: { test_org_id?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    // cron sends {} -- the normal path
+  }
+  if (body.test_org_id) {
+    const [{ data: org }, { data: members }] = await Promise.all([
+      admin.from('organizations').select('name').eq('id', body.test_org_id).maybeSingle(),
+      admin
+        .from('organization_members')
+        .select('profiles(email)')
+        .eq('organization_id', body.test_org_id)
+        .in('member_role', ['owner', 'admin'])
+        .eq('is_active', true),
+    ]);
+    const to = [
+      ...new Set(
+        (members ?? [])
+          .map((m) => (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { email?: string } | null)
+          .map((p) => p?.email)
+          .filter((e): e is string => !!e),
+      ),
+    ];
+    if (!org || to.length === 0) return respond({ error: 'No such fleet or no admin email' }, 404);
+    const sample = (kind: string, severity: Anomaly['severity'], detail: string) => ({
+      vehicle: 'Sample vehicle (CM-T0000)',
+      date: new Date().toISOString().slice(0, 10),
+      a: { id: '', organization_id: '', kind, severity, detail, vehicle_id: '', purchase_id: '' } as Anomaly,
+    });
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: `ControlMiles <${SENDER}>`,
+        to,
+        subject: `[TEST] 2 new fuel alerts — ${org.name}`,
+        html: buildHtml(`${org.name} (test email — sample data)`, [
+          sample('no_miles', 'high', '25.0 gal bought, but no miles were driven since the last fill-up.'),
+          sample('price_high', 'low', '$5.200/gal, 49% above the fleet’s usual $3.500/gal for gasoline.'),
+        ]),
+      }),
+    });
+    if (!res.ok) return respond({ error: 'Resend error', status: res.status, detail: await res.text() }, 502);
+    return respond({ test_sent_to: to.length });
+  }
+
   const { data: anomalies, error } = await admin
     .from('fuel_anomalies')
     .select('id, organization_id, kind, severity, detail, vehicle_id, purchase_id')
