@@ -18,6 +18,7 @@ import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
 import 'generate_report_code_screen.dart';
 import '../errors/app_error.dart';
+import '../widgets/language_selector_tile.dart';
 import '../widgets/app_version_text.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -599,73 +600,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  // One "Language" row that opens a dropdown (2026-09-30, user request:
+  // no loose list of 11 languages on the settings screen).
   Widget _buildLanguageSection(AppState appState, bool isDark) {
+    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: AppLanguage.values.map((lang) {
-          final isSelected = appState.currentLanguage == lang;
-          return _buildLanguageOption(
-            language: lang,
-            isSelected: isSelected,
-            isDark: isDark,
-            onTap: () {
-              appState.setLanguage(lang);
-              _showChangeConfirmation(context, appState, lang);
-            },
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildLanguageOption({
-    required AppLanguage language,
-    required bool isSelected,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final borderColor = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFE2E8F0);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isSelected ? primary : borderColor, width: 2),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: primary.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [],
-      ),
-      // BUG FIX (real, 183 occurrences in CGC Core monitoring -- this is
-      // the single biggest contributor, since it fires once per language
-      // row every time the picker renders): same DecoratedBox-hides-ink
-      // issue as _buildDangerZoneSection above, see that comment.
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          leading: Text(language.flag, style: const TextStyle(fontSize: 22)),
-          title: Text(
-            language.label,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-              color: isSelected ? primary : textColor,
-            ),
-          ),
-          trailing: isSelected
-              ? Icon(Icons.check_circle, color: primary)
-              : null,
-          onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+        ),
+        child: LanguageSelectorTile(
+          onChanged: (lang) => _showChangeConfirmation(context, appState, lang),
         ),
       ),
     );

@@ -11,9 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
-import '../i18n/app_texts.dart';
 import '../routes/app_routes.dart';
 import 'driver_safety_score_screen.dart';
+import '../widgets/language_selector_tile.dart';
 
 Future<void> showDriverSettingsSheet(BuildContext context) {
   return showModalBottomSheet(
@@ -127,32 +127,8 @@ class _DriverSettingsSheet extends StatelessWidget {
               },
             ),
             const Divider(),
-            Text(
-              appState.tr('language'),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: AppLanguage.values.map((lang) {
-                final selected = appState.currentLanguage == lang;
-                return ChoiceChip(
-                  label: Text('${lang.flag} ${lang.label}'),
-                  selected: selected,
-                  onSelected: (_) => appState.setLanguage(lang),
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  labelStyle: TextStyle(
-                    color: selected ? Colors.white : textColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              }).toList(),
-            ),
+            // One button that opens the languages (2026-09-30).
+            const LanguageSelectorTile(),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
