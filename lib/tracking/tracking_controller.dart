@@ -87,6 +87,15 @@ class TrackingController {
   /// tracked miles, which the DB then discarded.
   static bool lastStopDiscarded = false;
 
+  // Same rule per segment (explicit user request, 2026-10-01): a segment
+  // that ends with < minTrackedMiles -- at a switch (manual or Automatic
+  // Detection, both call switchSection) or as the last segment at End
+  // Trip -- is removed from the trip by the DB (switch_gig_app_section /
+  // fn_fold_empty_trip_sections). Carries that segment's gig app so the
+  // Dashboard shows the same "no miles, not saved" notice; consumed and
+  // reset to null by the listener.
+  static final ValueNotifier<String?> segmentDiscarded = ValueNotifier(null);
+
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
   static DateTime _lastLocationUpdateTime = DateTime.now();
@@ -847,6 +856,9 @@ class TrackingController {
 
     final oldSection = activeSection;
     final newSectionId = const Uuid().v4();
+    // Read before the switch zeroes it: the DB drops the old segment when
+    // it ends under minTrackedMiles (switch_gig_app_section).
+    final oldSectionMiles = _totalSectionMiles;
 
     try {
       final elapsedSeconds = oldSection != null
@@ -908,6 +920,10 @@ class TrackingController {
           "irs_purpose": irsPurpose,
         },
       );
+
+      if (oldSection != null && oldSectionMiles < minTrackedMiles) {
+        segmentDiscarded.value = oldSection.gigApp;
+      }
 
       _logDebug('SWITCH_OK', 'Switched atomically → gig_app: $newGigApp');
       return true;
@@ -975,11 +991,19 @@ class TrackingController {
       // así el tiempo pausado o entre cambios de gig app no cuenta de más.
       int sessionDurationSeconds = 0;
       double sectionsMiles = 0;
+      // The last segment's miles as STORED (endCurrentSection may cap them
+      // below _totalSectionMiles) -- what the DB's empty-segment rule sees.
+      double? lastSegmentStoredMiles;
       try {
         final sections = await Supabase.instance.client
             .from('session_sections')
-            .select('total_duration_seconds, total_miles')
+            .select('id, total_duration_seconds, total_miles')
             .eq('session_id', activeSessionId!);
+        for (final s in sections as List) {
+          if (s['id'] == activeSection?.id) {
+            lastSegmentStoredMiles = (s['total_miles'] as num?)?.toDouble() ?? 0;
+          }
+        }
 
         sessionDurationSeconds = (sections as List).fold<int>(
           0,
@@ -1009,6 +1033,16 @@ class TrackingController {
       // delete this trip. Nothing left to seal.
       final discarded = _totalSessionMiles < minTrackedMiles &&
           sectionsMiles < minTrackedMiles;
+
+      // Trip kept, but its LAST segment tracked nothing: the DB removes
+      // that segment on close (fn_fold_empty_trip_sections) -- when the
+      // trip's other segments hold the miles.
+      final lastSegmentApp = activeSection?.gigApp;
+      final lastSegmentDropped = !discarded &&
+          lastSegmentApp != null &&
+          lastSegmentStoredMiles != null &&
+          lastSegmentStoredMiles < minTrackedMiles &&
+          sectionsMiles - lastSegmentStoredMiles >= minTrackedMiles;
 
       // CGC Core governance sealing (see cgc_governance_service.dart):
       // captured BEFORE _resetState() zeroes these, fired in the
@@ -1044,6 +1078,7 @@ class TrackingController {
       }
 
       lastStopDiscarded = discarded;
+      if (lastSegmentDropped) segmentDiscarded.value = lastSegmentApp;
       _logDebug(
         'TRACKING_STOP_OK',
         discarded ? 'No miles tracked, trip discarded' : 'Session closed successfully',

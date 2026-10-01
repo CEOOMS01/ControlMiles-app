@@ -115,6 +115,21 @@ class _DashboardScreenState extends State<DashboardScreen>
     _setupRealTimeListeners();
     _loadActiveVehicle();
     TrackingController.autoFlashEvent.addListener(_onAutoFlashEvent);
+    TrackingController.segmentDiscarded.addListener(_onSegmentDiscarded);
+  }
+
+  // A segment with no miles was removed from the trip (at a switch, manual
+  // or auto-detect, or as the last segment at End Trip): same notice as a
+  // discarded trip, naming the gig app (2026-10-01).
+  void _onSegmentDiscarded() {
+    final app = TrackingController.segmentDiscarded.value;
+    if (app == null || !mounted) return;
+    TrackingController.segmentDiscarded.value = null;
+    final appState = context.read<AppState>();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${app.toUpperCase()}: ${appState.tr('trip_discarded_no_miles')}')),
+    );
+    _loadRecentSessions();
   }
 
   void _onAutoFlashEvent() {
@@ -457,6 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _switchBannerTimer?.cancel();
     _autoFlashTimer?.cancel();
     TrackingController.autoFlashEvent.removeListener(_onAutoFlashEvent);
+    TrackingController.segmentDiscarded.removeListener(_onSegmentDiscarded);
     super.dispose();
   }
 
