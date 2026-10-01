@@ -849,6 +849,7 @@ const Map<String, String> jaTexts = {
   'fuel_state_label': '州',
   'fuel_state_hint': '州を選択',
   'fuel_date_label': '購入日',
+  'terms_of_use': "利用規約",
   'licenses_map_data': "ライセンスと地図データ",
   'ready_to_track': "記録の準備完了",
   'ready_to_track_body': "アクティビティを選んで走行を開始してください。",

@@ -1081,6 +1081,23 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
           const SizedBox(height: 10),
+          // Terms of Use (2026-10-01): rules for using the app, same for
+          // every account type (unlike the Terms above).
+          _buildLegalLinkRow(
+            icon: Icons.rule_rounded,
+            label: appState.tr('terms_of_use'),
+            isDark: isDark,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LegalDocumentScreen(
+                  titleKey: 'terms_of_use',
+                  body: termsOfUseEn,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           // Explicit user request (2026-09-09): a place for user
           // suggestions/feedback that isn't the Dashboard -- Settings,
           // same row style as Subscription/Privacy/Terms above.

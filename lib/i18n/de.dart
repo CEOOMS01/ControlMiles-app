@@ -578,6 +578,7 @@ const Map<String, String> deTexts = {
   'fuel_state_label': 'Bundesstaat',
   'fuel_state_hint': 'Bundesstaat auswählen',
   'fuel_date_label': 'Kaufdatum',
+  'terms_of_use': "Nutzungsbedingungen",
   'licenses_map_data': "Lizenzen & Kartendaten",
   'ready_to_track': "Bereit zum Tracken",
   'ready_to_track_body': "Wähle deine Aktivität und starte deine Fahrt.",

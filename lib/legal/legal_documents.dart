@@ -243,7 +243,7 @@ If any provision of these Terms is found unenforceable or invalid, that provisio
 
 19. ENTIRE AGREEMENT
 
-These Terms, together with the Privacy Policy (and, for Fleet use, the Fleet Terms of Service and Fleet Privacy Policy), are the entire agreement between you and Olympus Mont Systems LLC regarding ControlMiles, and supersede any prior agreements or understandings, written or oral, regarding that subject matter.
+These Terms, together with the Terms of Use, the Privacy Policy (and, for Fleet use, the Fleet Terms of Service and Fleet Privacy Policy), are the entire agreement between you and Olympus Mont Systems LLC regarding ControlMiles, and supersede any prior agreements or understandings, written or oral, regarding that subject matter.
 
 20. ASSIGNMENT
 
@@ -486,4 +486,112 @@ We may update these Terms from time to time. We will update the "Last updated" d
 23. CONTACT US
 
 Questions about these Terms: info@controlmiles.com. Support: support@controlmiles.com. Privacy: privacy@controlmiles.com. Security: security@controlmiles.com.
+''';
+
+// Terms of Use (explicit user request, 2026-10-01). Distinct from the Terms
+// of Service on purpose: rules for using the app/website (license, conduct,
+// content, maps, security research, copyright) for everyone, including
+// visitors without an account. Disclaimers, liability, arbitration and
+// governing law are NOT restated -- section 17 points to the Terms of
+// Service, so the two documents can never contradict each other.
+const String termsOfUseEn = '''
+Last updated: $legalDocumentsLastUpdated
+© 2026 ControlMiles. All rights reserved.
+
+1. ABOUT THESE TERMS OF USE
+
+These Terms of Use set the rules for accessing and using the ControlMiles website (controlmiles.com), the ControlMiles mobile app, and their content (together, "ControlMiles"), which are operated by Olympus Mont Systems LLC ("we", "us", "our"). They apply to everyone, including visitors who never create an account.
+
+If you have an account, the Terms of Service (controlmiles.com/terms) -- and, for organizations, the Fleet Terms of Service (controlmiles.com/terms/fleet) -- also apply and govern your account, subscriptions, and how disputes are resolved. Our Privacy Policy (controlmiles.com/privacy) explains how we handle personal information. If these Terms of Use conflict with the Terms of Service, the Terms of Service control.
+
+By accessing or using ControlMiles, you agree to these Terms of Use. If you do not agree, do not use ControlMiles.
+
+2. WHO MAY USE CONTROLMILES
+
+You may browse the public website at any age, but you must be at least 18 years old to create an account or use the app. If you use ControlMiles on behalf of a company or organization, you confirm you are authorized to do so, and "you" includes that organization.
+
+3. LICENSE TO USE THE APP AND WEBSITE
+
+Subject to these Terms, we grant you a limited, personal, revocable, non-exclusive, non-transferable license to install the ControlMiles app on devices you own or control, and to access the website, solely for your own use or your organization's internal business use. All rights not expressly granted are reserved.
+
+If you download the app from Google Play, Google Play's terms of service also apply to that download. Google is not a party to these Terms and is not responsible for ControlMiles or for providing support for it.
+
+4. YOUR ACCOUNT AND SECURITY
+
+Keep your password and sign-in methods confidential and do not share your account. Each driver must use their own account or driver ID; a single account may not be shared among several people to avoid paying for additional seats. Tell us immediately at security@controlmiles.com if you suspect unauthorized use. You are responsible for activity under your account.
+
+5. ACCEPTABLE USE
+
+When using ControlMiles, you agree not to:
+track any person or vehicle without the authorization, notice, and consent required by law, or use ControlMiles for stalking, harassment, or surveillance;
+falsify trip data, including by spoofing GPS location, using mock-location or emulator tools, or editing, staging, or reusing odometer photos, fuel receipts, or inspection photos;
+access ControlMiles through bots, scrapers, or other automated means, or bulk-download its content or map data, except through features we provide for that purpose (such as report exports);
+bypass, disable, or interfere with security features, plan limits, seat limits, or usage restrictions;
+probe, scan, or test the vulnerability of ControlMiles, except as allowed under Section 12;
+overload, disrupt, or attempt to gain unauthorized access to ControlMiles, its servers, or other users' accounts or data;
+copy, modify, reverse-engineer, decompile, or create derivative works of the app or website, except where the law expressly allows it;
+resell, sublicense, rent, or offer ControlMiles to third parties as a service bureau without our written permission;
+upload malware, or content that is unlawful, infringing, defamatory, obscene, or that invades someone's privacy;
+use in-app messages to harass, threaten, or discriminate against anyone;
+impersonate any person or organization, or misrepresent your affiliation with them.
+
+6. YOUR CONTENT
+
+"Your content" means what you submit to ControlMiles: trip notes, odometer and receipt photos, inspection photos, incident reports, messages, vehicle details, and similar material. You keep ownership of your content. You grant us a worldwide, non-exclusive, royalty-free license to host, store, copy, process, and display your content only as needed to operate ControlMiles for you -- including showing it to your organization's administrators when you record it under an organization, as described in the Privacy Policy -- and to keep the service secure.
+
+You are responsible for your content and confirm you have the right to submit it. Photos should show only what is needed (the odometer, the receipt, the vehicle); avoid capturing people, faces, or license plates of other vehicles when you can. We may remove content that violates these Terms or the law.
+
+7. MAPS, LOCATION, AND THIRD-PARTY DATA
+
+Maps in ControlMiles use map data © OpenStreetMap contributors, available under the Open Database License (ODbL), packaged by Protomaps and rendered with MapLibre. You may not remove, hide, or alter the map attribution, and you may not extract or reuse the map data or tiles outside ControlMiles except as the ODbL allows. Locations, routes, speeds, speed limits, and distances shown in ControlMiles are approximate and may be delayed or inaccurate.
+
+ControlMiles also relies on third-party services, such as Google Sign-In, Google Play, Stripe, and the OpenStreetMap Overpass API. Your use of those services is subject to their own terms, and we are not responsible for them.
+
+8. SAFE USE WHILE DRIVING
+
+Do not handle your phone or interact with ControlMiles while the vehicle is moving. Start, pause, or end trips and fill in forms before driving or when safely parked, and follow all traffic laws and local rules on mobile-device use. ControlMiles is not a navigation system and must never be used to decide where to drive or how fast. Organizations must not require drivers to use ControlMiles while driving.
+
+9. OUR CONTENT AND TRADEMARKS
+
+ControlMiles, its name, logo, design, text, graphics, and software are owned by Olympus Mont Systems LLC or its licensors and are protected by intellectual-property laws. You may not use our trademarks or logos without our prior written permission. Names and logos of gig, delivery, rideshare, and other companies shown in ControlMiles belong to their owners and are used only to describe compatibility; their use does not imply any affiliation or endorsement. Open-source components of the app are licensed under their own terms, listed in the app under Settings > Licenses & map data.
+
+10. FEEDBACK
+
+If you send us suggestions or ideas about ControlMiles, you agree we may use them freely, without restriction or compensation to you.
+
+11. COPYRIGHT COMPLAINTS
+
+We respect intellectual-property rights. If you believe content on ControlMiles infringes your copyright, send a notice to info@controlmiles.com with: your contact information; a description of the copyrighted work; where the material appears on ControlMiles; a statement that you have a good-faith belief the use is not authorized by the owner, its agent, or the law; a statement, under penalty of perjury, that your notice is accurate and that you are the owner or authorized to act for the owner; and your physical or electronic signature. We may remove the material and, in appropriate cases, terminate the accounts of repeat infringers.
+
+12. SECURITY RESEARCH
+
+If you find a security vulnerability, report it to security@controlmiles.com (see controlmiles.com/.well-known/security.txt) and give us reasonable time to fix it before disclosing it. Do not access, modify, or delete other users' data, do not degrade the service, and test only against your own accounts. We will not pursue legal action against good-faith research that follows these rules.
+
+13. LINKS TO OTHER SITES
+
+ControlMiles may link to websites or services we do not control. Those links are provided for convenience only; we are not responsible for their content, policies, or practices.
+
+14. AVAILABILITY AND CHANGES TO CONTROLMILES
+
+We work to keep ControlMiles available, but it may be interrupted for maintenance, updates, or reasons beyond our control. We may add, change, or remove features, including features marked as new or beta, and may require you to update the app to keep using it.
+
+15. SUSPENSION AND TERMINATION
+
+We may suspend or end your access to ControlMiles, with or without notice, if you violate these Terms of Use, if required by law, or if your use creates risk or possible legal exposure for us, other users, or third parties. Sections 6, 9, 10, 16, and 17 survive termination.
+
+16. EXPORT AND SANCTIONS
+
+You may not use or download ControlMiles if you are located in a country subject to a U.S. government embargo, or if you are on a U.S. government list of prohibited or restricted parties.
+
+17. DISCLAIMERS, LIABILITY, AND DISPUTES
+
+ControlMiles is provided "as is" and "as available." The disclaimer of warranties, limitation of liability, indemnification, dispute resolution and binding arbitration (including the class action waiver and opt-out), and governing law (State of Maryland) sections of the Terms of Service apply to these Terms of Use and to any use of ControlMiles, including by visitors without an account.
+
+18. CHANGES TO THESE TERMS OF USE
+
+We may update these Terms of Use from time to time. We will update the "Last updated" date above and, for material changes, give notice on the website or in the app. Continued use of ControlMiles after a change takes effect constitutes acceptance of the updated Terms of Use.
+
+19. CONTACT US
+
+Questions about these Terms of Use: info@controlmiles.com. Security: security@controlmiles.com. Privacy: privacy@controlmiles.com. Support: support@controlmiles.com.
 ''';

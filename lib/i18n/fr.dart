@@ -583,6 +583,7 @@ const Map<String, String> frTexts = {
   'fuel_state_label': 'État',
   'fuel_state_hint': 'Sélectionnez l\'État',
   'fuel_date_label': 'Date d\'achat',
+  'terms_of_use': "Conditions d'utilisation",
   'licenses_map_data': "Licences et données cartographiques",
   'ready_to_track': "Prêt à suivre",
   'ready_to_track_body': "Choisissez votre activité et démarrez votre trajet.",

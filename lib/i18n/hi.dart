@@ -860,6 +860,7 @@ const Map<String, String> hiTexts = {
   'fuel_state_label': 'राज्य',
   'fuel_state_hint': 'राज्य चुनें',
   'fuel_date_label': 'खरीद तिथि',
+  'terms_of_use': "उपयोग की शर्तें",
   'licenses_map_data': "लाइसेंस और मानचित्र डेटा",
   'ready_to_track': "ट्रैक करने के लिए तैयार",
   'ready_to_track_body': "अपनी गतिविधि चुनें और यात्रा शुरू करें।",

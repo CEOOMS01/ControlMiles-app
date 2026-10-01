@@ -723,6 +723,7 @@ const Map<String, String> esTexts = {
   'fuel_state_label': 'Estado',
   'fuel_state_hint': 'Selecciona el estado',
   'fuel_date_label': 'Fecha de compra',
+  'terms_of_use': "Términos de uso",
   'licenses_map_data': "Licencias y datos del mapa",
   'ready_to_track': "Listo para rastrear",
   'ready_to_track_body': "Elige tu actividad e inicia tu viaje.",

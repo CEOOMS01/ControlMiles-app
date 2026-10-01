@@ -845,6 +845,7 @@ const Map<String, String> amTexts = {
   'fuel_state_label': 'ክፍለ ግዛት',
   'fuel_state_hint': 'ክፍለ ግዛት ይምረጡ',
   'fuel_date_label': 'የግዢ ቀን',
+  'terms_of_use': "የአጠቃቀም ውሎች",
   'licenses_map_data': "ፈቃዶች እና የካርታ ውሂብ",
   'ready_to_track': "ለመከታተል ዝግጁ",
   'ready_to_track_body': "እንቅስቃሴዎን ይምረጡ እና ጉዞዎን ይጀምሩ።",

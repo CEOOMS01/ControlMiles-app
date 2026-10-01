@@ -862,6 +862,7 @@ const Map<String, String> arTexts = {
   'fuel_state_label': 'الولاية',
   'fuel_state_hint': 'اختر الولاية',
   'fuel_date_label': 'تاريخ الشراء',
+  'terms_of_use': "شروط الاستخدام",
   'licenses_map_data': "التراخيص وبيانات الخريطة",
   'ready_to_track': "جاهز للتتبع",
   'ready_to_track_body': "اختر نشاطك وابدأ رحلتك.",
