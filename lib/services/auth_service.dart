@@ -80,8 +80,9 @@ class AuthService {
   // si el usuario después visitaba Profile y los llenaba a mano. Ahora se
   // piden los dos en el mismo formulario de registro.
   Future<void> signUp(String email, String password, {String? firstName, String? lastName}) async {
+    AuthResponse res;
     try {
-      await _supabase.auth.signUp(
+      res = await _supabase.auth.signUp(
         email: email,
         password: password,
         // ENVIAR METADATOS: Esto ayuda a que el Trigger de la DB
@@ -95,6 +96,14 @@ class AuthService {
       throw Exception(e.message);
     } catch (e) {
       throw Exception("Registration failed: ${e.toString()}");
+    }
+    // Silent failure found live (2026-09-30): signing up with an email that
+    // already has an account returns no error -- Supabase answers with a
+    // user that has no identities, to avoid revealing which emails exist --
+    // and the app carried on as if the account had been created. Surface it
+    // as "already registered" (AppError 401) so the person signs in instead.
+    if (res.user != null && (res.user!.identities?.isEmpty ?? false)) {
+      throw Exception('Email already registered');
     }
   }
 
