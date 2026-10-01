@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'full_bleed.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
@@ -69,17 +70,17 @@ class GigAppSelector extends StatelessWidget {
         ? const Color(0xFF1E293B)
         : const Color(0xFFE2E8F0);
 
+    // Full-width row (2026-10-01), like the other dashboard cards.
     return Container(
-      decoration: BoxDecoration(
+      decoration: fullBleedCard(
         color: isDark ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -137,7 +138,7 @@ class GigAppSelector extends StatelessWidget {
               child: SizedBox(
                 height: 108,
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: kPageGutter),
                   scrollDirection: Axis.horizontal,
                   itemCount: apps.length,
                   itemBuilder: (context, index) {

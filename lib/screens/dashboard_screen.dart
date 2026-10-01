@@ -17,6 +17,7 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/vehicle_inspection_screen.dart';
 import '../data/irs_rates.dart';
+import '../widgets/full_bleed.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/main_drawer.dart';
 import '../widgets/tracking_action_button.dart';
@@ -326,11 +327,12 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.symmetric(horizontal: kPageGutter, vertical: 18),
+      decoration: fullBleedCard(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: detectedApp != null ? accent : borderColor, width: detectedApp != null ? 2 : 1),
+        border: borderColor,
+        accentBorder: detectedApp != null ? accent : null,
+        accentWidth: 2,
       ),
       child: Row(
         children: [
@@ -386,12 +388,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: kPageGutter, vertical: 18),
+      decoration: fullBleedCard(color: cardBg, border: borderColor),
       child: Row(
         children: [
           Container(
@@ -688,7 +686,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       children: [
         // ── Encabezado de sección ──
         Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.fromLTRB(kPageGutter, 0, kPageGutter, 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -730,12 +728,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         else if (_recentSessions.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderColor),
-            ),
+            padding: const EdgeInsets.all(kPageGutter),
+            decoration: fullBleedCard(color: cardBg, border: borderColor),
             child: Column(
               children: [
                 Icon(Icons.history_rounded, size: 32, color: labelColor),
@@ -778,22 +772,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                 : appState.tr('mile_short');
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-                boxShadow: isDark ? [] : [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: fullBleedCard(color: cardBg, border: borderColor),
               child: Column(
                 children: [
 
                   // ── Fila superior: fecha / duración / millas ──
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 10),
                     child: Row(
                       children: [
 
@@ -847,7 +833,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // ── Secciones (chips de gig apps) ──
                   if (sections.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      padding: const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 12),
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 6,
@@ -941,25 +927,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4)),
-              ],
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: fullBleedCard(color: cardBg, border: borderColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
             child: Text(
               appState.tr('summary').toUpperCase(),
               style: TextStyle(
@@ -977,7 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               children: [
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 14),
+                    padding: const EdgeInsets.fromLTRB(kPageGutter, 12, 8, 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1016,7 +990,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 VerticalDivider(width: 1, thickness: 1, color: borderColor),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(8, 12, kPageGutter, 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1060,7 +1034,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             InkWell(
               onTap: () => _showIrsEstimateDisclaimer(appState),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                padding: const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 12),
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline_rounded, size: 14, color: Colors.blue),
@@ -1203,12 +1177,14 @@ class _DashboardScreenState extends State<DashboardScreen>
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          // Full-width rows (2026-10-01): no side margin here -- cards span
+          // edge to edge; non-card elements get Gutter() instead.
+          padding: EdgeInsets.zero,
           child: Column(
             children: [
               const SizedBox(height: 10),
 
-              _buildSwitchAppBanner(),
+              Gutter(child: _buildSwitchAppBanner()),
 
               const SizedBox(height: 20),
 
@@ -1253,7 +1229,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               if (appState.isGig &&
                   appState.premiumEntitled &&
                   TrackingController.currentState == TrackingState.idle) ...[
-                const AutoDetectAppsButton(),
+                const Gutter(child: AutoDetectAppsButton()),
                 const SizedBox(height: 20),
               ],
 
@@ -1290,7 +1266,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                       const SizedBox(height: 30),
 
-                      TrackingActionButton(
+                      Gutter(child: TrackingActionButton(
                 selectedGigApp: _selectedGigApp,
                 selectedIrsPurpose: _selectedIrsPurpose,
                 // BUG FIX (dashboard no se refrescaba tras terminar un
@@ -1344,7 +1320,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // red snackbar right after the dialog closes (canStart
                 // resolving false triggers that path regardless), which
                 // would just be a redundant second message stacked on top.
-              ),
+              )),
                     ],
                   ),
                   // Flash overlay itself: a full-bleed, non-interactive
@@ -1360,7 +1336,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: Container(
                           decoration: BoxDecoration(
                             color: _autoFlashColor ?? Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                       ),
@@ -1372,7 +1347,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 40),
 
               if (TrackingController.activeSection != null)
-                Container(
+                Gutter(child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
@@ -1386,7 +1361,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       fontSize: 12,
                     ),
                   ),
-                ),
+                )),
 
               const SizedBox(height: 30),
 
@@ -1458,7 +1433,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
 
     final headerRow = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
       child: Row(
         children: [
           Icon(Icons.directions_car_outlined,
@@ -1495,11 +1470,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (_activeVehicle == null) {
       return Container(
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor),
-        ),
+        decoration: fullBleedCard(color: cardBg, border: borderColor),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1508,7 +1479,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             InkWell(
               onTap: isFleetDriver ? null : _goToVehicleProfile,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                padding: const EdgeInsets.fromLTRB(kPageGutter, 12, kPageGutter, 14),
                 child: isFleetDriver
                     ? Text(appState.tr('fleet_no_vehicle_assigned'))
                     : Row(
@@ -1533,11 +1504,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Sin InkWell exterior: solo el bloque de vehículo (más abajo) navega.
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
-      ),
+      decoration: fullBleedCard(color: cardBg, border: borderColor),
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1573,7 +1540,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   InkWell(
                     onTap: isFleetDriver ? null : _goToVehicleProfile,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+                      padding: const EdgeInsets.fromLTRB(kPageGutter, 12, 12, 14),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1624,7 +1591,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // independiente de si hay un viaje corriendo o no.
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+                      padding: const EdgeInsets.fromLTRB(12, 12, kPageGutter, 14),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         // BUG FIX (pedido explícito, "separaste la función
@@ -1656,7 +1623,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             if (isFleetDriver) ...[
               Divider(height: 1, color: borderColor),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                padding: const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 10),
                 child: SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -1746,7 +1713,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildStatHalf(
       String value, String label, IconData icon, Color textColor, Color labelColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: kPageGutter),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
