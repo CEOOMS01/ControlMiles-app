@@ -52,6 +52,14 @@ class TrackingController {
   static final ValueNotifier<({double lat, double lng})?> livePosition =
       ValueNotifier(null);
 
+  // Route of the ACTIVE trip (2026-10-01, explicit user request: expand the
+  // dashboard map to see the trip's route). Same antifraud-validated ticks
+  // as livePosition, appended in processGpsTick and cleared in _resetState.
+  // In memory only -- after an app restart mid-trip it starts over from the
+  // next tick (the trip's miles are unaffected).
+  static final ValueNotifier<List<({double lat, double lng})>> liveRoute =
+      ValueNotifier(const []);
+
   // Auto-detect start/stop flash (explicit user request, 2026-09-08): a
   // transient in-app visual cue distinct from the existing OS notification
   // (showAutoTripStartedNotification) -- blue flash the instant auto-detect
@@ -165,6 +173,7 @@ class TrackingController {
     _minDrivingSignatureScore = 1.0;
     _runSegmentStartedAt = null;
     livePosition.value = null;
+    liveRoute.value = const [];
     _liveHeartbeat?.cancel();
     _liveHeartbeat = null;
     startedViaAutoDetect = false;
@@ -1106,6 +1115,7 @@ class TrackingController {
     // that already passed the antifraud check above, same trust boundary
     // as everything else this file writes.
     livePosition.value = (lat: latitude, lng: longitude);
+    liveRoute.value = [...liveRoute.value, (lat: latitude, lng: longitude)];
 
     // BUG FIX: start_latitude/start_longitude nunca se guardaban en ningún
     // punto del código vivo (quedaban null en el 100% de las secciones

@@ -61,6 +61,11 @@ class TrackingActionButton extends StatefulWidget {
   // failed or was abandoned): undo it so the class can be started again.
   final Future<void> Function(String blockId)? onShiftBlockStartFailed;
 
+  // Gig dashboard tracking card (2026-10-01, explicit user request): one
+  // row -- status text on the left, START/PAUSE/RESUME + END pills on the
+  // right -- instead of the big round buttons. Same handlers either way.
+  final bool compact;
+
   const TrackingActionButton({
     super.key,
     required this.selectedGigApp,
@@ -72,6 +77,7 @@ class TrackingActionButton extends StatefulWidget {
     this.preSelectedVehicleId,
     this.startShiftBlock,
     this.onShiftBlockStartFailed,
+    this.compact = false,
   });
 
   @override
@@ -370,6 +376,8 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       _pulseController.stop();
     }
 
+    if (widget.compact) return _buildCompact(appState, state);
+
     return AnimatedSize(
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
@@ -481,6 +489,105 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCompact(AppState appState, TrackingState state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final color = _getButtonColor(state);
+    final isIdle = state == TrackingState.idle;
+    final app = TrackingController.currentGigApp;
+
+    final String title;
+    final String subtitle;
+    if (isIdle) {
+      title = appState.tr('ready_to_track');
+      subtitle = appState.tr('ready_to_track_body');
+    } else if (state == TrackingState.paused) {
+      title = appState.tr('tracking_paused_label');
+      subtitle = app == null ? '' : app.toUpperCase();
+    } else {
+      title = appState.tr('tracking_active');
+      subtitle = app == null ? '' : app.toUpperCase();
+    }
+
+    Widget pill({required VoidCallback onTap, required IconData icon, required String label,
+        required Color bg, required Color fg, Color? border}) {
+      return Material(
+        color: bg,
+        shape: StadiumBorder(side: border == null ? BorderSide.none : BorderSide(color: border, width: 1.5)),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, color: fg, size: 20),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 0.6)),
+            ]),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        // Pulsing dot while running, same cue the big button's ring gives.
+        AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, _) => Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isIdle ? const Color(0xFF22C55E) : color,
+              boxShadow: state == TrackingState.running
+                  ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4 + 6 * _pulseController.value)]
+                  : null,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: textColor),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: TextStyle(fontSize: 12, color: subColor),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        pill(
+          onTap: () => _handlePress(appState),
+          icon: _getIcon(state),
+          label: _getLabel(appState, state),
+          bg: color,
+          fg: Colors.white,
+        ),
+        if (!isIdle) ...[
+          const SizedBox(width: 8),
+          pill(
+            onTap: () => _handleEndTrip(appState),
+            icon: Icons.stop_rounded,
+            label: appState.tr('end').toUpperCase(),
+            bg: isDark ? const Color(0xFF0F172A) : Colors.white,
+            fg: Colors.red.shade700,
+            border: Colors.red.shade200,
+          ),
+        ],
+      ],
     );
   }
 

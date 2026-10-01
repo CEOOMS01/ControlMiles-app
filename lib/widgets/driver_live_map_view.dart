@@ -64,10 +64,10 @@ class DriverLiveMapView extends StatefulWidget {
   const DriverLiveMapView({super.key, this.compact = false});
 
   @override
-  State<DriverLiveMapView> createState() => _DriverLiveMapViewState();
+  State<DriverLiveMapView> createState() => DriverLiveMapViewState();
 }
 
-class _DriverLiveMapViewState extends State<DriverLiveMapView> {
+class DriverLiveMapViewState extends State<DriverLiveMapView> {
   MapLibreMapController? _mapController;
   bool _didCenterOnce = false;
   Line? _trailLine;
@@ -95,11 +95,78 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
   double? _heading;
   final List<LatLng> _trail = [];
 
+  // Full mode (TripRouteMapScreen, 2026-10-01): the route comes from
+  // TrackingController.liveRoute (validated ticks of the ACTIVE trip), and
+  // the driver's position is a MapLibre circle -- the map is pannable here,
+  // so a screen-fixed puck would drift off the real position.
+  Circle? _positionDot;
+  bool _didFitRoute = false;
+
   @override
   void initState() {
     super.initState();
-    if (widget.compact) {
-      _startOwnPositionStream();
+    // Both modes open their own GPS stream: compact for the "where am I"
+    // glance, full so the expanded map also works with no trip running.
+    _startOwnPositionStream();
+    if (!widget.compact) {
+      TrackingController.liveRoute.addListener(_onLiveRoute);
+      TrackingController.livePosition.addListener(_syncPositionDot);
+      _onLiveRoute();
+    }
+  }
+
+  void _onLiveRoute() {
+    _trail
+      ..clear()
+      ..addAll(TrackingController.liveRoute.value.map((p) => LatLng(p.lat, p.lng)));
+    _syncTrail();
+  }
+
+  LatLng? get _currentPoint {
+    final live = TrackingController.livePosition.value;
+    if (live != null) return LatLng(live.lat, live.lng);
+    final own = _ownPosition;
+    return own == null ? null : LatLng(own.latitude, own.longitude);
+  }
+
+  Future<void> _syncPositionDot() async {
+    final controller = _mapController;
+    final point = _currentPoint;
+    if (widget.compact || controller == null || point == null) return;
+    if (_positionDot == null) {
+      final c = Theme.of(context).colorScheme.primary.toARGB32() & 0xFFFFFF;
+      _positionDot = await controller.addCircle(CircleOptions(
+        geometry: point,
+        circleRadius: 8,
+        circleColor: '#${c.toRadixString(16).padLeft(6, '0')}',
+        circleStrokeWidth: 3,
+        circleStrokeColor: '#FFFFFF',
+      ));
+    } else {
+      await controller.updateCircle(_positionDot!, CircleOptions(geometry: point));
+    }
+  }
+
+  /// Fits the whole route on screen (or centers on the driver when there is
+  /// no route yet). Called once when the map loads and by the recenter button.
+  Future<void> fitRoute() async {
+    final controller = _mapController;
+    if (controller == null) return;
+    if (_trail.length >= 2) {
+      var minLat = _trail.first.latitude, maxLat = minLat;
+      var minLng = _trail.first.longitude, maxLng = minLng;
+      for (final p in _trail) {
+        minLat = math.min(minLat, p.latitude);
+        maxLat = math.max(maxLat, p.latitude);
+        minLng = math.min(minLng, p.longitude);
+        maxLng = math.max(maxLng, p.longitude);
+      }
+      await controller.animateCamera(CameraUpdate.newLatLngBounds(
+        LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+        left: 48, top: 48, right: 48, bottom: 48,
+      ));
+    } else if (_currentPoint != null) {
+      await controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPoint!, 16));
     }
   }
 
@@ -129,7 +196,11 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
         ),
       );
       if (mounted) setState(() => _ownPosition = first);
-      _recenter(LatLng(first.latitude, first.longitude));
+      if (widget.compact) {
+        _recenter(LatLng(first.latitude, first.longitude));
+      } else {
+        _syncPositionDot();
+      }
 
       _ownPositionSub = geo.Geolocator.getPositionStream(
         locationSettings: const geo.LocationSettings(
@@ -151,6 +222,12 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
         // rastro se actualizan) -- el mapa queda congelado exactamente
         // donde estaba al pausar, y retoma en vivo solo al reanudar.
         if (TrackingController.currentState == TrackingState.paused) return;
+
+        if (!widget.compact) {
+          setState(() => _ownPosition = pos);
+          _syncPositionDot();
+          return;
+        }
 
         setState(() {
           _ownPosition = pos;
@@ -202,6 +279,10 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
 
   @override
   void dispose() {
+    if (!widget.compact) {
+      TrackingController.liveRoute.removeListener(_onLiveRoute);
+      TrackingController.livePosition.removeListener(_syncPositionDot);
+    }
     _ownPositionSub?.cancel();
     super.dispose();
   }
@@ -231,11 +312,8 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
     // posición nueva llega, así que el seguimiento en vivo tiene que
     // salir de acá. postFrameCallback porque el controller de un mapa
     // recién creado no está listo hasta después de este mismo build.
-    if (!widget.compact) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _recenter(point));
-    }
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(widget.compact ? 18 : 0),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -252,11 +330,26 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
             zoomGesturesEnabled: !widget.compact,
             doubleClickZoomEnabled: !widget.compact,
             onMapCreated: (controller) {
+              // A recreated map (first GPS fix switching the subtree) has
+              // none of the previous controller's annotations.
+              _trailLine = null;
+              _positionDot = null;
+              _didFitRoute = false;
               _mapController = controller;
               _didCenterOnce = true;
             },
-            onStyleLoadedCallback: _syncTrail,
+            onStyleLoadedCallback: () async {
+              await _syncTrail();
+              if (!widget.compact) {
+                await _syncPositionDot();
+                if (!_didFitRoute) {
+                  _didFitRoute = true;
+                  await fitRoute();
+                }
+              }
+            },
           ),
+          if (widget.compact)
           IgnorePointer(
             // Rotación por rumbo (pedido explícito): sin heading (null,
             // full mode o compact antes del primer fix con rumbo real)
@@ -282,12 +375,16 @@ class _DriverLiveMapViewState extends State<DriverLiveMapView> {
       return _map(LatLng(pos.latitude, pos.longitude), primary, heading: _heading);
     }
 
-    return ValueListenableBuilder(
-      valueListenable: TrackingController.livePosition,
-      builder: (context, position, _) {
-        if (position == null) return _emptyState();
-        return _map(LatLng(position.lat, position.lng), primary);
-      },
-    );
+    // Full mode: built once with the first known point; after that the
+    // camera is the driver's to pan, and the dot/route update in place.
+    final point = _currentPoint;
+    if (point == null) {
+      return ValueListenableBuilder(
+        valueListenable: TrackingController.livePosition,
+        builder: (context, live, child) =>
+            live == null ? _emptyState() : _map(LatLng(live.lat, live.lng), primary),
+      );
+    }
+    return _map(point, primary);
   }
 }

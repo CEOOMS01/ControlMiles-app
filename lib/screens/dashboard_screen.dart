@@ -16,6 +16,7 @@ import '../models/vehicle_inspection.dart';
 import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/vehicle_inspection_screen.dart';
+import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../widgets/full_bleed.dart';
 import '../widgets/driver_live_map_view.dart';
@@ -1196,77 +1197,24 @@ class _DashboardScreenState extends State<DashboardScreen>
               // El total mensual que antes vivía en MileageDeductionBadge
               // (año completo, ya eliminado) ahora vive en la card Summary
               // más abajo, no acá -- ver _buildSummaryCard.
+              // Tracking card (2026-10-01, explicit user request): vehicle,
+              // map, miles/duration and START live together in ONE card --
+              // START used to be the big round button under the gig-app
+              // carousel. The auto-detect start/stop flash now plays over
+              // this card, where the trip state is shown.
               _vehicleLoading
                   ? const CircularProgressIndicator()
-                  : _buildVehicleCard(
-                      appState: appState,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      borderColor: bColor,
-                      tripMilesValue: displayValue,
-                      tripMilesUnit: unitLabel,
-                    ),
-
-              const SizedBox(height: 30),
-
-              // Explicit user request (2026-08-27): a more discoverable
-              // entry point for auto-detect, right where the carousel/
-              // status card already lives -- replaces the small circular
-              // toggle that used to live in TrackingActionButton. Only
-              // shown at idle (Gig-only, same scope the drawer's removed
-              // version had) -- once running, the mode is already
-              // committed for that trip.
-              //
-              // BUG FIX (explicit user requirement, 2026-09-04): this
-              // button was visible to EVERY gig user regardless of tier --
-              // Basic/Free could see and tap it, only to hit
-              // AutoDetectAppsButton._activate()'s premium-locked dialog.
-              // "Basic solo debe ver el carrusel, Premium añade Auto
-              // Detection" -- the entry point itself is now Premium-only,
-              // not just what happens after tapping it. Basic/Free always
-              // fall through to the plain GigAppSelector carousel below,
-              // same as if auto-detect were simply off.
-              if (appState.isGig &&
-                  appState.premiumEntitled &&
-                  TrackingController.currentState == TrackingState.idle) ...[
-                const Gutter(child: AutoDetectAppsButton()),
-                const SizedBox(height: 20),
-              ],
-
-              // Explicit user request: the carousel must NEVER reappear
-              // while auto-detect is armed, in ANY trip state -- it was
-              // flagged as inconsistent that it came back once a
-              // detected trip started tracking. Auto-detect now owns
-              // gig-app selection for the whole trip lifecycle (start AND
-              // mid-trip switching, see AutoTripDetectionService's own
-              // _pollForMidTripSwitch), so the status card stays up
-              // throughout instead of handing back to the manual
-              // carousel.
-              // Auto-detect start/stop flash (explicit user request,
-              // 2026-09-08): Stack + AnimatedContainer instead of touching
-              // TrackingActionButton's own color logic directly -- this is
-              // a transient overlay independent of the button's persistent
-              // running/idle color, so it can flash blue-then-fade even
-              // while the button underneath is already showing its normal
-              // red "running" state.
-              Stack(
-                children: [
-                  Column(
-                    children: [
-                      appState.autoDetectEnabled
-                          ? _buildAutoDetectStatusCard(appState, isDark)
-                          : GigAppSelector(
-                              selectedGigApp: _selectedGigApp,
-                              activeGigApp: TrackingController.currentGigApp,
-                              isPaused: TrackingController.isPaused,
-                              onAppSelected: (appId) => _handleAppSelection(appId),
-                              onCustomSelected: (appId, irsPurpose) =>
-                                  _handleAppSelection(appId, irsPurpose: irsPurpose),
-                            ),
-
-                      const SizedBox(height: 30),
-
-                      Gutter(child: TrackingActionButton(
+                  : Stack(
+                      children: [
+                        _buildVehicleCard(
+                          appState: appState,
+                          isDark: isDark,
+                          cardBg: cardBg,
+                          borderColor: bColor,
+                          tripMilesValue: displayValue,
+                          tripMilesUnit: unitLabel,
+                          trackingRow: TrackingActionButton(
+                compact: true,
                 selectedGigApp: _selectedGigApp,
                 selectedIrsPurpose: _selectedIrsPurpose,
                 // BUG FIX (dashboard no se refrescaba tras terminar un
@@ -1320,13 +1268,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // red snackbar right after the dialog closes (canStart
                 // resolving false triggers that path regardless), which
                 // would just be a redundant second message stacked on top.
-              )),
-                    ],
-                  ),
-                  // Flash overlay itself: a full-bleed, non-interactive
-                  // colored fade over the Column above. IgnorePointer so it
-                  // never blocks taps on the real carousel/button beneath
-                  // it; AnimatedOpacity (not AnimatedContainer) since only
+              ),
+                        ),
+                  // Auto-detect start/stop flash (2026-09-08): a full-bleed,
+                  // non-interactive colored fade over the tracking card --
+                  // independent of the button's own running/idle color.
+                  // IgnorePointer so it never blocks taps beneath it; AnimatedOpacity (not AnimatedContainer) since only
                   // opacity changes here, color is set once per flash.
                   Positioned.fill(
                     child: IgnorePointer(
@@ -1341,27 +1288,57 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 40),
-
-              if (TrackingController.activeSection != null)
-                Gutter(child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "${appState.tr('tracking_active').toUpperCase()}: ${TrackingController.activeSection?.gigApp.toUpperCase()}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 12,
+                      ],
                     ),
-                  ),
-                )),
+
+              const SizedBox(height: 30),
+
+              // Explicit user request (2026-08-27): a more discoverable
+              // entry point for auto-detect, right where the carousel/
+              // status card already lives -- replaces the small circular
+              // toggle that used to live in TrackingActionButton. Only
+              // shown at idle (Gig-only, same scope the drawer's removed
+              // version had) -- once running, the mode is already
+              // committed for that trip.
+              //
+              // BUG FIX (explicit user requirement, 2026-09-04): this
+              // button was visible to EVERY gig user regardless of tier --
+              // Basic/Free could see and tap it, only to hit
+              // AutoDetectAppsButton._activate()'s premium-locked dialog.
+              // "Basic solo debe ver el carrusel, Premium añade Auto
+              // Detection" -- the entry point itself is now Premium-only,
+              // not just what happens after tapping it. Basic/Free always
+              // fall through to the plain GigAppSelector carousel below,
+              // same as if auto-detect were simply off.
+              if (appState.isGig &&
+                  appState.premiumEntitled &&
+                  TrackingController.currentState == TrackingState.idle) ...[
+                const Gutter(child: AutoDetectAppsButton()),
+                const SizedBox(height: 20),
+              ],
+
+              // Explicit user request: the carousel must NEVER reappear
+              // while auto-detect is armed, in ANY trip state -- it was
+              // flagged as inconsistent that it came back once a
+              // detected trip started tracking. Auto-detect now owns
+              // gig-app selection for the whole trip lifecycle (start AND
+              // mid-trip switching, see AutoTripDetectionService's own
+              // _pollForMidTripSwitch), so the status card stays up
+              // throughout instead of handing back to the manual
+              // carousel.
+              appState.autoDetectEnabled
+                          ? _buildAutoDetectStatusCard(appState, isDark)
+                          : GigAppSelector(
+                              selectedGigApp: _selectedGigApp,
+                              activeGigApp: TrackingController.currentGigApp,
+                              isPaused: TrackingController.isPaused,
+                              onAppSelected: (appId) => _handleAppSelection(appId),
+                              onCustomSelected: (appId, irsPurpose) =>
+                                  _handleAppSelection(appId, irsPurpose: irsPurpose),
+                            ),
+
+              // (The "TRACKING ACTIVE: APP" chip lived here -- the tracking
+              // card's status line shows the same thing now.)
 
               const SizedBox(height: 30),
 
@@ -1382,6 +1359,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   // de Profile a su propia pantalla (VehicleScreen) — toda la tarjeta
   // navega ahí, y al volver se refresca el vehículo activo en tiempo real
   // (por si se agregó, archivó o cambió cuál está activo).
+  void _openTripRouteMap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TripRouteMapScreen()),
+    );
+  }
+
   Future<void> _goToVehicleProfile() async {
     await Navigator.pushNamed(context, AppRoutes.vehicle);
     if (mounted) _loadActiveVehicle();
@@ -1394,6 +1378,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     required Color borderColor,
     required String tripMilesValue,
     required String tripMilesUnit,
+    required Widget trackingRow,
   }) {
     // BUG FIX (pedido explícito, "Full-width Divider"): la card de vehículo
     // no tenía separación entre título y contenido -- ahora sigue el mismo
@@ -1428,6 +1413,16 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
           ),
+        ),
+      ],
+    );
+
+    final trackingSection = Column(
+      children: [
+        Divider(height: 1, color: borderColor),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 14),
+          child: trackingRow,
         ),
       ],
     );
@@ -1496,124 +1491,118 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             tripStatsSection,
+            trackingSection,
           ],
         ),
       );
     }
 
     // Sin InkWell exterior: solo el bloque de vehículo (más abajo) navega.
+    // Tracking card (2026-10-01, explicit user request): no "VEHICLE"
+    // header row, and the vehicle block is a narrow column (icon over name)
+    // so the map gets most of the width and more height. Tapping the map or
+    // its expand button opens TripRouteMapScreen (active trip's route).
     return Container(
       width: double.infinity,
       decoration: fullBleedCard(color: cardBg, border: borderColor),
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            headerRow,
-            Divider(height: 1, color: borderColor),
-            // BUG FIX (pedido explícito, batch de 3 -- "vehículo y mapa
-            // coexisten en una función, no se ven separados"): la versión
-            // anterior metía ícono+nombre+mapa+chevron en un único Row sin
-            // ninguna frontera visual real entre "navegar al vehículo" y
-            // "ver el mapa" -- el mapa (un cuadrito gris, ya que todavía no
-            // hay fix GPS) quedaba pegado al chevron y leía como un segundo
-            // botón, aunque solo el chevron navegaba. Ahora son dos
-            // secciones explícitas dentro de la misma card, con su propio
-            // Padding cada una y un VerticalDivider real entre ambas --
-            // mismo lenguaje visual que ya usa esta pantalla para separar
-            // pares de datos (ver MI|Duration y Total Miles|Today más
-            // abajo). El chevron se movió junto al nombre, DENTRO de la
-            // zona de vehículo, no pegado al mapa.
-            // BUG FIX (pedido explícito, "el mapa tendría más presencia"):
-            // antes ambos lados competían por el mismo ancho (Expanded en
-            // el vehículo empujaba el chevron hasta el borde del divisor,
-            // el mapa se quedaba en un cuadrito fijo de 72x72). Ahora es al
-            // revés -- el bloque de vehículo (ícono + nombre + chevron) NO
-            // es Expanded, ocupa solo lo que su contenido necesita (nombre
-            // acotado a 130 de ancho con ellipsis para vehículos con
-            // nombres largos, chevron pegado inmediatamente después del
-            // texto) -- y el Expanded pasa al mapa, que ahora se estira a
-            // todo el ancho restante de la card en vez de un cuadrado fijo.
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  InkWell(
-                    onTap: isFleetDriver ? null : _goToVehicleProfile,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(kPageGutter, 12, 12, 14),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                shape: BoxShape.circle),
-                            child: const Icon(Icons.directions_car_filled_rounded,
-                                color: Colors.white),
-                          ),
-                          const SizedBox(width: 12),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 130),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 14),
+              child: SizedBox(
+                height: 132,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 92,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: isFleetDriver ? null : _goToVehicleProfile,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(9),
+                              decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.directions_car_filled_rounded,
+                                  color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(height: 10),
                             // Marca del vehículo activo (ej. Toyota, Nissan) + modelo.
-                            child: Text(
+                            Text(
                               _activeVehicle!.displayName,
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w900),
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w900, color: textColor),
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          if (!isFleetDriver) ...[
-                            const SizedBox(width: 4),
-                            // BUG FIX (pedido explícito, "cambiar la
-                            // dirección del botón > hacia abajo tipo v"):
-                            // chevron_right (apunta a la derecha, sugiere
-                            // "ir a otra pantalla") reemplazado por uno que
-                            // apunta hacia abajo -- sigue siendo solo un
-                            // ícono decorativo dentro del InkWell que
-                            // navega a VehicleScreen, el tap no cambia.
-                            const Icon(Icons.keyboard_arrow_down_rounded,
-                                color: Color(0xFF94A3B8)),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    appState.tr('vehicle'),
+                                    style: TextStyle(fontSize: 11, color: labelColor),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (!isFleetDriver)
+                                  Icon(Icons.keyboard_arrow_down_rounded,
+                                      size: 18, color: labelColor),
+                              ],
+                            ),
                           ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  VerticalDivider(width: 1, thickness: 1, color: borderColor),
-                  // BUG FIX (pedido explícito, "no quiero que se active al
-                  // activar el tracking, quiero que se vea visible sin el
-                  // tracking"): antes usaba TrackingController.livePosition,
-                  // que solo se llena durante un viaje activo (ver su
-                  // comentario en tracking_controller.dart) -- por eso en
-                  // idle solo se veía el ícono de "buscando GPS", nunca el
-                  // mapa real. El modo compact ahora arranca su PROPIO
-                  // stream de Geolocator (ver driver_live_map_view.dart),
-                  // independiente de si hay un viaje corriendo o no.
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, kPageGutter, 14),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        // BUG FIX (pedido explícito, "separaste la función
-                        // de vehículo del mapa"): el thumbnail ya no vive
-                        // dentro del InkWell que navega a VehicleScreen (ver
-                        // arriba, ahora ese InkWell solo envuelve el bloque
-                        // de vehículo) -- este InkWell propio (no-op, sin
-                        // pantalla de mapa completo todavía) solo evita que
-                        // el tap se filtre hacia el resto de la card.
-                        child: InkWell(
-                          onTap: () {},
-                          child: Container(
-                            height: 84,
-                            width: double.infinity,
-                            decoration: BoxDecoration(border: Border.all(color: borderColor)),
-                            child: const DriverLiveMapView(compact: true),
-                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    // El thumbnail arranca su PROPIO stream de Geolocator
+                    // (ver driver_live_map_view.dart), visible sin viaje.
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(border: Border.all(color: borderColor)),
+                                child: const DriverLiveMapView(compact: true),
+                              ),
+                            ),
+                            // The map ignores gestures in compact mode; this
+                            // layer turns any tap on it into "expand".
+                            Positioned.fill(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(onTap: _openTripRouteMap),
+                              ),
+                            ),
+                            Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: Material(
+                                color: isDark ? const Color(0xE60F172A) : const Color(0xE6FFFFFF),
+                                shape: const CircleBorder(),
+                                elevation: 2,
+                                child: IconButton(
+                                  tooltip: appState.tr('trip_route'),
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(Icons.open_in_full_rounded,
+                                      size: 18, color: Theme.of(context).colorScheme.primary),
+                                  onPressed: _openTripRouteMap,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Fleet Phase 4: DVIR-style pre/post-trip inspection, only
@@ -1636,6 +1625,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
             tripStatsSection,
+            trackingSection,
           ],
         ),
     );
