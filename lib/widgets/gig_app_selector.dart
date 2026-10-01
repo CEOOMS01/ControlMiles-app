@@ -101,15 +101,17 @@ class GigAppSelector extends StatelessWidget {
                       horizontal: 8,
                       vertical: 3,
                     ),
+                    // "ON LIVE" in blue (explicit user request, 2026-10-01),
+                    // same blue as the tracking card's running state.
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
-                      appState.tr('tracking_active').toUpperCase(),
-                      style: const TextStyle(
+                    child: const Text(
+                      'ON LIVE',
+                      style: TextStyle(
                         fontSize: 9,
-                        color: Colors.green,
+                        color: Color(0xFF2563EB),
                         fontWeight: FontWeight.bold,
                       ),
                     ),

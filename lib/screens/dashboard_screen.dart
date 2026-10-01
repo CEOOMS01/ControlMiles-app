@@ -1573,12 +1573,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 child: const DriverLiveMapView(compact: true),
                               ),
                             ),
-                            // The map ignores gestures in compact mode; this
-                            // layer turns any tap on it into "expand".
+                            // Only the expand button opens the big map
+                            // (explicit user request, 2026-10-01: an
+                            // accidental tap on the map must do nothing).
+                            // This layer just swallows taps on the map.
                             Positioned.fill(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(onTap: _openTripRouteMap),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {},
                               ),
                             ),
                             Positioned(

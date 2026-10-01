@@ -496,8 +496,12 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final subColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final color = _getButtonColor(state);
+    // Card colors (explicit user request, 2026-10-01): off = red dot,
+    // live = blue (dot + PAUSE pill), paused = orange. The big round
+    // button elsewhere keeps its own colors (_getButtonColor).
+    const liveBlue = Color(0xFF2563EB);
     final isIdle = state == TrackingState.idle;
+    final color = state == TrackingState.running ? liveBlue : _getButtonColor(state);
     final app = TrackingController.currentGigApp;
 
     final String title;
@@ -544,7 +548,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isIdle ? const Color(0xFF22C55E) : color,
+              color: isIdle ? Colors.red.shade600 : color,
               boxShadow: state == TrackingState.running
                   ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4 + 6 * _pulseController.value)]
                   : null,
