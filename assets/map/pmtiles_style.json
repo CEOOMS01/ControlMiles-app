@@ -6,7 +6,7 @@
     "protomaps": {
       "type": "vector",
       "url": "pmtiles://https://pub-e0486b4034e5461d886e22d73471a880.r2.dev/us.pmtiles",
-      "attribution": "Protomaps / OpenStreetMap"
+      "attribution": "© OpenStreetMap contributors · Protomaps"
     }
   },
   "layers": [

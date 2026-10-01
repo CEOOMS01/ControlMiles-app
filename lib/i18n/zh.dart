@@ -578,6 +578,7 @@ const Map<String, String> zhTexts = {
   'fuel_state_label': '州',
   'fuel_state_hint': '选择州',
   'fuel_date_label': '购买日期',
+  'licenses_map_data': "许可证与地图数据",
   'ready_to_track': "准备记录",
   'ready_to_track_body': "选择您的活动并开始行程。",
   'tracking_paused_label': "记录已暂停",

@@ -53,6 +53,7 @@ import '../services/geofence_service.dart';
 import '../services/organization_service.dart';
 import '../errors/app_error.dart';
 import '../util/geo_circle.dart';
+import '../widgets/driver_live_map_view.dart' show OsmAttribution;
 
 const String _pmtilesStyleAsset = 'assets/map/pmtiles_style.json';
 
@@ -372,6 +373,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
                           await _syncGeofenceFills();
                         },
                       ),
+                      const Positioned(right: 0, bottom: 0, child: OsmAttribution()),
                       if (_isPlacingGeofence)
                         Positioned(
                           top: 12,

@@ -48,6 +48,28 @@ import '../tracking/tracking_controller.dart';
 
 const String _pmtilesStyleAsset = 'assets/map/pmtiles_style.json';
 
+/// Visible map credit (2026-10-01). OpenStreetMap data is ODbL: every map
+/// showing it must credit "© OpenStreetMap contributors". Full-size maps
+/// show this label; the tiny dashboard thumbnail relies on MapLibre's own
+/// (i) attribution button, which OSM's guidelines allow for small maps.
+class OsmAttribution extends StatelessWidget {
+  const OsmAttribution({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        color: const Color(0xCCFFFFFF),
+        child: const Text(
+          '© OpenStreetMap contributors · Protomaps',
+          style: TextStyle(fontSize: 10, color: Color(0xFF334155)),
+        ),
+      ),
+    );
+  }
+}
+
 class DriverLiveMapView extends StatefulWidget {
   // BUG FIX (pedido explícito, "mapa en tiempo real al lado de la card de
   // Vehicle"): esta clase ya existía pero no estaba wireada a ningún lado
@@ -329,6 +351,8 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
             tiltGesturesEnabled: !widget.compact,
             zoomGesturesEnabled: !widget.compact,
             doubleClickZoomEnabled: !widget.compact,
+            // Full mode has a FAB at bottom-right; keep the (i) clear of it.
+            attributionButtonPosition: AttributionButtonPosition.bottomLeft,
             onMapCreated: (controller) {
               // A recreated map (first GPS fix switching the subtree) has
               // none of the previous controller's annotations.
@@ -349,6 +373,8 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
               }
             },
           ),
+          if (!widget.compact)
+            const Positioned(right: 0, top: 0, child: OsmAttribution()),
           if (widget.compact)
           IgnorePointer(
             // Rotación por rumbo (pedido explícito): sin heading (null,

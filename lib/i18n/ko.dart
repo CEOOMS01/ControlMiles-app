@@ -850,6 +850,7 @@ const Map<String, String> koTexts = {
   'fuel_state_label': '주(state)',
   'fuel_state_hint': '주를 선택하세요',
   'fuel_date_label': '구매일',
+  'licenses_map_data': "라이선스 및 지도 데이터",
   'ready_to_track': "기록 준비 완료",
   'ready_to_track_body': "활동을 선택하고 운행을 시작하세요.",
   'tracking_paused_label': "기록 일시정지됨",

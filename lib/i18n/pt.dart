@@ -578,6 +578,7 @@ const Map<String, String> ptTexts = {
   'fuel_state_label': 'Estado',
   'fuel_state_hint': 'Selecione o estado',
   'fuel_date_label': 'Data da compra',
+  'licenses_map_data': "Licenças e dados do mapa",
   'ready_to_track': "Pronto para rastrear",
   'ready_to_track_body': "Escolha sua atividade e inicie sua viagem.",
   'tracking_paused_label': "Rastreamento pausado",

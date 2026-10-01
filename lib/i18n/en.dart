@@ -751,6 +751,7 @@ const Map<String, String> enTexts = {
   'fuel_state_label': 'State',
   'fuel_state_hint': 'Select the state',
   'fuel_date_label': 'Purchase date',
+  'licenses_map_data': "Licenses & map data",
   'ready_to_track': "Ready to track",
   'ready_to_track_body': "Pick your activity and start your trip.",
   'tracking_paused_label': "Tracking paused",

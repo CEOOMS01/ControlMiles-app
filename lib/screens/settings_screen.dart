@@ -1084,6 +1084,25 @@ class _SettingsScreenState extends State<SettingsScreen>
           // Explicit user request (2026-09-09): a place for user
           // suggestions/feedback that isn't the Dashboard -- Settings,
           // same row style as Subscription/Privacy/Terms above.
+          // Map credits + open-source notices (2026-10-01): OpenStreetMap's
+          // ODbL and the bundled packages' licenses (MapLibre etc.) --
+          // Flutter's LicensePage lists every package license itself.
+          _buildLegalLinkRow(
+            icon: Icons.map_outlined,
+            label: appState.tr('licenses_map_data'),
+            isDark: isDark,
+            onTap: () => showLicensePage(
+              context: context,
+              applicationName: 'ControlMiles',
+              applicationLegalese:
+                  '© 2026 Olympus Mont Systems LLC\n\n'
+                  'Map data © OpenStreetMap contributors, available under the '
+                  'Open Database License (ODbL): openstreetmap.org/copyright. '
+                  'Basemap packaging by Protomaps (protomaps.com). Maps rendered '
+                  'with MapLibre. Speed limits from the OpenStreetMap Overpass API.',
+            ),
+          ),
+          const SizedBox(height: 10),
           _buildLegalLinkRow(
             icon: Icons.mail_outline_rounded,
             label: appState.tr('send_feedback'),
