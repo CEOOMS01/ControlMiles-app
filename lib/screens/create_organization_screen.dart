@@ -21,14 +21,28 @@ class CreateOrganizationScreen extends StatefulWidget {
   State<CreateOrganizationScreen> createState() => _CreateOrganizationScreenState();
 }
 
+// Fleet profiles (2026-09-30): same list as the web onboarding
+// (controlmiles-web src/lib/fleet-profiles.ts).
+const _fleetTypes = [
+  ('delivery', 'fleet_profile_delivery', 'fleet_profile_delivery_desc'),
+  ('field_service', 'fleet_profile_field_service', 'fleet_profile_field_service_desc'),
+  ('trucking', 'fleet_profile_trucking', 'fleet_profile_trucking_desc'),
+  ('construction', 'fleet_profile_construction', 'fleet_profile_construction_desc'),
+  ('passenger', 'fleet_profile_passenger', 'fleet_profile_passenger_desc'),
+  ('sales', 'fleet_profile_sales', 'fleet_profile_sales_desc'),
+  ('driving_school', 'fleet_type_driving_school', 'fleet_type_driving_school_desc'),
+  ('general', 'fleet_profile_general', 'fleet_profile_general_desc'),
+];
+
 class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
   final _nameController = TextEditingController();
   final _organizationService = OrganizationService();
   bool _isProcessing = false;
   String? _error;
-  // "What kind of fleet is it?" (2026-09-29): only a driving school gets
-  // hourly classes. Changeable later in Settings on controlmiles.com.
-  String _fleetType = 'delivery';
+  // "What kind of fleet is it?" (2026-09-29). 2026-10-03: nothing is
+  // preselected and the owner confirms it -- the type is locked once the
+  // fleet exists (set_fleet_type -> FLEET_TYPE_LOCKED; support changes it).
+  String? _fleetType;
 
   @override
   void dispose() {
@@ -36,12 +50,38 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
     super.dispose();
   }
 
-  Future<void> _createOrganization(AppState appState) async {
+  Future<void> _createOrganization(AppState appState, String fleetTypeTitle) async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _error = appState.tr('field_required'));
       return;
     }
+    final fleetType = _fleetType;
+    if (fleetType == null) {
+      setState(() => _error = appState.tr('fleet_type_choose_first'));
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('fleet_type_confirm_title')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(fleetTypeTitle, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 10),
+            Text(appState.tr('fleet_type_hint')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(appState.tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(appState.tr('confirm'))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
 
     setState(() {
       _isProcessing = true;
@@ -49,7 +89,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
     });
 
     try {
-      await _organizationService.createOrganization(name, industryTemplate: _fleetType);
+      await _organizationService.createOrganization(name, industryTemplate: fleetType);
 
       // El RPC ya promovió profiles.account_type a 'fleet_admin' server-side
       // -- esto solo refresca la copia en memoria/caché de AppState para
@@ -91,8 +131,8 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -132,17 +172,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textColor),
               ),
               const SizedBox(height: 8),
-              // Fleet profiles (2026-09-30): same list as the web onboarding.
-              for (final option in const [
-                ('delivery', 'fleet_profile_delivery', 'fleet_profile_delivery_desc'),
-                ('field_service', 'fleet_profile_field_service', 'fleet_profile_field_service_desc'),
-                ('trucking', 'fleet_profile_trucking', 'fleet_profile_trucking_desc'),
-                ('construction', 'fleet_profile_construction', 'fleet_profile_construction_desc'),
-                ('passenger', 'fleet_profile_passenger', 'fleet_profile_passenger_desc'),
-                ('sales', 'fleet_profile_sales', 'fleet_profile_sales_desc'),
-                ('driving_school', 'fleet_type_driving_school', 'fleet_type_driving_school_desc'),
-                ('general', 'fleet_profile_general', 'fleet_profile_general_desc'),
-              ])
+              for (final option in _fleetTypes)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: InkWell(
@@ -185,7 +215,17 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                     ),
                   ),
                 ),
-              Text(appState.tr('fleet_type_hint'), style: TextStyle(fontSize: 11.5, color: subTextColor)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: subTextColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(appState.tr('fleet_type_hint'),
+                        style: TextStyle(fontSize: 11.5, color: subTextColor)),
+                  ),
+                ],
+              ),
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12.5)),
@@ -195,7 +235,12 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isProcessing ? null : () => _createOrganization(appState),
+                  onPressed: (_isProcessing || _fleetType == null)
+                      ? null
+                      : () => _createOrganization(
+                            appState,
+                            appState.tr(_fleetTypes.firstWhere((t) => t.$1 == _fleetType).$2),
+                          ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

@@ -441,7 +441,7 @@ const Map<String, String> jaTexts = {
   'email_not_linked_to_controlmiles': 'このメールアドレスはControlMilesアカウントに紐付けられていません。',
 
   'free_trial_expired_title': '無料トライアルが終了しました',
-  'free_trial_expired_body': '30日間の無料トライアルが終了しました。走行記録を続けるにはBasicまたはPremiumにご登録ください。',
+  'free_trial_expired_body': '15日間の無料トライアルが終了しました。走行記録を続けるにはBasicまたはPremiumにご登録ください。',
   'vehicle_limit_reached_title': '車両登録数の上限に達しました',
   'vehicle_limit_reached_body': '現在のプランでは最大{max}台まで登録できます。追加するにはアップグレードしてください。',
   'export_limit_reached_title': 'エクスポート回数の上限に達しました',
@@ -482,6 +482,8 @@ const Map<String, String> jaTexts = {
   'org_access_revoked_body': 'フリート管理者がこの組織へのあなたのアクセスを削除しました。続行するにはサインアウトしてください。',
   'fleet_subscription_required_error': 'この組織には有効なFleetサブスクリプションが必要です。',
   'fleet_growth_required_error': 'この機能にはGrowthプランが必要です。フリート管理者にアップグレードを依頼してください。',
+  'fleet_type_locked_error': "フリートの種類は設定済みです。変更するには support@controlmiles.com までご連絡ください。",
+  'fleet_type_owner_only_error': "フリートの種類を選べるのはフリートのオーナーのみです。",
 
   // オープン／ローテーション車両割り当て（Fleet Sprint 4、2026-09-09）
   'fleet_select_vehicle_button': '車両を選択',
@@ -522,7 +524,9 @@ const Map<String, String> jaTexts = {
   'fleet_type_general_desc': "配送、サービス、営業、または混合の車両隊。",
   'fleet_type_driving_school': "自動車教習所",
   'fleet_type_driving_school_desc': "指導員と車両ごとに時間単位のレッスンを追加します。",
-  'fleet_type_hint': "controlmiles.com の Settings でいつでも変更できます。",
+  'fleet_type_hint': "慎重にお選びください：フリートの種類はフリートの設定（レッスン、IFTA、運行前点検）を決め、後から変更するにはサポートへの連絡が必要です。",
+  'fleet_type_confirm_title': "フリートの種類を確認",
+  'fleet_type_choose_first': "フリートの種類を選択してください",
   'purchase_success': "プランが有効になりました。ありがとうございます！",
   'purchase_pending': "お支払いは保留中です。Google Play で確認され次第、プランが有効になります。",
   'purchase_failed': "購入を完了できませんでした。料金は請求されていません。もう一度お試しください。",

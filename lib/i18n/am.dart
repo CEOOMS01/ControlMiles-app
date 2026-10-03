@@ -428,7 +428,7 @@ const Map<String, String> amTexts = {
   'email_not_linked_to_controlmiles': 'ይህ ኢሜይል ከየትኛውም ControlMiles መለያ ጋር የተገናኘ አይደለም።',
 
   'free_trial_expired_title': 'ነጻ የሙከራ ጊዜዎ አልቋል',
-  'free_trial_expired_body': 'የ30 ቀን ነጻ የሙከራ ጊዜዎ አልቋል። ጉዞዎችን መከታተል ለመቀጠል Basic ወይም Premium ይመዝገቡ።',
+  'free_trial_expired_body': 'የ15 ቀን ነጻ የሙከራ ጊዜዎ አልቋል። ጉዞዎችን መከታተል ለመቀጠል Basic ወይም Premium ይመዝገቡ።',
   'vehicle_limit_reached_title': 'የተሽከርካሪ ገደብ ላይ ደርሷል',
   'vehicle_limit_reached_body': 'የእርስዎ ዕቅድ እስከ {max} ተሽከርካሪ(ዎች) ይፈቅዳል። ተጨማሪ ለመጨመር ያሻሽሉ።',
   'export_limit_reached_title': 'የመላክ ገደብ ላይ ደርሷል',
@@ -469,6 +469,8 @@ const Map<String, String> amTexts = {
   'org_access_revoked_body': 'የመርከብ አስተዳዳሪዎ ወደዚህ ድርጅት ያለዎትን መዳረሻ አስወግደዋል። ለመቀጠል ይውጡ።',
   'fleet_subscription_required_error': 'ይህ ድርጅት ንቁ የFleet ምዝገባ ያስፈልገዋል።',
   'fleet_growth_required_error': 'ይህ ባህሪ የGrowth እቅድ ያስፈልገዋል። የመርከብ አስተዳዳሪዎ እንዲያሳድግ ይጠይቁ።',
+  'fleet_type_locked_error': "የመርከቡ አይነት ተወስኗል። ለመቀየር support@controlmiles.com ይጻፉ።",
+  'fleet_type_owner_only_error': "የመርከቡን አይነት መምረጥ የሚችለው ባለቤቱ ብቻ ነው።",
 
   // ክፍት/የሚሽከረከር ተሽከርካሪ ምደባ (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'ተሽከርካሪ ይምረጡ',
@@ -509,7 +511,9 @@ const Map<String, String> amTexts = {
   'fleet_type_general_desc': "ማድረስ፣ አገልግሎት፣ ሽያጭ ወይም የተደባለቀ ፍሊት።",
   'fleet_type_driving_school': "የማሽከርከር ትምህርት ቤት",
   'fleet_type_driving_school_desc': "በአስተማሪና በተሽከርካሪ በሰዓት የሚሰጡ ትምህርቶችን ይጨምራል።",
-  'fleet_type_hint': "በcontrolmiles.com ላይ በSettings ውስጥ በማንኛውም ጊዜ መቀየር ይችላሉ።",
+  'fleet_type_hint': "በጥንቃቄ ይምረጡ፦ የመርከቡ አይነት የመርከብዎን ቅንብር ይወስናል (ትምህርቶች፣ IFTA፣ ከጉዞ በፊት ምርመራ)፤ በኋላ መቀየር የሚቻለው ድጋፍን በማነጋገር ብቻ ነው።",
+  'fleet_type_confirm_title': "የመርከብ አይነትን ያረጋግጡ",
+  'fleet_type_choose_first': "የመርከብ አይነት ይምረጡ",
   'purchase_success': "እቅድዎ ነቅቷል። እናመሰግናለን!",
   'purchase_pending': "ክፍያዎ በመጠባበቅ ላይ ነው። Google Play እንዳረጋገጠ እቅዱ ይነቃል።",
   'purchase_failed': "ግዢው ሊጠናቀቅ አልቻለም። ምንም አልተከፈለዎትም። እንደገና ይሞክሩ።",

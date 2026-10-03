@@ -442,7 +442,7 @@ const Map<String, String> koTexts = {
   'email_not_linked_to_controlmiles': '이 이메일은 ControlMiles 계정에 연결되어 있지 않습니다.',
 
   'free_trial_expired_title': '무료 체험이 종료되었습니다',
-  'free_trial_expired_body': '30일 무료 체험이 종료되었습니다. 계속 이동 기록을 추적하려면 Basic 또는 Premium을 구독하세요.',
+  'free_trial_expired_body': '15일 무료 체험이 종료되었습니다. 계속 이동 기록을 추적하려면 Basic 또는 Premium을 구독하세요.',
   'vehicle_limit_reached_title': '차량 한도에 도달했습니다',
   'vehicle_limit_reached_body': '현재 플랜은 최대 {max}대의 차량을 지원합니다. 더 추가하려면 업그레이드하세요.',
   'export_limit_reached_title': '내보내기 한도에 도달했습니다',
@@ -483,6 +483,8 @@ const Map<String, String> koTexts = {
   'org_access_revoked_body': '플릿 관리자가 이 조직에 대한 귀하의 접근 권한을 제거했습니다. 계속하려면 로그아웃하세요.',
   'fleet_subscription_required_error': '이 작업을 하려면 활성 Fleet 구독이 필요합니다.',
   'fleet_growth_required_error': '이 기능은 Growth 플랜이 필요합니다. 플릿 관리자에게 업그레이드를 요청하세요.',
+  'fleet_type_locked_error': "플릿 유형이 이미 설정되었습니다. 변경하려면 support@controlmiles.com으로 문의하세요.",
+  'fleet_type_owner_only_error': "플릿 소유자만 플릿 유형을 선택할 수 있습니다.",
 
   // 개방형/순환 차량 배정 (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': '차량 선택',
@@ -523,7 +525,9 @@ const Map<String, String> koTexts = {
   'fleet_type_general_desc': "배송, 서비스, 영업 또는 혼합 플릿.",
   'fleet_type_driving_school': "운전 학원",
   'fleet_type_driving_school_desc': "강사와 차량별로 시간 단위 수업을 추가합니다.",
-  'fleet_type_hint': "controlmiles.com의 Settings에서 언제든지 변경할 수 있습니다.",
+  'fleet_type_hint': "신중하게 선택하세요: 플릿 유형은 플릿 설정(수업, IFTA, 운행 전 점검)을 결정하며, 나중에는 지원팀에 문의해야만 변경할 수 있습니다.",
+  'fleet_type_confirm_title': "플릿 유형 확인",
+  'fleet_type_choose_first': "플릿 유형을 선택하세요",
   'purchase_success': "플랜이 활성화되었습니다. 감사합니다!",
   'purchase_pending': "결제가 대기 중입니다. Google Play에서 확인되면 플랜이 활성화됩니다.",
   'purchase_failed': "구매를 완료하지 못했습니다. 요금은 청구되지 않았습니다. 다시 시도하세요.",

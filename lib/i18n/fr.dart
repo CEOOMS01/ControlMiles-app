@@ -745,7 +745,9 @@ const Map<String, String> frTexts = {
   'fleet_type_general_desc': "Livraison, service, vente ou flotte mixte.",
   'fleet_type_driving_school': "Auto-école",
   'fleet_type_driving_school_desc': "Ajoute des cours à l'heure par moniteur et par véhicule.",
-  'fleet_type_hint': "Vous pouvez le modifier à tout moment dans Settings sur controlmiles.com.",
+  'fleet_type_hint': "Choisissez avec soin : le type de flotte configure votre flotte (cours, IFTA, inspection avant départ) et ne peut ensuite être modifié qu'en contactant le support.",
+  'fleet_type_confirm_title': "Confirmer le type de flotte",
+  'fleet_type_choose_first': "Choisissez le type de flotte",
   'purchase_success': "Votre abonnement est actif. Merci !",
   'purchase_pending': "Votre paiement est en attente. L'abonnement s'active dès que Google Play le confirme.",
   'purchase_failed': "L'achat n'a pas pu aboutir. Vous n'avez pas été débité. Réessayez.",
@@ -920,7 +922,7 @@ const Map<String, String> frTexts = {
   'email_not_linked_to_controlmiles': "Cet e-mail n'est lié à aucun compte ControlMiles.",
 
   'free_trial_expired_title': 'Votre essai gratuit est terminé',
-  'free_trial_expired_body': "Votre essai gratuit de 30 jours est terminé. Abonnez-vous à Basic ou Premium pour continuer à suivre vos trajets.",
+  'free_trial_expired_body': "Votre essai gratuit de 15 jours est terminé. Abonnez-vous à Basic ou Premium pour continuer à suivre vos trajets.",
   'vehicle_limit_reached_title': 'Limite de véhicules atteinte',
   'vehicle_limit_reached_body': 'Votre forfait autorise jusqu\'à {max} véhicule(s). Passez à un forfait supérieur pour en ajouter.',
   'export_limit_reached_title': "Limite d'export atteinte",
@@ -950,6 +952,8 @@ const Map<String, String> frTexts = {
   'org_access_revoked_body': "L'administrateur de votre flotte a supprimé votre accès à cette organisation. Déconnectez-vous pour continuer.",
   'fleet_subscription_required_error': "Cette organisation a besoin d'un abonnement Fleet actif pour cela.",
   'fleet_growth_required_error': "Cette fonctionnalité nécessite le forfait Growth. Demandez à votre administrateur de flotte de le mettre à niveau.",
+  'fleet_type_locked_error': "Le type de flotte est défini. Pour le modifier, écrivez à support@controlmiles.com.",
+  'fleet_type_owner_only_error': "Seul le propriétaire de la flotte peut choisir le type de flotte.",
 
   // Attribution de véhicule ouverte/rotative (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Choisir un véhicule',

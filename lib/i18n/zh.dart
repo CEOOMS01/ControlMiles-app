@@ -747,7 +747,9 @@ const Map<String, String> zhTexts = {
   'fleet_type_general_desc': "配送、服务、销售或混合车队。",
   'fleet_type_driving_school': "驾校",
   'fleet_type_driving_school_desc': "按教练和车辆添加按小时的课程。",
-  'fleet_type_hint': "你可以随时在 controlmiles.com 的 Settings 中更改。",
+  'fleet_type_hint': "请谨慎选择：车队类型决定车队的设置（课程、IFTA、出车前检查），之后只能联系支持人员更改。",
+  'fleet_type_confirm_title': "确认车队类型",
+  'fleet_type_choose_first': "请选择车队类型",
   'purchase_success': "你的方案已生效。谢谢！",
   'purchase_pending': "你的付款正在处理中。Google Play 确认后方案即会生效。",
   'purchase_failed': "购买未能完成，未向你收费。请重试。",
@@ -909,7 +911,7 @@ const Map<String, String> zhTexts = {
   'email_not_linked_to_controlmiles': '该邮箱未关联任何 ControlMiles 账户。',
 
   'free_trial_expired_title': '免费试用已结束',
-  'free_trial_expired_body': '您的 30 天免费试用已结束。订阅 Basic 或 Premium 以继续记录行程。',
+  'free_trial_expired_body': '您的 15 天免费试用已结束。订阅 Basic 或 Premium 以继续记录行程。',
   'vehicle_limit_reached_title': '已达车辆数量上限',
   'vehicle_limit_reached_body': '您的套餐最多支持 {max} 辆车。升级套餐以添加更多车辆。',
   'export_limit_reached_title': '已达导出次数上限',
@@ -939,6 +941,8 @@ const Map<String, String> zhTexts = {
   'org_access_revoked_body': '你的车队管理员已移除你对该组织的访问权限。请登出以继续。',
   'fleet_subscription_required_error': '此组织需要有效的车队订阅才能执行此操作。',
   'fleet_growth_required_error': '此功能需要 Growth 套餐。请让你的车队管理员升级。',
+  'fleet_type_locked_error': "车队类型已设定。如需更改，请联系 support@controlmiles.com。",
+  'fleet_type_owner_only_error': "只有车队所有者可以选择车队类型。",
 
   // 开放式/轮换车辆分配（Fleet Sprint 4，2026-09-09）
   'fleet_select_vehicle_button': '选择车辆',

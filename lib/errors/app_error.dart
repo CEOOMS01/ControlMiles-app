@@ -84,6 +84,8 @@ class AppError {
   static const shiftBlockAnotherInProgress = AppError(418, 'shift_block_another_in_progress_error');
   static const workdayAlreadyClosed = AppError(419, 'workday_already_closed_error');
   static const workdayBlockInProgress = AppError(422, 'workday_block_in_progress_error');
+  static const fleetTypeLocked = AppError(423, 'fleet_type_locked_error');
+  static const fleetTypeOwnerOnly = AppError(424, 'fleet_type_owner_only_error');
   static const rateLimited = AppError(420, 'rate_limited_error');
   static const duplicateEntry = AppError(430, 'duplicate_entry_error');
   static const subscriptionsNotConfigured = AppError(440, 'subscriptions_not_configured');
@@ -157,6 +159,8 @@ class AppError {
     if (text.contains('SHIFT_BLOCK_ANOTHER_IN_PROGRESS')) return shiftBlockAnotherInProgress;
     if (text.contains('WORKDAY_ALREADY_CLOSED')) return workdayAlreadyClosed;
     if (text.contains('WORKDAY_BLOCK_IN_PROGRESS')) return workdayBlockInProgress;
+    if (text.contains('FLEET_TYPE_LOCKED')) return fleetTypeLocked;
+    if (text.contains('FLEET_TYPE_OWNER_ONLY')) return fleetTypeOwnerOnly;
 
     final belowRegistered = RegExp(r'ODOMETER_BELOW_REGISTERED:([\d.]+)').firstMatch(text);
     if (belowRegistered != null) {

@@ -456,7 +456,7 @@ const Map<String, String> arTexts = {
   'email_not_linked_to_controlmiles': 'هذا البريد الإلكتروني غير مرتبط بأي حساب في ControlMiles.',
 
   'free_trial_expired_title': 'انتهت فترتك التجريبية المجانية',
-  'free_trial_expired_body': 'انتهت فترتك التجريبية المجانية البالغة 30 يومًا. اشترك في Basic أو Premium لمواصلة تسجيل الرحلات.',
+  'free_trial_expired_body': 'انتهت فترتك التجريبية المجانية البالغة 15 يومًا. اشترك في Basic أو Premium لمواصلة تسجيل الرحلات.',
   'vehicle_limit_reached_title': 'تم الوصول إلى حد المركبات',
   'vehicle_limit_reached_body': 'تسمح خطتك بحد أقصى {max} مركبة/مركبات. قم بالترقية لإضافة المزيد.',
   'export_limit_reached_title': 'تم الوصول إلى حد التصدير',
@@ -497,6 +497,8 @@ const Map<String, String> arTexts = {
   'org_access_revoked_body': 'قام مسؤول أسطولك بإزالة وصولك إلى هذه المؤسسة. سجّل الخروج للمتابعة.',
   'fleet_subscription_required_error': 'تحتاج هذه المؤسسة إلى اشتراك Fleet نشط للقيام بذلك.',
   'fleet_growth_required_error': 'تتطلب هذه الميزة خطة Growth. اطلب من مسؤول أسطولك الترقية.',
+  'fleet_type_locked_error': "تم تحديد نوع الأسطول. لتغييره، راسل support@controlmiles.com.",
+  'fleet_type_owner_only_error': "يمكن لمالك الأسطول فقط اختيار نوع الأسطول.",
 
   // تخصيص مركبة مفتوح/دوّار (Fleet Sprint 4، 2026-09-09)
   'fleet_select_vehicle_button': 'اختر مركبة',
@@ -540,7 +542,9 @@ const Map<String, String> arTexts = {
   'fleet_type_general_desc': "توصيل أو خدمات أو مبيعات أو أسطول مختلط.",
   'fleet_type_driving_school': "مدرسة قيادة",
   'fleet_type_driving_school_desc': "يضيف دروسًا بالساعة لكل مدرّب ومركبة.",
-  'fleet_type_hint': "يمكنك تغييره في أي وقت من Settings على controlmiles.com.",
+  'fleet_type_hint': "اختر بعناية: نوع الأسطول يحدد إعداد أسطولك (الدروس، IFTA، فحص ما قبل الرحلة) ولا يمكن تغييره لاحقًا إلا بالتواصل مع الدعم.",
+  'fleet_type_confirm_title': "تأكيد نوع الأسطول",
+  'fleet_type_choose_first': "اختر نوع الأسطول",
   'purchase_success': "خطتك مفعّلة. شكرًا!",
   'purchase_pending': "دفعتك قيد الانتظار. ستُفعَّل الخطة فور تأكيد Google Play.",
   'purchase_failed': "تعذّر إتمام الشراء. لم يتم خصم أي مبلغ. حاول مرة أخرى.",

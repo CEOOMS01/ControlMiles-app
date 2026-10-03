@@ -103,7 +103,9 @@ const Map<String, String> esTexts = {
   'fleet_type_general_desc': "Reparto, servicio, ventas o una flota mixta.",
   'fleet_type_driving_school': "Escuela de manejo",
   'fleet_type_driving_school_desc': "Agrega clases por hora por instructor y vehículo.",
-  'fleet_type_hint': "Puedes cambiarlo cuando quieras en Settings, en controlmiles.com.",
+  'fleet_type_hint': "Elige con cuidado: el tipo de flota define cómo se configura tu flota (clases, IFTA, inspección pre-viaje) y después solo se puede cambiar contactando a soporte.",
+  'fleet_type_confirm_title': "Confirmar tipo de flota",
+  'fleet_type_choose_first': "Elige el tipo de flota",
   'purchase_success': "Tu plan está activo. ¡Gracias!",
   'purchase_pending': "Tu pago está pendiente. El plan se activa en cuanto Google Play lo confirme.",
   'purchase_failed': "No se pudo completar la compra. No se te cobró. Inténtalo de nuevo.",
@@ -941,7 +943,7 @@ const Map<String, String> esTexts = {
   'email_not_linked_to_controlmiles': 'Ese correo no está vinculado a ninguna cuenta de ControlMiles.',
 
   'free_trial_expired_title': 'Tu prueba gratis terminó',
-  'free_trial_expired_body': 'Tus 30 días de prueba gratis se acabaron. Suscribite a Basic o Premium para seguir registrando viajes.',
+  'free_trial_expired_body': 'Tus 15 días de prueba gratis se acabaron. Suscribite a Basic o Premium para seguir registrando viajes.',
   'vehicle_limit_reached_title': 'Límite de vehículos alcanzado',
   'vehicle_limit_reached_body': 'Tu plan permite hasta {max} vehículo(s). Mejorá tu plan para agregar más.',
   'export_limit_reached_title': 'Límite de exportación alcanzado',
@@ -971,6 +973,8 @@ const Map<String, String> esTexts = {
   'org_access_revoked_body': 'El administrador de tu flota removió tu acceso a esta organización. Cierra sesión para continuar.',
   'fleet_subscription_required_error': 'Esta organización necesita una suscripción Fleet activa para eso.',
   'fleet_growth_required_error': 'Esta función requiere el plan Growth. Pide a tu administrador de flota que lo actualice.',
+  'fleet_type_locked_error': "El tipo de flota ya está definido. Para cambiarlo, escribe a support@controlmiles.com.",
+  'fleet_type_owner_only_error': "Solo el dueño de la flota puede elegir el tipo de flota.",
 
   // Asignación de vehículo abierta/rotativa (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Seleccionar vehículo',

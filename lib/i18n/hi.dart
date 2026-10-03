@@ -452,7 +452,7 @@ const Map<String, String> hiTexts = {
   'email_not_linked_to_controlmiles': 'यह ईमेल किसी ControlMiles खाते से जुड़ा नहीं है।',
 
   'free_trial_expired_title': 'आपका फ्री ट्रायल समाप्त हो गया है',
-  'free_trial_expired_body': 'आपका 30-दिन का फ्री ट्रायल समाप्त हो गया है। ट्रिप ट्रैक करना जारी रखने के लिए Basic या Premium सब्सक्राइब करें।',
+  'free_trial_expired_body': 'आपका 15-दिन का फ्री ट्रायल समाप्त हो गया है। ट्रिप ट्रैक करना जारी रखने के लिए Basic या Premium सब्सक्राइब करें।',
   'vehicle_limit_reached_title': 'वाहन सीमा पूरी हो गई',
   'vehicle_limit_reached_body': 'आपकी योजना में अधिकतम {max} वाहन(वाहन) की अनुमति है। और जोड़ने के लिए अपग्रेड करें।',
   'export_limit_reached_title': 'एक्सपोर्ट सीमा पूरी हो गई',
@@ -493,6 +493,8 @@ const Map<String, String> hiTexts = {
   'org_access_revoked_body': 'आपके फ्लीट व्यवस्थापक ने इस संगठन तक आपकी पहुंच हटा दी है। जारी रखने के लिए साइन आउट करें।',
   'fleet_subscription_required_error': 'इसके लिए इस संगठन को एक सक्रिय Fleet सदस्यता चाहिए।',
   'fleet_growth_required_error': 'इस सुविधा के लिए Growth प्लान चाहिए। अपने फ्लीट व्यवस्थापक से अपग्रेड करने को कहें।',
+  'fleet_type_locked_error': "फ्लीट का प्रकार तय हो चुका है। बदलने के लिए support@controlmiles.com पर लिखें।",
+  'fleet_type_owner_only_error': "केवल फ्लीट मालिक ही फ्लीट का प्रकार चुन सकते हैं।",
 
   // खुला/घूर्णन वाहन असाइनमेंट (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'वाहन चुनें',
@@ -533,7 +535,9 @@ const Map<String, String> hiTexts = {
   'fleet_type_general_desc': "डिलीवरी, सर्विस, बिक्री या मिश्रित फ़्लीट।",
   'fleet_type_driving_school': "ड्राइविंग स्कूल",
   'fleet_type_driving_school_desc': "प्रशिक्षक और वाहन के अनुसार घंटेवार क्लासें जोड़ता है।",
-  'fleet_type_hint': "आप इसे कभी भी controlmiles.com पर Settings में बदल सकते हैं।",
+  'fleet_type_hint': "ध्यान से चुनें: फ्लीट का प्रकार आपके फ्लीट का सेटअप तय करता है (क्लास, IFTA, यात्रा-पूर्व निरीक्षण) और बाद में केवल सपोर्ट से संपर्क करके बदला जा सकता है।",
+  'fleet_type_confirm_title': "फ्लीट प्रकार की पुष्टि करें",
+  'fleet_type_choose_first': "फ्लीट का प्रकार चुनें",
   'purchase_success': "आपका प्लान सक्रिय है। धन्यवाद!",
   'purchase_pending': "आपका भुगतान लंबित है। Google Play की पुष्टि होते ही प्लान सक्रिय हो जाएगा।",
   'purchase_failed': "खरीदारी पूरी नहीं हो सकी। आपसे कोई शुल्क नहीं लिया गया। फिर से कोशिश करें।",

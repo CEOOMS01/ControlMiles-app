@@ -103,7 +103,9 @@ const Map<String, String> enTexts = {
   'fleet_type_general_desc': "Delivery, service, sales or a mixed fleet.",
   'fleet_type_driving_school': "Driving school",
   'fleet_type_driving_school_desc': "Adds hourly classes per instructor and vehicle.",
-  'fleet_type_hint': "You can change it anytime in Settings on controlmiles.com.",
+  'fleet_type_hint': "Choose carefully: the fleet type sets up your fleet (classes, IFTA, pre-trip inspection) and can only be changed later by contacting support.",
+  'fleet_type_confirm_title': "Confirm fleet type",
+  'fleet_type_choose_first': "Choose your fleet type",
   'purchase_success': "Your plan is active. Thanks!",
   'purchase_pending': "Your payment is pending. Your plan turns on as soon as Google Play confirms it.",
   'purchase_failed': "The purchase couldn't be completed. You weren't charged. Try again.",
@@ -979,7 +981,7 @@ const Map<String, String> enTexts = {
   // SUBSCRIPTION-TIER ENFORCEMENT (2026-09-04)
   // ============================================================
   'free_trial_expired_title': 'Your free trial has ended',
-  'free_trial_expired_body': 'Your 30-day free trial is over. Subscribe to Basic or Premium to keep tracking trips.',
+  'free_trial_expired_body': 'Your 15-day free trial is over. Subscribe to Basic or Premium to keep tracking trips.',
   'vehicle_limit_reached_title': 'Vehicle limit reached',
   'vehicle_limit_reached_body': 'Your plan allows up to {max} vehicle(s). Upgrade to add more.',
   'export_limit_reached_title': 'Export limit reached',
@@ -1009,6 +1011,8 @@ const Map<String, String> enTexts = {
   'org_access_revoked_body': 'Your fleet admin has removed your access to this organization. Sign out to continue.',
   'fleet_subscription_required_error': 'This organization needs an active Fleet subscription to do that.',
   'fleet_growth_required_error': 'This feature needs the Growth plan. Ask your fleet admin to upgrade.',
+  'fleet_type_locked_error': "This fleet's type is set. To change it, contact support@controlmiles.com.",
+  'fleet_type_owner_only_error': "Only the fleet owner can choose the fleet type.",
 
   // Open/rotating vehicle assignment (Fleet Sprint 4, 2026-09-09)
   'fleet_select_vehicle_button': 'Select vehicle',
