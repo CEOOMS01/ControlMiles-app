@@ -49,6 +49,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Future<void> _loadProducts() async {
     try {
+      // Knows the current Play subscription, so Basic -> Premium is an
+      // upgrade (replacement), never a second subscription.
+      await _billing.refreshOwned();
       final available = await _billing.isAvailable();
       final products = available ? await _billing.loadProducts() : <String, ProductDetails>{};
       if (!mounted) return;

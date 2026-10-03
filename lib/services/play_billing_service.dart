@@ -52,9 +52,39 @@ class PlayBillingService {
       _onPurchases,
       onError: (Object e) => debugPrint('[PlayBilling] purchase stream error: $e'),
     );
+    if (Supabase.instance.client.auth.currentUser != null) unawaited(refreshOwned());
   }
 
   Future<bool> isAvailable() => _iap.isAvailable();
+
+  /// Loads the subscription this Google account already owns from Play.
+  ///
+  /// Audit fix (2026-10-03): _ownedSubscription used to be set only after a
+  /// purchase in the same app session, so after a restart a Basic subscriber
+  /// tapping Premium bought a SECOND subscription (charged twice) instead of
+  /// upgrading. Also verifies any owned purchase the server never confirmed
+  /// (e.g. the app was killed mid-verification), before Google refunds it.
+  Future<void> refreshOwned() async {
+    try {
+      if (!await _iap.isAvailable()) return;
+      final addition = _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+      final response = await addition.queryPastPurchases(
+        applicationUserName: Supabase.instance.client.auth.currentUser?.id,
+      );
+      GooglePlayPurchaseDetails? owned;
+      for (final purchase in response.pastPurchases) {
+        if (!productIds.contains(purchase.productID)) continue;
+        if (purchase.status != PurchaseStatus.purchased && purchase.status != PurchaseStatus.restored) continue;
+        owned = purchase;
+        if (!purchase.billingClientPurchase.isAcknowledged) {
+          await _verifyAndComplete(purchase);
+        }
+      }
+      _ownedSubscription = owned;
+    } catch (e) {
+      debugPrint('[PlayBilling] loading owned purchases failed: $e');
+    }
+  }
 
   /// One ProductDetails per product (Play returns one per offer; the first
   /// is the one with the base plan's current offer, e.g. a free trial).

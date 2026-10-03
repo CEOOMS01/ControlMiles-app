@@ -23,7 +23,11 @@ const corsHeaders = {
 };
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
-const PORTAL_RETURN_URL = 'https://controlmiles.com/account';
+// 2026-10-03: was https://controlmiles.com/account, a page that never
+// existed (404 when leaving the Stripe portal). Fleet billing lives in
+// /admin/settings.
+const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://controlmiles.com';
+const PORTAL_RETURN_URL = `${SITE_URL}/admin/settings?billing=portal`;
 
 // Security hardening (2026-08-28): same Postgres-backed pattern as
 // create-checkout-session's own rate limiter -- see its comment for why
@@ -172,6 +176,6 @@ Deno.serve(async (req: Request) => {
     return respond({ url: session.url, configured: true });
   } catch (err: any) {
     console.error('[create-portal-session] Unexpected error:', err);
-    return respond({ error: err?.message ?? 'Internal error' }, 500);
+    return respond({ error: 'Internal error' }, 500);
   }
 });
