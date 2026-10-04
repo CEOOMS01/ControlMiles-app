@@ -34,21 +34,14 @@ class AppLifecycleObserver with WidgetsBindingObserver {
     }
   }
 
+  // Both paths use TrackingController.saveCheckpoint(): the confirmed base
+  // plus the running segment's start, so a recovery keeps counting from the
+  // real start. Writing elapsed-as-base without the segment start here reset
+  // the trip clock (2026-10-03, see saveCheckpoint).
   Future<void> _handleAppGoingToBackground() async {
-    if (TrackingController.isRunning) {
-      final section = TrackingController.activeSection;
+    if (TrackingController.isRunning || TrackingController.isPaused) {
       debugPrint('[AppLifecycle] App going to background - saving checkpoint');
-      await LocalStorageService.saveTripCheckpoint(
-        sessionId: TrackingController.activeSessionId ?? '',
-        sectionId: section?.id ?? '',
-        userId: section?.userId ?? '',
-        gigApp: TrackingController.currentGigApp ?? 'custom',
-        sectionStartTime: section?.startTime ?? DateTime.now(),
-        sectionDurationSeconds: TrackingController.elapsedSectionDuration.inSeconds,
-        totalSessionMiles: TrackingController.activeDistance,
-        totalSectionMiles: TrackingController.activeDistance,
-        isPaused: TrackingController.isPaused,
-      );
+      await TrackingController.saveCheckpoint();
     }
   }
 
@@ -132,20 +125,11 @@ class AppLifecycleObserver with WidgetsBindingObserver {
   }
 
   Future<void> _handleAppDetached() async {
-    if (TrackingController.isRunning || TrackingController.activeSessionId != null) {
-      final section = TrackingController.activeSection;
+    // Swiping the app away does not pause the trip (it used to be saved as
+    // paused here): GPS keeps running in the background service.
+    if (TrackingController.activeSessionId != null) {
       debugPrint('[AppLifecycle] App being detached - saving final checkpoint');
-      await LocalStorageService.saveTripCheckpoint(
-        sessionId: TrackingController.activeSessionId ?? '',
-        sectionId: section?.id ?? '',
-        userId: section?.userId ?? '',
-        gigApp: TrackingController.currentGigApp ?? 'custom',
-        sectionStartTime: section?.startTime ?? DateTime.now(),
-        sectionDurationSeconds: TrackingController.elapsedSectionDuration.inSeconds,
-        totalSessionMiles: TrackingController.activeDistance,
-        totalSectionMiles: TrackingController.activeDistance,
-        isPaused: true,
-      );
+      await TrackingController.saveCheckpoint();
     }
   }
 }

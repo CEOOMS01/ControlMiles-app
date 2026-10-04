@@ -1216,6 +1216,19 @@ class TrackingController {
   // ============================================================
   // HELPERS
   // ============================================================
+
+  /// Checkpoint for AppLifecycleObserver (background / swipe-away).
+  ///
+  /// BUG FIX (2026-10-03, live trip: 15.7 mi saved with a 7 s duration): the
+  /// observer wrote its own checkpoint with base = elapsed and WITHOUT
+  /// runSegmentStartedAtMs, which removed the saved segment start. Any later
+  /// recovery then restarted the clock from "now", so a trip started and
+  /// immediately backgrounded (switching to the gig app) kept only the
+  /// seconds before the switch plus the seconds after reopening. The swipe-
+  /// away path also marked the trip as paused. Both now go through the same
+  /// checkpoint the controller uses (base + segment start, real state).
+  static Future<void> saveCheckpoint() => _saveLocalCheckpoint();
+
   static Future<void> _saveLocalCheckpoint() async {
     if (activeSessionId == null || activeSection == null) return;
 
