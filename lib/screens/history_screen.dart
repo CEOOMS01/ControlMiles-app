@@ -2,6 +2,7 @@
 // lib/screens/history_screen.dart - PRODUCTION READY + DAILY DIVIDERS + 30 DAYS
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -32,6 +33,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   DateTime? _lastEnd;
 
   final Map<String, bool> _expandedSessions = {};
+
+  // Route "photo" per closed trip (2026-10-04): sessions.map_token -> the
+  // website's cached image (streets + route, one color per gig app).
+  final Map<String, String> _mapTokens = {};
 
   // Fleets where this user is owner/admin. Rule (user, 2026-09-29): a
   // fleet trip can only be deleted by its fleet's owner or admin -- not
@@ -98,6 +103,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             .toList();
 
         sectionsMap[session.id] = sectionList;
+        final mapToken = row['map_token'] as String?;
+        if (mapToken != null && row['is_closed'] == true) _mapTokens[session.id] = mapToken;
 
         for (var s in sectionList) {
           milesAccumulator += s.totalMiles;
@@ -534,6 +541,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         padding: const EdgeInsets.only(left: 4, bottom: 8),
                                         child: Text(appState.tr('sections_label'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: labelCol)),
                                       ),
+                                      if (_mapTokens[session.id] != null) ...[
+                                        _TripRouteImage(sessionId: session.id, mapToken: _mapTokens[session.id]!),
+                                        const SizedBox(height: 10),
+                                      ],
                                       ...sections.map((section) => _buildSectionRow(section, appState, isDark)),
                                     ],
                                   ),
@@ -678,6 +689,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(width: 3),
           Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
         ],
+      ),
+    );
+  }
+}
+
+/// The trip's route image from controlmiles.com (/api/trip-map): our own
+/// basemap streets + the route, one color per gig app. Loaded only when the
+/// trip is expanded; the website caches closed trips forever.
+class _TripRouteImage extends StatelessWidget {
+  const _TripRouteImage({required this.sessionId, required this.mapToken});
+
+  final String sessionId;
+  final String mapToken;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: SvgPicture.network(
+          'https://controlmiles.com/api/trip-map/$sessionId/$mapToken',
+          fit: BoxFit.cover,
+          placeholderBuilder: (_) => Container(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE8E4DD),
+            alignment: Alignment.center,
+            child: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
       ),
     );
   }

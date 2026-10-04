@@ -8,6 +8,27 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.17+19 — 2026-10-04
+
+### Added
+- **Trip route drawing.** New `RouteRecorder` (`lib/tracking/route_recorder.dart`)
+  keeps each gig-app segment's validated GPS path in an append-only file on
+  the phone (survives Android killing the app; shared by the UI and
+  headless isolates). When the segment closes (switch or End Trip) it is
+  simplified (Douglas-Peucker, 6 m, max 800 points), encoded as a Google
+  polyline and uploaded once to `session_sections.route_polyline`
+  (~0.5-2 KB per trip). Failed uploads stay on the phone and are retried on
+  the next start. A discarded trip's route is deleted.
+- **History:** expanding a closed trip shows its route image (streets +
+  route, one color per gig app) from controlmiles.com. New dependency
+  `flutter_svg`.
+
+### Changed
+- Gig trips send a GPS breadcrumb every 5 minutes instead of every minute
+  (the route now comes from the polyline; the breadcrumb only feeds the
+  12-hour abandoned-trip check). Fleet trips keep 1 per minute for IFTA,
+  idle time and fuel checks.
+
 ## 1.1.16+18 — 2026-10-03
 
 ### Fixed

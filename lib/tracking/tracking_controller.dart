@@ -23,6 +23,7 @@ import 'driver_safety_monitor.dart';
 import '../services/speed_limit_service.dart';
 import 'background_gps_service.dart';
 import 'auto_trip_detection_service.dart';
+import 'route_recorder.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -924,6 +925,8 @@ class TrackingController {
       if (oldSection != null && oldSectionMiles < minTrackedMiles) {
         segmentDiscarded.value = oldSection.gigApp;
       }
+      // The old segment is closed: send its route drawing.
+      if (oldSection != null) unawaited(RouteRecorder.upload(oldSection.id));
 
       _logDebug('SWITCH_OK', 'Switched atomically → gig_app: $newGigApp');
       return true;
@@ -1063,8 +1066,17 @@ class TrackingController {
       // request, 2026-09-08); a manually-started trip's end is already an
       // intentional user action and doesn't need the extra cue.
       final wasAutoDetect = startedViaAutoDetect;
+      final closedSectionId = activeSection?.id;
 
       _resetState();
+
+      // Route drawing of the last segment (the trip's earlier segments were
+      // sent at each switch). A discarded trip has nothing to draw.
+      if (closedSectionId != null) {
+        unawaited(discarded
+            ? RouteRecorder.discard(closedSectionId)
+            : RouteRecorder.upload(closedSectionId));
+      }
 
       if (wasAutoDetect) {
         autoFlashEvent.value = 'end';
@@ -1151,6 +1163,11 @@ class TrackingController {
     // as everything else this file writes.
     livePosition.value = (lat: latitude, lng: longitude);
     liveRoute.value = [...liveRoute.value, (lat: latitude, lng: longitude)];
+    // Route drawing of this segment (uploaded once when it closes).
+    final routeSectionId = activeSection?.id;
+    if (routeSectionId != null) {
+      unawaited(RouteRecorder.add(routeSectionId, latitude, longitude));
+    }
 
     // BUG FIX: start_latitude/start_longitude nunca se guardaban en ningún
     // punto del código vivo (quedaban null en el 100% de las secciones
@@ -1296,6 +1313,8 @@ class TrackingController {
 
   static Future<void> initializeOrRecover() async {
     await _recoverActiveState(startGps: true);
+    // Routes of segments that closed while offline (or before the app died).
+    unawaited(RouteRecorder.uploadPending(exceptSectionId: activeSection?.id));
   }
 
   // ============================================================
@@ -1782,7 +1801,12 @@ class TrackingController {
     // before they ever reach the table. Failures are swallowed for the
     // same reason as the blocks above: not trip-critical, must never
     // interrupt mileage tracking itself.
-    if (now.difference(_lastBreadcrumbTime).inSeconds >= 60) {
+    // 2026-10-04: gig trips draw their route from RouteRecorder's polyline,
+    // so their breadcrumb drops to one every 5 min (still enough for the
+    // abandoned-trip check); fleet trips keep 60 s (IFTA state miles, idle,
+    // fuel anomalies are computed from breadcrumbs).
+    final breadcrumbEverySeconds = activeOrganizationId != null ? 60 : 300;
+    if (now.difference(_lastBreadcrumbTime).inSeconds >= breadcrumbEverySeconds) {
       _lastBreadcrumbTime = now;
       try {
         await Supabase.instance.client.functions.invoke(
