@@ -1,9 +1,12 @@
 # Changelog
 
-All notable changes to the ControlMiles app (and the Supabase backend in
-`supabase/`) are recorded here, newest first. Every app change bumps
-`version` in `pubspec.yaml` (`MAJOR.MINOR.PATCH+BUILD`; the build number must
-always go up for Google Play) and adds an entry below.
+All notable changes to the ControlMiles mobile app are recorded here, newest
+first. Every app change bumps `version` in `pubspec.yaml`
+(`MAJOR.MINOR.PATCH+BUILD`; the build number must always go up for Google
+Play) and adds an entry below.
+
+Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
+changes there are not app releases and are not recorded here.
 
 ## 1.1.16+18 — 2026-10-03
 
@@ -26,24 +29,9 @@ always go up for Google Play) and adds an entry below.
   Fixed in all 11 languages. (`46ec394`)
 
 ### Changed
-- **Fleet type is chosen once and locked.** Create company has no
-  preselected type and asks for confirmation; after that only support can
-  change it (`support_change_fleet_type`). New errors 423
-  `FLEET_TYPE_LOCKED` and 424 `FLEET_TYPE_OWNER_ONLY`. (`46ec394`)
-- **Fleet free trial is 15 days** (was 5). (`46ec394`)
+- **Create company** has no preselected fleet type and asks the owner to
+  confirm it (the type is locked server-side after creation). Error
+  messages 423 `FLEET_TYPE_LOCKED` and 424 `FLEET_TYPE_OWNER_ONLY` added in
+  all 11 languages. (`46ec394`)
 - Removed unused, contradictory plan helpers from `app_config.dart` (a "PRO"
   tier and session limits that never existed). (`303bd3d`)
-
-### Backend (already live in Supabase)
-- Org billing columns, `tier_enforcement_exempt`, `industry_template` and
-  `fleet_type_confirmed_at` can no longer be written directly by clients
-  (an org admin could give the fleet free Growth). Reports can only be created
-  by `generate_report_access_code` (users could forge a "verified" report).
-  Fleet-wide export is gated to Growth server-side; `past_due` keeps the plan
-  during Stripe retries; anonymous write grants revoked.
-- Stripe: `stripe-webhook` re-reads each subscription from Stripe, retries on
-  failure instead of dropping the event, never switches off a Google Play
-  plan, takes the fleet tier from the price, and syncs seats (vehicle count)
-  before each renewal. `create-checkout-session` is fleet-only and computes
-  seats server-side; checkout/portal return to `/admin/settings`.
-- New table `fleet_type_changes` (who set or changed a fleet's type, and why).
