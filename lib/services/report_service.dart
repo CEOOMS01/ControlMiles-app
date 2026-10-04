@@ -119,14 +119,15 @@ class ReportService {
     };
 
     for (final session in sortedSessions) {
-      totalMiles += session.totalMiles;
+      final tripMiles = _tripMiles(session, sectionsBySession);
+      totalMiles += tripMiles;
       // BUG FIX (2026-08-28): the IRS mileage rate changed mid-year (see
       // irs_rates.dart) -- pricing the whole period's miles at one flat
       // rate silently understated any report spanning Jul 1, 2026.
       // Falls back to the report's own end date only if a session
       // somehow has no startTime.
       totalDeduction += calculateIrsDeductionEstimate(
-        session.totalMiles,
+        tripMiles,
         session.startTime ?? dateRange.end,
       );
       if (session.startOdometerValue != null) {
@@ -156,13 +157,16 @@ class ReportService {
           businessMiles += sec.totalMiles;
         }
       }
-      final unaccountedMiles = session.totalMiles - sectionedMiles;
+      final unaccountedMiles = tripMiles - sectionedMiles;
       if (unaccountedMiles > 0) {
         businessMiles += unaccountedMiles;
       }
     }
 
-    final businessUsePercent = totalMiles > 0 ? (businessMiles / totalMiles) * 100 : 0.0;
+    // Same miles on both sides (_tripMiles), so this can't pass 100%; the
+    // clamp only guards against rounding.
+    final businessUsePercent =
+        totalMiles > 0 ? ((businessMiles / totalMiles) * 100).clamp(0.0, 100.0) : 0.0;
 
     final dateFmt = DateFormat('MM/dd/yyyy');
     final periodLabel =
@@ -265,6 +269,20 @@ class ReportService {
   }
 
 
+  /// A trip's miles = the sum of its gig-app segments (what the app
+  /// measured); the trip's own total only when it has no segments. Fixes the
+  /// report showing Business-use 102.8% (2026-10-04): some legacy trips
+  /// stored only their last segment's miles, or 0. The DB now enforces the
+  /// same rule when a trip closes (trg_session_miles_from_sections).
+  static double _tripMiles(
+    TrackingSession session,
+    Map<String, List<SessionSection>> sectionsBySession,
+  ) {
+    final secs = sectionsBySession[session.id] ?? const <SessionSection>[];
+    final sum = secs.fold<double>(0, (acc, x) => acc + x.totalMiles);
+    return sum > 0 ? sum : session.totalMiles;
+  }
+
   // ════════════════════════════════════════════════════════════
   // TRIP ROUTES (2026-10-04)
   // ════════════════════════════════════════════════════════════
@@ -366,7 +384,7 @@ class ReportService {
           children: [
             pw.Text(
               '${s.startTime != null ? dateFmt.format(s.startTime!.toLocal()) : '--'}   '
-              '${s.totalMiles.toStringAsFixed(2)} mi   $apps',
+              '${_tripMiles(s, sectionsBySession).toStringAsFixed(2)} mi   $apps',
               style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             ),
             pw.Padding(
@@ -668,7 +686,7 @@ class ReportService {
       final dateStr = session.startTime != null
           ? dateFmt.format(session.startTime!.toLocal())
           : '--';
-      final milesStr = '${session.totalMiles.toStringAsFixed(2)} mi';
+      final milesStr = '${_tripMiles(session, sectionsBySession).toStringAsFixed(2)} mi';
       final durSec = session.effectiveDurationSeconds ?? 0;
       final durStr = '${durSec ~/ 3600}h ${(durSec % 3600) ~/ 60}m';
       // IRS Fase 3 (2026-08-28): the odometer readings existed in the DB

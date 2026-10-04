@@ -8,6 +8,22 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.20+22 — 2026-10-04
+
+### Fixed
+- **PDF report showed Business-use over 100%** (102.8%, and a business-use
+  total of 1621.63 mi against a report total of 1578.02 mi). The report
+  total used each trip's stored miles while the business-use summary added
+  its gig-app segments, and some legacy trips had stored only their last
+  segment's miles (the background-checkpoint bug fixed in 1.1.16) or 0. A
+  trip's miles are now the sum of its segments everywhere in the PDF
+  (totals, deduction, trip log, route pages); the percentage is clamped to
+  100%.
+- End Trip now saves the trip's miles as the sum of its segments.
+- Backend (live): the database sets a trip's miles to the sum of its
+  segments when it closes (`trg_session_miles_from_sections`), whatever
+  app version closed it; the 6 inconsistent stored trips were repaired.
+
 ## 1.1.19+21 — 2026-10-04
 
 ### Added

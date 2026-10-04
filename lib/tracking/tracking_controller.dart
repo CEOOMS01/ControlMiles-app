@@ -1027,7 +1027,9 @@ class TrackingController {
             'session_status': 'closed',
             'is_closed': true,
             'end_time': DateTime.now().toUtc().toIso8601String(),
-            'total_miles': _totalSessionMiles,
+            // A trip's miles are the sum of its gig-app segments (the DB
+            // enforces the same on close, trg_session_miles_from_sections).
+            'total_miles': sectionsMiles > 0 ? sectionsMiles : _totalSessionMiles,
             'total_duration_seconds': sessionDurationSeconds,
           })
           .eq('id', activeSessionId!);
