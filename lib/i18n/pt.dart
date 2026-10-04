@@ -69,6 +69,8 @@ const Map<String, String> ptTexts = {
   'pause_tracking': 'Pausar rastreamento',
   'resume_tracking': 'Retomar rastreamento',
   'trip_details': 'Detalhes da viagem',
+  'route_map_show': "Mapa da rota",
+  'route_map_hide': "Ocultar mapa",
   'trip_history': 'Histórico de viagens',
   'trip_ended': 'Viagem finalizada',
   'miles': 'Milhas',

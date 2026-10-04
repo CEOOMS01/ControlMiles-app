@@ -76,6 +76,8 @@ const Map<String, String> enTexts = {
   'pause_tracking': 'Pause tracking',
   'resume_tracking': 'Resume tracking',
   'trip_details': 'Trip details',
+  'route_map_show': "Route map",
+  'route_map_hide': "Hide map",
   'trip_history': 'Trip history',
   'trip_ended': 'Trip ended',
   'miles': 'Miles',

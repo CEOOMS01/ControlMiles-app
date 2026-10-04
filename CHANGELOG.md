@@ -8,6 +8,20 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.19+21 — 2026-10-04
+
+### Added
+- **Reports screen: "Route map" button on each trip.** Shows the trip's map
+  (every gig app in its color, names in the legend) and, when the trip
+  tracked more than one gig app, one map per gig app (two per row; segments
+  with no miles get none). Loaded only when tapped. `flutter_svg` is back
+  for this screen (History still shows no maps).
+
+### Fixed
+- PDF **Trip routes**: a trip's title could stay at the bottom of one page
+  while its map moved to the next. Title and map are now one unbreakable
+  block (`pw.Stack`).
+
 ## 1.1.18+20 — 2026-10-04
 
 ### Changed

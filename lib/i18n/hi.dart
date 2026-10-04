@@ -66,6 +66,8 @@ const Map<String, String> hiTexts = {
   'pause_tracking': 'ट्रैकिंग रोकें',
   'resume_tracking': 'ट्रैकिंग जारी रखें',
   'trip_details': 'यात्रा विवरण',
+  'route_map_show': "रूट मैप",
+  'route_map_hide': "मैप छिपाएँ",
   'trip_history': 'यात्रा इतिहास',
   'trip_ended': 'यात्रा समाप्त',
   'miles': 'मील',

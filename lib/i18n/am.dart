@@ -65,6 +65,8 @@ const Map<String, String> amTexts = {
   'pause_tracking': 'ትራኪንግ አቁም',
   'resume_tracking': 'ትራኪንግ ቀጥል',
   'trip_details': 'የጉዞ ዝርዝሮች',
+  'route_map_show': "የመንገድ ካርታ",
+  'route_map_hide': "ካርታውን ደብቅ",
   'trip_history': 'የጉዞ ታሪክ',
   'trip_ended': 'ጉዞ ተጠናቋል',
   'miles': 'ማይሎች',

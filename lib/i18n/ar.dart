@@ -65,6 +65,8 @@ const Map<String, String> arTexts = {
   'pause_tracking': 'إيقاف مؤقت',
   'resume_tracking': 'استئناف التتبع',
   'trip_details': 'تفاصيل الرحلة',
+  'route_map_show': "خريطة المسار",
+  'route_map_hide': "إخفاء الخريطة",
   'trip_history': 'سجل الرحلات',
   'trip_ended': 'انتهت الرحلة',
   'miles': 'أميال',

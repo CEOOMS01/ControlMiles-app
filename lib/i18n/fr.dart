@@ -69,6 +69,8 @@ const Map<String, String> frTexts = {
   'pause_tracking': 'Mettre en pause',
   'resume_tracking': 'Reprendre',
   'trip_details': 'Détails du trajet',
+  'route_map_show': "Carte du trajet",
+  'route_map_hide': "Masquer la carte",
   'trip_history': 'Historique des trajets',
   'trip_ended': 'Trajet terminé',
   'miles': 'Miles',

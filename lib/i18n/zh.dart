@@ -69,6 +69,8 @@ const Map<String, String> zhTexts = {
   'pause_tracking': '暂停追踪',
   'resume_tracking': '继续追踪',
   'trip_details': '行程详情',
+  'route_map_show': "路线地图",
+  'route_map_hide': "隐藏地图",
   'trip_history': '行程历史',
   'trip_ended': '行程结束',
   'miles': '英里',

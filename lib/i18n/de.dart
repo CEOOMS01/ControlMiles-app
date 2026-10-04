@@ -68,6 +68,8 @@ const Map<String, String> deTexts = {
   'pause_tracking': 'Tracking pausieren',
   'resume_tracking': 'Tracking fortsetzen',
   'trip_details': 'Fahrtdetails',
+  'route_map_show': "Routenkarte",
+  'route_map_hide': "Karte ausblenden",
   'trip_history': 'Fahrtverlauf',
   'trip_ended': 'Fahrt beendet',
   'miles': 'Meilen',

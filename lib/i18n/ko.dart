@@ -66,6 +66,8 @@ const Map<String, String> koTexts = {
   'pause_tracking': '트래킹 일시정지',
   'resume_tracking': '트래킹 재개',
   'trip_details': '주행 상세정보',
+  'route_map_show': "경로 지도",
+  'route_map_hide': "지도 숨기기",
   'trip_history': '주행 기록',
   'trip_ended': '주행 종료',
   'miles': '마일',

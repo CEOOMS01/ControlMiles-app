@@ -3,6 +3,7 @@
 // Dark mode · Real DB data (sessions + session_sections) · Clean i18n
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -76,6 +77,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, List<SessionSection>>         _sections = {};
   // sessions.map_token per trip: the PDF's route images (2026-10-04).
   Map<String, String>                       _mapTokens = {};
+  // Trips whose route map is open (loaded only on tap, like History was).
+  final Set<String>                         _openMaps = {};
   // BUG FIX (pedido explícito): el reporte nunca mostraba qué vehículo(s)
   // se usaron -- resuelto acá a partir de los sessions.vehicle_id
   // realmente presentes en el rango cargado (no assume un único vehículo
@@ -1009,6 +1012,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
 
+          // ── Route map (2026-10-04): the trip's map and, when it tracked
+          // more than one gig app, one map per gig app -- loaded on tap.
+          if (_mapTokens[session.id] != null)
+            _buildRouteMapToggle(appState, session, sections, isDark),
+
           // ── Sections breakdown ──
           if (sections.isNotEmpty) ...[
             Divider(height: 1, color: border),
@@ -1043,6 +1051,69 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // ── Route map ──────────────────────────────────────────────
+  static const String _tripMapBase = 'https://controlmiles.com/api/trip-map';
+
+  Widget _buildRouteMapToggle(AppState appState, TrackingSession session,
+      List<SessionSection> sections, bool isDark) {
+    final open = _openMaps.contains(session.id);
+    final base = '$_tripMapBase/${session.id}/${_mapTokens[session.id]}';
+    // Segments with miles only (no miles, no segment -- legacy trips can
+    // still hold empty ones).
+    final tracked = sections.where((s) => s.totalMiles >= 0.05).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextButton.icon(
+            onPressed: () => setState(() =>
+                open ? _openMaps.remove(session.id) : _openMaps.add(session.id)),
+            icon: Icon(open ? Icons.expand_less_rounded : Icons.map_outlined, size: 18),
+            label: Text(appState.tr(open ? 'route_map_hide' : 'route_map_show')),
+          ),
+          if (open) ...[
+            _routeImage(base, isDark),
+            if (tracked.length > 1) ...[
+              const SizedBox(height: 8),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 16 / 9,
+                children: [
+                  for (final s in tracked) _routeImage('$base?section=${s.id}', isDark),
+                ],
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _routeImage(String url, bool isDark) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: SvgPicture.network(
+          url,
+          fit: BoxFit.cover,
+          placeholderBuilder: (_) => Container(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE8E4DD),
+            alignment: Alignment.center,
+            child: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
       ),
     );
   }

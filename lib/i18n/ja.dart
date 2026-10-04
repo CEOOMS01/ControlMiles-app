@@ -66,6 +66,8 @@ const Map<String, String> jaTexts = {
   'pause_tracking': '一時停止',
   'resume_tracking': '再開',
   'trip_details': '走行詳細',
+  'route_map_show': "ルートマップ",
+  'route_map_hide': "地図を隠す",
   'trip_history': '走行履歴',
   'trip_ended': '走行終了',
   'miles': 'マイル',

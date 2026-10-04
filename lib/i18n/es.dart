@@ -76,6 +76,8 @@ const Map<String, String> esTexts = {
   'pause_tracking': 'Pausar seguimiento',
   'resume_tracking': 'Reanudar seguimiento',
   'trip_details': 'Detalles del viaje',
+  'route_map_show': "Mapa de ruta",
+  'route_map_hide': "Ocultar mapa",
   'trip_history': 'Historial de viajes',
   'trip_ended': 'Viaje finalizado',
   'miles': 'Millas',

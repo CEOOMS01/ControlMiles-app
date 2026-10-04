@@ -358,18 +358,21 @@ class ReportService {
       // Trip map, then the segment maps two per row as SEPARATE top-level
       // widgets: MultiPage can only break between top-level children, and
       // a trip with many gig apps would not fit on one page as one block.
-      cards.add(pw.Container(
-        margin: pw.EdgeInsets.only(bottom: sectionMaps.isEmpty ? 14 : 6),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+      // A Stack can't be split across pages (a Column can): the trip's
+      // title always stays on the same page as its map.
+      cards.add(pw.Padding(
+        padding: pw.EdgeInsets.only(bottom: sectionMaps.isEmpty ? 14 : 6),
+        child: pw.Stack(
           children: [
             pw.Text(
               '${s.startTime != null ? dateFmt.format(s.startTime!.toLocal()) : '--'}   '
               '${s.totalMiles.toStringAsFixed(2)} mi   $apps',
               style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             ),
-            pw.SizedBox(height: 6),
-            pw.SizedBox(width: 523, height: 294, child: pw.SvgImage(svg: tripSvg, fit: pw.BoxFit.cover)),
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 17),
+              child: pw.SizedBox(width: 523, height: 294, child: pw.SvgImage(svg: tripSvg, fit: pw.BoxFit.cover)),
+            ),
           ],
         ),
       ));
