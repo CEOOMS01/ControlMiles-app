@@ -23,6 +23,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 import '../data/irs_rates.dart';
 import '../models/tracking_session.dart';
@@ -70,6 +71,9 @@ class ReportService {
     // data predating this feature) falls back to the old per-session logic.
     double? periodCheckpointStart,
     double? periodCheckpointEnd,
+    // sessions.map_token per trip (2026-10-04): route images for the
+    // "Trip routes" pages. Empty = no route pages.
+    Map<String, String> mapTokens = const {},
   }) async {
     final pdf = pw.Document();
 
@@ -226,12 +230,172 @@ class ReportService {
       ),
     );
 
+    // Trip routes (2026-10-04): one map per trip and, when a trip had more
+    // than one gig app, one map per gig-app segment -- only in reports
+    // (user rule), never in History. Own MultiPage so its page count
+    // doesn't eat into the main report's.
+    final routeCards = await _buildRouteCards(sortedSessions, sectionsBySession, mapTokens);
+    if (routeCards.isNotEmpty) {
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(36),
+          maxPages: 60,
+          build: (ctx) => [
+            pw.Text('TRIP ROUTES',
+                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, letterSpacing: 1.2)),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'Each trip, and each gig app tracked within it. Map data (c) OpenStreetMap contributors.',
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            ),
+            pw.SizedBox(height: 12),
+            ...routeCards,
+          ],
+        ),
+      );
+    }
+
     await Printing.layoutPdf(
       onLayout: (_) async => pdf.save(),
       name: 'ControlMiles_Report_'
           '${DateFormat('yyyyMMdd').format(dateRange.start)}_'
           '${DateFormat('yyyyMMdd').format(dateRange.end)}.pdf',
     );
+  }
+
+
+  // ════════════════════════════════════════════════════════════
+  // TRIP ROUTES (2026-10-04)
+  // ════════════════════════════════════════════════════════════
+  static const String _tripMapBase = 'https://controlmiles.com/api/trip-map';
+
+  /// Cap on images per report (a year of trips would otherwise mean
+  /// hundreds of downloads and a huge PDF). The newest trips win; the rest
+  /// are counted in a note.
+  static const int _maxRouteImages = 60;
+
+  /// Segments with miles (the app's rule: no miles, no segment). Legacy
+  /// trips can still hold empty ones -- they get no map.
+  static List<SessionSection> _trackedSections(List<SessionSection>? secs) =>
+      (secs ?? const <SessionSection>[]).where((x) => x.totalMiles >= 0.05).toList();
+
+  static Future<List<pw.Widget>> _buildRouteCards(
+    List<TrackingSession> sessions,
+    Map<String, List<SessionSection>> sectionsBySession,
+    Map<String, String> mapTokens,
+  ) async {
+    final withMap = sessions.where((s) => mapTokens[s.id] != null).toList();
+    if (withMap.isEmpty) return const [];
+
+    // Newest first while budgeting, shown oldest first like the trip log.
+    final picked = <TrackingSession>[];
+    var budget = _maxRouteImages;
+    for (final s in withMap.reversed) {
+      final secs = _trackedSections(sectionsBySession[s.id]);
+      final cost = 1 + (secs.length > 1 ? secs.length : 0);
+      if (cost > budget) break;
+      budget -= cost;
+      picked.add(s);
+    }
+    final shown = picked.reversed.toList();
+
+    // url -> svg, fetched 6 at a time; a failed image is just left out.
+    final urls = <String>[];
+    for (final s in shown) {
+      final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
+      urls.add(base);
+      final secs = _trackedSections(sectionsBySession[s.id]);
+      if (secs.length > 1) {
+        for (final sec in secs) {
+          urls.add('$base?section=${sec.id}');
+        }
+      }
+    }
+    final svgs = <String, String>{};
+    for (var i = 0; i < urls.length; i += 6) {
+      await Future.wait(urls.skip(i).take(6).map((url) async {
+        try {
+          final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 20));
+          if (res.statusCode == 200) svgs[url] = res.body;
+        } catch (_) {
+          // No image for this one; the trip log above still has the trip.
+        }
+      }));
+    }
+
+    final dateFmt = DateFormat('MM/dd/yyyy hh:mm a');
+    final cards = <pw.Widget>[];
+    for (final s in shown) {
+      final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
+      final tripSvg = svgs[base];
+      if (tripSvg == null) continue;
+      final secs = _trackedSections(sectionsBySession[s.id]);
+      final apps = secs.map((x) => x.gigApp.toUpperCase()).toSet().join(' / ');
+
+      final sectionMaps = <pw.Widget>[];
+      if (secs.length > 1) {
+        for (final sec in secs) {
+          final svg = svgs['$base?section=${sec.id}'];
+          if (svg == null) continue;
+          sectionMaps.add(pw.SizedBox(
+            width: 255,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(width: 255, height: 143, child: pw.SvgImage(svg: svg, fit: pw.BoxFit.cover)),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '${sec.gigApp.toUpperCase()}  ${sec.totalMiles.toStringAsFixed(2)} mi',
+                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+                ),
+              ],
+            ),
+          ));
+        }
+      }
+
+      // Trip map, then the segment maps two per row as SEPARATE top-level
+      // widgets: MultiPage can only break between top-level children, and
+      // a trip with many gig apps would not fit on one page as one block.
+      cards.add(pw.Container(
+        margin: pw.EdgeInsets.only(bottom: sectionMaps.isEmpty ? 14 : 6),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              '${s.startTime != null ? dateFmt.format(s.startTime!.toLocal()) : '--'}   '
+              '${s.totalMiles.toStringAsFixed(2)} mi   $apps',
+              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            pw.SizedBox(width: 523, height: 294, child: pw.SvgImage(svg: tripSvg, fit: pw.BoxFit.cover)),
+          ],
+        ),
+      ));
+      for (var i = 0; i < sectionMaps.length; i += 2) {
+        cards.add(pw.Padding(
+          padding: pw.EdgeInsets.only(bottom: i + 2 >= sectionMaps.length ? 16 : 6),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              sectionMaps[i],
+              if (i + 1 < sectionMaps.length) ...[pw.SizedBox(width: 13), sectionMaps[i + 1]],
+            ],
+          ),
+        ));
+      }
+    }
+
+    final skipped = withMap.length - shown.length;
+    if (skipped > 0) {
+      cards.add(pw.Text(
+        'Routes of $skipped older trip${skipped == 1 ? '' : 's'} are not included in this PDF. '
+        'Shorten the date range to see them.',
+        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+      ));
+    }
+    return cards;
   }
 
   // ════════════════════════════════════════════════════════════

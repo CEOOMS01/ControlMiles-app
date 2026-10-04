@@ -8,6 +8,19 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.18+20 — 2026-10-04
+
+### Changed
+- **Route maps live only in reports** (user rule), not in History. The PDF
+  report (Reports → Generate) gets **Trip routes** pages: each trip's map
+  and, when the trip tracked more than one gig app, one map per gig app
+  (two per row; a segment with no miles gets none). Images come from
+  controlmiles.com/api/trip-map, 6 downloads at a time, capped at 60 per
+  report (newest trips first; a note counts the rest). Own `MultiPage`, so
+  the main report's page limit is untouched.
+- History no longer shows the route image added in 1.1.17; `flutter_svg`
+  removed (the PDF uses the `pdf` package's own SVG support).
+
 ## 1.1.17+19 — 2026-10-04
 
 ### Added

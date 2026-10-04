@@ -74,6 +74,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   List<TrackingSession>                     _sessions = [];
   Map<String, List<SessionSection>>         _sections = {};
+  // sessions.map_token per trip: the PDF's route images (2026-10-04).
+  Map<String, String>                       _mapTokens = {};
   // BUG FIX (pedido explícito): el reporte nunca mostraba qué vehículo(s)
   // se usaron -- resuelto acá a partir de los sessions.vehicle_id
   // realmente presentes en el rango cargado (no assume un único vehículo
@@ -212,8 +214,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final sessions = sessionRows.map(TrackingSession.fromMap).toList();
 
       final sectionsMap = <String, List<SessionSection>>{};
+      final mapTokens = <String, String>{};
       for (final row in sessionRows) {
         final session = TrackingSession.fromMap(row);
+        final mapToken = row['map_token'] as String?;
+        if (mapToken != null) mapTokens[session.id] = mapToken;
         final raw = List<Map<String, dynamic>>.from(
           row['session_sections'] as List? ?? const [],
         )..sort((a, b) => (a['start_time'] as String? ?? '')
@@ -292,6 +297,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         setState(() {
           _sessions = sessions;
           _sections = sectionsMap;
+          _mapTokens = mapTokens;
           _vehiclesUsed = vehiclesUsed;
           _periodCheckpointStart = periodCheckpointStart;
           _periodCheckpointEnd = periodCheckpointEnd;
@@ -397,6 +403,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         vehiclesUsed:      _vehiclesUsed,
         periodCheckpointStart: _periodCheckpointStart,
         periodCheckpointEnd:   _periodCheckpointEnd,
+        mapTokens:         _mapTokens,
       );
 
       // BUG FIX (2026-08-29, exactly what the user saw): 'report_generated_success'

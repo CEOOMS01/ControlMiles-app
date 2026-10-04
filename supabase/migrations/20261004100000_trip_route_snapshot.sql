@@ -78,6 +78,7 @@ as $$
            or coalesce(s.end_time, s.updated_at) < now() - interval '1 hour'),
     'sections', coalesce((
       select jsonb_agg(jsonb_build_object(
+        'id', ss.id,
         'gig_app', ss.gig_app,
         'polyline', ss.route_polyline,
         'points', case when ss.route_polyline is null then (
@@ -288,7 +289,11 @@ begin
     'weekly_checkpoints', coalesce(p_weekly_checkpoints, '[]'::jsonb),
     'route_points', coalesce((select jsonb_agg(jsonb_build_object(
         'session_id', rp.session_id, 'date_key', rp.date_key,
-        'total_miles', rp.total_miles, 'map_token', rp.map_token
+        'total_miles', rp.total_miles, 'map_token', rp.map_token,
+        -- a trip with several tracked gig apps also lists its segments (one
+        -- map each); segments with no miles (legacy) have nothing to draw
+        'section_ids', (select case when count(*) > 1 then jsonb_agg(ss.id order by ss.start_time) end
+                          from public.session_sections ss where ss.session_id = rp.session_id and ss.total_miles >= 0.05)
       ) order by rp.start_time)
       from route_points rp), '[]'::jsonb)
   )
