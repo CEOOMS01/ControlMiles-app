@@ -8,6 +8,14 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.21+23 — 2026-10-05
+
+### Fixed
+- **Reports and the PDF listed legacy 0.00 mi trips** (from before the
+  no-miles-no-trip rule), with empty route maps. Trips under 0.05 mi are now
+  left out of the Reports list, the trip count, the totals and the PDF --
+  the same filter the web Report Portal already applies.
+
 ## 1.1.20+22 — 2026-10-04
 
 ### Fixed

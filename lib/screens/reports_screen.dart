@@ -241,6 +241,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
             .toList();
       }
 
+      // No miles, no trip (app rule; the web Report Portal already filters
+      // the same way): legacy trips with < 0.05 mi -- from before the rule
+      // existed -- stay out of the list, the trip count and the PDF.
+      sessions.removeWhere((s) {
+        final secs = sectionsMap[s.id] ?? const <SessionSection>[];
+        final sum = secs.fold<double>(0, (acc, x) => acc + x.totalMiles);
+        return (sum > 0 ? sum : s.totalMiles) < 0.05;
+      });
+
       final vehicleIds = sessions
           .map((s) => s.vehicleId)
           .whereType<String>()
