@@ -76,6 +76,7 @@ Play Console → **Contenido de la app → Seguridad de los datos**.
 | ¿Tu app recoge o comparte alguno de los tipos de datos requeridos? | **Sí** |
 | ¿Todos los datos se cifran en tránsito? | **Sí** (HTTPS/TLS a Supabase y a todos los servicios) |
 | ¿Ofreces una forma de pedir que se eliminen los datos? | **Sí**: en la app (Settings → Danger Zone → Delete Account) y en la web **https://controlmiles.com/delete-account** |
+| ¿Forma de pedir que se borre una parte o la totalidad de los datos sin borrar la cuenta? (opcional) | **Sí** → vínculo **https://controlmiles.com/delete-data** (borrar viajes y vehículos en la app; el resto por correo a account@controlmiles.com, 2026-10-05) |
 | ¿Revisión de seguridad independiente (MASA)? | No |
 
 ### Tipos de datos
@@ -113,6 +114,7 @@ Play Console → **Contenido de la app → Seguridad de los datos**.
 |---|---|
 | Política de privacidad | https://controlmiles.com/privacy |
 | Eliminación de cuenta | https://controlmiles.com/delete-account |
+| Eliminación de datos sin borrar la cuenta | https://controlmiles.com/delete-data |
 | Anuncios | No contiene anuncios |
 | Público objetivo | **18+** (los términos exigen 18 años; la app lo confirma al registrarse) |
 | Acceso a la app | Crea una **cuenta de revisor** (gig) con viajes de ejemplo y pon su correo y contraseña **solo en Play Console**. Añade también un ID de conductor de flota de prueba si quieres que revisen el modo flota |
