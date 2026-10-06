@@ -8,6 +8,14 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.23+25 — 2026-10-06
+
+### Changed
+- Removed the `RECORD_AUDIO` permission that the camera plugin merged into
+  the manifest. The app only takes photos (`enableAudio: false`), and the
+  Play Data safety form declares no audio collected; Play Console flagged it
+  as an undeclared sensitive permission on the first closed-testing release.
+
 ## 1.1.22+24 — 2026-10-05
 
 ### Fixed

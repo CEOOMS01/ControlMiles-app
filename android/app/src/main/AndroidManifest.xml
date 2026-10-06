@@ -9,6 +9,11 @@
 
     <!-- Camera (Odometer OCR) -->
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- The camera plugin (camera_android_camerax) declares RECORD_AUDIO for
+         video. ControlMiles only takes photos (enableAudio: false) and the
+         Play Data safety form says no audio is collected, so the merged
+         permission is removed (2026-10-06, Play pre-launch review). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false"/>
