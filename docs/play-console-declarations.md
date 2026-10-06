@@ -34,6 +34,16 @@ Play Console → **Contenido de la app → Permisos sensibles → Permisos de ub
 4. Salir a otra app (Maps o una app gig) con la notificación visible; volver: las millas han subido.
 5. Tocar **End trip**.
 
+
+### A1-b. Formulario real de Play Console (2026-10-06) — campos de 500 caracteres
+**Propósito de la app** (275/500):
+> ControlMiles is a mileage log for rideshare and delivery (gig) drivers and for fleet drivers. It records each work trip's route and distance from GPS and turns them into mileage reports for the IRS standard mileage deduction and for fleet mileage and IFTA (fuel tax) reports.
+
+**Acceso a la ubicación — 1 función** (418/500):
+> Trip mileage tracking. After the driver taps Start (or confirms an automatic-detection prompt), the app records GPS locations until the trip ends, with a persistent notification the whole time. During the trip the driver uses navigation and gig apps, so ControlMiles is in the background or the screen is off; without background location the trip's route and miles would be missing. Recording stops when the trip ends.
+
+**Instrucciones en video:** obligatorio (no deja guardar sin la URL de YouTube).
+
 ### A2. Servicio en primer plano de ubicación (`FOREGROUND_SERVICE_LOCATION`) — OBLIGATORIO
 Play Console → **Contenido de la app → Permisos de servicios en primer plano**. Tipo: **Location**.
 
