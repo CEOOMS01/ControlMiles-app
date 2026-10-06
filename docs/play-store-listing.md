@@ -49,8 +49,7 @@ FOR FLEETS
 • Fleet dashboard and billing at controlmiles.com.
 
 PLANS
-• 15-day free trial for drivers, no card needed.
-• Basic and Premium monthly subscriptions through Google Play; cancel anytime in Google Play.
+• Basic and Premium monthly subscriptions through Google Play, each with a 15-day free trial; cancel anytime in Google Play.
 • Fleet plans are set up and billed on controlmiles.com.
 
 PRIVACY
@@ -90,8 +89,7 @@ PARA FLOTAS
 • Panel de flota y facturación en controlmiles.com.
 
 PLANES
-• 15 días de prueba gratis para conductores, sin tarjeta.
-• Suscripciones mensuales Basic y Premium con Google Play; cancela cuando quieras en Google Play.
+• Suscripciones mensuales Basic y Premium con Google Play, cada una con 15 días de prueba gratis; cancela cuando quieras en Google Play.
 • Los planes de flota se configuran y cobran en controlmiles.com.
 
 PRIVACIDAD
@@ -135,3 +133,11 @@ Capturas recomendadas (en este orden), tomadas con una cuenta con viajes reales:
 | Sitio web | https://controlmiles.com |
 | Teléfono | (opcional) |
 | Política de privacidad | https://controlmiles.com/privacy |
+
+---
+
+## Pruebas gratis en Google Play (configurar en Play Console)
+Monetizar → Productos → Suscripciones → `controlmiles_basic_monthly` y
+`controlmiles_premium_monthly` → plan base mensual → **Agregar oferta** →
+elegibilidad *Adquisición de clientes nuevos* → fase **Prueba gratis, 15 días**.
+La app ya dice "Includes a 15-day free trial" en ambos planes (1.1.22).

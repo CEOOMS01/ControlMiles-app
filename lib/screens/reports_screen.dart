@@ -87,6 +87,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // ya no se usa sigue siendo real evidencia del período reportado.
   List<Vehicle>                             _vehiclesUsed = [];
   double?                                   _periodCheckpointStart;
+  // First odometer reading ever captured per vehicle (2026-10-05): the
+  // vehicle's own `odometer` column is its CURRENT reading, so it can't be
+  // shown as the starting one.
+  Map<String, ({double value, DateTime? at})> _firstOdometerByVehicle = {};
   double?                                   _periodCheckpointEnd;
 
   // ── NUEVO: card Summary (total del día, pedido explícito) ──
@@ -300,6 +304,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
         }
       }
 
+      final firstOdometerByVehicle = <String, ({double value, DateTime? at})>{};
+      if (vehicleIds.isNotEmpty) {
+        final firstRaw = await Supabase.instance.client
+            .from('vehicle_odometer_checkpoints')
+            .select('vehicle_id, week_start_date, start_odometer_value, start_captured_at')
+            .inFilter('vehicle_id', vehicleIds)
+            .not('start_odometer_value', 'is', null)
+            .order('week_start_date', ascending: true);
+        for (final row in firstRaw as List) {
+          final vid = row['vehicle_id'] as String;
+          if (firstOdometerByVehicle.containsKey(vid)) continue;
+          firstOdometerByVehicle[vid] = (
+            value: (row['start_odometer_value'] as num).toDouble(),
+            at: DateTime.tryParse((row['start_captured_at'] ?? row['week_start_date'] ?? '') as String),
+          );
+        }
+      }
+
       final periodMiles = sessions.fold<double>(
           0.0, (acc, s) => acc + s.totalMiles);
       final periodDurationSec = sessions.fold<int>(
@@ -313,6 +335,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _vehiclesUsed = vehiclesUsed;
           _periodCheckpointStart = periodCheckpointStart;
           _periodCheckpointEnd = periodCheckpointEnd;
+          _firstOdometerByVehicle = firstOdometerByVehicle;
           _periodTotalMiles = periodMiles;
           _periodTotalDurationSec = periodDurationSec;
         });
@@ -414,6 +437,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         mileageMethod:     appState.mileageMethod,
         vehiclesUsed:      _vehiclesUsed,
         periodCheckpointStart: _periodCheckpointStart,
+        firstOdometerByVehicle: _firstOdometerByVehicle,
         periodCheckpointEnd:   _periodCheckpointEnd,
         mapTokens:         _mapTokens,
       );

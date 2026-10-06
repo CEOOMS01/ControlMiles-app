@@ -71,6 +71,9 @@ class ReportService {
     // data predating this feature) falls back to the old per-session logic.
     double? periodCheckpointStart,
     double? periodCheckpointEnd,
+    // First odometer reading ever captured per vehicle (vehicle id ->
+    // value/date). The vehicles' own `odometer` is their CURRENT reading.
+    Map<String, ({double value, DateTime? at})> firstOdometerByVehicle = const {},
     // sessions.map_token per trip (2026-10-04): route images for the
     // "Trip routes" pages. Empty = no route pages.
     Map<String, String> mapTokens = const {},
@@ -209,7 +212,7 @@ class ReportService {
           _buildGlobalProfileSection(
               userName, userDisplayId, periodLabel, sortedSessions.length),
           pw.SizedBox(height: 24),
-          _buildVehicleInfo(vehiclesUsed),
+          _buildVehicleInfo(vehiclesUsed, firstOdometerByVehicle),
           pw.SizedBox(height: 24),
           _buildOdometerEvidence(
             totalMiles,
@@ -508,7 +511,10 @@ class ReportService {
   // es un solo vehículo; si el usuario cambió de vehículo activo dentro del
   // rango del reporte, se listan todos con su propio odómetro inicial.
   // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildVehicleInfo(List<Vehicle> vehicles) {
+  static pw.Widget _buildVehicleInfo(
+    List<Vehicle> vehicles,
+    Map<String, ({double value, DateTime? at})> firstOdometerByVehicle,
+  ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -533,7 +539,7 @@ class ReportService {
               children: [
                 for (var i = 0; i < vehicles.length; i++) ...[
                   if (i > 0) pw.Container(height: 0.5, color: PdfColors.grey300),
-                  _vehicleRow(vehicles[i]),
+                  _vehicleRow(vehicles[i], firstOdometerByVehicle[vehicles[i].id]),
                 ],
               ],
             ),
@@ -542,12 +548,21 @@ class ReportService {
     );
   }
 
-  static pw.Widget _vehicleRow(Vehicle vehicle) {
+  // BUG FIX (2026-10-05): this showed vehicles.odometer as "Starting
+  // odometer", but that column is updated with every reading -- it's the
+  // vehicle's CURRENT odometer (209,354 while ODOMETER EVIDENCE correctly
+  // started at 206,637). Now: the first reading ever captured in
+  // ControlMiles (with its date) and the current one, each labeled.
+  static pw.Widget _vehicleRow(Vehicle vehicle, ({double value, DateTime? at})? first) {
     final year = vehicle.year != null ? '${vehicle.year} ' : '';
     final name = vehicle.displayName.isEmpty ? '--' : vehicle.displayName;
-    final startOdo = vehicle.odometer != null
-        ? '${vehicle.odometer!.toStringAsFixed(1)} mi'
-        : '--';
+    final odoFmt = NumberFormat('#,##0.0');
+    final parts = <String>[
+      if (first != null)
+        'First odometer in ControlMiles: ${odoFmt.format(first.value)} mi'
+        '${first.at != null ? ' (${DateFormat('MM/dd/yyyy').format(first.at!.toLocal())})' : ''}',
+      if (vehicle.odometer != null) 'Current: ${odoFmt.format(vehicle.odometer!)} mi',
+    ];
 
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -556,7 +571,7 @@ class ReportService {
         children: [
           pw.Text('$year$name',
               style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-          pw.Text('Starting odometer (ControlMiles): $startOdo',
+          pw.Text(parts.isEmpty ? 'Odometer: --' : parts.join('   ·   '),
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
         ],
       ),
@@ -576,11 +591,19 @@ class ReportService {
     double? periodCheckpointStart,
     double? periodCheckpointEnd,
   }) {
-    final start = (periodCheckpointStart ?? firstOdoSession?.startOdometerValue)
-            ?.toStringAsFixed(1) ?? '--';
-    final end   = (periodCheckpointEnd ?? lastOdoSession?.endOdometerValue)
-            ?.toStringAsFixed(1) ?? '--';
-    final total = totalMiles.toStringAsFixed(2);
+    // BUG FIX (2026-10-05): TOTAL showed the TRACKED trip miles ("units")
+    // between two odometer readings, which read as if the odometer moved
+    // 1,679 mi while START/END said 2,717. The odometer box now holds only
+    // odometer numbers (END - START, in mi); tracked miles stay in the
+    // Total Miles / business-use summaries below.
+    final startVal = periodCheckpointStart ?? firstOdoSession?.startOdometerValue;
+    final endVal = periodCheckpointEnd ?? lastOdoSession?.endOdometerValue;
+    final odoFmt = NumberFormat('#,##0.0');
+    final start = startVal != null ? odoFmt.format(startVal) : '--';
+    final end = endVal != null ? odoFmt.format(endVal) : '--';
+    final total = (startVal != null && endVal != null && endVal >= startVal)
+        ? odoFmt.format(endVal - startVal)
+        : '--';
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -601,7 +624,7 @@ class ReportService {
             children: [
               _odoCell('START', start, isFirst: true),
               _odoCell('END',   end),
-              _odoCell('TOTAL', total),
+              _odoCell('ODOMETER MILES', total),
             ],
           ),
         ),
@@ -632,7 +655,7 @@ class ReportService {
                 style: pw.TextStyle(
                     fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 2),
-            pw.Text('units',
+            pw.Text('mi',
                 style: const pw.TextStyle(
                     fontSize: 8, color: PdfColors.grey500)),
           ],

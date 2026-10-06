@@ -8,6 +8,23 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.22+24 — 2026-10-05
+
+### Fixed
+- **PDF odometer numbers contradicted each other.** The vehicle line said
+  "Starting odometer: 209,354" while ODOMETER EVIDENCE started at 206,637:
+  it showed the vehicle's `odometer` column, which is updated with every
+  reading (the CURRENT odometer). It now shows the first reading ever
+  captured in ControlMiles, with its date, and the current one, each
+  labeled. ODOMETER EVIDENCE's third box showed the tracked trip miles as
+  "TOTAL units"; it now shows **ODOMETER MILES** (END - START, in mi);
+  tracked miles stay in the Total Miles and business-use summaries.
+
+### Changed
+- Subscription screen: Basic and Premium both say "Includes a 15-day free
+  trial" (Premium said 5 days), in all 11 languages. The 15-day trial
+  offers must be set on both base plans in Play Console.
+
 ## 1.1.21+23 — 2026-10-05
 
 ### Fixed
