@@ -108,7 +108,7 @@ La deducción que se muestra es una estimación para tus registros, no asesoría
 |---|---|---|
 | **Ícono de la app** | PNG 512×512, ≤ 1 MB | `store_assets/play_store_icon_512.png` ✅ |
 | **Imagen destacada** | PNG/JPG 1024×500, ≤ 15 MB | `store_assets/feature_graphic_1024x500.png` |
-| **Capturas de teléfono** | 2–8, PNG/JPG, lado menor ≥ 320 px, **el lado mayor no puede ser más de 2× el menor** (la pantalla del S24+ es 1440×3120 → se recorta a 1440×2880) | `store_assets/screenshots/phone_*.png` |
+| **Capturas de teléfono** | 2–8, PNG/JPG, lado menor ≥ 320 px, **el lado mayor no puede ser más de 2× el menor** y la proporción debe ser **exactamente 9:16** (se recortan a 1440×2560) | `store_assets/screenshots/phone_*.png` |
 | Capturas de tablet 7"/10" | Opcional | — |
 | Video | Opcional (URL de YouTube) | — |
 
