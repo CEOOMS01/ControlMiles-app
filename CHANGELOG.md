@@ -8,6 +8,19 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.24+26 — 2026-10-07
+
+### Fixed
+- **Subscription screen with the Play free-trial offers.** Play Console now
+  has `controlmiles_basic_monthly` ($5.99) and `controlmiles_premium_monthly`
+  ($9.99), base plan `monthly`, each with offer `free-trial-15d` (15 days
+  free, new subscribers who never had any ControlMiles subscription). Play
+  returns the trial offer and the base plan as separate entries in no fixed
+  order: the app could buy the base plan (no trial), and the trial entry's
+  price is its first phase, so the card would read "Free/mo". The app now
+  buys the trial offer when the user is eligible and always shows the
+  monthly price after the trial.
+
 ## 1.1.23+25 — 2026-10-06
 
 ### Changed

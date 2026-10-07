@@ -129,7 +129,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   String _priceLabel(String productId, String fallback) {
     final p = _products[productId];
-    return p == null ? fallback : '${p.price}/mo';
+    return p == null ? fallback : '${_billing.recurringPrice(p)}/mo';
   }
 
   Widget _buildTierCard(

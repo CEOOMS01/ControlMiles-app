@@ -20,7 +20,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_android/billing_client_wrappers.dart' show ReplacementMode;
+import 'package:in_app_purchase_android/billing_client_wrappers.dart'
+    show ReplacementMode, SubscriptionOfferDetailsWrapper;
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -86,16 +87,38 @@ class PlayBillingService {
     }
   }
 
-  /// One ProductDetails per product (Play returns one per offer; the first
-  /// is the one with the base plan's current offer, e.g. a free trial).
+  /// One ProductDetails per product. Play returns one entry per base plan and
+  /// per offer the user is eligible for, in no guaranteed order; the 15-day
+  /// free-trial offer (`free-trial-15d`, new subscribers only) wins over the
+  /// bare base plan so buying it starts the trial.
   Future<Map<String, ProductDetails>> loadProducts() async {
     final response = await _iap.queryProductDetails(productIds);
     final byId = <String, ProductDetails>{};
     for (final p in response.productDetails) {
-      byId.putIfAbsent(p.id, () => p);
+      final current = byId[p.id];
+      if (current == null || (_offerId(p) != null && _offerId(current) == null)) {
+        byId[p.id] = p;
+      }
     }
     return byId;
   }
+
+  /// The monthly price after any trial. ProductDetails.price is the offer's
+  /// FIRST phase, which for the free-trial offer is "Free".
+  String recurringPrice(ProductDetails product) {
+    final offer = _offer(product);
+    return offer?.pricingPhases.last.formattedPrice ?? product.price;
+  }
+
+  static SubscriptionOfferDetailsWrapper? _offer(ProductDetails product) {
+    if (product is! GooglePlayProductDetails) return null;
+    final index = product.subscriptionIndex;
+    final offers = product.productDetails.subscriptionOfferDetails;
+    if (index == null || offers == null || index >= offers.length) return null;
+    return offers[index];
+  }
+
+  static String? _offerId(ProductDetails product) => _offer(product)?.offerId;
 
   Future<void> buy(ProductDetails product) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;

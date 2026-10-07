@@ -136,8 +136,14 @@ Capturas recomendadas (en este orden), tomadas con una cuenta con viajes reales:
 
 ---
 
-## Pruebas gratis en Google Play (configurar en Play Console)
-Monetizar → Productos → Suscripciones → `controlmiles_basic_monthly` y
-`controlmiles_premium_monthly` → plan base mensual → **Agregar oferta** →
-elegibilidad *Adquisición de clientes nuevos* → fase **Prueba gratis, 15 días**.
-La app ya dice "Includes a 15-day free trial" en ambos planes (1.1.22).
+## Suscripciones en Google Play (creadas 2026-10-07, activas)
+| Producto | Plan base | Precio | Oferta |
+|---|---|---|---|
+| `controlmiles_basic_monthly` (ControlMiles Basic) | `monthly`, mensual, renovación automática, gracia 7 días | USD 5.99 (resto de países convertido por Play) | `free-trial-15d` |
+| `controlmiles_premium_monthly` (ControlMiles Premium) | `monthly`, igual | USD 9.99 | `free-trial-15d` |
+
+Oferta `free-trial-15d`: *Adquisición de clientes nuevos* → **No tuvieron
+ninguna suscripción** en la app (una sola prueba por cuenta de Google: quien
+ya probó Basic no recibe otra prueba en Premium), fase **Prueba gratuita 15
+días**. La app compra la oferta de prueba cuando el usuario es elegible y
+muestra el precio mensual posterior (1.1.24).
