@@ -17,7 +17,27 @@ class SchoolStudent {
   final String action; // board | alight
   final bool done;
 
-  const SchoolStudent({required this.id, required this.name, this.grade, required this.action, required this.done});
+  /// Day status computed by the server (migration 20261009130000):
+  /// blue = on track; red = alert (rode this morning but hasn't come out,
+  /// or not dropped off); yellow = didn't ride this morning / absent;
+  /// gray = red resolved with a reason; expected | pending | on_board =
+  /// not decided yet.
+  final String status;
+  final String? releaseReason; // parent_pickup | early_dismissal | activity | other
+  final String? releaseNote;
+
+  const SchoolStudent({
+    required this.id,
+    required this.name,
+    this.grade,
+    required this.action,
+    required this.done,
+    required this.status,
+    this.releaseReason,
+    this.releaseNote,
+  });
+
+  bool get settled => status == 'yellow' || status == 'gray';
 
   factory SchoolStudent.fromJson(Map<String, dynamic> j) => SchoolStudent(
         id: j['id'] as String,
@@ -25,6 +45,9 @@ class SchoolStudent {
         grade: j['grade'] as String?,
         action: (j['action'] as String?) ?? 'board',
         done: (j['done'] as bool?) ?? false,
+        status: (j['status'] as String?) ?? (((j['done'] as bool?) ?? false) ? 'blue' : 'pending'),
+        releaseReason: j['release_reason'] as String?,
+        releaseNote: j['release_note'] as String?,
       );
 }
 
@@ -56,6 +79,10 @@ class SchoolStop {
   });
 
   bool get arrived => arrivedAt != null;
+
+  /// Nobody to pick up or drop off here today (every rider absent or
+  /// released): the driver can go straight past it.
+  bool get skippable => students.isNotEmpty && students.every((st) => st.settled);
 
   factory SchoolStop.fromJson(Map<String, dynamic> j) => SchoolStop(
         id: j['id'] as String,
@@ -98,10 +125,10 @@ class SchoolRoute {
   bool get inProgress => runStatus == 'in_progress';
   bool get completed => runStatus == 'completed';
 
-  /// First stop the bus hasn't reached yet.
+  /// First stop the bus hasn't reached yet (skippable stops passed over).
   SchoolStop? get nextStop {
     for (final s in stops) {
-      if (!s.arrived) return s;
+      if (!s.arrived && !s.skippable) return s;
     }
     return null;
   }
@@ -115,6 +142,16 @@ class SchoolRoute {
       }
     }
     return n < 0 ? 0 : n;
+  }
+
+  /// Red alerts the driver must clear before finishing (board them or give
+  /// a reason).
+  int get unresolved {
+    var n = 0;
+    for (final s in stops) {
+      n += s.students.where((st) => st.action == 'board' && st.status == 'red').length;
+    }
+    return n;
   }
 
   factory SchoolRoute.fromJson(Map<String, dynamic> j) {
@@ -151,13 +188,17 @@ class SchoolRouteService {
   Future<void> markArrived(String runId, String stopId) =>
       _db.rpc('mark_stop_arrived', params: {'p_run_id': runId, 'p_stop_id': stopId});
 
-  Future<void> setRider(String runId, String stopId, String studentId, String action, bool done) =>
+  /// [action] board | alight | released (released needs a [reason]).
+  Future<void> setRider(String runId, String stopId, String studentId, String action, bool done,
+          {String? reason, String? note}) =>
       _db.rpc('record_ridership', params: {
         'p_run_id': runId,
         'p_stop_id': stopId,
         'p_student_id': studentId,
         'p_action': action,
         'p_done': done,
+        'p_reason': reason,
+        'p_note': note,
       });
 
   Future<void> complete(String runId, {double? latitude, double? longitude}) =>

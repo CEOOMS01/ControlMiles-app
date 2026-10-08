@@ -8,6 +8,14 @@
 // screen is open it also checks the phone's position every 15 s, and the
 // driver can mark it by hand. Finishing requires the "no child left on
 // board" walk-through, recorded with time and place.
+//
+// Day colors (user rule + 4 adjustments, 2026-10-09; computed by the
+// server): blue = on track; red = rode this morning but hasn't come out for
+// the PM bus (go ask at the school) or not dropped off; yellow = didn't ride
+// this morning -- not expected, a stop with only yellow riders can be
+// skipped, but the driver can still board them; gray = red resolved with a
+// reason (parent pick-up, early dismissal, activity, other). The route
+// can't be finished with a child on board or an unresolved red.
 
 import 'dart:async';
 
@@ -97,9 +105,18 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
     } catch (e) {
       if (!mounted) return;
       final appState = context.read<AppState>();
-      final err = AppError.from(e);
+      final raw = e.toString();
+      final String message;
+      if (raw.contains('STUDENTS_STILL_ON_BOARD')) {
+        message = appState.tr('school_err_on_board');
+      } else if (raw.contains('UNRESOLVED_STUDENTS')) {
+        message = appState.tr('school_err_unresolved');
+      } else {
+        final err = AppError.from(e);
+        message = err.display(appState.tr(err.messageKey));
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err.display(appState.tr(err.messageKey))), backgroundColor: Colors.red.shade700),
+        SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -126,6 +143,13 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                 const SizedBox(height: 10),
                 Text(
                   appState.tr('school_still_on_board').replaceFirst('{n}', '${route.onBoard}'),
+                  style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w700),
+                ),
+              ],
+              if (route.unresolved > 0) ...[
+                const SizedBox(height: 10),
+                Text(
+                  appState.tr('school_unresolved_count').replaceFirst('{n}', '${route.unresolved}'),
                   style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w700),
                 ),
               ],
@@ -159,6 +183,65 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(appState.tr('school_route_finished'))));
       Navigator.pop(context, true);
     }
+  }
+
+  static const _reasons = ['parent_pickup', 'early_dismissal', 'activity', 'other'];
+
+  /// Resolve a red (or expected) PM rider who won't ride: a reason turns
+  /// them gray and counts as attendance.
+  Future<void> _release(AppState appState, String runId, SchoolStop stop, SchoolStudent st) async {
+    String? reason;
+    final noteCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(appState.tr('school_release_title').replaceFirst('{name}', st.name)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioGroup<String>(
+                  groupValue: reason,
+                  onChanged: (v) => setLocal(() => reason = v),
+                  child: Column(
+                    children: [
+                      for (final r in _reasons)
+                        RadioListTile<String>(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          value: r,
+                          title: Text(appState.tr('school_reason_$r')),
+                        ),
+                    ],
+                  ),
+                ),
+                TextField(
+                  controller: noteCtrl,
+                  maxLength: 300,
+                  onChanged: (_) => setLocal(() {}),
+                  decoration: InputDecoration(labelText: appState.tr('school_release_note')),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(appState.tr('cancel'))),
+            FilledButton(
+              onPressed: reason == null || (reason == 'other' && noteCtrl.text.trim().isEmpty)
+                  ? null
+                  : () => Navigator.pop(ctx, true),
+              child: Text(appState.tr('save')),
+            ),
+          ],
+        ),
+      ),
+    );
+    final note = noteCtrl.text.trim();
+    noteCtrl.dispose();
+    if (ok != true || reason == null) return;
+    await _run(() => _service.setRider(runId, stop.id, st.id, 'released', true,
+        reason: reason, note: note.isEmpty ? null : note));
   }
 
   String _clock(String? hhmmss) {
@@ -279,6 +362,7 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                         if (s.scheduledTime != null) _clock(s.scheduledTime),
                         if (isNext) appState.tr('school_next_stop'),
                         if (s.arrived) appState.tr('school_arrived'),
+                        if (!s.arrived && s.skippable) appState.tr('school_skip_stop'),
                       ].join(' · '),
                       style: TextStyle(fontSize: 12, color: subTextColor),
                     ),
@@ -294,26 +378,46 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
           ),
           if (s.students.isNotEmpty) ...[
             const SizedBox(height: 6),
-            // Attendance colors (user rule, 2026-10-09): blue = picked up /
-            // dropped off (a pick-up is the day's attendance); red = the bus
-            // reached the stop and the student wasn't marked -- absent at a
-            // pick-up, or STILL ON THE BUS at a drop-off -- so nobody is
-            // ever forgotten. Not reached yet: neutral.
             for (final st in s.students)
               Builder(builder: (_) {
-                final missed = !st.done && (s.arrived || route.completed);
-                final color = st.done
-                    ? Colors.blue.shade700
-                    : missed
-                        ? Colors.red.shade700
-                        : subTextColor;
-                final status = st.action == 'board'
-                    ? (st.done ? 'school_present' : missed ? 'school_absent' : 'school_got_on')
-                    : (st.done ? 'school_dropped_off' : missed ? 'school_not_dropped' : 'school_got_off');
+                final color = switch (st.status) {
+                  'blue' => Colors.blue.shade700,
+                  'red' => Colors.red.shade700,
+                  'yellow' => Colors.amber.shade800,
+                  'gray' => Colors.blueGrey.shade500,
+                  _ => subTextColor,
+                };
+                final decided = const {'blue', 'red', 'yellow', 'gray'}.contains(st.status);
+                final board = st.action == 'board';
+                final String label;
+                if (st.status == 'gray') {
+                  label = '${appState.tr('school_released')}: ${appState.tr('school_reason_${st.releaseReason ?? 'other'}')}'
+                      '${st.releaseNote != null ? ' · ${st.releaseNote}' : ''}';
+                } else {
+                  label = appState.tr(switch ((st.status, board)) {
+                    ('blue', true) => 'school_present',
+                    ('blue', false) => 'school_dropped_off',
+                    ('red', true) => 'school_not_out',
+                    ('red', false) => 'school_not_dropped',
+                    ('yellow', true) when route.routeType == 'school_pm' => 'school_absent_today',
+                    ('yellow', true) => 'school_absent',
+                    ('yellow', false) => 'school_absent_today',
+                    ('expected', _) => 'school_expected',
+                    ('on_board', _) => 'school_on_bus',
+                    (_, true) => 'school_got_on',
+                    (_, false) => 'school_got_off',
+                  });
+                }
+                final canEdit = route.inProgress && runId != null && !_busy;
+                // A PM rider expected (or red) can be resolved with a reason;
+                // a released one can be undone.
+                final canRelease = canEdit && board && route.routeType == 'school_pm' &&
+                    (st.status == 'red' || st.status == 'expected');
+                final canUndo = canEdit && board && st.status == 'gray';
                 return Container(
                   margin: const EdgeInsets.only(top: 4),
                   decoration: BoxDecoration(
-                    color: (st.done || missed) ? color.withValues(alpha: 0.08) : null,
+                    color: decided ? color.withValues(alpha: 0.08) : null,
                     borderRadius: BorderRadius.circular(10),
                     border: Border(left: BorderSide(color: color, width: 4)),
                   ),
@@ -323,15 +427,26 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                     controlAffinity: ListTileControlAffinity.leading,
                     activeColor: Colors.blue.shade700,
                     value: st.done,
-                    onChanged: (!route.inProgress || runId == null || _busy)
-                        ? null
-                        : (v) => _run(() => _service.setRider(runId, s.id, st.id, st.action, v ?? false)),
+                    // Yellow doesn't block: a parent may have taken them to school.
+                    onChanged: canEdit
+                        ? (v) => _run(() => _service.setRider(runId, s.id, st.id, st.action, v ?? false))
+                        : null,
                     title: Text(st.name, style: TextStyle(color: textColor, fontWeight: FontWeight.w700)),
                     subtitle: Text(
-                      appState.tr(status) +
-                          (st.grade != null ? ' · ${appState.tr('school_grade')} ${st.grade}' : ''),
+                      label + (st.grade != null ? ' · ${appState.tr('school_grade')} ${st.grade}' : ''),
                       style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
+                    secondary: canRelease
+                        ? TextButton(
+                            onPressed: () => _release(appState, runId, s, st),
+                            child: Text(appState.tr('school_resolve')),
+                          )
+                        : canUndo
+                            ? TextButton(
+                                onPressed: () => _run(() => _service.setRider(runId, s.id, st.id, 'released', false)),
+                                child: Text(appState.tr('school_undo')),
+                              )
+                            : null,
                   ),
                 );
               }),

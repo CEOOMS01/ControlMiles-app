@@ -8,6 +8,29 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.28+30 — 2026-10-09
+
+### Changed
+- **School day colors** (owner's rule + 4 adjustments), computed by the
+  server for each student across the whole day:
+  - **blue** = on track (picked up at home -> at school; picked up at
+    school -> dropped at home);
+  - **red** = rode the bus this morning but hasn't come out for the PM bus
+    (the driver/monitor goes in and asks), or was not dropped off at their
+    stop;
+  - **yellow** = didn't ride this morning: not expected in the afternoon.
+    Doesn't block -- the driver can still board them. A stop whose riders
+    are all yellow/gray shows **"Skip · no one here today"** and isn't the
+    next stop;
+  - **gray** = a red resolved with **Resolve**: picked up by a parent,
+    early dismissal, after-school activity, or other + note. Counts as
+    attendance; **Undo** reverts it, and boarding the student (e.g. was in
+    the bathroom) clears it.
+- **Finish route** is blocked with a student still on board or an
+  unresolved red; the dialog shows both counts.
+- `SchoolRouteService.setRider` takes a release reason/note; 17 new keys in
+  11 languages.
+
 ## 1.1.27+29 — 2026-10-09
 
 ### Added
