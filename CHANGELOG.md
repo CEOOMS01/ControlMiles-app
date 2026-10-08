@@ -36,6 +36,9 @@ changes there are not app releases and are not recorded here.
 - `AppState` loads the member role and the fleet type (`isMonitor`,
   `isSchoolFleet`); `SchoolRoute.myRole`, `SchoolStop.departedAt` /
   `graceLeft`. 54 new keys in 11 languages.
+- Analyzer clean (0 issues): the odometer-cycle dialog uses `RadioGroup`
+  instead of the deprecated `groupValue`/`onChanged` per tile; braces on a
+  one-line `if` in `TrackingController.switchSection`.
 
 ## 1.1.29+31 — 2026-10-09
 

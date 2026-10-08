@@ -851,8 +851,9 @@ class TrackingController {
     String newGigApp, {
     String? irsPurpose,
   }) async {
-    if (currentState != TrackingState.running || activeSessionId == null)
+    if (currentState != TrackingState.running || activeSessionId == null) {
       return false;
+    }
     if (activeSection?.gigApp == newGigApp) return false;
 
     final oldSection = activeSection;

@@ -202,20 +202,29 @@ class _VehicleScreenState extends State<VehicleScreen>
       builder: (context) => SimpleDialog(
         title: Text(appState.tr('odometer_cycle_label')),
         children: [
-          for (final cycle in const ['weekly', 'biweekly', 'monthly'])
-            RadioListTile<String>(
-              value: cycle,
-              groupValue: v.odometerCycle,
-              // Explicit user requirement (2026-09-18): Basic stays fixed
-              // on weekly; only Premium can pick biweekly/monthly. Same
-              // lock pattern as AutoDetectAppsButton -- weekly itself is
-              // never locked (everyone already has it).
-              title: Text(appState.tr('odometer_cycle_$cycle')),
-              secondary: (cycle != 'weekly' && !appState.premiumEntitled)
-                  ? const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey)
-                  : null,
-              onChanged: (value) => Navigator.pop(context, value),
+          // RadioGroup (Flutter 3.32+) holds the selection; the per-tile
+          // groupValue/onChanged are deprecated.
+          RadioGroup<String>(
+            groupValue: v.odometerCycle,
+            onChanged: (value) => Navigator.pop(context, value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final cycle in const ['weekly', 'biweekly', 'monthly'])
+                  RadioListTile<String>(
+                    value: cycle,
+                    // Explicit user requirement (2026-09-18): Basic stays fixed
+                    // on weekly; only Premium can pick biweekly/monthly. Same
+                    // lock pattern as AutoDetectAppsButton -- weekly itself is
+                    // never locked (everyone already has it).
+                    title: Text(appState.tr('odometer_cycle_$cycle')),
+                    secondary: (cycle != 'weekly' && !appState.premiumEntitled)
+                        ? const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey)
+                        : null,
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
