@@ -8,6 +8,14 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.29+31 — 2026-10-09
+
+### Fixed
+- **Finish route** dialog counts a PM student still "expected" (rode this
+  morning, never boarded or resolved) as unresolved, matching the server.
+  Found by the 5-stop route test; server side, starting a route now marks
+  arrival at the stop the bus is already parked at (the PM school stop).
+
 ## 1.1.28+30 — 2026-10-09
 
 ### Changed

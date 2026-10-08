@@ -145,11 +145,14 @@ class SchoolRoute {
   }
 
   /// Red alerts the driver must clear before finishing (board them or give
-  /// a reason).
+  /// a reason). A PM rider still "expected" counts too: finishing would turn
+  /// them red (the server refuses with UNRESOLVED_STUDENTS).
   int get unresolved {
     var n = 0;
     for (final s in stops) {
-      n += s.students.where((st) => st.action == 'board' && st.status == 'red').length;
+      n += s.students
+          .where((st) => st.action == 'board' && (st.status == 'red' || st.status == 'expected'))
+          .length;
     }
     return n;
   }
