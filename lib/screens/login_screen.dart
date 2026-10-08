@@ -230,6 +230,21 @@ class _LoginScreenState extends State<LoginScreen> {
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
         );
+        // Found live (2026-10-08): with email confirmation on, signUp
+        // returns no session, and _afterSuccessfulAuth then showed
+        // "Authentication error" although the account was created and the
+        // confirmation email sent. Go to the sign-in form instead (user
+        // request), email kept, with a "check your email" message.
+        if (Supabase.instance.client.auth.currentSession == null) {
+          if (!mounted) return;
+          setState(() {
+            _isLoginMode = true;
+            _isDriverIdMode = false;
+            _passwordController.clear();
+          });
+          _showInfo(appState.tr('signup_check_email'));
+          return;
+        }
       }
 
       if (!mounted) return;
@@ -351,6 +366,18 @@ class _LoginScreenState extends State<LoginScreen> {
       isFleetDriver: appState.isFleetDriver,
     );
     Navigator.pushReplacementNamed(context, targetRoute);
+  }
+
+  void _showInfo(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 8),
+      ),
+    );
   }
 
   void _showError(String message) {

@@ -878,6 +878,7 @@ const Map<String, String> zhTexts = {
   // 缺失键审计 (2026-09-03)
   // ============================================================
   'auth_error': '身份验证错误，请重试。',
+  'signup_check_email': "账户已创建。请确认您的邮箱，然后在此登录。",
   'invalid_credentials': '邮箱或密码无效。',
   'email_already_exists': '该邮箱已被注册。',
   'camera_permission_denied_error': '需要相机权限才能执行此操作。',

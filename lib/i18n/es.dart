@@ -910,6 +910,7 @@ const Map<String, String> esTexts = {
   // tr() mostraba en pantalla la clave cruda en silencio.
   // ============================================================
   'auth_error': 'Error de autenticación. Intenta de nuevo.',
+  'signup_check_email': "Cuenta creada. Confirma tu correo y luego inicia sesión aquí.",
   'invalid_credentials': 'Correo o contraseña inválidos.',
   'email_already_exists': 'Este correo ya está registrado.',
   'camera_permission_denied_error': 'Se necesita acceso a la cámara para esto.',

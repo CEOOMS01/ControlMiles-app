@@ -878,6 +878,7 @@ const Map<String, String> deTexts = {
   // Audit fehlender Schlüssel (2026-09-03)
   // ============================================================
   'auth_error': 'Authentifizierungsfehler. Bitte erneut versuchen.',
+  'signup_check_email': "Konto erstellt. Bestätige deine E-Mail und melde dich dann hier an.",
   'invalid_credentials': 'Ungültige E-Mail oder Passwort.',
   'email_already_exists': 'Diese E-Mail ist bereits registriert.',
   'camera_permission_denied_error': 'Dafür wird Kamerazugriff benötigt.',

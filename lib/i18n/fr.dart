@@ -889,6 +889,7 @@ const Map<String, String> frTexts = {
   // Audit des clés manquantes (2026-09-03)
   // ============================================================
   'auth_error': "Erreur d'authentification. Réessayez.",
+  'signup_check_email': "Compte créé. Confirmez votre e-mail, puis connectez-vous ici.",
   'invalid_credentials': 'E-mail ou mot de passe invalide.',
   'email_already_exists': 'Cet e-mail est déjà enregistré.',
   'camera_permission_denied_error': "L'accès à la caméra est nécessaire pour cela.",

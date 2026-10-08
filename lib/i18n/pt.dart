@@ -878,6 +878,7 @@ const Map<String, String> ptTexts = {
   // Auditoria de chaves faltantes (2026-09-03)
   // ============================================================
   'auth_error': 'Erro de autenticação. Tente novamente.',
+  'signup_check_email': "Conta criada. Confirme seu e-mail e depois entre aqui.",
   'invalid_credentials': 'E-mail ou senha inválidos.',
   'email_already_exists': 'Este e-mail já está registrado.',
   'camera_permission_denied_error': 'É necessário acesso à câmera para isso.',

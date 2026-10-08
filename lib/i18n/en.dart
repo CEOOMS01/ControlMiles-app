@@ -938,6 +938,7 @@ const Map<String, String> enTexts = {
   // the raw key string on screen. See feedback_i18n_hardcoded_strings.
   // ============================================================
   'auth_error': 'Authentication error. Please try again.',
+  'signup_check_email': "Account created. Confirm your email, then sign in here.",
   'invalid_credentials': 'Invalid email or password.',
   'email_already_exists': 'This email is already registered.',
   // AppError registry (lib/errors/app_error.dart) -- coded error

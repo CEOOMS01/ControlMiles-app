@@ -8,6 +8,17 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.25+27 — 2026-10-08
+
+### Fixed
+- **Sign-up showed "Authentication error"** although the account was
+  created and the confirmation email sent (found live with a closed-testing
+  account). With email confirmation on, `signUp` returns no session and the
+  post-auth step treated that as a failure. The app now switches to the
+  sign-in form (email kept, password cleared) with "Account created. Confirm
+  your email, then sign in here." (new key `signup_check_email`, 11
+  languages).
+
 ## 1.1.24+26 — 2026-10-07
 
 ### Fixed

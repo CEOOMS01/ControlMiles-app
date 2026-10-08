@@ -408,6 +408,7 @@ const Map<String, String> jaTexts = {
   // 欠落キー監査 (2026-09-03)
   // ============================================================
   'auth_error': '認証エラーです。もう一度お試しください。',
+  'signup_check_email': "アカウントを作成しました。メールを確認してから、ここでサインインしてください。",
   'invalid_credentials': 'メールアドレスまたはパスワードが無効です。',
   'email_already_exists': 'このメールアドレスは既に登録されています。',
   'camera_permission_denied_error': 'この操作にはカメラへのアクセスが必要です。',
