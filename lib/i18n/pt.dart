@@ -879,6 +879,9 @@ const Map<String, String> ptTexts = {
   // ============================================================
   'auth_error': 'Erro de autenticação. Tente novamente.',
   'signup_check_email': "Conta criada. Confirme seu e-mail e depois entre aqui.",
+  'signup_confirm_title': "Verifique seu e-mail",
+  'login_sign_in_title': "Entrar",
+  'login_sign_in_sub': "Entre para começar a registrar cada milha.",
   'invalid_credentials': 'E-mail ou senha inválidos.',
   'email_already_exists': 'Este e-mail já está registrado.',
   'camera_permission_denied_error': 'É necessário acesso à câmera para isso.',

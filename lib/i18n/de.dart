@@ -879,6 +879,9 @@ const Map<String, String> deTexts = {
   // ============================================================
   'auth_error': 'Authentifizierungsfehler. Bitte erneut versuchen.',
   'signup_check_email': "Konto erstellt. Bestätige deine E-Mail und melde dich dann hier an.",
+  'signup_confirm_title': "Prüfe deine E-Mails",
+  'login_sign_in_title': "Anmelden",
+  'login_sign_in_sub': "Melde dich an, um jede Meile zu erfassen.",
   'invalid_credentials': 'Ungültige E-Mail oder Passwort.',
   'email_already_exists': 'Diese E-Mail ist bereits registriert.',
   'camera_permission_denied_error': 'Dafür wird Kamerazugriff benötigt.',

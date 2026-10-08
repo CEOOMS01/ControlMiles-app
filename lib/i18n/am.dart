@@ -396,6 +396,9 @@ const Map<String, String> amTexts = {
   // ============================================================
   'auth_error': 'የማረጋገጫ ስህተት። እባክዎ እንደገና ይሞክሩ።',
   'signup_check_email': "መለያዎ ተፈጥሯል። ኢሜይልዎን ያረጋግጡ፣ ከዚያ እዚህ ይግቡ።",
+  'signup_confirm_title': "ኢሜይልዎን ያረጋግጡ",
+  'login_sign_in_title': "ግባ",
+  'login_sign_in_sub': "እያንዳንዱን ማይል ለመመዝገብ ይግቡ።",
   'invalid_credentials': 'ልክ ያልሆነ ኢሜይል ወይም የይለፍ ቃል።',
   'email_already_exists': 'ይህ ኢሜይል አስቀድሞ ተመዝግቧል።',
   'camera_permission_denied_error': 'ለዚህ የካሜራ መዳረሻ ያስፈልጋል።',

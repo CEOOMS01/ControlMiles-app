@@ -410,6 +410,9 @@ const Map<String, String> koTexts = {
   // ============================================================
   'auth_error': '인증 오류입니다. 다시 시도해 주세요.',
   'signup_check_email': "계정이 생성되었습니다. 이메일을 확인한 후 여기에서 로그인하세요.",
+  'signup_confirm_title': "이메일을 확인하세요",
+  'login_sign_in_title': "로그인",
+  'login_sign_in_sub': "로그인하고 모든 마일을 기록하세요.",
   'invalid_credentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
   'email_already_exists': '이미 등록된 이메일입니다.',
   'camera_permission_denied_error': '이 작업에는 카메라 접근 권한이 필요합니다.',

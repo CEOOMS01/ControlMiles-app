@@ -8,6 +8,17 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.26+28 — 2026-10-08
+
+### Fixed
+- **Sign-in screen said "Welcome back" to new users** (on first open and
+  right after signing up). The header now depends on who is there:
+  "Welcome back" only if someone has signed in on this phone before
+  (new device flag set on every successful sign-in, `LoginPrefs`),
+  "Check your email" right after a sign-up, and "Sign in" otherwise.
+  New keys `login_sign_in_title`, `login_sign_in_sub`,
+  `signup_confirm_title` in 11 languages.
+
 ## 1.1.25+27 — 2026-10-08
 
 ### Fixed

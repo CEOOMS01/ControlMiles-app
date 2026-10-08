@@ -890,6 +890,9 @@ const Map<String, String> frTexts = {
   // ============================================================
   'auth_error': "Erreur d'authentification. Réessayez.",
   'signup_check_email': "Compte créé. Confirmez votre e-mail, puis connectez-vous ici.",
+  'signup_confirm_title': "Vérifiez vos e-mails",
+  'login_sign_in_title': "Connexion",
+  'login_sign_in_sub': "Connectez-vous pour enregistrer chaque mile.",
   'invalid_credentials': 'E-mail ou mot de passe invalide.',
   'email_already_exists': 'Cet e-mail est déjà enregistré.',
   'camera_permission_denied_error': "L'accès à la caméra est nécessaire pour cela.",

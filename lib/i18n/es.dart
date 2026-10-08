@@ -911,6 +911,9 @@ const Map<String, String> esTexts = {
   // ============================================================
   'auth_error': 'Error de autenticación. Intenta de nuevo.',
   'signup_check_email': "Cuenta creada. Confirma tu correo y luego inicia sesión aquí.",
+  'signup_confirm_title': "Revisa tu correo",
+  'login_sign_in_title': "Inicia sesión",
+  'login_sign_in_sub': "Inicia sesión para empezar a registrar cada milla.",
   'invalid_credentials': 'Correo o contraseña inválidos.',
   'email_already_exists': 'Este correo ya está registrado.',
   'camera_permission_denied_error': 'Se necesita acceso a la cámara para esto.',

@@ -77,6 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
   // the password; staying signed in is on by default on the phone because
   // background tracking and auto-detect need a live session).
   bool _rememberId = false;
+  // Header wording: "Welcome back" only for a returning user; "Check your
+  // email" right after a sign-up; "Sign in" otherwise.
+  bool _hasSignedInBefore = false;
+  bool _justSignedUp = false;
   bool _staySignedIn = true;
 
   @override
@@ -89,8 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadLoginPrefs() async {
     final prefs = await LoginPrefs.load();
+    final hasSignedInBefore = await LoginPrefs.hasSignedInBefore();
     if (!mounted) return;
     setState(() {
+      _hasSignedInBefore = hasSignedInBefore;
       _rememberId = prefs.remember;
       _staySignedIn = prefs.staySignedIn;
       if (prefs.remember) {
@@ -240,6 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() {
             _isLoginMode = true;
             _isDriverIdMode = false;
+            _justSignedUp = true;
             _passwordController.clear();
           });
           _showInfo(appState.tr('signup_check_email'));
@@ -298,6 +305,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _afterSuccessfulAuth(AppState appState) async {
+    if (Supabase.instance.client.auth.currentSession != null) {
+      await LoginPrefs.markSignedIn();
+    }
     if (!_isLoginMode && Supabase.instance.client.auth.currentSession != null) {
       try {
         await Supabase.instance.client
@@ -551,12 +561,24 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            appState.tr(_isLoginMode ? 'login_welcome_back' : 'login_create_account_title'),
+            appState.tr(!_isLoginMode
+                ? 'login_create_account_title'
+                : _justSignedUp
+                    ? 'signup_confirm_title'
+                    : _hasSignedInBefore
+                        ? 'login_welcome_back'
+                        : 'login_sign_in_title'),
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
           ),
           const SizedBox(height: 4),
           Text(
-            appState.tr(_isLoginMode ? 'login_welcome_back_sub' : 'login_create_account_sub'),
+            appState.tr(!_isLoginMode
+                ? 'login_create_account_sub'
+                : _justSignedUp
+                    ? 'signup_check_email'
+                    : _hasSignedInBefore
+                        ? 'login_welcome_back_sub'
+                        : 'login_sign_in_sub'),
             style: TextStyle(fontSize: 13.5, color: subColor),
           ),
           const SizedBox(height: 20),
@@ -955,6 +977,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ? null
             : () => setState(() {
                   _isLoginMode = !_isLoginMode;
+                  _justSignedUp = false;
                   if (!_isLoginMode) _isDriverIdMode = false;
                 }),
         child: RichText(

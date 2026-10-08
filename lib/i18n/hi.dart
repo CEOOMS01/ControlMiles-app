@@ -420,6 +420,9 @@ const Map<String, String> hiTexts = {
   // ============================================================
   'auth_error': 'प्रमाणीकरण त्रुटि। कृपया पुनः प्रयास करें।',
   'signup_check_email': "खाता बन गया। अपना ईमेल पुष्टि करें, फिर यहाँ साइन इन करें।",
+  'signup_confirm_title': "अपना ईमेल देखें",
+  'login_sign_in_title': "साइन इन करें",
+  'login_sign_in_sub': "हर मील दर्ज करना शुरू करने के लिए साइन इन करें।",
   'invalid_credentials': 'अमान्य ईमेल या पासवर्ड।',
   'email_already_exists': 'यह ईमेल पहले से पंजीकृत है।',
   'camera_permission_denied_error': 'इसके लिए कैमरा एक्सेस आवश्यक है।',

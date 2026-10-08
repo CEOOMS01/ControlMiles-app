@@ -424,6 +424,9 @@ const Map<String, String> arTexts = {
   // ============================================================
   'auth_error': 'خطأ في المصادقة. حاول مرة أخرى.',
   'signup_check_email': "تم إنشاء حسابك. أكّد بريدك الإلكتروني ثم سجّل الدخول هنا.",
+  'signup_confirm_title': "تحقق من بريدك الإلكتروني",
+  'login_sign_in_title': "تسجيل الدخول",
+  'login_sign_in_sub': "سجّل الدخول لتبدأ تسجيل كل ميل.",
   'invalid_credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
   'email_already_exists': 'هذا البريد الإلكتروني مسجل بالفعل.',
   'camera_permission_denied_error': 'يلزم الوصول إلى الكاميرا لهذا.',

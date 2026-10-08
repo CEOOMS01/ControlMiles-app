@@ -53,4 +53,14 @@ class LoginPrefs {
 
   static Future<bool> staySignedIn() async =>
       (await SharedPreferences.getInstance()).getBool(_kStaySignedIn) ?? true;
+
+  // "Welcome back" only for someone who has signed in on this phone before
+  // (2026-10-08: new users saw it on first open and right after sign-up).
+  static const _kHasSignedIn = 'controlmiles_login_has_signed_in';
+
+  static Future<bool> hasSignedInBefore() async =>
+      (await SharedPreferences.getInstance()).getBool(_kHasSignedIn) ?? false;
+
+  static Future<void> markSignedIn() async =>
+      (await SharedPreferences.getInstance()).setBool(_kHasSignedIn, true);
 }

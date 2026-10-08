@@ -939,6 +939,9 @@ const Map<String, String> enTexts = {
   // ============================================================
   'auth_error': 'Authentication error. Please try again.',
   'signup_check_email': "Account created. Confirm your email, then sign in here.",
+  'signup_confirm_title': "Check your email",
+  'login_sign_in_title': "Sign in",
+  'login_sign_in_sub': "Sign in to start logging every mile.",
   'invalid_credentials': 'Invalid email or password.',
   'email_already_exists': 'This email is already registered.',
   // AppError registry (lib/errors/app_error.dart) -- coded error

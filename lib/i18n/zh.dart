@@ -879,6 +879,9 @@ const Map<String, String> zhTexts = {
   // ============================================================
   'auth_error': '身份验证错误，请重试。',
   'signup_check_email': "账户已创建。请确认您的邮箱，然后在此登录。",
+  'signup_confirm_title': "请查看您的邮箱",
+  'login_sign_in_title': "登录",
+  'login_sign_in_sub': "登录后开始记录每一英里。",
   'invalid_credentials': '邮箱或密码无效。',
   'email_already_exists': '该邮箱已被注册。',
   'camera_permission_denied_error': '需要相机权限才能执行此操作。',
