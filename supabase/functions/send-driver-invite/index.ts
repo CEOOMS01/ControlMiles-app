@@ -86,8 +86,22 @@ async function isRateLimited(clientId: string): Promise<boolean> {
 // that ID is -- the admin saw it on the roster, the driver did not. It is
 // printed here now (the slot is reserved when the invite is created), and the
 // wording follows the role actually invited instead of always saying "driver".
+// 2026-10-09: 'monitor' (bus monitor/aide, School transportation fleets only)
+// keeps the student list in the app instead of tracking trips.
 function roleLabel(role: string | null | undefined): string {
-  return role === 'admin' ? 'an admin' : role === 'operator' ? 'an operator' : 'a driver';
+  return role === 'admin'
+    ? 'an admin'
+    : role === 'operator'
+      ? 'an operator'
+      : role === 'monitor'
+        ? 'a bus monitor'
+        : 'a driver';
+}
+
+function roleBlurb(role: string | null | undefined): string {
+  return role === 'monitor'
+    ? 'keep the student list of your school bus routes up to date, stop by stop'
+    : 'GPS trip tracking, odometer verification, and mileage records ready for tax season';
 }
 
 function buildEmailHtml(
@@ -100,7 +114,7 @@ function buildEmailHtml(
   const safeDriverId = (driverId ?? '').replace(/[^A-Za-z0-9-]/g, '');
   const idBlock = safeDriverId
     ? `<p style="margin:16px 0 0 0; padding:12px 14px; background-color:#faf6ee; border:1px solid #e3d9c4; border-radius:10px; font-size:14px; line-height:1.5; color:#211c14;">
-                Your driver ID is <strong style="font-family:Menlo,Consolas,monospace; letter-spacing:0.04em;">${safeDriverId}</strong>. In the app you sign in with this ID and the password you choose when you accept.
+                Your ${role === 'monitor' ? 'ControlMiles' : 'driver'} ID is <strong style="font-family:Menlo,Consolas,monospace; letter-spacing:0.04em;">${safeDriverId}</strong>. In the app you sign in with this ID and the password you choose when you accept.
               </p>`
     : '';
   return `<!DOCTYPE html>
@@ -138,7 +152,7 @@ function buildEmailHtml(
                 You've been invited to join<br>${safeOrgName}
               </h1>
               <p style="margin:16px 0 0 0; font-size:15px; line-height:1.6; color:#6b6250;">
-                <strong style="color:#211c14;">${safeOrgName}</strong> has invited you to join their fleet on ControlMiles as ${roleLabel(role)} — GPS trip tracking, odometer verification, and mileage records ready for tax season.
+                <strong style="color:#211c14;">${safeOrgName}</strong> has invited you to join their fleet on ControlMiles as ${roleLabel(role)} — ${roleBlurb(role)}.
               </p>
               ${idBlock}
             </td>
