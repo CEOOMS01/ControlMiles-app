@@ -16,6 +16,15 @@
 // skipped, but the driver can still board them; gray = red resolved with a
 // reason (parent pick-up, early dismissal, activity, other). The route
 // can't be finished with a child on board or an unresolved red.
+//
+// 2026-10-09 (plan section 8):
+//  * Countdown: when the bus reaches a stop, students have 5 minutes to come
+//    out (server grace period); the stop shows the time left, and the screen
+//    refreshes the moment it ends.
+//  * Bus monitor (route.isMonitor): keeps the list of the run the driver
+//    started; no "Mark arrived", no "Finish route".
+//  * Driver: the list locks while the bus is moving (over ~7 mph) -- marking
+//    is done stopped, or by the monitor.
 
 import 'dart:async';
 
@@ -43,18 +52,68 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
   bool _loading = true;
   bool _busy = false;
   Timer? _ticker;
+  // Countdown + driving lock.
+  Timer? _secondTicker;
+  StreamSubscription<geo.Position>? _positionSub;
+  bool _moving = false;
+  DateTime? _lastPositionAt;
+  static const _movingSpeed = 3.0; // m/s, ~7 mph
 
   @override
   void initState() {
     super.initState();
     _refresh();
     _ticker = Timer.periodic(const Duration(seconds: 15), (_) => _tick());
+    _secondTicker = Timer.periodic(const Duration(seconds: 1), (_) => _everySecond());
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
+    _secondTicker?.cancel();
+    _positionSub?.cancel();
     super.dispose();
+  }
+
+  void _everySecond() {
+    if (!mounted) return;
+    final route = _route;
+    // No fresh position for 20 s: assume stopped (GPS lost, app paused).
+    if (_moving && (_lastPositionAt == null || DateTime.now().difference(_lastPositionAt!).inSeconds > 20)) {
+      setState(() => _moving = false);
+    }
+    if (route == null || !route.inProgress) return;
+    final now = DateTime.now();
+    var counting = false;
+    var justEnded = false;
+    for (final st in route.stops) {
+      final left = st.graceLeft(now);
+      if (left != null) {
+        counting = true;
+        if (left.inMilliseconds <= 1000) justEnded = true;
+      }
+    }
+    if (counting) setState(() {});
+    // The server decides red / absent at the end of the grace period.
+    if (justEnded) Future.delayed(const Duration(seconds: 2), _refresh);
+  }
+
+  /// Driver only: lock the list while the bus moves.
+  Future<void> _watchSpeed(SchoolRoute route) async {
+    if (_positionSub != null || route.isMonitor || !route.inProgress) return;
+    try {
+      final permission = await geo.Geolocator.checkPermission();
+      if (permission != geo.LocationPermission.always && permission != geo.LocationPermission.whileInUse) return;
+      _positionSub = geo.Geolocator.getPositionStream(
+        locationSettings: const geo.LocationSettings(accuracy: geo.LocationAccuracy.high, distanceFilter: 5),
+      ).listen((pos) {
+        _lastPositionAt = DateTime.now();
+        final moving = pos.speed > _movingSpeed;
+        if (mounted && moving != _moving) setState(() => _moving = moving);
+      }, onError: (e) => debugPrint('[SchoolRun] position stream: $e'));
+    } catch (e) {
+      debugPrint('[SchoolRun] speed watch failed: $e');
+    }
   }
 
   Future<void> _refresh() async {
@@ -66,6 +125,7 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
           _route = route;
           _loading = false;
         });
+        if (route != null) _watchSpeed(route);
       }
     } catch (e) {
       debugPrint('[SchoolRun] refresh failed: $e');
@@ -77,7 +137,13 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
   Future<void> _tick() async {
     final route = _route;
     final runId = route?.runId;
-    if (route == null || runId == null || !route.inProgress) return;
+    if (route == null) return;
+    // Not running (a monitor waiting for the driver) or a monitor: refresh
+    // only -- stop arrival is the driver's (and the server's).
+    if (runId == null || !route.inProgress || route.isMonitor) {
+      await _refresh();
+      return;
+    }
     try {
       final permission = await geo.Geolocator.checkPermission();
       if (permission == geo.LocationPermission.always || permission == geo.LocationPermission.whileInUse) {
@@ -244,6 +310,22 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
         reason: reason, note: note.isEmpty ? null : note));
   }
 
+  Widget _banner(String text, IconData icon, Color color) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 10),
+            Expanded(child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w700))),
+          ],
+        ),
+      );
+
   String _clock(String? hhmmss) {
     if (hhmmss == null || hhmmss.length < 5) return '';
     final h = int.parse(hhmmss.substring(0, 2));
@@ -286,12 +368,24 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                           ].join(' · '),
                           style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
                         ),
+                        if (route.isMonitor) ...[
+                          const SizedBox(height: 8),
+                          _banner(
+                            route.inProgress ? appState.tr('school_monitor_view') : appState.tr('monitor_waiting_driver'),
+                            Icons.badge_rounded,
+                            primary,
+                          ),
+                        ],
+                        if (!route.isMonitor && _moving && route.inProgress) ...[
+                          const SizedBox(height: 8),
+                          _banner(appState.tr('school_driving_locked'), Icons.do_not_touch_rounded, Colors.orange.shade800),
+                        ],
                         const SizedBox(height: 12),
                         for (final s in route.stops) ...[
                           _stopCard(appState, route, s, cardColor, textColor, subTextColor, borderColor, primary),
                           const SizedBox(height: 10),
                         ],
-                        if (route.inProgress) ...[
+                        if (route.inProgress && !route.isMonitor) ...[
                           const SizedBox(height: 8),
                           SizedBox(
                             width: double.infinity,
@@ -366,10 +460,35 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                       ].join(' · '),
                       style: TextStyle(fontSize: 12, color: subTextColor),
                     ),
+                    if (route.inProgress && s.graceLeft(DateTime.now()) != null)
+                      Builder(builder: (_) {
+                        final left = s.graceLeft(DateTime.now())!;
+                        final mmss =
+                            '${left.inMinutes}:${(left.inSeconds % 60).toString().padLeft(2, '0')}';
+                        return Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_rounded, size: 16, color: Colors.orange.shade800),
+                              const SizedBox(width: 6),
+                              Text(
+                                appState.tr('school_countdown').replaceFirst('{time}', mmss),
+                                style: TextStyle(fontWeight: FontWeight.w800, color: Colors.orange.shade800),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                   ],
                 ),
               ),
-              if (isNext && !s.arrived && runId != null)
+              if (isNext && !s.arrived && runId != null && !route.isMonitor)
                 TextButton(
                   onPressed: _busy ? null : () => _run(() => _service.markArrived(runId, s.id)),
                   child: Text(appState.tr('school_mark_arrived')),
@@ -408,7 +527,8 @@ class _SchoolRunScreenState extends State<SchoolRunScreen> {
                     (_, false) => 'school_got_off',
                   });
                 }
-                final canEdit = route.inProgress && runId != null && !_busy;
+                // Driver: no taps while the bus moves (the monitor, or a stop).
+                final canEdit = route.inProgress && runId != null && !_busy && (route.isMonitor || !_moving);
                 // A PM rider expected (or red) can be resolved with a reason;
                 // a released one can be undone.
                 final canRelease = canEdit && board && route.routeType == 'school_pm' &&

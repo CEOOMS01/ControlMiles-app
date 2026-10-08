@@ -8,6 +8,35 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.30+32 — 2026-10-09
+
+### Added
+- **First-run tour** (`lib/onboarding/app_tour.dart`): 4 short, always
+  skippable cards with progress ("2 of 4") for the kind of account -- gig,
+  fleet driver, fleet admin or bus monitor. Only NEW accounts (created in
+  the last 14 days) see it, once per account on the device.
+- **What's new**: every user-facing feature gets a `FeatureNote`; each note
+  shows once (bottom sheet) to the accounts it applies to (school notes only
+  in School transportation fleets). Settings -> **Tutorial & what's new**
+  (gig/admin settings and the driver/monitor settings sheet) replays both.
+- **Bus monitor home** (`MonitorHomeScreen`): a member with role `monitor`
+  (invited only from the web, School transportation fleets) gets today's
+  routes instead of the driver's trip screen; "Waiting for the driver to
+  start" until the driver starts a route, then **Open route** to keep the
+  student list. No trips, miles, Mark arrived or Finish route; no safety
+  score in their settings.
+- **Countdown at each stop**: after the bus arrives, the stop shows the
+  5-minute grace time left ("4:12 to come out"); the screen refreshes when
+  it ends (the server then decides red / absent).
+- **Hands off while driving**: for the driver, the student list locks while
+  the bus moves (over ~7 mph, from the GPS speed), with a banner; it
+  unlocks when stopped. The monitor can always mark.
+
+### Changed
+- `AppState` loads the member role and the fleet type (`isMonitor`,
+  `isSchoolFleet`); `SchoolRoute.myRole`, `SchoolStop.departedAt` /
+  `graceLeft`. 54 new keys in 11 languages.
+
 ## 1.1.29+31 — 2026-10-09
 
 ### Fixed

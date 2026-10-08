@@ -56,6 +56,13 @@ class AppState extends ChangeNotifier {
   // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
   String _accountType = 'gig';
   String? _defaultOrgId;
+  // Role in the default fleet (2026-10-09): 'monitor' (bus monitor, School
+  // transportation fleets) gets MonitorHomeScreen instead of the driver's
+  // trip screen. Null for gig / not loaded yet.
+  String? _memberRole;
+  // The default fleet's type (organizations.industry_template), e.g.
+  // 'school_transport' -- decides which "What's new" notes apply.
+  String? _fleetTemplate;
   // Gates paid Gig features (starting with automatic trip detection).
   // Kept in sync server-side from Google Play subscriptions
   // (verify-play-purchase / play-rtdn -> recompute_personal_entitlements),
@@ -140,6 +147,11 @@ class AppState extends ChangeNotifier {
   bool get isGig => _accountType == 'gig';
   bool get isFleetAdmin => _accountType == 'fleet_admin';
   bool get isFleetDriver => _accountType == 'fleet_driver';
+  String? get memberRole => _memberRole;
+  bool get isMonitor => _accountType == 'fleet_driver' && _memberRole == 'monitor';
+  String? get fleetTemplate => _fleetTemplate;
+  bool get isSchoolFleet => _fleetTemplate == 'school_transport';
+  DateTime? get accountCreatedAt => _accountCreatedAt;
   bool get isFleetAccount => isFleetAdmin || isFleetDriver;
 
   // ============================================================
@@ -296,6 +308,43 @@ class AppState extends ChangeNotifier {
         await prefs.setBool('controlmiles_auto_detect_enabled', false);
       }
 
+      String? newMemberRole;
+      String? newFleetTemplate;
+      if (newDefaultOrgId != null && newAccountType != 'gig') {
+        try {
+          final m = await Supabase.instance.client
+              .from('organization_members')
+              .select('member_role, organizations(industry_template)')
+              .eq('user_id', user.id)
+              .eq('organization_id', newDefaultOrgId)
+              .eq('is_active', true)
+              .maybeSingle();
+          newMemberRole = m?['member_role'] as String?;
+          final org = m?['organizations'];
+          newFleetTemplate = (org is Map ? org['industry_template'] : null) as String?;
+        } catch (e) {
+          debugPrint('[AppState] member role fetch failed: $e');
+          newMemberRole = _memberRole;
+          newFleetTemplate = _fleetTemplate;
+        }
+      }
+      if (newMemberRole != _memberRole || newFleetTemplate != _fleetTemplate) {
+        _memberRole = newMemberRole;
+        _fleetTemplate = newFleetTemplate;
+        final prefs = await SharedPreferences.getInstance();
+        if (newMemberRole != null) {
+          await prefs.setString('controlmiles_member_role', newMemberRole);
+        } else {
+          await prefs.remove('controlmiles_member_role');
+        }
+        if (newFleetTemplate != null) {
+          await prefs.setString('controlmiles_fleet_template', newFleetTemplate);
+        } else {
+          await prefs.remove('controlmiles_fleet_template');
+        }
+        if (!changed) notifyListeners();
+      }
+
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
@@ -331,6 +380,10 @@ class AppState extends ChangeNotifier {
           await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
         } else {
           await prefs.remove('controlmiles_default_org_id');
+    await prefs.remove('controlmiles_member_role');
+    await prefs.remove('controlmiles_fleet_template');
+    _memberRole = null;
+    _fleetTemplate = null;
         }
 
         notifyListeners();
@@ -649,6 +702,8 @@ class AppState extends ChangeNotifier {
       // Fleet module
       _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
       _defaultOrgId = prefs.getString('controlmiles_default_org_id');
+      _memberRole = prefs.getString('controlmiles_member_role');
+      _fleetTemplate = prefs.getString('controlmiles_fleet_template');
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;
       _tierEnforcementExempt = prefs.getBool('controlmiles_tier_enforcement_exempt') ?? false;

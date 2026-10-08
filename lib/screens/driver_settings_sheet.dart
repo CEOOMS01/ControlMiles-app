@@ -14,6 +14,7 @@ import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import 'driver_safety_score_screen.dart';
 import '../widgets/language_selector_tile.dart';
+import '../onboarding/app_tour.dart';
 
 Future<void> showDriverSettingsSheet(BuildContext context) {
   return showModalBottomSheet(
@@ -109,8 +110,8 @@ class _DriverSettingsSheet extends StatelessWidget {
               ),
             ),
             // The driver's own safety score lives here (2026-09-30), not
-            // on the main screen.
-            ListTile(
+            // on the main screen. Bus monitors don't drive: no score.
+            if (!appState.isMonitor) ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.speed_rounded, color: Theme.of(context).colorScheme.primary),
               title: Text(
@@ -124,6 +125,21 @@ class _DriverSettingsSheet extends StatelessWidget {
                 final navigator = Navigator.of(context);
                 navigator.pop();
                 navigator.push(MaterialPageRoute(builder: (_) => const DriverSafetyScoreScreen()));
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.school_rounded, color: Theme.of(context).colorScheme.primary),
+              title: Text(
+                appState.tr('tutorial_whats_new'),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                final nav = Navigator.of(context);
+                final rootContext = nav.context;
+                nav.pop();
+                AppTourService.replay(rootContext);
               },
             ),
             const Divider(),

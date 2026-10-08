@@ -4,7 +4,9 @@
 // School transportation (2026-10-09): the driver's school routes for today
 // on the fleet driver home. A route starts inside an open trip (the trip
 // supplies the GPS and the bus), so with no trip it only says to start one.
-// Shows nothing when the driver has no school routes today.
+// Shows nothing when the driver has no school routes today. In monitorMode
+// (bus monitor home, 2026-10-09) there's no trip and no Start: the monitor
+// opens a route once the driver has started it.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +20,14 @@ import '../tracking/tracking_controller.dart';
 class SchoolRoutesCard extends StatefulWidget {
   final String organizationId;
   final bool tripIsActive;
+  final bool monitorMode;
 
-  const SchoolRoutesCard({super.key, required this.organizationId, required this.tripIsActive});
+  const SchoolRoutesCard({
+    super.key,
+    required this.organizationId,
+    required this.tripIsActive,
+    this.monitorMode = false,
+  });
 
   @override
   State<SchoolRoutesCard> createState() => _SchoolRoutesCardState();
@@ -99,8 +107,10 @@ class _SchoolRoutesCardState extends State<SchoolRoutesCard> {
 
   @override
   Widget build(BuildContext context) {
-    if (_routes.isEmpty) return const SizedBox.shrink();
     final appState = context.watch<AppState>();
+    if (_routes.isEmpty) {
+      return widget.monitorMode ? Text(appState.tr('school_no_routes_today')) : const SizedBox.shrink();
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
@@ -122,7 +132,7 @@ class _SchoolRoutesCardState extends State<SchoolRoutesCard> {
             appState.tr('school_routes_today').toUpperCase(),
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
           ),
-          if (!widget.tripIsActive) ...[
+          if (!widget.tripIsActive && !widget.monitorMode) ...[
             const SizedBox(height: 6),
             Text(appState.tr('school_start_trip_first'), style: TextStyle(fontSize: 12, color: subTextColor)),
           ],
@@ -158,6 +168,12 @@ class _SchoolRoutesCardState extends State<SchoolRoutesCard> {
                     FilledButton(
                       onPressed: _busy ? null : () => _open(r),
                       child: Text(appState.tr('school_open_route')),
+                    )
+                  else if (r.isMonitor)
+                    SizedBox(
+                      width: 120,
+                      child: Text(appState.tr('monitor_waiting_driver'),
+                          textAlign: TextAlign.end, style: TextStyle(fontSize: 12, color: subTextColor)),
                     )
                   else
                     FilledButton(

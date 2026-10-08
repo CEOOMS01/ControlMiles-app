@@ -20,6 +20,7 @@ import 'generate_report_code_screen.dart';
 import '../errors/app_error.dart';
 import '../widgets/language_selector_tile.dart';
 import '../widgets/app_version_text.dart';
+import '../onboarding/app_tour.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1030,6 +1031,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 10),
+          // First-run tour + "What's new", replayable (2026-10-09).
+          _buildLegalLinkRow(
+            icon: Icons.school_rounded,
+            label: appState.tr('tutorial_whats_new'),
+            isDark: isDark,
+            onTap: () => AppTourService.replay(context),
           ),
           const SizedBox(height: 10),
           _buildMileageMethodRow(appState, isDark),

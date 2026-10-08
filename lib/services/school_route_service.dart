@@ -62,6 +62,8 @@ class SchoolStop {
   final String? scheduledTime; // HH:MM:SS fleet local time
   final String kind; // pickup | school | dropoff
   final DateTime? arrivedAt;
+  // The bus left the stop (server, from the live location).
+  final DateTime? departedAt;
   final List<SchoolStudent> students;
 
   const SchoolStop({
@@ -75,10 +77,22 @@ class SchoolStop {
     this.scheduledTime,
     required this.kind,
     this.arrivedAt,
+    this.departedAt,
     required this.students,
   });
 
   bool get arrived => arrivedAt != null;
+
+  /// Grace period (server: 5 minutes after arriving, or until the bus
+  /// leaves) before students here turn red / absent. Null when not counting.
+  static const grace = Duration(minutes: 5);
+  Duration? graceLeft(DateTime now) {
+    final at = arrivedAt;
+    if (at == null || departedAt != null) return null;
+    if (!students.any((st) => const {'expected', 'pending', 'on_board'}.contains(st.status))) return null;
+    final left = at.add(grace).difference(now);
+    return left.isNegative ? null : left;
+  }
 
   /// Nobody to pick up or drop off here today (every rider absent or
   /// released): the driver can go straight past it.
@@ -95,6 +109,7 @@ class SchoolStop {
         scheduledTime: j['scheduled_time'] as String?,
         kind: (j['stop_kind'] as String?) ?? 'pickup',
         arrivedAt: j['arrived_at'] == null ? null : DateTime.parse(j['arrived_at'] as String),
+        departedAt: j['departed_at'] == null ? null : DateTime.parse(j['departed_at'] as String),
         students: ((j['students'] as List?) ?? const [])
             .map((s) => SchoolStudent.fromJson(Map<String, dynamic>.from(s as Map)))
             .toList(),
@@ -109,6 +124,8 @@ class SchoolRoute {
   final String? scheduledStartTime;
   final String? runId;
   final String? runStatus; // in_progress | completed
+  // 'driver' or 'monitor' (bus monitor: keeps the list; can't start/finish).
+  final String myRole;
   final List<SchoolStop> stops;
 
   const SchoolRoute({
@@ -119,9 +136,11 @@ class SchoolRoute {
     this.scheduledStartTime,
     this.runId,
     this.runStatus,
+    this.myRole = 'driver',
     required this.stops,
   });
 
+  bool get isMonitor => myRole == 'monitor';
   bool get inProgress => runStatus == 'in_progress';
   bool get completed => runStatus == 'completed';
 
@@ -167,6 +186,7 @@ class SchoolRoute {
       scheduledStartTime: j['scheduled_start_time'] as String?,
       runId: run?['id'] as String?,
       runStatus: run?['status'] as String?,
+      myRole: (j['my_role'] as String?) ?? 'driver',
       stops: ((j['stops'] as List?) ?? const [])
           .map((s) => SchoolStop.fromJson(Map<String, dynamic>.from(s as Map)))
           .toList(),
