@@ -29,6 +29,7 @@ const _fleetTypes = [
   ('trucking', 'fleet_profile_trucking', 'fleet_profile_trucking_desc'),
   ('construction', 'fleet_profile_construction', 'fleet_profile_construction_desc'),
   ('passenger', 'fleet_profile_passenger', 'fleet_profile_passenger_desc'),
+  ('school_transport', 'fleet_profile_school', 'fleet_profile_school_desc'),
   ('sales', 'fleet_profile_sales', 'fleet_profile_sales_desc'),
   ('driving_school', 'fleet_type_driving_school', 'fleet_type_driving_school_desc'),
   ('general', 'fleet_profile_general', 'fleet_profile_general_desc'),

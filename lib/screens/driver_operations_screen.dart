@@ -38,6 +38,7 @@ import 'driver_notifications_screen.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/org_mode_switcher.dart';
+import '../widgets/school_routes_card.dart';
 import 'fleet_vehicle_picker_screen.dart';
 import 'register_own_vehicle_screen.dart';
 import 'vehicle_inspection_screen.dart';
@@ -895,6 +896,12 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                   if (_shiftDay?.hasBlocks ?? false) ...[
                     const SizedBox(height: 20),
                     _buildClassesCard(appState, cardColor, textColor, subTextColor, borderColor),
+                  ],
+                  // School transportation (2026-10-09): today's school
+                  // routes; renders nothing when the driver has none.
+                  if (appState.defaultOrgId != null) ...[
+                    const SizedBox(height: 20),
+                    SchoolRoutesCard(organizationId: appState.defaultOrgId!, tripIsActive: _tripIsActive),
                   ],
                   const SizedBox(height: 28),
                   // A closed day can't start anything (DB: WORKDAY_ALREADY_CLOSED).

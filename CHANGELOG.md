@@ -8,6 +8,25 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.27+29 — 2026-10-09
+
+### Added
+- **School transportation (fleet drivers).** New fleet type `school_transport`
+  (also in Create company). The fleet driver home shows today's school
+  routes (`SchoolRoutesCard`); a route starts inside an open trip and opens
+  `SchoolRunScreen`: stops in order with the next one highlighted, the
+  students who get on/off at each stop (one tap each), manual "Mark
+  arrived", and **Finish route** behind a mandatory "no child left on
+  board" check (time and place recorded). Stop arrival is also marked by
+  the server from the bus's live location (works with the phone locked) and
+  by the screen every 15 s while open.
+- **Attendance colors**: blue = picked up (counts as attendance) / dropped
+  off; red = the bus reached the stop and the student wasn't marked
+  (absent, or **not dropped off -- still on the bus?**). Not reached yet:
+  neutral. Unmarked students on board are shown in the finish dialog.
+- New service `SchoolRouteService`; 30 new keys in 11 languages
+  (`school_*`, `fleet_profile_school*`).
+
 ## 1.1.26+28 — 2026-10-08
 
 ### Fixed
