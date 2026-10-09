@@ -675,7 +675,8 @@ class _VehicleScreenState extends State<VehicleScreen>
           context,
           MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
         ),
-        leading: const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF574F40)),
+        leading: Icon(Icons.directions_car_filled_rounded,
+            color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)),
         title: Row(
           children: [
             Flexible(child: Text(v.displayName, style: const TextStyle(fontWeight: FontWeight.bold))),
@@ -697,14 +698,26 @@ class _VehicleScreenState extends State<VehicleScreen>
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!v.isActive)
+            // Owner's request (2026-10-09): the check mark showed on the car
+            // that was NOT selected (it was the "make active" button), which
+            // read as if that car were the selected one. Now the selected car
+            // carries the filled green check (indicator only) and the others
+            // an empty circle you tap to select them -- the check moves there.
+            if (v.isActive)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E)),
+              )
+            else
               IconButton(
-                icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF574F40)),
+                icon: Icon(Icons.radio_button_unchecked_rounded,
+                    color: isDark ? const Color(0xFFA39A86) : const Color(0xFF6B6250)),
                 tooltip: appState.tr('mark_as_active'),
                 onPressed: _isLoading ? null : () => _setActiveVehicle(v.id, appState),
               ),
             IconButton(
-              icon: const Icon(Icons.event_repeat_rounded, color: Color(0xFF574F40)),
+              icon: Icon(Icons.event_repeat_rounded,
+                  color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)),
               tooltip: appState.tr('odometer_cycle_label'),
               onPressed: _isLoading ? null : () => _changeOdometerCycle(v, appState),
             ),
