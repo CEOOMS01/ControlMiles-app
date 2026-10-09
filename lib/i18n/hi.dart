@@ -447,6 +447,7 @@ const Map<String, String> hiTexts = {
   'school_route_finished': "रूट पूरा हुआ।",
   'school_err_completed': "यह रूट आज पहले ही पूरा हो चुका है।",
   'school_err_other_running': "पहले अपना दूसरा रूट पूरा करें।",
+  'header_miles_period': "होम हेडर में मील",
   'tour_step': "{total} में से {n}",
   'tour_skip': "छोड़ें",
   'tour_next': "आगे",

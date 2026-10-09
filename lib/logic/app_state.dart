@@ -472,6 +472,18 @@ class AppState extends ChangeNotifier {
   // ============================================================
   // DARK MODE
   // ============================================================
+  // Gig dashboard header (2026-10-09): miles of this 'week' | 'month' | 'year',
+  // chosen in Profile.
+  String _headerMilesPeriod = 'week';
+  String get headerMilesPeriod => _headerMilesPeriod;
+  Future<void> setHeaderMilesPeriod(String value) async {
+    if (!const {'week', 'month', 'year'}.contains(value) || value == _headerMilesPeriod) return;
+    _headerMilesPeriod = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('controlmiles_header_miles_period', value);
+  }
+
   Future<void> setDarkMode(bool value) async {
     if (_isDarkMode == value) return;
 
@@ -682,6 +694,7 @@ class AppState extends ChangeNotifier {
 
       // Dark Mode (nuevo)
       _isDarkMode = prefs.getBool('controlmiles_dark_mode') ?? false;
+      _headerMilesPeriod = prefs.getString('controlmiles_header_miles_period') ?? 'week';
 
       // Notificaciones (misma clave que ya usaba SettingsScreen)
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;

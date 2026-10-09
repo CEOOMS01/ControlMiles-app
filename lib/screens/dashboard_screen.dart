@@ -96,8 +96,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   // total daría un estimado incorrecto para meses que cruzan el cambio de
   // tarifa.
   double _monthMiles = 0.0;
-  // Header (2026-10-09): miles closed this week (Monday 00:00 local).
-  double _weekMiles = 0.0;
+  // Header (2026-10-09): miles closed this week / month / year (Profile).
+  double _headerMiles = 0.0;
+  String? _headerMilesLoadedFor;
   int _monthDurationSec = 0;
   double _monthDeduction = 0.0;
   bool _monthLoading = true;
@@ -509,7 +510,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     await _loadRecentSessions(); // ── NUEVO
     await _loadTodaySummary(); // ── NUEVO
     await _loadMonthSummary(); // ── NUEVO
-    await _loadWeekSummary();
+    await _loadHeaderMiles();
     if (mounted) {
       _syncTrackingUiState();
       setState(() => loading = false);
@@ -556,25 +557,32 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  // Header (2026-10-09): miles of the week so far, Monday 00:00 local time.
-  Future<void> _loadWeekSummary() async {
+  // Header (2026-10-09): miles so far this week (Monday 00:00), month or year,
+  // local time -- the period is chosen in Profile.
+  Future<void> _loadHeaderMiles() async {
+    final period = context.read<AppState>().headerMilesPeriod;
+    _headerMilesLoadedFor = period;
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) return;
-      final nowLocal = DateTime.now();
-      final monday = DateTime(nowLocal.year, nowLocal.month, nowLocal.day)
-          .subtract(Duration(days: nowLocal.weekday - 1));
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final from = switch (period) {
+        'month' => DateTime(now.year, now.month, 1),
+        'year' => DateTime(now.year, 1, 1),
+        _ => today.subtract(Duration(days: now.weekday - 1)),
+      };
       final rows = await _supabase
           .from('sessions')
           .select('total_miles')
           .eq('user_id', user.id)
           .eq('is_closed', true)
-          .gte('start_time', monday.toUtc().toIso8601String());
+          .gte('start_time', from.toUtc().toIso8601String());
       final miles = List<Map<String, dynamic>>.from(rows)
           .fold<double>(0.0, (acc, r) => acc + ((r['total_miles'] as num?)?.toDouble() ?? 0.0));
-      if (mounted) setState(() => _weekMiles = miles);
+      if (mounted) setState(() => _headerMiles = miles);
     } catch (e) {
-      debugPrint("[ControlMiles Week Summary Load Error] $e");
+      debugPrint("[ControlMiles Header Miles Load Error] $e");
     }
   }
 
@@ -1135,8 +1143,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     final appState  = Provider.of<AppState>(context);
     final isDark    = Theme.of(context).brightness == Brightness.dark;
     final scaffoldBg = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
-    final cardBg    = isDark ? const Color(0xFF1C1812) : Colors.white;
-    final bColor    = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     final displayValue = appState.useMetricSystem
         ? (liveMiles * 1.60934).toStringAsFixed(2)
@@ -1146,6 +1152,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         : appState.tr('mile_short');
 
     if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_headerMilesLoadedFor != null && _headerMilesLoadedFor != appState.headerMilesPeriod) {
+      _headerMilesLoadedFor = appState.headerMilesPeriod;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadHeaderMiles());
+    }
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -1185,13 +1195,20 @@ class _DashboardScreenState extends State<DashboardScreen>
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
-                  '${appState.useMetricSystem ? (_weekMiles * 1.60934).toStringAsFixed(1) : _weekMiles.toStringAsFixed(1)} '
+                  '${appState.useMetricSystem ? (_headerMiles * 1.60934).toStringAsFixed(1) : _headerMiles.toStringAsFixed(1)} '
                   '${appState.useMetricSystem ? appState.tr('kilometer_short') : appState.tr('mile_short')}',
                   style: const TextStyle(
                       fontFamily: 'serif', fontSize: 26, fontWeight: FontWeight.w600, color: Color(0xFFFAF6EE)),
                 ),
                 const SizedBox(width: 8),
-                Text(appState.tr('this_week').toLowerCase(),
+                Text(
+                    appState
+                        .tr(switch (appState.headerMilesPeriod) {
+                          'month' => 'this_month',
+                          'year' => 'this_year',
+                          _ => 'this_week',
+                        })
+                        .toLowerCase(),
                     style: const TextStyle(fontSize: 12.5, color: Color(0xFFC9BFA9))),
               ],
             ),
@@ -1233,11 +1250,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ? const CircularProgressIndicator()
                   : Stack(
                       children: [
+                        // Light blue (2026-10-09, trial): the tracking card
+                        // stands out from the white cards.
                         _buildVehicleCard(
                           appState: appState,
                           isDark: isDark,
-                          cardBg: cardBg,
-                          borderColor: bColor,
+                          cardBg: isDark ? const Color(0xFF15222C) : const Color(0xFFE6F0F8),
+                          borderColor: isDark ? const Color(0xFF22384A) : const Color(0xFFBDD6EA),
                           tripMilesValue: displayValue,
                           tripMilesUnit: unitLabel,
                           trackingRow: TrackingActionButton(

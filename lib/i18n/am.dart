@@ -423,6 +423,7 @@ const Map<String, String> amTexts = {
   'school_route_finished': "መንገዱ ተጠናቋል።",
   'school_err_completed': "ይህ መንገድ ዛሬ አስቀድሞ ተጠናቋል።",
   'school_err_other_running': "መጀመሪያ ሌላውን መንገድዎን ይጨርሱ።",
+  'header_miles_period': "በመነሻ ራስጌ ላይ ያሉ ማይሎች",
   'tour_step': "{n} ከ{total}",
   'tour_skip': "ዝለል",
   'tour_next': "ቀጣይ",

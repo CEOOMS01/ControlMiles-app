@@ -908,6 +908,7 @@ const Map<String, String> zhTexts = {
   'school_route_finished': "路线已结束。",
   'school_err_completed': "这条路线今天已结束。",
   'school_err_other_running': "请先结束你的另一条路线。",
+  'header_miles_period': "首页顶部显示的里程",
   'tour_step': "第 {n}/{total} 步",
   'tour_skip': "跳过",
   'tour_next': "下一步",

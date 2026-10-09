@@ -20,7 +20,7 @@ class MainDrawer extends StatelessWidget {
    // sin importar appState.isDarkMode. Mismo patrón isDark ya usado en
    // dashboard_screen.dart/history_screen.dart/etc.
    final isDark = Theme.of(context).brightness == Brightness.dark;
-   final bgColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+   final bgColor = isDark ? const Color(0xFF1C1812) : const Color(0xFFFAF6EE); // cream (2026-10-09)
    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
    final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
    final dividerColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);

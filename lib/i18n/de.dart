@@ -908,6 +908,7 @@ const Map<String, String> deTexts = {
   'school_route_finished': "Route beendet.",
   'school_err_completed': "Diese Route ist heute bereits beendet.",
   'school_err_other_running': "Beende zuerst deine andere Route.",
+  'header_miles_period': "Meilen in der Startseiten-Kopfzeile",
   'tour_step': "{n} von {total}",
   'tour_skip': "Überspringen",
   'tour_next': "Weiter",

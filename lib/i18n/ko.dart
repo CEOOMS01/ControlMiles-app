@@ -437,6 +437,7 @@ const Map<String, String> koTexts = {
   'school_route_finished': "노선이 종료되었습니다.",
   'school_err_completed': "이 노선은 오늘 이미 종료되었습니다.",
   'school_err_other_running': "먼저 다른 노선을 종료하세요.",
+  'header_miles_period': "홈 상단에 표시할 마일",
   'tour_step': "{n}/{total}",
   'tour_skip': "건너뛰기",
   'tour_next': "다음",

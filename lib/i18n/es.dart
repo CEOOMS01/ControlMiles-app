@@ -940,6 +940,7 @@ const Map<String, String> esTexts = {
   'school_route_finished': "Ruta terminada.",
   'school_err_completed': "Esta ruta ya se terminó hoy.",
   'school_err_other_running': "Termina primero tu otra ruta.",
+  'header_miles_period': "Millas en el encabezado de inicio",
   'tour_step': "{n} de {total}",
   'tour_skip': "Saltar",
   'tour_next': "Siguiente",

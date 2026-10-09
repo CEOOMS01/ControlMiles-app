@@ -919,6 +919,7 @@ const Map<String, String> frTexts = {
   'school_route_finished': "Circuit terminé.",
   'school_err_completed': "Ce circuit est déjà terminé aujourd'hui.",
   'school_err_other_running': "Terminez d'abord votre autre circuit.",
+  'header_miles_period': "Miles dans l'en-tête d'accueil",
   'tour_step': "{n} sur {total}",
   'tour_skip': "Passer",
   'tour_next': "Suivant",

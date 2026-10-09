@@ -518,7 +518,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     }
 
     Widget pill({required VoidCallback onTap, required IconData icon, required String label,
-        required Color bg, required Color fg, Color? border}) {
+        required Color bg, required Color fg, Color? border, bool big = false}) {
       return Material(
         color: bg,
         shape: StadiumBorder(side: border == null ? BorderSide.none : BorderSide(color: border, width: 1.5)),
@@ -526,12 +526,17 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           customBorder: const StadiumBorder(),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            // START is bigger (2026-10-09) so it wins over the Premium
+            // auto-detect button next to it.
+            padding: big
+                ? const EdgeInsets.symmetric(horizontal: 24, vertical: 16)
+                : const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, color: fg, size: 20),
-              const SizedBox(width: 6),
+              Icon(icon, color: fg, size: big ? 28 : 20),
+              SizedBox(width: big ? 8 : 6),
               Text(label,
-                  style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 0.6)),
+                  style: TextStyle(
+                      color: fg, fontSize: big ? 16.5 : 13, fontWeight: FontWeight.w900, letterSpacing: 0.6)),
             ]),
           ),
         ),
@@ -579,6 +584,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
           label: _getLabel(appState, state),
           bg: color,
           fg: Colors.white,
+          big: isIdle,
         ),
         if (!isIdle) ...[
           const SizedBox(width: 8),

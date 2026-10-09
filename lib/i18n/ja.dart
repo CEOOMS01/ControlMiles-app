@@ -436,6 +436,7 @@ const Map<String, String> jaTexts = {
   'school_route_finished': "ルートを終了しました。",
   'school_err_completed': "このルートは今日すでに終了しています。",
   'school_err_other_running': "先にもう一つのルートを終了してください。",
+  'header_miles_period': "ホーム上部に表示するマイル",
   'tour_step': "{n} / {total}",
   'tour_skip': "スキップ",
   'tour_next': "次へ",

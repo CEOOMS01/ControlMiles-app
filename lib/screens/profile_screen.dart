@@ -199,6 +199,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildInfoCard(appState, isDark),
 
             _buildSectionTitle(appState.tr('settings')),
+            _buildHeaderPeriodSelector(appState, isDark),
+            const SizedBox(height: 12),
             _buildUnitSelector(appState, isDark),
             const SizedBox(height: 12),
             _buildDarkModeSwitch(appState, isDark),
@@ -363,13 +365,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Which total the home header shows (2026-10-09): this week / month / year.
+  Widget _buildHeaderPeriodSelector(AppState appState, bool isDark) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.speed_rounded),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(appState.tr('header_miles_period'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'week', label: Text(appState.tr('this_week'))),
+                  ButtonSegment(value: 'month', label: Text(appState.tr('this_month'))),
+                  ButtonSegment(value: 'year', label: Text(appState.tr('this_year'))),
+                ],
+                selected: {appState.headerMilesPeriod},
+                onSelectionChanged: (v) => appState.setHeaderMilesPeriod(v.first),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 24, top: 30, bottom: 12),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(title.toUpperCase(), 
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.1, color: Colors.grey)),
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              letterSpacing: 1.2,
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0E6D2) : const Color(0xFF2E281F))),
       ),
     );
   }

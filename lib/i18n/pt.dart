@@ -908,6 +908,7 @@ const Map<String, String> ptTexts = {
   'school_route_finished': "Rota finalizada.",
   'school_err_completed': "Esta rota já foi finalizada hoje.",
   'school_err_other_running': "Finalize primeiro sua outra rota.",
+  'header_miles_period': "Milhas no cabeçalho do início",
   'tour_step': "{n} de {total}",
   'tour_skip': "Pular",
   'tour_next': "Próximo",

@@ -451,6 +451,7 @@ const Map<String, String> arTexts = {
   'school_route_finished': "انتهى المسار.",
   'school_err_completed': "تم إنهاء هذا المسار اليوم بالفعل.",
   'school_err_other_running': "أنهِ مسارك الآخر أولًا.",
+  'header_miles_period': "الأميال في رأس الشاشة الرئيسية",
   'tour_step': "{n} من {total}",
   'tour_skip': "تخطٍّ",
   'tour_next': "التالي",

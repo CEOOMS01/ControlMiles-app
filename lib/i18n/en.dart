@@ -968,6 +968,7 @@ const Map<String, String> enTexts = {
   'school_route_finished': "Route finished.",
   'school_err_completed': "This route is already finished today.",
   'school_err_other_running': "Finish your other route first.",
+  'header_miles_period': "Miles on the home header",
   'tour_step': "{n} of {total}",
   'tour_skip': "Skip",
   'tour_next': "Next",
