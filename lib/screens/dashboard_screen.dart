@@ -1680,9 +1680,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  // Fixed History / Reports bar. Android 15+ draws apps edge to edge, so on
+  // phones with the 3-button navigation bar the system bar covered these
+  // buttons (owner's report, 2026-10-09). SafeArea(top: false) adds exactly
+  // the system bar's height below them (0 on gesture-navigation phones); the
+  // bar's background still runs behind the system bar.
   Widget _buildBottomButtons(bool isDark, AppState appState) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1812) : Colors.white,
         border: Border(
@@ -1690,7 +1694,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               color: isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4)),
         ),
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
         children: [
           Expanded(
             child: ElevatedButton.icon(
@@ -1722,6 +1730,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
