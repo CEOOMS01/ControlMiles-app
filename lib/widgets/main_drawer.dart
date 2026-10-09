@@ -132,7 +132,9 @@ class MainDrawer extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 30),
+      // The ID tab sits flush on the header's bottom edge and left side
+      // (owner's request, 2026-10-09); the logo row keeps its own 24 px sides.
+      padding: const EdgeInsets.only(top: 60),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -149,7 +151,9 @@ class MainDrawer extends StatelessWidget {
           // Explicit user request: wordmark moved next to the logo
           // (was stacked below it) -- a single horizontal lockup instead
           // of two separate lines.
-          Row(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
             children: [
               Image.asset(
                 'assets/images/logo_controlmiles.png',
@@ -174,8 +178,9 @@ class MainDrawer extends StatelessWidget {
               ),
             ],
           ),
+          ),
           // FIX 2: Text(userEmail) eliminado — línea de email removida
-          const SizedBox(height: 16),
+          const SizedBox(height: 26),
           // BUG FIX (pedido explícito): el quick-toggle de auto-detect que
           // vivía acá se movió al Dashboard, junto al botón Start -- tener
           // los dos a la vez era un control duplicado para la misma
@@ -183,10 +188,10 @@ class MainDrawer extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.fromLTRB(24, 7, 14, 7),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: const BorderRadius.only(topRight: Radius.circular(10)),
                 ),
                 child: Text(
                   "ID: ${appState.userDisplayId ?? '---'}",
