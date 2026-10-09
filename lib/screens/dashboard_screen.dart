@@ -1186,21 +1186,39 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(kPageGutter, 0, kPageGutter, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+        // Miles on the right, level with the greeting (owner's request,
+        // 2026-10-09): value in a serif, the period underneath.
+        actions: [
+          // Soft divider between the greeting and the miles: a hairline in
+          // faint cream that fades out at both ends (2026-10-09).
+          Container(
+            width: 1,
+            height: 40,
+            margin: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFFFAF6EE).withValues(alpha: 0),
+                  const Color(0xFFFAF6EE).withValues(alpha: 0.35),
+                  const Color(0xFFFAF6EE).withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: kPageGutter),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   '${appState.useMetricSystem ? (_headerMiles * 1.60934).toStringAsFixed(1) : _headerMiles.toStringAsFixed(1)} '
                   '${appState.useMetricSystem ? appState.tr('kilometer_short') : appState.tr('mile_short')}',
                   style: const TextStyle(
-                      fontFamily: 'serif', fontSize: 26, fontWeight: FontWeight.w600, color: Color(0xFFFAF6EE)),
+                      fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFFAF6EE)),
                 ),
-                const SizedBox(width: 8),
                 Text(
                     appState
                         .tr(switch (appState.headerMilesPeriod) {
@@ -1209,11 +1227,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                           _ => 'this_week',
                         })
                         .toLowerCase(),
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFC9BFA9))),
+                    style: const TextStyle(fontSize: 11, color: Color(0xFFC9BFA9))),
               ],
             ),
           ),
-        ),
+        ],
+        toolbarHeight: 72,
       ),
       body: RefreshIndicator(
         onRefresh: () async {
