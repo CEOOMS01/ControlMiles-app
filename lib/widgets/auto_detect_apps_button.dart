@@ -398,7 +398,7 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
               : appState.tr('auto_detect_apps_subtitle_off'),
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDark ? Colors.white54 : const Color(0xFF64748B),
+            color: isDark ? Colors.white54 : const Color(0xFF6B6250),
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
@@ -415,13 +415,13 @@ class _AutoDetectAppsButtonState extends State<AutoDetectAppsButton> {
                   child: Icon(
                     Icons.lock_outline_rounded,
                     size: 12,
-                    color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                    color: isDark ? Colors.white38 : const Color(0xFFA39A86),
                   ),
                 ),
               Text(
                 appState.tr('shift_apps_picker_link'),
                 style: TextStyle(
-                  color: isDark ? Colors.white70 : const Color(0xFF3B82F6),
+                  color: isDark ? Colors.white70 : const Color(0xFF2C6C99),
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.underline,

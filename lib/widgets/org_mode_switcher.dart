@@ -139,8 +139,8 @@ class _OrgModeSwitcherState extends State<OrgModeSwitcher> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    final bgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-    final inactiveText = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF);
+    final inactiveText = isDark ? Colors.white60 : const Color(0xFF6B6250);
     final isCompanyMode = appState.isFleetAccount;
 
     return Container(

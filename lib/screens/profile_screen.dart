@@ -218,7 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.only(top: 30, bottom: 40),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+        color: isDark ? const Color(0xFF2E281F) : const Color(0xFF1C1812),
       ),
       child: Column(
         children: [
@@ -249,7 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildDarkModeSwitch(AppState appState, bool isDark) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SwitchListTile(
         title: Text(appState.tr('dark_mode'), style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -267,10 +267,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       elevation: 0,
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
-        side: BorderSide(color: isDark ? const Color(0xFF334155) : Colors.grey[200]!)
+        side: BorderSide(color: isDark ? const Color(0xFF3D352A) : Colors.grey[200]!)
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -304,9 +304,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white, 
+        color: isDark ? const Color(0xFF2E281F) : Colors.white, 
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.transparent)
+        border: Border.all(color: isDark ? const Color(0xFF3D352A) : Colors.transparent)
       ),
       child: Column(
         children: [
@@ -320,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B), 
+                backgroundColor: const Color(0xFF2E281F), 
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
               ),
@@ -352,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildUnitSelector(AppState appState, bool isDark) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SwitchListTile(
         title: Text(appState.tr('metric_system'), style: const TextStyle(fontWeight: FontWeight.bold)),

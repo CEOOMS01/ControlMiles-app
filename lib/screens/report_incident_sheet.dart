@@ -102,9 +102,9 @@ class _ReportIncidentSheetState extends State<_ReportIncidentSheet> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final bgColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -165,7 +165,7 @@ class _ReportIncidentSheetState extends State<_ReportIncidentSheet> {
                 labelText: appState.tr('report_incident_description_label'),
                 hintText: appState.tr('report_incident_description_hint'),
                 filled: true,
-                fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                fillColor: isDark ? const Color(0xFF2E281F) : const Color(0xFFFAF6EE),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: borderColor),

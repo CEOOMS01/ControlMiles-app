@@ -112,10 +112,10 @@ class _SchoolRoutesCardState extends State<SchoolRoutesCard> {
       return widget.monitorMode ? Text(appState.tr('school_no_routes_today')) : const SizedBox.shrink();
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
     final primary = Theme.of(context).colorScheme.primary;
 
     return Container(

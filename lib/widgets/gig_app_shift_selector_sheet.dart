@@ -120,7 +120,7 @@ class _GigAppShiftSelectorSheetState
                   appState.tr('shift_apps_picker_body'),
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                    color: isDark ? Colors.white60 : const Color(0xFF6B6250),
                   ),
                 ),
               ),

@@ -22,6 +22,7 @@ import 'routes/app_routes.dart';
 import 'logic/app_state.dart';
 import 'i18n/app_texts.dart';
 import 'theme/app_colors.dart';
+import 'theme/cm_colors.dart';
 
 // Servicios de Hardware y Fondo
 import 'tracking/background_gps_service.dart';
@@ -258,30 +259,12 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       // relación entre onPrimary/primaryContainer/etc. que Material 3
       // deriva del seed, y termina en un look que no combina consigo
       // mismo. Se deja que M3 derive el set completo de roles.
-      theme: ThemeData(
-        colorSchemeSeed: kBrandSeed,
-        useMaterial3: true,
-        fontFamily: 'Inter',
-        brightness: Brightness.light,
-      ),
-
-      darkTheme: ThemeData(
-        // BUG FIX (pedido explícito): kBrandSeed resaltaba demasiado en
-        // modo oscuro -- kBrandSeedDark es el mismo azul desaturado (ver
-        // lib/theme/app_colors.dart), pasado igual a fromSeed() para que
-        // M3 derive todos los roles de forma consistente. Modo claro
-        // sigue con kBrandSeed sin cambios.
-        colorSchemeSeed: kBrandSeedDark,
-        useMaterial3: true,
-        fontFamily: 'Inter',
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF020617),
-        cardColor: const Color(0xFF0F172A),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F172A),
-          foregroundColor: Colors.white,
-        ),
-      ),
+      // Warm palette (2026-10-09, lib/theme/cm_colors.dart): the website's
+      // cream / ink / brand blue / amber instead of white and slate. Still
+      // one seed (the brand blue) so Material 3 derives consistent roles;
+      // only the page/card surfaces and shapes are set on top.
+      theme: _cmTheme(Brightness.light),
+      darkTheme: _cmTheme(Brightness.dark),
 
       themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       // ========================================================
@@ -358,4 +341,76 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       ),
     );
   }
+}
+
+ThemeData _cmTheme(Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  final scheme = ColorScheme.fromSeed(
+    seedColor: dark ? kBrandSeedDark : CmColors.blue,
+    brightness: brightness,
+  ).copyWith(
+    surface: dark ? CmColors.nightCard : Colors.white,
+    tertiary: CmColors.amber,
+    outlineVariant: dark ? CmColors.ink : CmColors.sand,
+  );
+  return ThemeData(
+    useMaterial3: true,
+    brightness: brightness,
+    colorScheme: scheme,
+    fontFamily: 'Inter',
+    scaffoldBackgroundColor: dark ? CmColors.night : CmColors.cream,
+    cardColor: dark ? CmColors.nightCard : Colors.white,
+    dividerColor: dark ? CmColors.ink : CmColors.sand,
+    appBarTheme: AppBarTheme(
+      backgroundColor: dark ? CmColors.nightCard : CmColors.cream,
+      foregroundColor: dark ? Colors.white : CmColors.nightInk,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+    ),
+    cardTheme: CardThemeData(
+      color: dark ? CmColors.nightCard : Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: dark ? CmColors.ink : CmColors.sand),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(shape: const StadiumBorder()),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(shape: const StadiumBorder(), elevation: 0),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(shape: const StadiumBorder()),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: dark ? CmColors.nightCard : CmColors.cream,
+      surfaceTintColor: Colors.transparent,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: dark ? CmColors.nightCard : CmColors.cream,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: dark ? CmColors.creamDeep : CmColors.nightInk,
+      contentTextStyle: TextStyle(color: dark ? CmColors.nightInk : CmColors.cream),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: dark ? CmColors.nightCard : Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: dark ? CmColors.ink : CmColors.sand),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: dark ? CmColors.ink : CmColors.sand),
+      ),
+    ),
+  );
 }

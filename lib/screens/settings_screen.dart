@@ -200,8 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF020617)
-          : const Color(0xFFF8FAFC),
+          ? const Color(0xFF12100C)
+          : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(
           appState.tr('settings').toUpperCase(),
@@ -211,8 +211,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         ),
         backgroundColor: isDark
-            ? const Color(0xFF0F172A)
-            : const Color(0xFF1E293B),
+            ? const Color(0xFF1C1812)
+            : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -269,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          color: isDark ? const Color(0xFF1C1812) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark ? Colors.red.shade900 : Colors.red.shade100,
@@ -332,7 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   '${appState.tr('delete_account_type_to_confirm')} ($confirmWord)',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFF6B6250),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -428,7 +428,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+              color: isDark ? Colors.white38 : const Color(0xFFA39A86),
               letterSpacing: 1,
             ),
           ),
@@ -446,8 +446,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   // One "Language" row that opens a dropdown (2026-09-30, user request:
   // no loose list of 11 languages on the settings screen).
   Widget _buildLanguageSection(AppState appState, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -468,10 +468,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   // the minimum; renaming or deleting the fleet, drivers, vehicles and
   // every other setting are managed on controlmiles.com.
   Widget _buildOrganizationSection(AppState appState, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     if (_isLoadingOrg) {
       return const Padding(
@@ -513,9 +513,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildReportPortalSection(AppState appState, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     final primary = Theme.of(context).colorScheme.primary;
 
     return Padding(
@@ -546,9 +546,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildAutoDetectSection(AppState appState, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     final locked = !appState.premiumEntitled;
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -779,12 +779,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     required VoidCallback onTap,
   }) {
     final statusColor = granted == null
-        ? (isDark ? Colors.white38 : const Color(0xFF94A3B8))
+        ? (isDark ? Colors.white38 : const Color(0xFFA39A86))
         : (granted ? const Color(0xFF22C55E) : const Color(0xFFF59E0B));
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -793,7 +793,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            color: isDark ? Colors.white : const Color(0xFF2E281F),
           ),
         ),
         subtitle: Row(
@@ -857,7 +857,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1C1812) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -887,7 +887,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF2E281F),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -938,7 +938,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -948,7 +948,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            color: isDark ? Colors.white : const Color(0xFF2E281F),
           ),
         ),
         subtitle: subtitle != null
@@ -956,7 +956,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                  color: isDark ? Colors.white54 : const Color(0xFF6B6250),
                 ),
               )
             : null,
@@ -970,7 +970,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildAboutSection(AppState appState, bool isDark) {
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -979,7 +979,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              color: isDark ? const Color(0xFF1C1812) : Colors.white,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -991,12 +991,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                       appState.tr('app_version'),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF2E281F),
                       ),
                     ),
                     AppVersionText(
                       style: TextStyle(
-                        color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                        color: isDark ? Colors.white54 : const Color(0xFF6B6250),
                         fontSize: 13,
                       ),
                     ),
@@ -1004,7 +1004,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 Divider(
                   height: 32,
-                  color: isDark ? const Color(0xFF1E293B) : null,
+                  color: isDark ? const Color(0xFF2E281F) : null,
                 ),
                 _buildAboutRow(
                   appState.tr('company'),
@@ -1013,7 +1013,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 Divider(
                   height: 32,
-                  color: isDark ? const Color(0xFF1E293B) : null,
+                  color: isDark ? const Color(0xFF2E281F) : null,
                 ),
                 // Explicit user request (legal risk mitigation, 2026-08-27):
                 // a short, always-visible non-affiliation disclaimer -- the
@@ -1170,11 +1170,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   // ever computes standard-mileage figures), just what the report's
   // disclaimer honestly claims. See AppState.setMileageMethod.
   Widget _buildMileageMethodRow(AppState appState, bool isDark) {
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -1190,7 +1190,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           value: appState.mileageMethod,
           underline: const SizedBox.shrink(),
           style: TextStyle(color: subTextColor, fontSize: 13),
-          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          dropdownColor: isDark ? const Color(0xFF2E281F) : Colors.white,
           items: [
             DropdownMenuItem(
               value: 'standard',
@@ -1215,11 +1215,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -1242,13 +1242,13 @@ class _SettingsScreenState extends State<SettingsScreen>
           label,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            color: isDark ? Colors.white : const Color(0xFF2E281F),
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            color: isDark ? Colors.white54 : const Color(0xFF64748B),
+            color: isDark ? Colors.white54 : const Color(0xFF6B6250),
             fontSize: 13,
           ),
         ),

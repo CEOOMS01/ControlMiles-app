@@ -35,7 +35,7 @@ class GigAppCatalog {
     id: '',
     name: '',
     icon: Icons.local_shipping_rounded,
-    color: Color(0xFF475569),
+    color: Color(0xFF574F40),
   );
 
   // Colores (2026-08-27, pedido explícito -- mitigación legal): antes cada
@@ -262,7 +262,7 @@ class GigAppCatalog {
       id: 'custom',
       name: 'Custom/Truck',
       icon: Icons.local_shipping_rounded,
-      color: Color(0xFF475569),
+      color: Color(0xFF574F40),
     ),
   ];
 

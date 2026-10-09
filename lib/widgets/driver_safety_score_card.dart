@@ -89,7 +89,7 @@ class _DriverSafetyScoreCardState extends State<DriverSafetyScoreCard> {
   }
 
   (String, Color) _grade(AppState appState, int? score) {
-    if (score == null) return (appState.tr('safety_grade_not_enough'), const Color(0xFF94A3B8));
+    if (score == null) return (appState.tr('safety_grade_not_enough'), const Color(0xFFA39A86));
     if (score >= 90) return (appState.tr('safety_grade_excellent'), const Color(0xFF10B981));
     if (score >= 75) return (appState.tr('safety_grade_good'), const Color(0xFF0EA5E9));
     if (score >= 60) return (appState.tr('safety_grade_coaching'), const Color(0xFFF59E0B));
@@ -102,10 +102,10 @@ class _DriverSafetyScoreCardState extends State<DriverSafetyScoreCard> {
     if (!_loaded) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     final score = _current?.score;
     final (label, color) = _grade(appState, score);

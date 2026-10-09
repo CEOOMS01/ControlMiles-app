@@ -94,7 +94,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+        foregroundColor: isDark ? Colors.white : const Color(0xFF1C1812),
       ),
       body: SafeArea(
         child: Padding(
@@ -111,7 +111,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF1C1812),
                 ),
               ),
               const SizedBox(height: 10),
@@ -119,7 +119,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 appState.tr('forgot_password_body'),
                 style: TextStyle(
                   fontSize: 13,
-                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  color: isDark ? Colors.white70 : const Color(0xFF6B6250),
                 ),
               ),
               const SizedBox(height: 30),
@@ -130,11 +130,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   labelText: appState.tr('email'),
                   prefixIcon: const Icon(Icons.alternate_email_rounded),
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                  fillColor: isDark ? const Color(0xFF2E281F) : const Color(0xFFFAF6EE),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        color: isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),

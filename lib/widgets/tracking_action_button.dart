@@ -494,12 +494,12 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
 
   Widget _buildCompact(AppState appState, TrackingState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     // Card colors (explicit user request, 2026-10-01): off = red dot,
     // live = blue (dot + PAUSE pill), paused = orange. The big round
     // button elsewhere keeps its own colors (_getButtonColor).
-    const liveBlue = Color(0xFF2563EB);
+    const liveBlue = Color(0xFF2C6C99);
     final isIdle = state == TrackingState.idle;
     final color = state == TrackingState.running ? liveBlue : _getButtonColor(state);
     final app = TrackingController.currentGigApp;
@@ -586,7 +586,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             onTap: () => _handleEndTrip(appState),
             icon: Icons.stop_rounded,
             label: appState.tr('end').toUpperCase(),
-            bg: isDark ? const Color(0xFF0F172A) : Colors.white,
+            bg: isDark ? const Color(0xFF1C1812) : Colors.white,
             fg: Colors.red.shade700,
             border: Colors.red.shade200,
           ),

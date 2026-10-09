@@ -19,9 +19,9 @@ class DriverSafetyScoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
     final orgId = appState.defaultOrgId;
 
     return Scaffold(

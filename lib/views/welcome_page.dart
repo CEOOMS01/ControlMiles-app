@@ -268,10 +268,10 @@ class _WelcomePageState extends State<WelcomePage> {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -309,7 +309,7 @@ class _WelcomePageState extends State<WelcomePage> {
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                  border: Border.all(color: isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,7 +399,7 @@ class _PermissionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -407,7 +407,7 @@ class _PermissionTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4)),
       ),
       child: Row(
         children: [

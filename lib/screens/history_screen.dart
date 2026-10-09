@@ -298,15 +298,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-    final labelCol = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final borderCol = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
+    final labelCol = isDark ? Colors.white38 : const Color(0xFFA39A86);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(appState.tr('history').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900)),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -432,7 +432,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 0.6,
-                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                    color: isDark ? Colors.white : const Color(0xFF2E281F),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -449,7 +449,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.4,
-                                color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                                color: isDark ? Colors.white70 : const Color(0xFF6B6250),
                               ),
                             ),
                           ),
@@ -478,8 +478,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           Container(
                                             width: 40,
                                             height: 40,
-                                            decoration: BoxDecoration(color: const Color(0xFF475569).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                                            child: const Icon(Icons.route_rounded, color: Color(0xFF475569), size: 20),
+                                            decoration: BoxDecoration(color: const Color(0xFF574F40).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                                            child: const Icon(Icons.route_rounded, color: Color(0xFF574F40), size: 20),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
@@ -487,7 +487,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text('${appState.tr('trip_number_label').replaceFirst('{number}', '${index + 1}')}  ·  ${session.startTime != null ? DateFormat('MM/dd hh:mm a').format(session.startTime!.toLocal()) : '--'}',
-                                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: isDark ? Colors.white : const Color(0xFF2E281F))),
                                                 const SizedBox(height: 2),
                                                 Text(appState.tr('trip_end_time_label').replaceFirst('{time}', session.endTime != null ? DateFormat('hh:mm a').format(session.endTime!.toLocal()) : '--'),
                                                     style: TextStyle(fontSize: 11, color: labelCol)),
@@ -557,15 +557,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF475569)),
+          Icon(icon, size: 12, color: const Color(0xFF574F40)),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF574F40))),
         ],
       ),
     );
@@ -615,7 +615,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           : app.name,
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: appColor),
                     ),
-                    Text(DateFormat('hh:mm a').format(section.startTime), style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : const Color(0xFF64748B))),
+                    Text(DateFormat('hh:mm a').format(section.startTime), style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : const Color(0xFF6B6250))),
                   ],
                 ),
               ),

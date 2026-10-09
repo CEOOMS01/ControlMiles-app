@@ -438,10 +438,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final appState = context.watch<AppState>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFF0F2A44),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFF0F2A44),
       body: Stack(
         children: [
           // Brand backdrop: navy gradient + the same soft route curve the
@@ -552,8 +552,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildCardContent(AppState appState, bool isDark) {
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1C1812);
+    final subColor = isDark ? Colors.white60 : const Color(0xFF6B6250);
     final showGoogle = !(_isLoginMode && _isDriverIdMode);
 
     return AutofillGroup(
@@ -641,7 +641,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -674,8 +674,8 @@ class _LoginScreenState extends State<LoginScreen> {
       child: OutlinedButton(
         onPressed: _isLoading ? null : () => _handleGoogle(appState),
         style: OutlinedButton.styleFrom(
-          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-          side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFDADCE0)),
+          backgroundColor: isDark ? const Color(0xFF2E281F) : Colors.white,
+          side: BorderSide(color: isDark ? const Color(0xFF3D352A) : const Color(0xFFDADCE0)),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: Row(
@@ -698,7 +698,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildOrDivider(AppState appState, bool isDark) {
-    final lineColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final lineColor = isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4);
     return Row(
       children: [
         Expanded(child: Divider(color: lineColor)),
@@ -706,7 +706,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             appState.tr('or_divider'),
-            style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFF94A3B8)),
+            style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFFA39A86)),
           ),
         ),
         Expanded(child: Divider(color: lineColor)),
@@ -718,7 +718,7 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _decoration(bool isDark, String label, IconData icon, {Widget? suffix, String? prefixText, String? hint}) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      borderSide: BorderSide(color: isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4)),
     );
     return InputDecoration(
       labelText: label,
@@ -727,7 +727,7 @@ class _LoginScreenState extends State<LoginScreen> {
       prefixIcon: Icon(icon, size: 20),
       suffixIcon: suffix,
       filled: true,
-      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+      fillColor: isDark ? const Color(0xFF2E281F) : const Color(0xFFFAF6EE),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: border,
       enabledBorder: border,
@@ -813,8 +813,8 @@ class _LoginScreenState extends State<LoginScreen> {
   // "Remember my email" + "Forgot password?" share one row; "Stay signed in"
   // gets its own row with the reason (see LoginPrefs).
   Widget _buildLoginOptions(AppState appState, bool isDark) {
-    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
-    final hintColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white70 : const Color(0xFF574F40);
+    final hintColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     return Column(
       children: [
         Row(
@@ -884,7 +884,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Explicit user requirement (legal risk mitigation, 2026-08-27):
   // required before signup -- 18+ self-attestation + Terms/Privacy.
   Widget _buildAgeTermsCheckbox(AppState appState, bool isDark) {
-    final textColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final textColor = isDark ? Colors.white70 : const Color(0xFF574F40);
     final linkColor = Theme.of(context).colorScheme.primary;
 
     return Row(
@@ -970,7 +970,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ====================== SIGN-IN / SIGN-UP SWITCH ======================
   Widget _buildToggleMode(AppState appState, bool isDark) {
-    final muted = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
     return Center(
       child: TextButton(
         onPressed: _isLoading
@@ -1025,7 +1025,7 @@ class _ModeToggleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    final fg = selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B));
+    final fg = selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF6B6250));
     return Material(
       color: Colors.transparent,
       child: InkWell(

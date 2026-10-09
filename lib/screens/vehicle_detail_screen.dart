@@ -126,11 +126,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final v = widget.vehicle;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(appState.tr('vehicle_profile_title').toUpperCase(),
             style: const TextStyle(fontWeight: FontWeight.w900)),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
       ),
       body: _loading
@@ -167,7 +167,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   Widget _buildVehicleCard(Vehicle v, AppState appState, bool isDark) {
     return Card(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -176,7 +176,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF475569)),
+                const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF574F40)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(v.displayName,
@@ -211,7 +211,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   Widget _buildMilesCard(AppState appState, bool isDark) {
     return Card(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: const Icon(Icons.timeline_rounded, color: Color(0xFF22C55E)),
@@ -238,7 +238,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -300,7 +300,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   : Container(
                       width: 48,
                       height: 48,
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      color: isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4),
                       child: const Icon(Icons.image_not_supported_rounded, size: 18, color: Colors.grey),
                     ),
             ),

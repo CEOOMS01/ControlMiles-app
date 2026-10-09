@@ -597,11 +597,11 @@ class _VehicleScreenState extends State<VehicleScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(appState.tr('vehicle').toUpperCase(),
             style: const TextStyle(fontWeight: FontWeight.w900)),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
@@ -654,7 +654,7 @@ class _VehicleScreenState extends State<VehicleScreen>
   Widget _buildVehicleCard(Vehicle v, AppState appState, bool isDark) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       // BUG FIX (pedido explícito, cuadros invisibles en modo día): la
       // tarjeta inactiva no tenía borde -- blanco sobre el fondo #F8FAFC
       // del scaffold, contraste casi nulo. Ahora usa el mismo token de
@@ -663,7 +663,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         borderRadius: BorderRadius.circular(16),
         side: v.isActive
             ? const BorderSide(color: Color(0xFF22C55E), width: 1.5)
-            : BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+            : BorderSide(color: isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4)),
       ),
       child: ListTile(
         // Explicit user requirement: entrar al perfil del vehículo para
@@ -675,7 +675,7 @@ class _VehicleScreenState extends State<VehicleScreen>
           context,
           MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
         ),
-        leading: const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF475569)),
+        leading: const Icon(Icons.directions_car_filled_rounded, color: Color(0xFF574F40)),
         title: Row(
           children: [
             Flexible(child: Text(v.displayName, style: const TextStyle(fontWeight: FontWeight.bold))),
@@ -699,12 +699,12 @@ class _VehicleScreenState extends State<VehicleScreen>
           children: [
             if (!v.isActive)
               IconButton(
-                icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF475569)),
+                icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF574F40)),
                 tooltip: appState.tr('mark_as_active'),
                 onPressed: _isLoading ? null : () => _setActiveVehicle(v.id, appState),
               ),
             IconButton(
-              icon: const Icon(Icons.event_repeat_rounded, color: Color(0xFF475569)),
+              icon: const Icon(Icons.event_repeat_rounded, color: Color(0xFF574F40)),
               tooltip: appState.tr('odometer_cycle_label'),
               onPressed: _isLoading ? null : () => _changeOdometerCycle(v, appState),
             ),
@@ -725,7 +725,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.grey[50],
+        color: isDark ? const Color(0xFF2E281F) : Colors.grey[50],
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -912,10 +912,10 @@ class _VehicleScreenState extends State<VehicleScreen>
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Card(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2E281F) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: ListTile(
-          leading: const Icon(Icons.speed_rounded, color: Color(0xFF475569)),
+          leading: const Icon(Icons.speed_rounded, color: Color(0xFF574F40)),
           title: Text(appState.tr('current_odometer')),
           trailing: Text(
             vehicle.odometer != null ? _formatMiles(vehicle.odometer!, appState) : '—',
@@ -948,7 +948,7 @@ class _VehicleScreenState extends State<VehicleScreen>
         final statusText = remaining <= 0
             ? appState.tr('service_overdue_miles').replaceFirst('{miles}', _formatMiles(-remaining, appState))
             : appState.tr('next_service_due_miles').replaceFirst('{miles}', _formatMiles(remaining, appState));
-        final color = remaining <= 0 ? Colors.red.shade700 : const Color(0xFF475569);
+        final color = remaining <= 0 ? Colors.red.shade700 : const Color(0xFF574F40);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,12 +998,12 @@ class _VehicleScreenState extends State<VehicleScreen>
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF2E281F) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF475569).withValues(alpha: 0.12),
-          child: Icon(meta.icon, color: const Color(0xFF475569), size: 20),
+          backgroundColor: const Color(0xFF574F40).withValues(alpha: 0.12),
+          child: Icon(meta.icon, color: const Color(0xFF574F40), size: 20),
         ),
         title: Text(appState.tr(meta.labelKey), style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
@@ -1040,7 +1040,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.grey[50],
+        color: isDark ? const Color(0xFF2E281F) : Colors.grey[50],
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1054,7 +1054,7 @@ class _VehicleScreenState extends State<VehicleScreen>
                       value: t.id,
                       child: Row(
                         children: [
-                          Icon(t.icon, size: 18, color: const Color(0xFF475569)),
+                          Icon(t.icon, size: 18, color: const Color(0xFF574F40)),
                           const SizedBox(width: 8),
                           Text(appState.tr(t.labelKey)),
                         ],

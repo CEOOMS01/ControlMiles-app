@@ -119,7 +119,7 @@ class _SplashPageState extends State<SplashPage> {
     ).primary;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E293B), // Slate 900
+      backgroundColor: const Color(0xFF2E281F), // Slate 900
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

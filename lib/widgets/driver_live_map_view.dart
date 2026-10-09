@@ -63,7 +63,7 @@ class OsmAttribution extends StatelessWidget {
         color: const Color(0xCCFFFFFF),
         child: const Text(
           '© OpenStreetMap contributors · Protomaps',
-          style: TextStyle(fontSize: 10, color: Color(0xFF334155)),
+          style: TextStyle(fontSize: 10, color: Color(0xFF3D352A)),
         ),
       ),
     );

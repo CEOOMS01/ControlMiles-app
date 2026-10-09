@@ -22,8 +22,8 @@ class LanguageSelectorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
     final primary = Theme.of(context).colorScheme.primary;
     final current = appState.currentLanguage;
 

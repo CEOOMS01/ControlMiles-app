@@ -704,11 +704,11 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final bgColor = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
+    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -717,8 +717,10 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
           appState.tr('driver_ops_title').toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF211C14),
         foregroundColor: Colors.white,
+        // Website-style ink header with a rounded bottom (warm palette, 2026-10-09).
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
         elevation: 0,
         actions: [
           IconButton(

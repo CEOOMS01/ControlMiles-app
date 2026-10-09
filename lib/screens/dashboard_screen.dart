@@ -292,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         margin: const EdgeInsets.only(top: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFF2E281F),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -331,10 +331,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildAutoDetectIdleCard(AppState appState, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     final primary = Theme.of(context).colorScheme.primary;
 
     final detectedId = AutoTripDetectionService.instance.lastDetectedGigAppId;
@@ -391,10 +391,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   // AutoTripDetectionService._pollForMidTripSwitch) -- this card only
   // ever quietly shows what's currently being tracked.
   Widget _buildAutoDetectTrackingCard(AppState appState, bool isDark, {required bool isPaused}) {
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     final primary = Theme.of(context).colorScheme.primary;
 
     final currentApp = TrackingController.currentGigApp != null
@@ -692,10 +692,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // ── NUEVO: widget de historial reciente ──
   Widget _buildRecentSessionsHistory(AppState appState, bool isDark) {
-    final cardBg     = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-    final labelColor  = isDark ? Colors.white38 : const Color(0xFF94A3B8);
-    final textColor   = isDark ? Colors.white : const Color(0xFF1E293B);
+    final cardBg     = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
+    final labelColor  = isDark ? Colors.white38 : const Color(0xFFA39A86);
+    final textColor   = isDark ? Colors.white : const Color(0xFF2E281F);
     final dateFormat  = DateFormat('MM/dd · hh:mm a');
 
     return Column(
@@ -1104,7 +1104,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1127,16 +1127,16 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Color get borderColor {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    return isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
   }
 
   @override
   Widget build(BuildContext context) {
     final appState  = Provider.of<AppState>(context);
     final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final scaffoldBg = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
-    final cardBg    = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final bColor    = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final scaffoldBg = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
+    final cardBg    = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final bColor    = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
 
     final displayValue = appState.useMetricSystem
         ? (liveMiles * 1.60934).toStringAsFixed(2)
@@ -1152,12 +1152,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       drawer: const MainDrawer(),
       bottomNavigationBar: _buildBottomButtons(isDark, appState),
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFFFAF6EE),
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           appState.tr('app_name'),
           style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            color: isDark ? Colors.white : const Color(0xFF2E281F),
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -1167,7 +1168,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               margin: const EdgeInsets.only(right: 15),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Theme.of(context).colorScheme.primary),
               ),
@@ -1403,8 +1404,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     // BUG FIX (build error, olvido al escribir el header): 'labelColor' no
     // es un campo de la clase -- cada método que lo usa lo calcula local a
     // partir de isDark (mismo criterio que _buildRecentSessionsHistory).
-    final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
 
     // BUG FIX (pedido explícito, "una misma card"): millas + duración del
     // viaje EN VIVO (antes su propia card gradiente, _buildStatsBox) ahora
@@ -1672,10 +1673,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         border: Border(
           top: BorderSide(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              color: isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4)),
         ),
       ),
       child: Row(
@@ -1686,7 +1687,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               icon: const Icon(Icons.history),
               label: Text(appState.tr('history').toUpperCase()),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B),
+                backgroundColor: const Color(0xFF2E281F),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

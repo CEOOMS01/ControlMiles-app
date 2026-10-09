@@ -67,13 +67,13 @@ class GigAppSelector extends StatelessWidget {
     // Container con borde, separados por un Divider de borde a borde,
     // mismo patrón que Vehicle/Stats/Summary.
     final borderColor = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFE2E8F0);
+        ? const Color(0xFF2E281F)
+        : const Color(0xFFE3D9C4);
 
     // Full-width row (2026-10-01), like the other dashboard cards.
     return Container(
       decoration: fullBleedCard(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         border: borderColor,
       ),
       child: Column(
@@ -104,14 +104,14 @@ class GigAppSelector extends StatelessWidget {
                     // "ON LIVE" in blue (explicit user request, 2026-10-01),
                     // same blue as the tracking card's running state.
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                      color: const Color(0xFF2C6C99).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
                       'ON LIVE',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Color(0xFF2563EB),
+                        color: Color(0xFF2C6C99),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -192,7 +192,7 @@ class GigAppSelector extends StatelessWidget {
                               : isSelected
                               ? baseColor.withValues(alpha: 0.85)
                               : (isDark
-                                    ? const Color(0xFF1E293B)
+                                    ? const Color(0xFF2E281F)
                                     : Colors.grey.shade100),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(

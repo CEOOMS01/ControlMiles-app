@@ -252,7 +252,7 @@ class _TourDialogState extends State<_TourDialog> {
                   padding: const EdgeInsets.only(left: 20),
                   child: Text(
                     appState.tr('tour_step').replaceFirst('{n}', '${_index + 1}').replaceFirst('{total}', '${widget.pages.length}'),
-                    style: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                    style: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF6B6250), fontWeight: FontWeight.w600),
                   ),
                 ),
                 const Spacer(),
@@ -282,14 +282,14 @@ class _TourDialogState extends State<_TourDialog> {
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                              color: isDark ? Colors.white : const Color(0xFF2E281F),
                             ),
                           ),
                           const SizedBox(height: 14),
                           Text(
                             appState.tr(p.bodyKey),
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, height: 1.45, color: isDark ? Colors.white70 : const Color(0xFF475569)),
+                            style: TextStyle(fontSize: 16, height: 1.45, color: isDark ? Colors.white70 : const Color(0xFF574F40)),
                           ),
                         ],
                       ),
@@ -342,8 +342,8 @@ class _WhatsNewSheet extends StatelessWidget {
     final appState = context.watch<AppState>();
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF574F40);
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),

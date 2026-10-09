@@ -533,8 +533,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final appState = context.watch<AppState>();
     final isDark   = Theme.of(context).brightness == Brightness.dark;
 
-    final scaffoldBg = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
-    final cardBg     = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final scaffoldBg = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
+    final cardBg     = isDark ? const Color(0xFF1C1812) : Colors.white;
     // BUG FIX (pedido explícito): #E2E8F0 (el borde compartido por casi
     // toda la app) es casi indistinguible del fondo del scaffold
     // (#F8FAFC) en modo día -- las líneas de las cards en Reports (bordes
@@ -542,12 +542,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // más oscuro de la misma paleta slate (#CBD5E1, ya usado en esta
     // misma pantalla para el ícono del empty state) -- cambio acotado a
     // esta pantalla, no al token compartido de toda la app.
-    final border     = isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1);
+    final border     = isDark ? const Color(0xFF2E281F) : const Color(0xFFCFC3A8);
 
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1C1812) : Colors.white,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,7 +557,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               appState.tr('reports').toUpperCase(),
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF1C1812),
               ),
             ),
             // Marca la apertura desde la notificación de resumen semanal
@@ -577,7 +577,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ],
         ),
         iconTheme: IconThemeData(
-            color: isDark ? Colors.white : const Color(0xFF0F172A)),
+            color: isDark ? Colors.white : const Color(0xFF1C1812)),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range_rounded),
@@ -595,9 +595,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   data: Theme.of(ctx).copyWith(
                     colorScheme: isDark
                         ? const ColorScheme.dark(
-                            primary: Color(0xFF3B82F6))
+                            primary: Color(0xFF2C6C99))
                         : const ColorScheme.light(
-                            primary: Color(0xFF3B82F6)),
+                            primary: Color(0xFF2C6C99)),
                   ),
                   child: child!,
                 ),
@@ -622,14 +622,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const CircularProgressIndicator(
-                      color: Color(0xFF3B82F6), strokeWidth: 2),
+                      color: Color(0xFF2C6C99), strokeWidth: 2),
                   const SizedBox(height: 20),
                   Text(
                     _progressMessage ?? appState.tr('loading'),
                     style: TextStyle(
                         color: isDark
                             ? Colors.white54
-                            : const Color(0xFF64748B)),
+                            : const Color(0xFF6B6250)),
                   ),
                 ],
               ),
@@ -645,7 +645,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         await _loadSessions();
         await _loadTodaySummary();
       },
-      color: const Color(0xFF3B82F6),
+      color: const Color(0xFF2C6C99),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -686,13 +686,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // curso -- ese sí se "resetea" solo porque _loadTodaySummary reconsulta
   // desde la medianoche local cada vez que corre).
   Widget _buildSummaryCard(AppState appState, bool isDark, Color border) {
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
     // BUG FIX (pedido explícito): el título "SUMMARY" usaba el mismo gris
     // clarito que sus propios sub-labels (TOTAL MILES, TODAY) -- se perdía
     // como encabezado en modo claro. Ahora un color oscuro propio, mismo
     // tono ya usado en esta pantalla para títulos (ej. AppBar más abajo).
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1C1812);
 
     String fmtMiles(double miles) {
       final display = appState.useMetricSystem
@@ -862,7 +862,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               size: 48,
               color: isDark
                   ? Colors.white24
-                  : const Color(0xFFCBD5E1)),
+                  : const Color(0xFFCFC3A8)),
           const SizedBox(height: 16),
           Text(
             // BUG FIX (missing key, real report from user): 'no_reports_found'
@@ -876,7 +876,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+              color: isDark ? Colors.white38 : const Color(0xFFA39A86),
             ),
           ),
         ],
@@ -915,7 +915,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.6,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF1C1812),
                 ),
               ),
               const SizedBox(width: 10),
@@ -968,11 +968,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                    color: const Color(0xFF2C6C99).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.verified_rounded,
-                      size: 18, color: Color(0xFF3B82F6)),
+                      size: 18, color: Color(0xFF2C6C99)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -986,7 +986,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           fontWeight: FontWeight.w700,
                           color: isDark
                               ? Colors.white
-                              : const Color(0xFF0F172A),
+                              : const Color(0xFF1C1812),
                         ),
                       ),
                       Text(
@@ -995,7 +995,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           fontSize: 11,
                           color: isDark
                               ? Colors.white38
-                              : const Color(0xFF94A3B8),
+                              : const Color(0xFFA39A86),
                         ),
                       ),
                     ],
@@ -1006,17 +1006,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                    color: const Color(0xFF2C6C99).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
+                        color: const Color(0xFF2C6C99).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '$totalDisp $unitLabel',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF3B82F6),
+                      color: Color(0xFF2C6C99),
                     ),
                   ),
                 ),
@@ -1068,7 +1068,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         letterSpacing: 0.8,
                         color: isDark
                             ? Colors.white38
-                            : const Color(0xFF94A3B8),
+                            : const Color(0xFFA39A86),
                       ),
                     ),
                   ),
@@ -1141,7 +1141,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           url,
           fit: BoxFit.cover,
           placeholderBuilder: (_) => Container(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE8E4DD),
+            color: isDark ? const Color(0xFF2E281F) : const Color(0xFFE8E4DD),
             alignment: Alignment.center,
             child: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
           ),
@@ -1208,20 +1208,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1E293B)
-            : const Color(0xFFF1F5F9),
+            ? const Color(0xFF2E281F)
+            : const Color(0xFFF3ECDF),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF64748B)),
+          Icon(icon, size: 12, color: const Color(0xFF6B6250)),
           const SizedBox(width: 5),
           Text(label,
               style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B))),
+                  color: Color(0xFF6B6250))),
         ],
       ),
     );

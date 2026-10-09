@@ -48,11 +48,11 @@ class _DriverSettingsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final bgColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
     final borderColor = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFE2E8F0);
+        ? const Color(0xFF2E281F)
+        : const Color(0xFFE3D9C4);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),

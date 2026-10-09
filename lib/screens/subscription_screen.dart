@@ -148,7 +148,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: isCurrent
             ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
@@ -165,7 +165,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  color: isDark ? Colors.white : const Color(0xFF2E281F),
                 ),
               ),
               Text(
@@ -183,7 +183,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             appState.tr(descriptionKey),
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.white70 : const Color(0xFF64748B),
+              color: isDark ? Colors.white70 : const Color(0xFF6B6250),
             ),
           ),
           const SizedBox(height: 16),
@@ -229,10 +229,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final trialDaysLeft = appState.freeTrialDaysLeft;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(appState.tr('subscription')),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
       ),
       body: ListView(
@@ -243,7 +243,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                color: isDark ? const Color(0xFF1C1812) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
               ),
@@ -258,7 +258,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
-                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          color: isDark ? Colors.white : const Color(0xFF2E281F),
                         ),
                       ),
                       Icon(Icons.verified_rounded, color: Colors.green, size: 18),
@@ -269,7 +269,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     appState.tr('started_plan_description'),
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B6250),
                     ),
                   ),
                   if (trialDaysLeft != null) ...[
@@ -312,7 +312,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             const SizedBox(height: 16),
             Text(
               appState.tr('play_store_unavailable'),
-              style: TextStyle(fontSize: 12.5, color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+              style: TextStyle(fontSize: 12.5, color: isDark ? Colors.white60 : const Color(0xFF6B6250)),
             ),
           ],
           if (baseEntitled || premiumEntitled) ...[

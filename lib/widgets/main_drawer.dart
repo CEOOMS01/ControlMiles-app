@@ -20,11 +20,11 @@ class MainDrawer extends StatelessWidget {
    // sin importar appState.isDarkMode. Mismo patrón isDark ya usado en
    // dashboard_screen.dart/history_screen.dart/etc.
    final isDark = Theme.of(context).brightness == Brightness.dark;
-   final bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-   final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-   final labelColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
-   final dividerColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-   final chevronColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1);
+   final bgColor = isDark ? const Color(0xFF1C1812) : Colors.white;
+   final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+   final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
+   final dividerColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
+   final chevronColor = isDark ? Colors.white24 : const Color(0xFFCFC3A8);
 
     return Drawer(
       backgroundColor: bgColor,
@@ -138,8 +138,8 @@ class MainDrawer extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF1E293B),
-            Color(0xFF0F172A),
+            Color(0xFF2E281F),
+            Color(0xFF1C1812),
           ],
         ),
       ),
@@ -311,7 +311,7 @@ class MainDrawer extends StatelessWidget {
         style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
       ),
       onTap: () => _showLogoutConfirmation(context, appState),
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFFCBD5E1)),
+      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFFCFC3A8)),
     );
   }
 

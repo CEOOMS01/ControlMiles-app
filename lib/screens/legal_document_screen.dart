@@ -25,13 +25,13 @@ class LegalDocumentScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
       appBar: AppBar(
         title: Text(
           appState.tr(titleKey).toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -41,7 +41,7 @@ class LegalDocumentScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 13.5,
             height: 1.55,
-            color: isDark ? Colors.white70 : const Color(0xFF334155),
+            color: isDark ? Colors.white70 : const Color(0xFF3D352A),
           ),
         ),
       ),

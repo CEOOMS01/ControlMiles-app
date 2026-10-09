@@ -60,13 +60,15 @@ class _MonitorHomeScreenState extends State<MonitorHomeScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
     final orgId = appState.defaultOrgId;
     return Scaffold(
       appBar: AppBar(
         title: Text(appState.tr('monitor_home_title')),
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF211C14),
         foregroundColor: Colors.white,
+        // Website-style ink header with a rounded bottom (warm palette, 2026-10-09).
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_rounded),
