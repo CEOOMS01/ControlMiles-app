@@ -300,7 +300,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
     final borderCol = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
-    final labelCol = isDark ? Colors.white38 : const Color(0xFFA39A86);
+    // Dark mode: white38 was too faint on the dark cards (2026-10-09).
+    final labelCol = isDark ? Colors.white60 : const Color(0xFF6B6250);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
@@ -478,8 +479,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           Container(
                                             width: 40,
                                             height: 40,
-                                            decoration: BoxDecoration(color: const Color(0xFF574F40).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                                            child: const Icon(Icons.route_rounded, color: Color(0xFF574F40), size: 20),
+                                            decoration: BoxDecoration(color: (isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)).withValues(alpha: isDark ? 0.12 : 0.1), borderRadius: BorderRadius.circular(10)),
+                                            child: Icon(Icons.route_rounded, color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40), size: 20),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
@@ -553,7 +554,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   // Métodos auxiliares (sin cambios)
+  // Chip text/icon follow the mode (2026-10-09): the fixed brown/slate was
+  // nearly invisible on the dark chip.
   Widget _buildInfoChip({required IconData icon, required String label, required bool isDark}) {
+    final fg = isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -563,9 +567,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF574F40)),
+          Icon(icon, size: 12, color: fg),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF574F40))),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
         ],
       ),
     );

@@ -596,7 +596,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   data: Theme.of(ctx).copyWith(
                     colorScheme: isDark
                         ? const ColorScheme.dark(
-                            primary: Color(0xFF2C6C99))
+                            primary: Color(0xFF6FB3E0))
                         : const ColorScheme.light(
                             primary: Color(0xFF2C6C99)),
                   ),
@@ -622,8 +622,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(
-                      color: Color(0xFF2C6C99), strokeWidth: 2),
+                  CircularProgressIndicator(
+                      color: _accent(isDark), strokeWidth: 2),
                   const SizedBox(height: 20),
                   Text(
                     _progressMessage ?? appState.tr('loading'),
@@ -639,6 +639,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  // Brand blue, lighter in dark mode (2026-10-09): the deep #2C6C99 that
+  // replaced the old bright blue was too dark to read on the dark cards.
+  Color _accent(bool isDark) => isDark ? const Color(0xFF6FB3E0) : const Color(0xFF2C6C99);
+
   Widget _buildBody(
       AppState appState, bool isDark, Color cardBg, Color border) {
     return RefreshIndicator(
@@ -646,7 +650,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         await _loadSessions();
         await _loadTodaySummary();
       },
-      color: const Color(0xFF2C6C99),
+      color: _accent(isDark),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -688,7 +692,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // desde la medianoche local cada vez que corre).
   Widget _buildSummaryCard(AppState appState, bool isDark, Color border) {
     final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
-    final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
+    final labelColor = isDark ? Colors.white60 : const Color(0xFF6B6250);
     // The "SUMMARY" title is a CmCardHeader strip now (2026-10-09).
 
     String fmtMiles(double miles) {
@@ -862,7 +866,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white38 : const Color(0xFFA39A86),
+              color: isDark ? Colors.white60 : const Color(0xFF6B6250),
             ),
           ),
         ],
@@ -954,11 +958,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C6C99).withValues(alpha: 0.1),
+                    color: _accent(isDark).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.verified_rounded,
-                      size: 18, color: Color(0xFF2C6C99)),
+                  child: Icon(Icons.verified_rounded,
+                      size: 18, color: _accent(isDark)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -980,8 +984,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark
-                              ? Colors.white38
-                              : const Color(0xFFA39A86),
+                              ? Colors.white60
+                              : const Color(0xFF6B6250),
                         ),
                       ),
                     ],
@@ -992,17 +996,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C6C99).withValues(alpha: 0.1),
+                    color: _accent(isDark).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: const Color(0xFF2C6C99).withValues(alpha: 0.3)),
+                        color: _accent(isDark).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '$totalDisp $unitLabel',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF2C6C99),
+                      color: _accent(isDark),
                     ),
                   ),
                 ),
