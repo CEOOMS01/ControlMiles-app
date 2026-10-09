@@ -980,7 +980,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(appState.tr('total_miles').toUpperCase(),
+                        // This column is the current month (_monthMiles); it said
+                        // "TOTAL MILES" and read like the header's total (2026-10-09).
+                        Text(appState.tr('this_month').toUpperCase(),
                             style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,

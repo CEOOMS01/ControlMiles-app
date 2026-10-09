@@ -8,6 +8,23 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.32+34 — 2026-10-09
+
+### Fixed
+- **History / Reports buttons hidden behind the navigation bar** on phones
+  with the 3-button navigation bar (reported by the owner). Android 15+
+  draws apps edge to edge; the fixed bottom bar now reserves exactly the
+  system bar's height (`SafeArea(top: false)`), so the buttons stay fixed and
+  sit above it. Gesture-navigation phones look the same as before.
+- Dashboard Summary: the left column said "TOTAL MILES" but shows the
+  current month (`_monthMiles`), so it didn't match the header's total; it
+  now reads **"THIS MONTH"**.
+
+### Changed
+- Gig dashboard header: the miles moved to the right, level with the
+  greeting (value in a serif, the period underneath), with a soft fading
+  hairline between them; one compact band instead of two lines.
+
 ## 1.1.31+33 — 2026-10-09
 
 ### Changed
