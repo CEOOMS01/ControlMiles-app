@@ -17,6 +17,7 @@ import '../models/vehicle.dart';
 import '../routes/app_routes.dart';
 import '../services/report_service.dart';
 import '../widgets/cm_card_header.dart';
+import '../utils/duration_format.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -506,11 +507,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // before pause-aware persistence) showed "0m" instead of the real trip
   // length. effectiveDurationSeconds treats 0 as "not set" too.
   String _formatSectionDuration(SessionSection s) {
-    final sec = s.effectiveDurationSeconds;
-    final m   = sec ~/ 60;
-    final h   = m   ~/ 60;
-    if (h > 0) return '${h}h ${m % 60}m';
-    return '${m}m';
+    // With seconds (2026-10-09).
+    return formatHms(s.effectiveDurationSeconds);
   }
 
   // BUG FIX: TrackingSession now maps total_duration_seconds (pause-excluded,
@@ -520,10 +518,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   String _formatSessionDuration(TrackingSession session) {
     final sec = session.effectiveDurationSeconds;
     if (sec == null) return '---';
-    final m   = sec ~/ 60;
-    final h   = m   ~/ 60;
-    if (h > 0) return '${h}h ${m % 60}m';
-    return '${m}m';
+    // With seconds (2026-10-09).
+    return formatHms(sec);
   }
 
   // ════════════════════════════════════════════════════════════
@@ -705,12 +701,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       return '$display $unit';
     }
 
-    String fmtDuration(int seconds) {
-      final durMin = seconds ~/ 60;
-      final durH = durMin ~/ 60;
-      final durRemMin = durMin % 60;
-      return durH > 0 ? '${durH}h ${durRemMin}m' : '${durRemMin}m';
-    }
+    // With seconds (2026-10-09).
+    String fmtDuration(int seconds) => formatHms(seconds);
 
     Widget subLabel(String text) => Padding(
           padding: const EdgeInsets.only(bottom: 6),
@@ -753,21 +745,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         subLabel(appState.tr('total_miles')),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _infoChip(
-                              icon: Icons.speed_rounded,
-                              label: fmtMiles(_periodTotalMiles),
-                              isDark: isDark,
-                            ),
-                            _infoChip(
-                              icon: Icons.timer_outlined,
-                              label: fmtDuration(_periodTotalDurationSec),
-                              isDark: isDark,
-                            ),
-                          ],
+                        // Miles and duration side by side (2026-10-09; the
+                        // Wrap used to push the duration below the miles).
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              _infoChip(
+                                icon: Icons.speed_rounded,
+                                label: fmtMiles(_periodTotalMiles),
+                                isDark: isDark,
+                              ),
+                              const SizedBox(width: 8),
+                              _infoChip(
+                                icon: Icons.timer_outlined,
+                                label: fmtDuration(_periodTotalDurationSec),
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1195,13 +1192,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF6B6250)),
+          // Text/icon follow the mode (2026-10-09): the fixed gray-brown
+          // was nearly invisible on the dark chip.
+          Icon(icon, size: 12, color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)),
           const SizedBox(width: 5),
           Text(label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B6250))),
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40))),
         ],
       ),
     );

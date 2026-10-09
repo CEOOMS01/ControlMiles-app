@@ -11,6 +11,7 @@ import '../models/tracking_session.dart';
 import '../models/session_section.dart';
 import '../models/gig_app.dart';
 import '../errors/app_error.dart';
+import '../utils/duration_format.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -291,7 +292,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   String _formatDuration(int seconds) {
     final d = Duration(seconds: seconds);
-    return "${d.inHours}h ${d.inMinutes.remainder(60)}m";
+    // With seconds (2026-10-09).
+    return formatHms(d.inSeconds);
   }
 
   @override
