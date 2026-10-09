@@ -8,6 +8,7 @@ import 'full_bleed.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
+import 'cm_card_header.dart';
 
 class GigAppSelector extends StatelessWidget {
   final String? selectedGigApp;
@@ -79,47 +80,24 @@ class GigAppSelector extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  appState.tr('active_activity').toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: theme.textTheme.bodyMedium?.color?.withValues(
-                      alpha: 0.6,
-                    ),
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                if (isTracking)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    // "ON LIVE" in blue (explicit user request, 2026-10-01),
-                    // same blue as the tracking card's running state.
+          // Brown header strip (2026-10-09). "ON LIVE" badge in the brand
+          // blue (explicit user request, 2026-10-01), solid so it reads on brown.
+          CmCardHeader(
+            title: appState.tr('active_activity'),
+            trailing: isTracking
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2C6C99).withValues(alpha: 0.12),
+                      color: const Color(0xFF3E93CA),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
                       'ON LIVE',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Color(0xFF2C6C99),
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
                     ),
-                  ),
-              ],
-            ),
+                  )
+                : null,
           ),
-          Divider(height: 1, color: borderColor),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: ShaderMask(

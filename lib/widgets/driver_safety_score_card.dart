@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
+import 'cm_card_header.dart';
 
 class DriverSafetyScoreCard extends StatefulWidget {
   final String organizationId;
@@ -135,10 +136,7 @@ class _DriverSafetyScoreCardState extends State<DriverSafetyScoreCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appState.tr('safety_score_title').toUpperCase(),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
-          ),
+          CmCardHeader(title: appState.tr('safety_score_title'), inset: true),
           const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,

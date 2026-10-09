@@ -16,6 +16,7 @@ import '../logic/app_state.dart';
 import '../screens/school_run_screen.dart';
 import '../services/school_route_service.dart';
 import '../tracking/tracking_controller.dart';
+import 'cm_card_header.dart';
 
 class SchoolRoutesCard extends StatefulWidget {
   final String organizationId;
@@ -128,10 +129,7 @@ class _SchoolRoutesCardState extends State<SchoolRoutesCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appState.tr('school_routes_today').toUpperCase(),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
-          ),
+          CmCardHeader(title: appState.tr('school_routes_today'), inset: true),
           if (!widget.tripIsActive && !widget.monitorMode) ...[
             const SizedBox(height: 6),
             Text(appState.tr('school_start_trip_first'), style: TextStyle(fontSize: 12, color: subTextColor)),

@@ -16,6 +16,7 @@ import '../models/gig_app.dart';
 import '../models/vehicle.dart';
 import '../routes/app_routes.dart';
 import '../services/report_service.dart';
+import '../widgets/cm_card_header.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -688,11 +689,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildSummaryCard(AppState appState, bool isDark, Color border) {
     final cardBg = isDark ? const Color(0xFF1C1812) : Colors.white;
     final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
-    // BUG FIX (pedido explícito): el título "SUMMARY" usaba el mismo gris
-    // clarito que sus propios sub-labels (TOTAL MILES, TODAY) -- se perdía
-    // como encabezado en modo claro. Ahora un color oscuro propio, mismo
-    // tono ya usado en esta pantalla para títulos (ej. AppBar más abajo).
-    final titleColor = isDark ? Colors.white : const Color(0xFF1C1812);
+    // The "SUMMARY" title is a CmCardHeader strip now (2026-10-09).
 
     String fmtMiles(double miles) {
       final display = appState.useMetricSystem
@@ -726,6 +723,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14),
@@ -734,19 +732,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            child: Text(
-              appState.tr('summary').toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-                color: titleColor,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: border),
+          CmCardHeader(title: appState.tr('summary'), padding: const EdgeInsets.fromLTRB(16, 10, 16, 10)),
           // BUG FIX (pedido explícito): TOTAL y TODAY vivían apilados uno
           // debajo del otro, sin ninguna separación visual que dejara claro
           // que son dos cifras distintas (una es el total del período, la
@@ -1059,18 +1045,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      appState.tr('trip_details').toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: isDark
-                            ? Colors.white38
-                            : const Color(0xFFA39A86),
-                      ),
-                    ),
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: CmCardHeader(title: appState.tr('trip_details'), inset: true),
                   ),
                   Wrap(
                     spacing: 8,

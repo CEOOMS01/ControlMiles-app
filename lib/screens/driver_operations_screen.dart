@@ -45,6 +45,7 @@ import 'vehicle_inspection_screen.dart';
 import 'inspection_detail_screen.dart';
 import 'report_incident_sheet.dart';
 import 'driver_settings_sheet.dart';
+import '../widgets/cm_card_header.dart';
 
 class DriverOperationsScreen extends StatefulWidget {
   const DriverOperationsScreen({super.key});
@@ -254,10 +255,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appState.tr('shift_classes_today').toUpperCase(),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
-          ),
+          CmCardHeader(title: appState.tr('shift_classes_today'), inset: true),
           const SizedBox(height: 10),
           for (final b in day.blocks)
             Padding(
@@ -956,10 +954,7 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      appState.tr('driver_ops_live_location').toUpperCase(),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: subTextColor),
-                    ),
+                    CmCardHeader(title: appState.tr('driver_ops_live_location'), inset: true),
                     const SizedBox(height: 8),
                     SizedBox(height: 320, child: const DriverLiveMapView()),
                   ],

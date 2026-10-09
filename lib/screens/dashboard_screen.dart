@@ -19,6 +19,7 @@ import '../screens/vehicle_inspection_screen.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../widgets/full_bleed.dart';
+import '../widgets/cm_card_header.dart';
 import '../widgets/driver_live_map_view.dart';
 import '../widgets/main_drawer.dart';
 import '../widgets/tracking_action_button.dart';
@@ -95,6 +96,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   // total daría un estimado incorrecto para meses que cruzan el cambio de
   // tarifa.
   double _monthMiles = 0.0;
+  // Header (2026-10-09): miles closed this week (Monday 00:00 local).
+  double _weekMiles = 0.0;
   int _monthDurationSec = 0;
   double _monthDeduction = 0.0;
   bool _monthLoading = true;
@@ -448,6 +451,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   // dispositivo (misma fuente que ya usa RECENT TRIPS para el corte de
   // medianoche, no UTC). firstName puede ser null (perfil sin nombre
   // cargado) -- en ese caso el saludo se muestra solo, sin nombre vacío.
+  bool get _isDaytime {
+    final hour = DateTime.now().hour;
+    return hour >= 6 && hour < 19;
+  }
+
   String _buildGreeting(AppState appState) {
     final hour = DateTime.now().hour;
     final String greetingKey;
@@ -461,8 +469,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final greeting = appState.tr(greetingKey);
     final firstName = appState.firstName;
     return (firstName != null && firstName.trim().isNotEmpty)
-        ? '$greeting! $firstName'
-        : '$greeting!';
+        ? '$greeting, $firstName'
+        : greeting;
   }
 
   @override
@@ -501,6 +509,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     await _loadRecentSessions(); // ── NUEVO
     await _loadTodaySummary(); // ── NUEVO
     await _loadMonthSummary(); // ── NUEVO
+    await _loadWeekSummary();
     if (mounted) {
       _syncTrackingUiState();
       setState(() => loading = false);
@@ -544,6 +553,28 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       debugPrint("[ControlMiles Today Summary Load Error] $e");
       if (mounted) setState(() => _summaryLoading = false);
+    }
+  }
+
+  // Header (2026-10-09): miles of the week so far, Monday 00:00 local time.
+  Future<void> _loadWeekSummary() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+      final nowLocal = DateTime.now();
+      final monday = DateTime(nowLocal.year, nowLocal.month, nowLocal.day)
+          .subtract(Duration(days: nowLocal.weekday - 1));
+      final rows = await _supabase
+          .from('sessions')
+          .select('total_miles')
+          .eq('user_id', user.id)
+          .eq('is_closed', true)
+          .gte('start_time', monday.toUtc().toIso8601String());
+      final miles = List<Map<String, dynamic>>.from(rows)
+          .fold<double>(0.0, (acc, r) => acc + ((r['total_miles'] as num?)?.toDouble() ?? 0.0));
+      if (mounted) setState(() => _weekMiles = miles);
+    } catch (e) {
+      debugPrint("[ControlMiles Week Summary Load Error] $e");
     }
   }
 
@@ -701,38 +732,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Encabezado de sección ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(kPageGutter, 0, kPageGutter, 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                appState.tr('recent_trips_title').toUpperCase(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: labelColor,
-                ),
-              ),
-              if (_recentSessions.isNotEmpty)
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/history'),
-                  child: Text(
-                    '${appState.tr('see_all_label').toUpperCase()} →',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-
         // ── NUEVO: card Summary (total del día, pedido explícito) ──
         _buildSummaryCard(appState, cardBg, borderColor, labelColor, textColor),
         const SizedBox(height: 14),
@@ -911,6 +910,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             );
           }).toList()),
+        if (_recentSessions.isNotEmpty)
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pushNamed(context, '/history'),
+              child: Text('${appState.tr('see_all_label')} →'),
+            ),
+          ),
       ],
     );
   }
@@ -949,19 +955,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
-            child: Text(
-              appState.tr('summary').toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-                color: labelColor,
-              ),
-            ),
+          // RECENT TRIPS lives on the left of this card's header now
+          // (owner's request, 2026-10-09), with SUMMARY on the right; "See
+          // all" moved under the trip list.
+          CmCardHeader(
+            title: appState.tr('recent_trips_title'),
+            trailing: Text(appState.tr('summary').toUpperCase(), style: cmHeaderLinkStyle),
           ),
-          Divider(height: 1, color: borderColor),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1151,42 +1151,52 @@ class _DashboardScreenState extends State<DashboardScreen>
       backgroundColor: scaffoldBg,
       drawer: const MainDrawer(),
       bottomNavigationBar: _buildBottomButtons(isDark, appState),
+      // Brand-blue header with a rounded bottom (warm palette, 2026-10-09).
+      // Header, option B (owner's pick, 2026-10-09): the app's warm brown
+      // with a rounded bottom; the time-of-day greeting with a sun or moon,
+      // and this week's miles big, in a serif like the website.
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFFFAF6EE),
+        backgroundColor: isDark ? const Color(0xFF3D352A) : const Color(0xFF2E281F),
+        foregroundColor: const Color(0xFFFAF6EE),
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text(
-          appState.tr('app_name'),
-          style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF2E281F),
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        actions: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(right: 15),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).colorScheme.primary),
-              ),
-              // BUG FIX (pedido explícito): reemplaza el badge "IRS 2026 ·
-              // X¢/mi" (número ya vive en MileageDeductionBadge más abajo,
-              // detrás del disclaimer completo) por un saludo dinámico
-              // según la hora del dispositivo + nombre real del usuario.
-              // firstName sale de AppState (ver fetchUserProfile), NO de
-              // un fetch propio de esta pantalla, para no reabrir el bug
-              // de caché cruzado entre cuentas ya resuelto ahí.
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            Icon(_isDaytime ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                size: 20, color: _isDaytime ? const Color(0xFFF2B48C) : const Color(0xFFC9BFA9)),
+            const SizedBox(width: 8),
+            Flexible(
               child: Text(
                 _buildGreeting(appState),
-                style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFFFAF6EE)),
               ),
             ),
+          ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(52),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(kPageGutter, 0, kPageGutter, 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${appState.useMetricSystem ? (_weekMiles * 1.60934).toStringAsFixed(1) : _weekMiles.toStringAsFixed(1)} '
+                  '${appState.useMetricSystem ? appState.tr('kilometer_short') : appState.tr('mile_short')}',
+                  style: const TextStyle(
+                      fontFamily: 'serif', fontSize: 26, fontWeight: FontWeight.w600, color: Color(0xFFFAF6EE)),
+                ),
+                const SizedBox(width: 8),
+                Text(appState.tr('this_week').toLowerCase(),
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFC9BFA9))),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -1444,25 +1454,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
 
-    final headerRow = Padding(
-      padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 12),
-      child: Row(
-        children: [
-          Icon(Icons.directions_car_outlined,
-              size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            appState.tr('vehicle').toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-              color: labelColor,
-            ),
-          ),
-        ],
-      ),
-    );
+    final headerRow = CmCardHeader(title: appState.tr('vehicle'));
 
     // Fleet Phase 3: a fleet_driver's vehicle comes from their admin
     // (assigned_driver_id), not from AppRoutes.vehicle (VehicleScreen is
@@ -1487,7 +1479,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             headerRow,
-            Divider(height: 1, color: borderColor),
             InkWell(
               onTap: isFleetDriver ? null : _goToVehicleProfile,
               child: Padding(
