@@ -8,6 +8,48 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.1.31+33 — 2026-10-09
+
+### Changed
+- **Warm, website-style look** (owner's request; competitor research:
+  Gridwise and Samsara moved to warm off-white backgrounds, a warm near-black
+  ink and one strong accent; the ControlMiles website already uses cream
+  #FAF6EE, ink #211C14, blue #2C6C99, amber #BD5B26). New palette
+  `lib/theme/cm_colors.dart`; the 435 hard-coded Tailwind "slate" colors in
+  51 files were swapped 1:1 for warm equivalents (comments untouched).
+  Global theme: cream background, white cards with sand borders, pill
+  buttons, rounded dialogs/sheets, floating snack bars, warm charcoal dark
+  mode.
+- **Gig dashboard header**: the app's warm brown with a rounded bottom; the
+  time-of-day greeting with a sun or moon icon and the user's name, and the
+  miles of this week / month / year big in a serif. **Profile -> "Miles on
+  the home header"** picks the period (saved on the device).
+- **Card headers**: every card title ("ACTIVE ACTIVITY", "SUMMARY",
+  "TRIP DETAILS", safety score, school routes, today's classes, live
+  location...) is a solid brown strip with cream text (`CmCardHeader`) --
+  they were faint gray labels. Settings and Profile section titles are
+  brown with an amber underline.
+- Dashboard: **RECENT TRIPS** moved into the Summary card header (left),
+  with SUMMARY on the right; "See all" under the trip list. The tracking
+  card has a **light blue** background; the **Start** button is bigger when
+  idle so it stands out next to Premium auto-detect.
+- Fleet driver, bus monitor and school run screens: brand-blue header with a
+  rounded bottom.
+- Side menu: cream background; the user ID tab sits flush on the bottom-left
+  edge of the header (logo unchanged).
+- **History and Reports**: trip durations show seconds ("2h 17m 05s"),
+  including the Reports summary, where the duration now sits beside the
+  miles.
+- **Vehicles**: only the selected car has a check mark (it used to show on
+  the car that was NOT selected); its border and ACTIVE badge are blue
+  instead of green. Tapping another car's card selects it; the chevron on
+  each card (or tapping the selected car) opens the vehicle profile.
+
+### Fixed
+- Dark mode: History and Reports info chips (miles, times, durations), the
+  trip icon and faint labels were almost invisible; Reports' blue is lighter
+  in dark mode. Vehicle list icons readable in dark mode.
+
 ## 1.1.30+32 — 2026-10-09
 
 ### Added

@@ -661,8 +661,9 @@ class _VehicleScreenState extends State<VehicleScreen>
       // borde que el resto de la app.
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        // Selected car in the brand blue (was green), 2026-10-09.
         side: v.isActive
-            ? const BorderSide(color: Color(0xFF22C55E), width: 1.5)
+            ? const BorderSide(color: Color(0xFF3E93CA), width: 1.5)
             : BorderSide(color: isDark ? const Color(0xFF3D352A) : const Color(0xFFE3D9C4)),
       ),
       child: ListTile(
@@ -671,10 +672,15 @@ class _VehicleScreenState extends State<VehicleScreen>
         // el tap en el cuerpo de la tarjeta abre VehicleDetailScreen,
         // solo-lectura. Los controles de acción (activar/eliminar) siguen
         // viviendo en `trailing`, sin cambio de comportamiento.
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
-        ),
+        // 2026-10-09 (owner's request): tapping a car that isn't selected
+        // selects it (the check mark moves to it); the selected car's tap,
+        // and the chevron on every card, open the vehicle profile.
+        onTap: v.isActive
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
+                )
+            : (_isLoading ? null : () => _setActiveVehicle(v.id, appState)),
         leading: Icon(Icons.directions_car_filled_rounded,
             color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)),
         title: Row(
@@ -685,11 +691,11 @@ class _VehicleScreenState extends State<VehicleScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                  color: const Color(0xFF3E93CA).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(appState.tr('active_badge'),
-                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF22C55E))),
+                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF3E93CA))),
               ),
             ],
           ],
@@ -699,21 +705,14 @@ class _VehicleScreenState extends State<VehicleScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Owner's request (2026-10-09): the check mark showed on the car
-            // that was NOT selected (it was the "make active" button), which
-            // read as if that car were the selected one. Now the selected car
-            // carries the filled green check (indicator only) and the others
-            // an empty circle you tap to select them -- the check moves there.
+            // that was NOT selected (it was the "make active" button) and read
+            // as if that car were the selected one. Only the selected car has
+            // the check now (blue, indicator only); the others have none --
+            // tapping their card selects them.
             if (v.isActive)
               const Padding(
                 padding: EdgeInsets.all(12),
-                child: Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E)),
-              )
-            else
-              IconButton(
-                icon: Icon(Icons.radio_button_unchecked_rounded,
-                    color: isDark ? const Color(0xFFA39A86) : const Color(0xFF6B6250)),
-                tooltip: appState.tr('mark_as_active'),
-                onPressed: _isLoading ? null : () => _setActiveVehicle(v.id, appState),
+                child: Icon(Icons.check_circle_rounded, color: Color(0xFF3E93CA)),
               ),
             IconButton(
               icon: Icon(Icons.event_repeat_rounded,
@@ -724,6 +723,14 @@ class _VehicleScreenState extends State<VehicleScreen>
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
               onPressed: _isLoading ? null : () => _deleteVehicle(v.id, appState),
+            ),
+            IconButton(
+              icon: Icon(Icons.chevron_right_rounded,
+                  color: isDark ? const Color(0xFFE3D9C4) : const Color(0xFF574F40)),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => VehicleDetailScreen(vehicle: v)),
+              ),
             ),
           ],
         ),
