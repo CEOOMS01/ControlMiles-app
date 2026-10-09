@@ -89,7 +89,6 @@ class MainDrawer extends StatelessWidget {
 
                 // --- Sección: Preferencias ---
                 _buildSectionHeader(appState, 'settings', labelColor),
-                _buildLanguageSelector(context, appState, textColor, chevronColor),
 
                 // BUG FIX (pedido explícito): botón dedicado para alternar
                 // modo oscuro directo desde el sidebar, sin tener que entrar
@@ -99,18 +98,19 @@ class MainDrawer extends StatelessWidget {
                 _buildMenuItem(
                   context: context,
                   appState: appState,
-                  icon: Icons.settings_rounded,
-                  labelKey: 'settings',
-                  route: AppRoutes.settings,
-                  textColor: textColor,
-                  chevronColor: chevronColor,
-                ),
-                _buildMenuItem(
-                  context: context,
-                  appState: appState,
                   icon: Icons.person_rounded,
                   labelKey: 'profile',
                   route: AppRoutes.profile,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
+                ),
+                // Settings last, under Profile (owner's request, 2026-10-09).
+                _buildMenuItem(
+                  context: context,
+                  appState: appState,
+                  icon: Icons.settings_rounded,
+                  labelKey: 'settings',
+                  route: AppRoutes.settings,
                   textColor: textColor,
                   chevronColor: chevronColor,
                 ),
@@ -203,6 +203,65 @@ class MainDrawer extends StatelessWidget {
                   ),
                 ),
               ),
+              const Spacer(),
+              // Language (2026-10-09, owner's request): moved from the menu
+              // list to this header's right corner, mirroring the ID tab; it
+              // only opens the list of languages.
+              PopupMenuButton<AppLanguage>(
+                tooltip: appState.tr('language'),
+                position: PopupMenuPosition.under,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                constraints: const BoxConstraints(minWidth: 200, maxHeight: 420),
+                onSelected: (lang) {
+                  if (lang != appState.currentLanguage) appState.setLanguage(lang);
+                },
+                itemBuilder: (context) => AppLanguage.values
+                    .map((lang) => PopupMenuItem<AppLanguage>(
+                          value: lang,
+                          child: Row(
+                            children: [
+                              Text(lang.flag, style: const TextStyle(fontSize: 18)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  lang.label,
+                                  style: TextStyle(
+                                      fontWeight:
+                                          lang == appState.currentLanguage ? FontWeight.w800 : FontWeight.w500),
+                                ),
+                              ),
+                              if (lang == appState.currentLanguage)
+                                Icon(Icons.check_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 5, 20, 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(10)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(appState.currentLanguage.flag, style: const TextStyle(fontSize: 15)),
+                      const SizedBox(width: 6),
+                      Text(
+                        appState.currentLanguage.code.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.arrow_drop_down_rounded, color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -262,28 +321,6 @@ class MainDrawer extends StatelessWidget {
       onTap: () {
         Navigator.pop(context);
         Navigator.pushNamed(context, route);
-      },
-      trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
-    );
-  }
-
-  Widget _buildLanguageSelector(BuildContext context, AppState appState, Color textColor, Color chevronColor) {
-    return ListTile(
-      leading: Icon(Icons.language, color: Theme.of(context).colorScheme.primary, size: 22),
-      title: Text(
-        appState.tr('language'),
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-      subtitle: Text(
-        '${appState.currentLanguage.flag} ${appState.currentLanguage.label}',
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, AppRoutes.settings);
       },
       trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
     );

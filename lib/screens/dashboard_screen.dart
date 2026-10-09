@@ -1386,7 +1386,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               // (The "TRACKING ACTIVE: APP" chip lived here -- the tracking
               // card's status line shows the same thing now.)
 
-              const SizedBox(height: 30),
+              // More room between the carousel and Recent trips (2026-10-09).
+              const SizedBox(height: 46),
 
               // ── NUEVO: historial reciente debajo del botón ──
               _buildRecentSessionsHistory(appState, isDark),

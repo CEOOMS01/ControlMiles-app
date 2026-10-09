@@ -36,7 +36,11 @@ changes there are not app releases and are not recorded here.
 - Fleet driver, bus monitor and school run screens: brand-blue header with a
   rounded bottom.
 - Side menu: cream background; the user ID tab sits flush on the bottom-left
-  edge of the header (logo unchanged).
+  edge of the header (logo unchanged). The Language row left the menu list:
+  a language button (flag + code) now sits in the header's bottom-right
+  corner, mirroring the ID tab, and only opens the list of languages.
+  Settings moved to the last place, under Profile.
+- Dashboard: more space between the gig-app carousel and Recent trips.
 - **History and Reports**: trip durations show seconds ("2h 17m 05s"),
   including the Reports summary, where the duration now sits beside the
   miles.
