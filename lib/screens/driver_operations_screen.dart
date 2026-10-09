@@ -717,9 +717,9 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
           appState.tr('driver_ops_title').toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
-        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF211C14),
+        backgroundColor: isDark ? const Color(0xFF1F4E6F) : const Color(0xFF2C6C99),
         foregroundColor: Colors.white,
-        // Website-style ink header with a rounded bottom (warm palette, 2026-10-09).
+        // Brand-blue header with a rounded bottom (warm palette, 2026-10-09).
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
         elevation: 0,
         actions: [
