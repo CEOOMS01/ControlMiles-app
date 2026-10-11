@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../config/app_flavor.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../models/organization.dart';
@@ -1041,15 +1042,19 @@ class _SettingsScreenState extends State<SettingsScreen>
             onTap: () => AppTourService.replay(context),
           ),
           const SizedBox(height: 10),
-          _buildMileageMethodRow(appState, isDark),
-          const SizedBox(height: 10),
-          _buildLegalLinkRow(
-            icon: Icons.workspace_premium_outlined,
-            label: appState.tr('subscription'),
-            isDark: isDark,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
-          ),
-          const SizedBox(height: 10),
+          // Personal plans and the IRS mileage method belong to the gig app;
+          // fleets are billed on controlmiles.com (Gig / Fleet split).
+          if (AppFlavor.isGig) ...[
+            _buildMileageMethodRow(appState, isDark),
+            const SizedBox(height: 10),
+            _buildLegalLinkRow(
+              icon: Icons.workspace_premium_outlined,
+              label: appState.tr('subscription'),
+              isDark: isDark,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
+            ),
+            const SizedBox(height: 10),
+          ],
           _buildLegalLinkRow(
             icon: Icons.privacy_tip_outlined,
             label: appState.tr('privacy_policy'),
@@ -1063,9 +1068,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   // the organization/company-framed version -- the
                   // individual version doesn't cover an admin's own
                   // obligations around driver data, which is the
-                  // relationship that's actually live once isFleetAccount
-                  // is true.
-                  body: appState.isFleetAccount
+                  // relationship that's actually live in the Fleet app.
+                  body: AppFlavor.isFleet
                       ? privacyPolicyFleetEn
                       : privacyPolicyEn,
                 ),
@@ -1082,7 +1086,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               MaterialPageRoute(
                 builder: (_) => LegalDocumentScreen(
                   titleKey: 'terms_conditions',
-                  body: appState.isFleetAccount
+                  body: AppFlavor.isFleet
                       ? termsOfServiceFleetEn
                       : termsOfServiceEn,
                 ),

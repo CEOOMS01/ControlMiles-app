@@ -1160,4 +1160,12 @@ const Map<String, String> enTexts = {
   'usage_access_required_title': 'Usage access needed',
   'usage_access_required_body': 'Automatic detection can\'t see which gig app is open without "Usage access". Grant it in Settings, then turn automatic detection on again.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "You have a company trip open in ControlMiles Fleet. End it there before starting a personal trip.",
+  'active_personal_trip_error': "You have a personal trip open in ControlMiles. End it there before starting a company trip.",
+  'fleet_join_owner_hint': "Own or manage a fleet? Create it and manage it at controlmiles.com, then come back here.",
+  'fleet_join_open_web': "Open controlmiles.com",
+  'gig_fleet_app_hint': "Drive for a company fleet? Company trips go in the ControlMiles Fleet app. This app keeps your personal miles only.",
+  'get_fleet_app': "Get ControlMiles Fleet",
+
 };

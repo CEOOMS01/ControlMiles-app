@@ -86,6 +86,10 @@ class AppError {
   static const workdayBlockInProgress = AppError(422, 'workday_block_in_progress_error');
   static const fleetTypeLocked = AppError(423, 'fleet_type_locked_error');
   static const fleetTypeOwnerOnly = AppError(424, 'fleet_type_owner_only_error');
+  // Gig / Fleet split (2026-10-11, tr_sessions_block_cross_app_open_trip):
+  // a personal trip and a company trip can't be open at the same time.
+  static const activeFleetTrip = AppError(425, 'active_fleet_trip_error');
+  static const activePersonalTrip = AppError(426, 'active_personal_trip_error');
   static const rateLimited = AppError(420, 'rate_limited_error');
   static const duplicateEntry = AppError(430, 'duplicate_entry_error');
   static const subscriptionsNotConfigured = AppError(440, 'subscriptions_not_configured');
@@ -174,6 +178,8 @@ class AppError {
 
     if (text.contains('VEHICLE_LIMIT_REACHED')) return vehicleLimitReached;
     if (text.contains('FREE_TRIAL_EXPIRED')) return freeTrialExpired;
+    if (text.contains('ACTIVE_FLEET_TRIP')) return activeFleetTrip;
+    if (text.contains('ACTIVE_PERSONAL_TRIP')) return activePersonalTrip;
     if (text.contains('ORG_MEMBERSHIP_REVOKED')) return orgMembershipRevoked;
     if (text.contains('FLEET_SUBSCRIPTION_REQUIRED')) return fleetSubscriptionRequired;
     if (text.contains('FLEET_GROWTH_REQUIRED')) return fleetGrowthRequired;

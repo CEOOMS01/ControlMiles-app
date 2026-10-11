@@ -1081,4 +1081,12 @@ const Map<String, String> hiTexts = {
   'usage_access_required_title': 'उपयोग पहुंच आवश्यक है',
   'usage_access_required_body': '"उपयोग पहुंच" के बिना स्वचालित पहचान यह नहीं देख सकती कि कौन सी गिग ऐप खुली है। इसे सेटिंग्स में दें और स्वचालित पहचान फिर से चालू करें।',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "ControlMiles Fleet में आपकी एक कंपनी यात्रा खुली है। निजी यात्रा शुरू करने से पहले उसे वहाँ समाप्त करें।",
+  'active_personal_trip_error': "ControlMiles में आपकी एक निजी यात्रा खुली है। कंपनी यात्रा शुरू करने से पहले उसे वहाँ समाप्त करें।",
+  'fleet_join_owner_hint': "क्या आप किसी फ्लीट के मालिक या प्रबंधक हैं? उसे controlmiles.com पर बनाएँ और प्रबंधित करें, फिर यहाँ लौटें।",
+  'fleet_join_open_web': "controlmiles.com खोलें",
+  'gig_fleet_app_hint': "क्या आप किसी कंपनी फ्लीट के लिए गाड़ी चलाते हैं? कंपनी यात्राएँ ControlMiles Fleet ऐप में होती हैं। यह ऐप केवल आपके निजी मील रखता है।",
+  'get_fleet_app': "ControlMiles Fleet डाउनलोड करें",
+
 };

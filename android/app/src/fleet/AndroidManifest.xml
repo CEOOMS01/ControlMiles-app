@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ControlMiles Fleet only (merged into src/main/AndroidManifest.xml). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name=".MainActivity">
+            <!-- Fleet driver invite deep link: Android App Links for
+                 https://controlmiles.com/invite/<token>, emailed by the
+                 send-driver-invite edge function. android:autoVerify needs
+                 this app's package + signing fingerprint in
+                 https://controlmiles.com/.well-known/assetlinks.json
+                 (controlmiles-web repo); without it Android shows a chooser
+                 instead of opening the app. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="controlmiles.com"
+                    android:pathPrefix="/invite"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

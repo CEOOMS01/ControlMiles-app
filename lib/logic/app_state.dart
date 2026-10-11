@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/app_flavor.dart';
 import '../i18n/app_texts.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
@@ -144,11 +145,19 @@ class AppState extends ChangeNotifier {
   bool get baseEntitled => _baseEntitled;
   String get mileageMethod => _mileageMethod;
   bool get accountTypeChosen => _accountTypeChosen;
-  bool get isGig => _accountType == 'gig';
-  bool get isFleetAdmin => _accountType == 'fleet_admin';
-  bool get isFleetDriver => _accountType == 'fleet_driver';
+  // Gig / Fleet split (2026-10-11): the app's mode comes from which app
+  // this is (AppFlavor) plus, in the Fleet app, the member's role in their
+  // fleet -- never from profiles.account_type, which one person with both
+  // apps installed would keep flipping. The gig app is always personal.
+  bool get isGig => AppFlavor.isGig;
+  bool get isFleetAdmin =>
+      AppFlavor.isFleet && _fleetManagerRoles.contains(_memberRole);
+  bool get isFleetDriver =>
+      AppFlavor.isFleet && _fleetDriverRoles.contains(_memberRole);
+  static const _fleetManagerRoles = {'owner', 'admin', 'operator'};
+  static const _fleetDriverRoles = {'driver', 'monitor'};
   String? get memberRole => _memberRole;
-  bool get isMonitor => _accountType == 'fleet_driver' && _memberRole == 'monitor';
+  bool get isMonitor => isFleetDriver && _memberRole == 'monitor';
   String? get fleetTemplate => _fleetTemplate;
   bool get isSchoolFleet => _fleetTemplate == 'school_transport';
   DateTime? get accountCreatedAt => _accountCreatedAt;
@@ -262,10 +271,9 @@ class AppState extends ChangeNotifier {
           ? DateTime.tryParse(data!['created_at'] as String)
           : null;
       final bool newTierEnforcementExempt = data?['tier_enforcement_exempt'] as bool? ?? false;
-      final bool changed = _userDisplayId != newDisplayId ||
+      bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||
-          _defaultOrgId != newDefaultOrgId ||
           _premiumEntitled != newPremiumEntitled ||
           _baseEntitled != newBaseEntitled ||
           _mileageMethod != newMileageMethod ||
@@ -289,45 +297,39 @@ class AppState extends ChangeNotifier {
         await prefs.setBool('controlmiles_auto_detect_enabled', false);
       }
 
-      // Fleet Sprint 3 (shift-scoped privacy, explicit user request,
-      // 2026-09-09): a hybrid account switching from gig into fleet_admin/
-      // fleet_driver mode (OrgModeSwitcher, Sprint 2) could otherwise carry
-      // an auto-detect flag left on from their Gig usage straight into
-      // Fleet mode -- the background location/gig-app-detection service
-      // has no business running at all for a fleet_driver outside an
-      // active tracked session. Same "check BEFORE _accountType updates
-      // below" ordering as the premium-lapse fix above, so this only fires
-      // on a genuine gig -> fleet transition, not on every profile fetch
-      // while already in fleet mode.
-      final becameFleetAccount = _accountType == 'gig' &&
-          (newAccountType == 'fleet_admin' || newAccountType == 'fleet_driver');
-      if (becameFleetAccount && _autoDetectEnabled) {
-        _autoDetectEnabled = false;
-        await AutoTripDetectionService.instance.setEnabled(false);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('controlmiles_auto_detect_enabled', false);
-      }
-
+      // Fleet app only: the member's role decides the home screen (manager
+      // look vs driver ops). Their default fleet first, else the fleet they
+      // joined most recently. The gig app never reads fleet membership.
       String? newMemberRole;
       String? newFleetTemplate;
-      if (newDefaultOrgId != null && newAccountType != 'gig') {
+      String? fleetOrgId = newDefaultOrgId;
+      if (AppFlavor.isFleet) {
         try {
-          final m = await Supabase.instance.client
+          final rows = await Supabase.instance.client
               .from('organization_members')
-              .select('member_role, organizations(industry_template)')
+              .select('organization_id, member_role, joined_at, organizations(industry_template)')
               .eq('user_id', user.id)
-              .eq('organization_id', newDefaultOrgId)
               .eq('is_active', true)
-              .maybeSingle();
+              .order('joined_at', ascending: false);
+          final list = List<Map<String, dynamic>>.from(rows);
+          final m = list.where((r) => r['organization_id'] == newDefaultOrgId).firstOrNull ??
+              list.firstOrNull;
+          fleetOrgId = m?['organization_id'] as String?;
           newMemberRole = m?['member_role'] as String?;
           final org = m?['organizations'];
           newFleetTemplate = (org is Map ? org['industry_template'] : null) as String?;
         } catch (e) {
           debugPrint('[AppState] member role fetch failed: $e');
+          fleetOrgId = _defaultOrgId;
           newMemberRole = _memberRole;
           newFleetTemplate = _fleetTemplate;
         }
       }
+      // The fleet this app works with: the Fleet app's own fleet, none in
+      // the gig app (personal trips only).
+      final String? effectiveOrgId = AppFlavor.isFleet ? fleetOrgId : null;
+      changed = changed || _defaultOrgId != effectiveOrgId;
+
       if (newMemberRole != _memberRole || newFleetTemplate != _fleetTemplate) {
         _memberRole = newMemberRole;
         _fleetTemplate = newFleetTemplate;
@@ -349,7 +351,7 @@ class AppState extends ChangeNotifier {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
         _accountType = newAccountType;
-        _defaultOrgId = newDefaultOrgId;
+        _defaultOrgId = effectiveOrgId;
         _premiumEntitled = newPremiumEntitled;
         _baseEntitled = newBaseEntitled;
         _mileageMethod = newMileageMethod;
@@ -714,8 +716,9 @@ class AppState extends ChangeNotifier {
 
       // Fleet module
       _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
-      _defaultOrgId = prefs.getString('controlmiles_default_org_id');
-      _memberRole = prefs.getString('controlmiles_member_role');
+      // Gig app: personal only, even if an older build cached a fleet here.
+      _defaultOrgId = AppFlavor.isFleet ? prefs.getString('controlmiles_default_org_id') : null;
+      _memberRole = AppFlavor.isFleet ? prefs.getString('controlmiles_member_role') : null;
       _fleetTemplate = prefs.getString('controlmiles_fleet_template');
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;

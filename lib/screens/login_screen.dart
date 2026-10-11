@@ -6,6 +6,9 @@ import '../services/login_prefs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../config/app_flavor.dart';
 
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
@@ -86,8 +89,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _isLoginMode = !widget.startInSignupMode;
-    _isDriverIdMode = widget.startInDriverIdMode;
+    // Gig / Fleet split (2026-10-11): the Fleet app has no self sign-up
+    // (owners sign up on controlmiles.com, drivers get a code) and opens
+    // on the driver-ID tab; the gig app is email / Google only.
+    _isLoginMode = AppFlavor.isFleet || !widget.startInSignupMode;
+    _isDriverIdMode = AppFlavor.isFleet || widget.startInDriverIdMode;
     _loadLoginPrefs();
   }
 
@@ -205,28 +211,25 @@ class _LoginScreenState extends State<LoginScreen> {
         // member_role == 'driver' specifically -- operator/admin/owner
         // still need email (they use the web dashboard too), only the
         // base driver tier is ID-only.
+        // Gig / Fleet split: only the Fleet app enforces this -- in the gig
+        // app the same person signs in with email for their personal miles.
         final justSignedIn = Supabase.instance.client.auth.currentUser;
-        if (justSignedIn != null) {
-          final profileRow = await Supabase.instance.client
-              .from('profiles')
-              .select('account_type, default_org_id')
-              .eq('id', justSignedIn.id)
-              .maybeSingle();
-          final orgId = profileRow?['default_org_id'] as String?;
-          if (profileRow?['account_type'] == 'fleet_driver' && orgId != null) {
-            final memberRow = await Supabase.instance.client
-                .from('organization_members')
-                .select('member_role')
-                .eq('user_id', justSignedIn.id)
-                .eq('organization_id', orgId)
-                .maybeSingle();
-            if (memberRow?['member_role'] == 'driver') {
-              await Supabase.instance.client.auth.signOut();
-              if (!mounted) return;
-              setState(() => _isLoading = false);
-              _showError(appState.tr('fleet_driver_must_use_id_login'));
-              return;
-            }
+        if (justSignedIn != null && AppFlavor.isFleet) {
+          final memberRows = await Supabase.instance.client
+              .from('organization_members')
+              .select('member_role')
+              .eq('user_id', justSignedIn.id)
+              .eq('is_active', true);
+          final roles = {
+            for (final r in memberRows as List) r['member_role'] as String?,
+          };
+          if (roles.contains('driver') &&
+              !roles.any((r) => r == 'owner' || r == 'admin' || r == 'operator')) {
+            await Supabase.instance.client.auth.signOut();
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+            _showError(appState.tr('fleet_driver_must_use_id_login'));
+            return;
           }
         }
       } else {
@@ -582,7 +585,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(fontSize: 13.5, color: subColor),
           ),
           const SizedBox(height: 20),
-          if (_isLoginMode) ...[
+          if (_isLoginMode && AppFlavor.isFleet) ...[
             _buildLoginModeToggle(appState, isDark),
             const SizedBox(height: 18),
           ],
@@ -598,7 +601,9 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 16),
           _buildLoginButton(appState),
           const SizedBox(height: 8),
-          if (!_isDriverIdMode || !_isLoginMode) _buildToggleMode(appState, isDark),
+          if (AppFlavor.isGig) _buildToggleMode(appState, isDark),
+          const SizedBox(height: 8),
+          _buildOtherAppHint(appState, isDark),
           const SizedBox(height: 8),
           _buildFooter(appState),
         ],
@@ -965,6 +970,30 @@ class _LoginScreenState extends State<LoginScreen> {
               : Text(label, key: ValueKey(label)),
         ),
       ),
+    );
+  }
+
+  // ====================== OTHER APP HINT ======================
+  // Gig: "drive for a fleet? get ControlMiles Fleet". Fleet: owners and
+  // admins create / manage their fleet on controlmiles.com.
+  Widget _buildOtherAppHint(AppState appState, bool isDark) {
+    final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
+    final isFleet = AppFlavor.isFleet;
+    return Column(
+      children: [
+        Text(
+          appState.tr(isFleet ? 'fleet_join_owner_hint' : 'gig_fleet_app_hint'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: muted),
+        ),
+        TextButton(
+          onPressed: () => launchUrl(
+            Uri.parse(isFleet ? 'https://controlmiles.com/signup' : AppFlavor.fleetStoreUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Text(appState.tr(isFleet ? 'fleet_join_open_web' : 'get_fleet_app')),
+        ),
+      ],
     );
   }
 

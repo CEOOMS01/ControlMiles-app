@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_flavor.dart';
+
 /// Clase centralizada para gestionar todas las rutas de la aplicación
 /// Evita hardcodear strings de rutas en múltiples lugares
 /// Proporciona generación de rutas dinámicas y validación
@@ -401,6 +403,11 @@ class AppRoutes {
     // longer routes anywhere.
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
+    // Gig / Fleet split (2026-10-11): the gig app is personal-only -- no
+    // fleet invites, no role choice, always the personal dashboard.
+    if (AppFlavor.isGig) return dashboard;
+    // Fleet app: invites first, then the home for the member's role, and a
+    // member of no fleet yet lands on "join with your code".
     if (hasPendingInvites) return pendingInvite;
     // BUG FIX (found live, real account): account_type/default_org_id are
     // set atomically server-side by create_organization/claim_driver_slot,
@@ -419,8 +426,7 @@ class AppRoutes {
     // ever desyncs again for some other reason.
     if (isFleetAdmin) return fleetDashboard;
     if (isFleetDriver) return driverOperations;
-    if (!accountTypeChosen) return roleChooser;
-    return dashboard;
+    return claimDriverSlot;
   }
 
   static List<String> get breadcrumbExcluded => [

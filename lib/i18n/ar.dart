@@ -1083,4 +1083,12 @@ const Map<String, String> arTexts = {
   'usage_access_required_title': 'مطلوب الوصول إلى الاستخدام',
   'usage_access_required_body': 'بدون "الوصول إلى الاستخدام" لا يستطيع الكشف التلقائي معرفة تطبيق العمل المفتوح. امنحه من الإعدادات ثم أعد تفعيل الكشف التلقائي.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "لديك رحلة عمل مفتوحة في ControlMiles Fleet. أنهِها هناك قبل بدء رحلة شخصية.",
+  'active_personal_trip_error': "لديك رحلة شخصية مفتوحة في ControlMiles. أنهِها هناك قبل بدء رحلة عمل.",
+  'fleet_join_owner_hint': "هل تملك أسطولًا أو تديره؟ أنشئه وأدِره على controlmiles.com ثم عُد إلى هنا.",
+  'fleet_join_open_web': "افتح controlmiles.com",
+  'gig_fleet_app_hint': "هل تقود لأسطول شركة؟ رحلات الشركة تُسجَّل في تطبيق ControlMiles Fleet. هذا التطبيق يحفظ أميالك الشخصية فقط.",
+  'get_fleet_app': "احصل على ControlMiles Fleet",
+
 };

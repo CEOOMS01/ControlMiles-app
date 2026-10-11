@@ -173,6 +173,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           .from('sessions')
           .select('total_miles, total_duration_seconds')
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', windowStartUtc.toIso8601String());
 
@@ -213,6 +215,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           // 106 network round trips before anything rendered.
           .select('*, session_sections(*)')
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', _dateRange.start.toIso8601String())
           .lte('start_time',

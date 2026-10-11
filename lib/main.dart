@@ -43,18 +43,14 @@ import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/vehicle_screen.dart';
-import 'screens/role_chooser_screen.dart';
-import 'screens/account_type_screen.dart';
-import 'screens/create_organization_screen.dart';
 import 'screens/claim_driver_slot_screen.dart';
 import 'screens/monitor_home_screen.dart';
 import 'onboarding/app_tour.dart';
 import 'screens/fleet_dashboard_screen.dart';
-import 'screens/fleet_roster_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
-import 'screens/fleet_state_mileage_screen.dart';
 import 'screens/pending_invite_screen.dart';
 import 'screens/invite_landing_screen.dart';
+import 'config/app_flavor.dart';
 import 'screens/shift_ended_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
@@ -183,12 +179,17 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
-    _initDeepLinks();
-    // Google Play Billing (2026-09-29): listen from app start so a purchase
-    // finished while the app was closed is still verified and completed.
-    PlayBillingService.instance.start(
-      onVerified: () => context.read<AppState>().fetchUserProfile(),
-    );
+    // Fleet invite links open the Fleet app only; personal plans (Google
+    // Play Billing) exist in the gig app only -- fleets pay on the web.
+    if (AppFlavor.isFleet) {
+      _initDeepLinks();
+    } else {
+      // Listen from app start so a purchase finished while the app was
+      // closed is still verified and completed.
+      PlayBillingService.instance.start(
+        onVerified: () => context.read<AppState>().fetchUserProfile(),
+      );
+    }
   }
 
   Future<void> _initDeepLinks() async {
@@ -229,7 +230,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'ControlMiles',
+      title: AppFlavor.isFleet ? 'ControlMiles Fleet' : 'ControlMiles',
       debugShowCheckedModeBanner: false,
 
       // LOCALIZACIÓN
@@ -273,14 +274,8 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (_) => const SplashPage(),
-        AppRoutes.roleChooser: (_) => const RoleChooserScreen(),
         AppRoutes.login: (context) {
-          // 'signup' / 'driver_id' -- extended (explicit user request,
-          // 2026-09-17) from a plain bool since RoleChooserScreen now
-          // needs to steer to one of TWO different starting modes, not
-          // just signup-vs-login. Every other call site in this project
-          // passes no arguments at all (verified by grep before this
-          // change), so this is a safe, non-breaking widening.
+          // 'signup' / 'driver_id' starting modes.
           final args = ModalRoute.of(context)!.settings.arguments as String?;
           return LoginScreen(
             startInSignupMode: args == 'signup',
@@ -293,15 +288,11 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
           return ResetPasswordScreen(email: email);
         },
         AppRoutes.welcome: (_) => const WelcomePage(),
-        AppRoutes.accountType: (_) => const AccountTypeScreen(),
-        AppRoutes.createOrganization: (_) => const CreateOrganizationScreen(),
         AppRoutes.claimDriverSlot: (_) => const ClaimDriverSlotScreen(),
         // Home screens show the first-run tour / "What's new" (AppTourGate).
         AppRoutes.driverOperations: (_) => const AppTourGate(child: FleetMemberHome()),
         AppRoutes.fleetDashboard: (_) => const AppTourGate(child: FleetDashboardScreen()),
-        AppRoutes.fleetRoster: (_) => const FleetRosterScreen(),
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
-        AppRoutes.fleetStateMileage: (_) => const FleetStateMileageScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
         AppRoutes.inviteLanding: (context) {
           final token = ModalRoute.of(context)!.settings.arguments as String? ?? '';

@@ -151,7 +151,7 @@ class AppTexts {
       if (kDebugMode) {
         debugPrint('[AppTexts] Missing key "$key" in $langCode');
       }
-      return key;
+      return enTexts[key] ?? key;
     }
 
     return text;
@@ -159,7 +159,9 @@ class AppTexts {
 
   /// acceso rápido
   static String getText(String key, AppLanguage language) {
-    return _languages[language]?.texts[key] ?? key;
+    // English fallback so a key that's missing in one language never
+    // shows up as a raw key on screen.
+    return _languages[language]?.texts[key] ?? enTexts[key] ?? key;
   }
 
   static List<AppLanguage> get supported => AppLanguage.values;

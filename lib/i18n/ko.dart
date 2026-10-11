@@ -1080,4 +1080,12 @@ const Map<String, String> koTexts = {
   'usage_access_required_title': '사용 정보 접근이 필요합니다',
   'usage_access_required_body': '"사용 정보 접근" 없이는 자동 감지가 어떤 긱 앱이 열려 있는지 알 수 없습니다. 설정에서 허용한 뒤 자동 감지를 다시 켜세요.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "ControlMiles Fleet에 진행 중인 회사 운행이 있습니다. 개인 운행을 시작하기 전에 그곳에서 종료하세요.",
+  'active_personal_trip_error': "ControlMiles에 진행 중인 개인 운행이 있습니다. 회사 운행을 시작하기 전에 그곳에서 종료하세요.",
+  'fleet_join_owner_hint': "차량을 소유하거나 관리하시나요? controlmiles.com에서 만들고 관리한 다음 여기로 돌아오세요.",
+  'fleet_join_open_web': "controlmiles.com 열기",
+  'gig_fleet_app_hint': "회사 차량을 운전하시나요? 회사 운행은 ControlMiles Fleet 앱에서 기록합니다. 이 앱은 개인 마일만 저장합니다.",
+  'get_fleet_app': "ControlMiles Fleet 받기",
+
 };

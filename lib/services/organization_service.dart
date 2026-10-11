@@ -184,28 +184,6 @@ class OrganizationService {
     return List<Map<String, dynamic>>.from(data).map(Vehicle.fromMap).toList();
   }
 
-  /// Reclama un fleet_driver_slots creado por un admin (dashboard web,
-  /// Roster -> "Add driver (no account yet)") usando el código de un solo
-  /// uso que el admin le compartió. La RPC misma devuelve success:false +
-  /// un mensaje (nunca lanza excepción) para distinguir un rechazo
-  /// esperado (código inválido, ya usado, demasiados intentos) de un error
-  /// real -- este wrapper lo convierte en una excepción normal para que el
-  /// try/catch de ClaimDriverSlotScreen no necesite plumbing nuevo.
-  ///
-  /// La RPC ya promovió profiles.account_type a 'fleet_driver' y
-  /// default_org_id server-side en un solo statement -- el caller debe
-  /// refrescar AppState.fetchUserProfile() después, mismo patrón que
-  /// createOrganization()/respondToInvite().
-  /// Switches the caller's own account_type between 'gig'/'fleet_admin'/
-  /// 'fleet_driver' -- explicit user requirement for testing (and a real
-  /// capability for a hybrid user who both owns a fleet and drives
-  /// personally). The RPC validates real membership server-side; it
-  /// throws a clear message if the target mode doesn't apply to this
-  /// account (e.g. 'fleet_admin' for someone who owns no organization).
-  Future<void> switchAccountMode(String mode) async {
-    await _supabase.rpc('switch_account_mode', params: {'p_mode': mode});
-  }
-
   /// Renombra la organización -- organizations_update_admin (RLS) ya
   /// permite esto a cualquier owner/admin, mismo mecanismo que el
   /// formulario de rename en el dashboard web (rename-org-form.tsx). El
@@ -235,6 +213,16 @@ class OrganizationService {
     await _supabase.rpc('delete_organization', params: {'p_org_id': organizationId});
   }
 
+  /// Reclama un fleet_driver_slots creado por un admin (dashboard web,
+  /// Roster -> "Add driver (no account yet)") usando el código de un solo
+  /// uso que el admin le compartió. La RPC misma devuelve success:false +
+  /// un mensaje (nunca lanza excepción) para distinguir un rechazo
+  /// esperado (código inválido, ya usado, demasiados intentos) de un error
+  /// real -- este wrapper lo convierte en una excepción normal para que el
+  /// try/catch de ClaimDriverSlotScreen no necesite plumbing nuevo.
+  ///
+  /// El caller debe refrescar AppState.fetchUserProfile() después para que
+  /// la app Fleet tome el rol nuevo.
   Future<String> claimDriverSlot(String claimCode) async {
     final result = await _supabase.rpc(
       'claim_driver_slot',

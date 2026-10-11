@@ -1100,4 +1100,12 @@ const Map<String, String> zhTexts = {
   'usage_access_required_title': '需要使用情况访问权限',
   'usage_access_required_body': '没有“使用情况访问权限”，自动检测无法知道哪个零工应用已打开。请在设置中授予，然后重新开启自动检测。',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "您在 ControlMiles Fleet 中有一个未结束的公司行程。请先在那里结束，再开始个人行程。",
+  'active_personal_trip_error': "您在 ControlMiles 中有一个未结束的个人行程。请先在那里结束，再开始公司行程。",
+  'fleet_join_owner_hint': "您拥有或管理车队吗？请在 controlmiles.com 创建和管理车队，然后回到这里。",
+  'fleet_join_open_web': "打开 controlmiles.com",
+  'gig_fleet_app_hint': "您为公司车队驾驶吗？公司行程请使用 ControlMiles Fleet 应用。本应用只记录您的个人里程。",
+  'get_fleet_app': "下载 ControlMiles Fleet",
+
 };

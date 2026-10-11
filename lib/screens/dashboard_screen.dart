@@ -535,6 +535,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           .from('sessions')
           .select('total_miles, total_duration_seconds')
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', windowStartUtc.toIso8601String());
 
@@ -576,6 +578,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           .from('sessions')
           .select('total_miles')
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', from.toUtc().toIso8601String());
       final miles = List<Map<String, dynamic>>.from(rows)
@@ -603,6 +607,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           .from('sessions')
           .select('total_miles, total_duration_seconds, start_time')
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', windowStartUtc.toIso8601String());
 
@@ -686,6 +692,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           .from('sessions')
           .select()
           .eq('user_id', user.id)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .eq('is_closed', true)
           .gte('start_time', windowStartUtc.toIso8601String())
           .order('start_time', ascending: false)

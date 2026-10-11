@@ -59,6 +59,24 @@ android {
         versionName = flutter.versionName
     }
 
+    // Gig / Fleet split (2026-10-11): two store apps from this one codebase
+    // (lib/config/app_flavor.dart). Build with --flavor gig or --flavor fleet.
+    // Both sign with the same upload key; Play App Signing gives each app
+    // its own app-signing key.
+    flavorDimensions += "app"
+    productFlavors {
+        create("gig") {
+            dimension = "app"
+            applicationId = "com.olimsys.controlmiles"
+            resValue("string", "app_name", "ControlMiles")
+        }
+        create("fleet") {
+            dimension = "app"
+            applicationId = "com.olimsys.controlmiles.fleet"
+            resValue("string", "app_name", "ControlMiles Fleet")
+        }
+    }
+
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {

@@ -1100,4 +1100,12 @@ const Map<String, String> deTexts = {
   'usage_access_required_title': 'Zugriff auf Nutzungsdaten nötig',
   'usage_access_required_body': 'Ohne den "Zugriff auf Nutzungsdaten" kann die automatische Erkennung nicht sehen, welche Gig-App geöffnet ist. Erteile ihn in den Einstellungen und aktiviere die automatische Erkennung erneut.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "Sie haben eine Firmenfahrt in ControlMiles Fleet offen. Beenden Sie sie dort, bevor Sie eine private Fahrt starten.",
+  'active_personal_trip_error': "Sie haben eine private Fahrt in ControlMiles offen. Beenden Sie sie dort, bevor Sie eine Firmenfahrt starten.",
+  'fleet_join_owner_hint': "Besitzen oder verwalten Sie eine Flotte? Erstellen und verwalten Sie sie auf controlmiles.com und kommen Sie dann hierher zurück.",
+  'fleet_join_open_web': "controlmiles.com öffnen",
+  'gig_fleet_app_hint': "Fahren Sie für eine Firmenflotte? Firmenfahrten gehören in die App ControlMiles Fleet. Diese App speichert nur Ihre privaten Meilen.",
+  'get_fleet_app': "ControlMiles Fleet holen",
+
 };

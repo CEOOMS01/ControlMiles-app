@@ -1099,4 +1099,12 @@ const Map<String, String> frTexts = {
   'usage_access_required_title': 'Accès à l\'utilisation requis',
   'usage_access_required_body': 'Sans l\'"accès à l\'utilisation", la détection automatique ne peut pas voir quelle appli gig est ouverte. Accordez-le dans les Paramètres, puis réactivez la détection automatique.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "Vous avez un trajet d'entreprise en cours dans ControlMiles Fleet. Terminez-le là-bas avant de commencer un trajet personnel.",
+  'active_personal_trip_error': "Vous avez un trajet personnel en cours dans ControlMiles. Terminez-le là-bas avant de commencer un trajet d'entreprise.",
+  'fleet_join_owner_hint': "Vous possédez ou gérez une flotte ? Créez-la et gérez-la sur controlmiles.com, puis revenez ici.",
+  'fleet_join_open_web': "Ouvrir controlmiles.com",
+  'gig_fleet_app_hint': "Vous conduisez pour la flotte d'une entreprise ? Les trajets d'entreprise se font dans l'app ControlMiles Fleet. Cette app ne garde que vos miles personnels.",
+  'get_fleet_app': "Télécharger ControlMiles Fleet",
+
 };

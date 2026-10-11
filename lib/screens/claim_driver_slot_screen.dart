@@ -1,17 +1,17 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/screens/claim_driver_slot_screen.dart
 //
-// Reached when a new user picked "Fleet Driver" on RoleChooserScreen --
-// links their brand-new account to a fleet_driver_slots row an admin
-// already created (name + CM-D#### on the web dashboard) using the
-// one-time code the admin shared. No back button on purpose: this
-// screen is reached deterministically right after welcome/permissions
-// for that intent, not from AccountTypeScreen, so there's no sensible
-// "back" target. "I don't have a code" defaults to a plain individual
-// driver instead, mirroring AccountTypeScreen's Gig choice.
+// ControlMiles Fleet home for an account that belongs to no fleet yet
+// (AppRoutes.getInitialRoute): links it to a fleet_driver_slots row an
+// admin already created (name + CM-D#### on the web dashboard) using the
+// one-time code the admin shared. Owners and admins are pointed to
+// controlmiles.com, where fleets are created and managed (Gig / Fleet
+// split, 2026-10-11 -- there is no "continue as an individual" here any
+// more: personal miles live in the ControlMiles app).
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
@@ -52,9 +52,7 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
     try {
       await _organizationService.claimDriverSlot(code);
 
-      // The RPC already promoted profiles.account_type to 'fleet_driver'
-      // + default_org_id server-side -- same refresh pattern
-      // CreateOrganizationScreen uses after create_organization.
+      // Picks up the new membership (role 'driver') for this app.
       await appState.refreshAccountType();
       await appState.completeAccountTypeChoice();
       await appState.clearPendingIntendedRole();
@@ -74,14 +72,13 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
     }
   }
 
-  Future<void> _continueAsIndividual(AppState appState) async {
+  Future<void> _signOut(AppState appState) async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
-      await appState.completeAccountTypeChoice();
-      await appState.clearPendingIntendedRole();
+      await appState.signOutAndClear();
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -100,7 +97,7 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,17 +156,44 @@ class _ClaimDriverSlotScreenState extends State<ClaimDriverSlotScreen> {
                         ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appState.tr('fleet_join_owner_hint'),
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse('https://controlmiles.com/login'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: Text(appState.tr('fleet_join_open_web')),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               Center(
                 child: TextButton(
-                  onPressed: _isProcessing ? null : () => _continueAsIndividual(appState),
+                  onPressed: _isProcessing ? null : () => _signOut(appState),
                   child: Text(
-                    appState.tr('claim_driver_slot_skip'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: subTextColor, fontSize: 12.5),
+                    appState.tr('sign_out'),
+                    style: TextStyle(color: subTextColor, fontSize: 13),
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ),

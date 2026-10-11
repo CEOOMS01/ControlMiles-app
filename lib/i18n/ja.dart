@@ -1079,4 +1079,12 @@ const Map<String, String> jaTexts = {
   'usage_access_required_title': '使用状況へのアクセスが必要です',
   'usage_access_required_body': '「使用状況へのアクセス」がないと、自動検知はどのギグアプリが開いているか判別できません。設定で許可してから、自動検知をもう一度オンにしてください。',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "ControlMiles Fleet で会社の走行が記録中です。個人の走行を始める前に、そちらで終了してください。",
+  'active_personal_trip_error': "ControlMiles で個人の走行が記録中です。会社の走行を始める前に、そちらで終了してください。",
+  'fleet_join_owner_hint': "フリートを所有・管理していますか？controlmiles.com で作成・管理してから、ここに戻ってください。",
+  'fleet_join_open_web': "controlmiles.com を開く",
+  'gig_fleet_app_hint': "会社のフリートで運転していますか？会社の走行は ControlMiles Fleet アプリで記録します。このアプリは個人のマイルだけを保存します。",
+  'get_fleet_app': "ControlMiles Fleet を入手",
+
 };

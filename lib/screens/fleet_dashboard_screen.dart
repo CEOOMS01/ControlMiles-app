@@ -19,7 +19,6 @@ import '../logic/app_state.dart';
 import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/organization_service.dart';
-import '../widgets/org_mode_switcher.dart';
 
 const _webDashboardUrl = 'https://controlmiles.com/admin';
 
@@ -155,7 +154,6 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(20),
                       children: [
-                        const OrgModeSwitcher(),
                         const SizedBox(height: 4),
                         Text(
                           _organization?.name ?? '',

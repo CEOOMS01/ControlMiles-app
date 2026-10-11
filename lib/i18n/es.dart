@@ -1123,4 +1123,12 @@ const Map<String, String> esTexts = {
   'usage_access_required_title': 'Falta el acceso de uso',
   'usage_access_required_body': 'Sin el "Acceso de uso", la detección automática no puede ver qué app gig está abierta. Concédelo en Ajustes y vuelve a activar la detección automática.',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "Tienes un viaje de la empresa abierto en ControlMiles Fleet. Termínalo allí antes de iniciar un viaje personal.",
+  'active_personal_trip_error': "Tienes un viaje personal abierto en ControlMiles. Termínalo allí antes de iniciar un viaje de la empresa.",
+  'fleet_join_owner_hint': "¿Eres dueño o administras una flota? Créala y adminístrala en controlmiles.com y luego vuelve aquí.",
+  'fleet_join_open_web': "Abrir controlmiles.com",
+  'gig_fleet_app_hint': "¿Manejas para una flota de empresa? Los viajes de la empresa van en la app ControlMiles Fleet. Esta app guarda solo tus millas personales.",
+  'get_fleet_app': "Descargar ControlMiles Fleet",
+
 };

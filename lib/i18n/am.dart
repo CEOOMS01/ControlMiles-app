@@ -1075,4 +1075,12 @@ const Map<String, String> amTexts = {
   'usage_access_required_title': 'የአጠቃቀም መዳረሻ ያስፈልጋል',
   'usage_access_required_body': 'ያለ "የአጠቃቀም መዳረሻ" ራስ-ሰር ማወቂያው የትኛው የጊግ መተግበሪያ እንደተከፈተ ማየት አይችልም። ከቅንብሮች ይፍቀዱና ራስ-ሰር ማወቂያውን እንደገና ያብሩ።',
 
+  // Gig / Fleet split (2026-10-11).
+  'active_fleet_trip_error': "በ ControlMiles Fleet ውስጥ ክፍት የኩባንያ ጉዞ አለዎት። የግል ጉዞ ከመጀመርዎ በፊት እዚያ ያጠናቅቁት።",
+  'active_personal_trip_error': "በ ControlMiles ውስጥ ክፍት የግል ጉዞ አለዎት። የኩባንያ ጉዞ ከመጀመርዎ በፊት እዚያ ያጠናቅቁት።",
+  'fleet_join_owner_hint': "የተሽከርካሪ ቡድን ባለቤት ወይም አስተዳዳሪ ነዎት? በ controlmiles.com ይፍጠሩና ያስተዳድሩ፣ ከዚያ ወደዚህ ይመለሱ።",
+  'fleet_join_open_web': "controlmiles.com ክፈት",
+  'gig_fleet_app_hint': "ለኩባንያ ተሽከርካሪ ቡድን ይነዳሉ? የኩባንያ ጉዞዎች በ ControlMiles Fleet መተግበሪያ ውስጥ ይመዘገባሉ። ይህ መተግበሪያ የግል ማይሎችዎን ብቻ ይይዛል።",
+  'get_fleet_app': "ControlMiles Fleet ያውርዱ",
+
 };

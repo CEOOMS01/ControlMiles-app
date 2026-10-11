@@ -66,6 +66,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           .from('sessions')
           .select('*, session_sections(*)')
           .eq('user_id', userId)
+          // Personal trips only: fleet trips live in ControlMiles Fleet.
+          .isFilter('organization_id', null)
           .gte('start_time', last12Months.toIso8601String())
           .order('start_time', ascending: false);
 

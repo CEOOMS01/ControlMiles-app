@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../config/app_flavor.dart';
 import '../models/session_section.dart';
 import '../services/audit_service.dart';
 import '../services/cgc_governance_service.dart';
@@ -1445,11 +1446,16 @@ class TrackingController {
       // Ahora se pide explícitamente la MÁS RECIENTE y se toma la primera:
       // misma semántica de "la sesión activa" sin depender de que haya
       // exactamente una.
-      final sessions = await Supabase.instance.client
+      // Each app resumes only its own kind of trip: with both installed, the
+      // gig app must never pick up a fleet trip (or the other way round).
+      final openTrips = Supabase.instance.client
           .from('sessions')
           .select('*, session_sections(*)')
           .eq('user_id', user.id)
-          .eq('is_closed', false)
+          .eq('is_closed', false);
+      final sessions = await (AppFlavor.isFleet
+              ? openTrips.not('organization_id', 'is', null)
+              : openTrips.isFilter('organization_id', null))
           .order('start_time', ascending: false)
           .limit(1);
 
