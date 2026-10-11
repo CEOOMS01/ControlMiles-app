@@ -41,8 +41,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool loading = true;
 
   // Product tour (2026-10-11): spotlights over the real controls.
-  static const _tour = 'dashboard';
-  final _tourScope = TourScope(_tour);
+  final _tourScope = TourScope('dashboard');
+  String get _tour => _tourScope.name;
   final _tVehicle = GlobalKey();
   final _tApps = GlobalKey();
   final _tStart = GlobalKey();
@@ -129,6 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _tourScope.register();
+    ProductTour.replayRequested.addListener(_onTourReplay);
     _initDashboard();
     _setupRealTimeListeners();
     _loadActiveVehicle();
@@ -155,6 +156,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
     if (!mounted) return;
     await ProductTour.run(context, id: TourIds.dashboard, scope: _tour, keys: _dashboardTourKeys);
+  }
+
+  // Settings -> "App tour": play it here, on top of this dashboard.
+  void _onTourReplay() {
+    if (!mounted) return;
+    _tourChecked = false;
+    _maybeStartTour();
   }
 
   // First finished trip: point at History.
@@ -526,6 +534,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _autoFlashTimer?.cancel();
     TrackingController.autoFlashEvent.removeListener(_onAutoFlashEvent);
     TrackingController.segmentDiscarded.removeListener(_onSegmentDiscarded);
+    ProductTour.replayRequested.removeListener(_onTourReplay);
     _tourScope.unregister();
     super.dispose();
   }

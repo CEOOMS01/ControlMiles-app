@@ -54,8 +54,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // Product tour (2026-10-11): one tip on the newest trip, the first time
   // History opens with trips in it.
-  static const _tour = 'history';
-  final _tourScope = TourScope(_tour);
+  final _tourScope = TourScope('history');
+  String get _tour => _tourScope.name;
   final _tTrip = GlobalKey();
   bool _tourChecked = false;
 

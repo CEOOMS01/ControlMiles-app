@@ -132,8 +132,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   // Product tour (2026-10-11): this screen's tips the first time it opens.
-  static const _tour = 'reports';
-  final _tourScope = TourScope(_tour);
+  final _tourScope = TourScope('reports');
+  String get _tour => _tourScope.name;
   final _tRange = GlobalKey();
   final _tSummary = GlobalKey();
   final _tPdf = GlobalKey();

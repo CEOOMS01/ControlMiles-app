@@ -45,7 +45,6 @@ import 'screens/subscription_screen.dart';
 import 'screens/vehicle_screen.dart';
 import 'screens/claim_driver_slot_screen.dart';
 import 'screens/monitor_home_screen.dart';
-import 'onboarding/app_tour.dart';
 import 'screens/fleet_dashboard_screen.dart';
 import 'screens/fleet_live_map_screen.dart';
 import 'screens/pending_invite_screen.dart';
@@ -289,9 +288,8 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         },
         AppRoutes.welcome: (_) => const WelcomePage(),
         AppRoutes.claimDriverSlot: (_) => const ClaimDriverSlotScreen(),
-        // Home screens show the first-run tour / "What's new" (AppTourGate).
-        AppRoutes.driverOperations: (_) => const AppTourGate(child: FleetMemberHome()),
-        AppRoutes.fleetDashboard: (_) => const AppTourGate(child: FleetDashboardScreen()),
+        AppRoutes.driverOperations: (_) => const FleetMemberHome(),
+        AppRoutes.fleetDashboard: (_) => const FleetDashboardScreen(),
         AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
         AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
         AppRoutes.inviteLanding: (context) {

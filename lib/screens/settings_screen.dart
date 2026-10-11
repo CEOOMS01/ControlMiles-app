@@ -22,7 +22,6 @@ import 'generate_report_code_screen.dart';
 import '../errors/app_error.dart';
 import '../widgets/language_selector_tile.dart';
 import '../widgets/app_version_text.dart';
-import '../onboarding/app_tour.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -102,8 +101,8 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   // Product tour (2026-10-11, gig app): the two settings people miss -- the
   // tax-preparer code and background reliability.
-  static const _tour = 'settings';
-  final _tourScope = TourScope(_tour);
+  final _tourScope = TourScope('settings');
+  String get _tour => _tourScope.name;
   final _tPortal = GlobalKey();
   final _tReliability = GlobalKey();
   bool _tourChecked = false;
@@ -1077,25 +1076,21 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
           const SizedBox(height: 10),
-          // Gig: "App tour" replays the product tour from the dashboard
-          // (2026-10-11, replaces "Tutorial & what's new"); the Fleet app
-          // keeps its own tour for now.
-          _buildLegalLinkRow(
-            icon: Icons.school_rounded,
-            label: appState.tr(AppFlavor.isGig ? 'ptour_replay' : 'tutorial_whats_new'),
-            isDark: isDark,
-            onTap: () async {
-              if (AppFlavor.isFleet) {
-                AppTourService.replay(context);
-                return;
-              }
-              await ProductTour.resetAll();
-              await ProductTour.markSeen(TourIds.welcome);
-              if (!mounted) return;
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (r) => false);
-            },
-          ),
-          const SizedBox(height: 10),
+          // "App tour" (2026-10-11, replaces "Tutorial & what's new"): back
+          // to the dashboard that's already open; the tour plays on top of it
+          // (ProductTour.replayRequested). Gig app only for now.
+          if (AppFlavor.isGig) ...[
+            _buildLegalLinkRow(
+              icon: Icons.school_rounded,
+              label: appState.tr('ptour_replay'),
+              isDark: isDark,
+              onTap: () async {
+                Navigator.popUntil(context, (r) => r.settings.name == AppRoutes.dashboard || r.isFirst);
+                await ProductTour.replay();
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
           // Personal plans and the IRS mileage method belong to the gig app;
           // fleets are billed on controlmiles.com (Gig / Fleet split).
           if (AppFlavor.isGig) ...[

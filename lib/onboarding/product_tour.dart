@@ -85,6 +85,18 @@ class ProductTour {
     await _push(seen);
   }
 
+  /// Settings -> "App tour": the dashboard that's already open (under
+  /// Settings) listens to this and plays the tour on top of itself -- no
+  /// new dashboard is built (owner's request, 2026-10-11).
+  static final replayRequested = ValueNotifier<int>(0);
+
+  /// Resets every tip and asks the open dashboard to replay the tour.
+  static Future<void> replay() async {
+    await resetAll();
+    await markSeen(TourIds.welcome);
+    replayRequested.value++;
+  }
+
   /// Settings -> "App tour": everything shows again.
   static Future<void> resetAll() async {
     _cache = <String>{};
@@ -140,9 +152,16 @@ class ProductTour {
 
 /// Registers a showcase scope for a screen's lifetime. Call [register] in
 /// initState and [unregister] in dispose.
+///
+/// Each instance gets its own scope name: when a screen is replaced by a
+/// new copy of itself (Settings -> "App tour" reopens the dashboard), the
+/// old one's dispose runs AFTER the new one's initState, and with a shared
+/// name it unregistered the new screen's scope -- "No ShowcaseView
+/// registered for scope", blank screen (found on 1.3.0, 2026-10-11).
 class TourScope {
+  static int _next = 0;
   final String name;
-  TourScope(this.name);
+  TourScope(String base) : name = '$base-${_next++}';
 
   void register() => ShowcaseView.register(
         scope: name,
