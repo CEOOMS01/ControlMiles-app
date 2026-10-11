@@ -19,6 +19,7 @@
 // ningún lado.
 
 import 'package:flutter/material.dart' show DateTimeRange;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -175,6 +176,15 @@ class ReportService {
     final periodLabel =
         '${dateFmt.format(dateRange.start)} - ${dateFmt.format(dateRange.end)}';
 
+    // ControlMiles logo for the header (owner's request, 2026-10-11).
+    pw.MemoryImage? logo;
+    try {
+      final data = await rootBundle.load('assets/images/logo_controlmiles.png');
+      logo = pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      logo = null;
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -205,7 +215,7 @@ class ReportService {
         // pages, and a low ceiling is a better trip-wire for a future
         // regression than a raised one that only delays the same failure.
         build: (ctx) => [
-          _buildHeader(),
+          _buildHeader(logo),
           pw.SizedBox(height: 18),
           _buildHRule(),
           pw.SizedBox(height: 16),
@@ -425,7 +435,10 @@ class ReportService {
   // ════════════════════════════════════════════════════════════
   // HEADER
   // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildHeader() {
+  // "ControlMiles Reports" + the app's slogan, with the ControlMiles logo
+  // (owner's request, 2026-10-11: no "CERTIFIED", no company name here --
+  // the legal entity stays in the report footer / legal documents).
+  static pw.Widget _buildHeader(pw.MemoryImage? logo) {
     return pw.Row(
       mainAxisAlignment:  pw.MainAxisAlignment.spaceBetween,
       crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -434,7 +447,7 @@ class ReportService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text(
-              'ControlMiles CERTIFIED REPORT',
+              'ControlMiles Reports',
               style: pw.TextStyle(
                 fontSize:   22,
                 fontWeight: pw.FontWeight.bold,
@@ -443,32 +456,36 @@ class ReportService {
             ),
             pw.SizedBox(height: 4),
             pw.Text(
-              'Olympus Mont Systems LLC - Verify',
+              'Every mile, on the record.',
               style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
             ),
           ],
         ),
-        pw.Container(
-          width:  54,
-          height: 54,
-          decoration: const pw.BoxDecoration(
-            color: PdfColors.blue800,
-            shape: pw.BoxShape.circle,
-          ),
-          child: pw.Center(
-            child: pw.Text(
-              'CM',
-              style: pw.TextStyle(
-                color:      PdfColors.white,
-                fontSize:   20,
-                fontWeight: pw.FontWeight.bold,
+        if (logo != null)
+          pw.Image(logo, width: 54, height: 54)
+        else
+          pw.Container(
+            width:  54,
+            height: 54,
+            decoration: const pw.BoxDecoration(
+              color: PdfColors.blue800,
+              shape: pw.BoxShape.circle,
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                'CM',
+                style: pw.TextStyle(
+                  color:      PdfColors.white,
+                  fontSize:   20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
+
 
   static pw.Widget _buildHRule() =>
       pw.Container(height: 0.5, color: PdfColors.grey400);
