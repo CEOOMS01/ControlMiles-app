@@ -199,9 +199,13 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
     }
   }
 
+  // Annotations need a loaded style: a realtime vehicle update can arrive
+  // before it (same crash as DriverLiveMapView, audit 2026-10-10).
+  bool _styleLoaded = false;
+
   Future<void> _syncVehicleMarkers() async {
     final controller = _mapController;
-    if (controller == null) return;
+    if (controller == null || !_styleLoaded) return;
     final primary = Theme.of(context).colorScheme.primary;
     await controller.clearCircles();
     for (final v in _vehicles.where((v) => v.hasLiveLocation)) {
@@ -221,7 +225,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
 
   Future<void> _syncGeofenceFills() async {
     final controller = _mapController;
-    if (controller == null) return;
+    if (controller == null || !_styleLoaded) return;
     await controller.clearFills();
     await controller.clearLines();
     for (final g in _selectedVehicleGeofences.where((g) => g.isActive)) {
@@ -369,6 +373,7 @@ class _FleetLiveMapScreenState extends State<FleetLiveMapScreen> {
                           controller.onCircleTapped.add(_onCircleTapped);
                         },
                         onStyleLoadedCallback: () async {
+                          _styleLoaded = true;
                           await _syncVehicleMarkers();
                           await _syncGeofenceFills();
                         },

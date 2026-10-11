@@ -151,10 +151,15 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
     return own == null ? null : LatLng(own.latitude, own.longitude);
   }
 
+  // Annotations can only be added once the style is loaded (crash report
+  // 2026-10-06: "This Annotation Manager has not been initialized" -- a GPS
+  // fix arrived before the style). onStyleLoadedCallback syncs both.
+  bool _styleLoaded = false;
+
   Future<void> _syncPositionDot() async {
     final controller = _mapController;
     final point = _currentPoint;
-    if (widget.compact || controller == null || point == null) return;
+    if (widget.compact || controller == null || point == null || !_styleLoaded) return;
     if (_positionDot == null) {
       final c = Theme.of(context).colorScheme.primary.toARGB32() & 0xFFFFFF;
       _positionDot = await controller.addCircle(CircleOptions(
@@ -270,7 +275,11 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
         });
         _recenter(LatLng(pos.latitude, pos.longitude));
         _syncTrail();
-      });
+      },
+          // Crash report 2026-10-06/10-10 audit: with the phone's location
+          // turned off the stream emits LocationServiceDisabledException,
+          // which went uncaught. The map just keeps its last position.
+          onError: (Object e) => debugPrint('[DriverLiveMapView] GPS stream: $e'));
     } catch (e) {
       debugPrint('[DriverLiveMapView] compact GPS stream error: $e');
     }
@@ -289,7 +298,7 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
 
   Future<void> _syncTrail() async {
     final controller = _mapController;
-    if (controller == null || _trail.length < 2) return;
+    if (controller == null || _trail.length < 2 || !_styleLoaded) return;
     if (_trailLine == null) {
       _trailLine = await controller.addLine(
         LineOptions(geometry: _trail, lineColor: '#2C6C99', lineWidth: 3),
@@ -359,10 +368,12 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
               _trailLine = null;
               _positionDot = null;
               _didFitRoute = false;
+              _styleLoaded = false;
               _mapController = controller;
               _didCenterOnce = true;
             },
             onStyleLoadedCallback: () async {
+              _styleLoaded = true;
               await _syncTrail();
               if (!widget.compact) {
                 await _syncPositionDot();
