@@ -1087,5 +1087,7 @@ const Map<String, String> koTexts = {
   'fleet_join_open_web': "controlmiles.com 열기",
   'gig_fleet_app_hint': "회사 차량을 운전하시나요? 회사 운행은 ControlMiles Fleet 앱에서 기록합니다. 이 앱은 개인 마일만 저장합니다.",
   'get_fleet_app': "ControlMiles Fleet 받기",
+  'fleet_admin_email_login': "차량 소유자 또는 관리자이신가요? 이메일로 로그인",
+  'fleet_driver_id_login': "운전자 또는 통학 차량 보조원이신가요? 운전자 ID로 로그인",
 
 };

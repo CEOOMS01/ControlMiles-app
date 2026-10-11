@@ -1106,5 +1106,7 @@ const Map<String, String> frTexts = {
   'fleet_join_open_web': "Ouvrir controlmiles.com",
   'gig_fleet_app_hint': "Vous conduisez pour la flotte d'une entreprise ? Les trajets d'entreprise se font dans l'app ControlMiles Fleet. Cette app ne garde que vos miles personnels.",
   'get_fleet_app': "Télécharger ControlMiles Fleet",
+  'fleet_admin_email_login': "Propriétaire ou admin de la flotte ? Connectez-vous par e-mail",
+  'fleet_driver_id_login': "Chauffeur ou accompagnateur ? Connectez-vous avec votre ID chauffeur",
 
 };

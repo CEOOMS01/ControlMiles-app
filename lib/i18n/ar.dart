@@ -1090,5 +1090,7 @@ const Map<String, String> arTexts = {
   'fleet_join_open_web': "افتح controlmiles.com",
   'gig_fleet_app_hint': "هل تقود لأسطول شركة؟ رحلات الشركة تُسجَّل في تطبيق ControlMiles Fleet. هذا التطبيق يحفظ أميالك الشخصية فقط.",
   'get_fleet_app': "احصل على ControlMiles Fleet",
+  'fleet_admin_email_login': "مالك الأسطول أو مديره؟ سجّل الدخول بالبريد الإلكتروني",
+  'fleet_driver_id_login': "سائق أو مرافق حافلة؟ سجّل الدخول بمعرّف السائق",
 
 };

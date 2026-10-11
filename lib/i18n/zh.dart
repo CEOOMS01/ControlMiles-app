@@ -1107,5 +1107,7 @@ const Map<String, String> zhTexts = {
   'fleet_join_open_web': "打开 controlmiles.com",
   'gig_fleet_app_hint': "您为公司车队驾驶吗？公司行程请使用 ControlMiles Fleet 应用。本应用只记录您的个人里程。",
   'get_fleet_app': "下载 ControlMiles Fleet",
+  'fleet_admin_email_login': "车队所有者或管理员？使用邮箱登录",
+  'fleet_driver_id_login': "车队司机或校车随车员？使用您的司机 ID 登录",
 
 };

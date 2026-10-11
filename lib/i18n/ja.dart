@@ -1086,5 +1086,7 @@ const Map<String, String> jaTexts = {
   'fleet_join_open_web': "controlmiles.com を開く",
   'gig_fleet_app_hint': "会社のフリートで運転していますか？会社の走行は ControlMiles Fleet アプリで記録します。このアプリは個人のマイルだけを保存します。",
   'get_fleet_app': "ControlMiles Fleet を入手",
+  'fleet_admin_email_login': "フリートのオーナー・管理者の方はメールでサインイン",
+  'fleet_driver_id_login': "ドライバー・添乗員の方はドライバー ID でサインイン",
 
 };

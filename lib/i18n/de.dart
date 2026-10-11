@@ -1107,5 +1107,7 @@ const Map<String, String> deTexts = {
   'fleet_join_open_web': "controlmiles.com öffnen",
   'gig_fleet_app_hint': "Fahren Sie für eine Firmenflotte? Firmenfahrten gehören in die App ControlMiles Fleet. Diese App speichert nur Ihre privaten Meilen.",
   'get_fleet_app': "ControlMiles Fleet holen",
+  'fleet_admin_email_login': "Flotteninhaber oder Admin? Mit E-Mail anmelden",
+  'fleet_driver_id_login': "Fahrer oder Begleitperson? Mit Ihrer Fahrer-ID anmelden",
 
 };

@@ -1088,5 +1088,7 @@ const Map<String, String> hiTexts = {
   'fleet_join_open_web': "controlmiles.com खोलें",
   'gig_fleet_app_hint': "क्या आप किसी कंपनी फ्लीट के लिए गाड़ी चलाते हैं? कंपनी यात्राएँ ControlMiles Fleet ऐप में होती हैं। यह ऐप केवल आपके निजी मील रखता है।",
   'get_fleet_app': "ControlMiles Fleet डाउनलोड करें",
+  'fleet_admin_email_login': "फ्लीट मालिक या एडमिन? ईमेल से साइन इन करें",
+  'fleet_driver_id_login': "फ्लीट ड्राइवर या बस मॉनिटर? अपनी ड्राइवर ID से साइन इन करें",
 
 };

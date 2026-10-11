@@ -1130,5 +1130,7 @@ const Map<String, String> esTexts = {
   'fleet_join_open_web': "Abrir controlmiles.com",
   'gig_fleet_app_hint': "¿Manejas para una flota de empresa? Los viajes de la empresa van en la app ControlMiles Fleet. Esta app guarda solo tus millas personales.",
   'get_fleet_app': "Descargar ControlMiles Fleet",
+  'fleet_admin_email_login': "¿Dueño o admin de la flota? Entra con email",
+  'fleet_driver_id_login': "¿Conductor o monitor de la flota? Entra con tu ID de conductor",
 
 };

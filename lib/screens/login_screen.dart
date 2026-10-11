@@ -532,7 +532,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Image.asset(
-                'assets/images/logo_controlmiles.png',
+                AppFlavor.isFleet
+                    ? 'assets/images/logo_controlmiles_fleet.png'
+                    : 'assets/images/logo_controlmiles.png',
                 height: 56,
                 errorBuilder: (_, _, _) => const Icon(Icons.route_rounded, size: 56, color: Colors.white),
               ),
@@ -540,9 +542,30 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            AppFlavor.isFleet ? 'ControlMiles Fleet' : appState.tr('app_name'),
+            appState.tr('app_name'),
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8),
           ),
+          // Fleet app: "Fleet" in black, as in the logo, on a cream tag so it
+          // stays readable on the dark header (owner's request, 2026-10-11).
+          if (AppFlavor.isFleet) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF6EE),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Fleet',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             appState.tr('login_tagline'),
@@ -585,10 +608,6 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(fontSize: 13.5, color: subColor),
           ),
           const SizedBox(height: 20),
-          if (_isLoginMode && AppFlavor.isFleet) ...[
-            _buildLoginModeToggle(appState, isDark),
-            const SizedBox(height: 18),
-          ],
           if (showGoogle) ...[
             _buildGoogleButton(appState, isDark),
             const SizedBox(height: 16),
@@ -636,39 +655,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ))
           .toList(),
-    );
-  }
-
-  // ====================== LOGIN MODE TOGGLE ======================
-  // Explicit user request, 2026-09-17: fleet_driver accounts sign in with
-  // their driver ID; everyone else (gig drivers, fleet admins) with email.
-  Widget _buildLoginModeToggle(AppState appState, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2E281F) : const Color(0xFFF3ECDF),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ModeToggleChip(
-              label: appState.tr('email'),
-              icon: Icons.alternate_email_rounded,
-              selected: !_isDriverIdMode,
-              onTap: () => setState(() => _isDriverIdMode = false),
-            ),
-          ),
-          Expanded(
-            child: _ModeToggleChip(
-              label: appState.tr('fleet_driver_login_tab'),
-              icon: Icons.badge_outlined,
-              selected: _isDriverIdMode,
-              onTap: () => setState(() => _isDriverIdMode = true),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -974,13 +960,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ====================== OTHER APP HINT ======================
-  // Gig: "drive for a fleet? get ControlMiles Fleet". Fleet: owners and
-  // admins create / manage their fleet on controlmiles.com.
+  // Gig: "drive for a fleet? get ControlMiles Fleet". Fleet: every driver
+  // and bus monitor signs in with their CM-D ID (the email is only used to
+  // register, user rule 2026-10-11); owners and admins get a small "sign in
+  // with email" link, and create / manage their fleet on controlmiles.com.
   Widget _buildOtherAppHint(AppState appState, bool isDark) {
     final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
     final isFleet = AppFlavor.isFleet;
     return Column(
       children: [
+        if (isFleet)
+          TextButton(
+            onPressed: _isLoading
+                ? null
+                : () => setState(() => _isDriverIdMode = !_isDriverIdMode),
+            child: Text(appState.tr(
+                _isDriverIdMode ? 'fleet_admin_email_login' : 'fleet_driver_id_login')),
+          ),
         Text(
           appState.tr(isFleet ? 'fleet_join_owner_hint' : 'gig_fleet_app_hint'),
           textAlign: TextAlign.center,
@@ -1042,52 +1038,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _ModeToggleChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ModeToggleChip({required this.label, required this.icon, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-    final fg = selected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF6B6250));
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: fg),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: fg),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The soft route line from the website hero, drawn over the backdrop.
 class _RouteCurvePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

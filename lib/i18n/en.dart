@@ -1167,5 +1167,7 @@ const Map<String, String> enTexts = {
   'fleet_join_open_web': "Open controlmiles.com",
   'gig_fleet_app_hint': "Drive for a company fleet? Company trips go in the ControlMiles Fleet app. This app keeps your personal miles only.",
   'get_fleet_app': "Get ControlMiles Fleet",
+  'fleet_admin_email_login': "Fleet owner or admin? Sign in with email",
+  'fleet_driver_id_login': "Fleet driver or bus monitor? Sign in with your driver ID",
 
 };

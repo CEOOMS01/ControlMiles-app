@@ -1082,5 +1082,7 @@ const Map<String, String> amTexts = {
   'fleet_join_open_web': "controlmiles.com ክፈት",
   'gig_fleet_app_hint': "ለኩባንያ ተሽከርካሪ ቡድን ይነዳሉ? የኩባንያ ጉዞዎች በ ControlMiles Fleet መተግበሪያ ውስጥ ይመዘገባሉ። ይህ መተግበሪያ የግል ማይሎችዎን ብቻ ይይዛል።",
   'get_fleet_app': "ControlMiles Fleet ያውርዱ",
+  'fleet_admin_email_login': "የተሽከርካሪ ቡድን ባለቤት ወይም አስተዳዳሪ? በኢሜይል ይግቡ",
+  'fleet_driver_id_login': "ሹፌር ወይም የአውቶቡስ ተቆጣጣሪ? በሹፌር መታወቂያዎ ይግቡ",
 
 };
