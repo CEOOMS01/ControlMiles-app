@@ -1109,5 +1109,9 @@ const Map<String, String> zhTexts = {
   'get_fleet_app': "下载 ControlMiles Fleet",
   'fleet_admin_email_login': "车队所有者或管理员？使用邮箱登录",
   'fleet_driver_id_login': "车队司机或校车随车员？使用您的司机 ID 登录",
+  'login_tagline_fleet': "掌控您的车队。",
+  'fleet_sign_in_sub_driver': "请使用车队提供的司机 ID 和密码。",
+  'fleet_sign_in_sub_admin': "车队所有者和管理员：请使用邮箱登录。",
+  'stay_signed_in_hint_fleet': "保持开启，您的行程会在后台持续记录。在共用手机上请关闭。",
 
 };

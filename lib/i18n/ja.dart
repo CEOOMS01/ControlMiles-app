@@ -1088,5 +1088,9 @@ const Map<String, String> jaTexts = {
   'get_fleet_app': "ControlMiles Fleet を入手",
   'fleet_admin_email_login': "フリートのオーナー・管理者の方はメールでサインイン",
   'fleet_driver_id_login': "ドライバー・添乗員の方はドライバー ID でサインイン",
+  'login_tagline_fleet': "フリートをしっかり管理。",
+  'fleet_sign_in_sub_driver': "フリートから受け取ったドライバー ID とパスワードを使用してください。",
+  'fleet_sign_in_sub_admin': "フリートのオーナー・管理者はメールでサインインしてください。",
+  'stay_signed_in_hint_fleet': "オンにしておくと、走行がバックグラウンドで記録され続けます。共用の端末ではオフにしてください。",
 
 };

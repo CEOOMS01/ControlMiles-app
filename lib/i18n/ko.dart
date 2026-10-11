@@ -1089,5 +1089,9 @@ const Map<String, String> koTexts = {
   'get_fleet_app': "ControlMiles Fleet 받기",
   'fleet_admin_email_login': "차량 소유자 또는 관리자이신가요? 이메일로 로그인",
   'fleet_driver_id_login': "운전자 또는 통학 차량 보조원이신가요? 운전자 ID로 로그인",
+  'login_tagline_fleet': "차량 운영을 확실하게 관리하세요.",
+  'fleet_sign_in_sub_driver': "소속 차량팀에서 받은 운전자 ID와 비밀번호를 사용하세요.",
+  'fleet_sign_in_sub_admin': "차량 소유자 및 관리자: 이메일로 로그인하세요.",
+  'stay_signed_in_hint_fleet': "켜 두면 운행이 백그라운드에서 계속 기록됩니다. 공용 휴대폰에서는 끄세요.",
 
 };

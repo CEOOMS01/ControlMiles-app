@@ -1109,5 +1109,9 @@ const Map<String, String> deTexts = {
   'get_fleet_app': "ControlMiles Fleet holen",
   'fleet_admin_email_login': "Flotteninhaber oder Admin? Mit E-Mail anmelden",
   'fleet_driver_id_login': "Fahrer oder Begleitperson? Mit Ihrer Fahrer-ID anmelden",
+  'login_tagline_fleet': "Behalten Sie Ihre Flotte im Griff.",
+  'fleet_sign_in_sub_driver': "Verwenden Sie die Fahrer-ID und das Passwort Ihrer Flotte.",
+  'fleet_sign_in_sub_admin': "Flotteninhaber und Admins: Melden Sie sich mit Ihrer E-Mail an.",
+  'stay_signed_in_hint_fleet': "Lassen Sie dies aktiviert, damit Ihre Fahrten im Hintergrund weiter aufgezeichnet werden. Auf einem geteilten Telefon deaktivieren.",
 
 };

@@ -1108,5 +1108,9 @@ const Map<String, String> frTexts = {
   'get_fleet_app': "Télécharger ControlMiles Fleet",
   'fleet_admin_email_login': "Propriétaire ou admin de la flotte ? Connectez-vous par e-mail",
   'fleet_driver_id_login': "Chauffeur ou accompagnateur ? Connectez-vous avec votre ID chauffeur",
+  'login_tagline_fleet': "Gardez le contrôle de votre flotte.",
+  'fleet_sign_in_sub_driver': "Utilisez l'ID chauffeur et le mot de passe fournis par votre flotte.",
+  'fleet_sign_in_sub_admin': "Propriétaires et administrateurs de flotte : connectez-vous avec votre e-mail.",
+  'stay_signed_in_hint_fleet': "Laissez activé pour que vos trajets continuent d'être enregistrés en arrière-plan. Désactivez-le sur un téléphone partagé.",
 
 };

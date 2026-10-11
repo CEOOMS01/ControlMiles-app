@@ -1092,5 +1092,9 @@ const Map<String, String> arTexts = {
   'get_fleet_app': "احصل على ControlMiles Fleet",
   'fleet_admin_email_login': "مالك الأسطول أو مديره؟ سجّل الدخول بالبريد الإلكتروني",
   'fleet_driver_id_login': "سائق أو مرافق حافلة؟ سجّل الدخول بمعرّف السائق",
+  'login_tagline_fleet': "حافظ على السيطرة على أسطولك.",
+  'fleet_sign_in_sub_driver': "استخدم معرّف السائق وكلمة المرور من أسطولك.",
+  'fleet_sign_in_sub_admin': "مالكو الأساطيل ومديروها: سجّلوا الدخول بالبريد الإلكتروني.",
+  'stay_signed_in_hint_fleet': "اترك هذا مفعّلًا لتستمر رحلاتك في التسجيل في الخلفية. أوقفه على هاتف مشترك.",
 
 };

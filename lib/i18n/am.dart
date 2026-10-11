@@ -1084,5 +1084,9 @@ const Map<String, String> amTexts = {
   'get_fleet_app': "ControlMiles Fleet ያውርዱ",
   'fleet_admin_email_login': "የተሽከርካሪ ቡድን ባለቤት ወይም አስተዳዳሪ? በኢሜይል ይግቡ",
   'fleet_driver_id_login': "ሹፌር ወይም የአውቶቡስ ተቆጣጣሪ? በሹፌር መታወቂያዎ ይግቡ",
+  'login_tagline_fleet': "የተሽከርካሪ ቡድንዎን በቁጥጥር ስር ያድርጉ።",
+  'fleet_sign_in_sub_driver': "ከተሽከርካሪ ቡድንዎ የተሰጠዎትን የሹፌር መታወቂያ እና የይለፍ ቃል ይጠቀሙ።",
+  'fleet_sign_in_sub_admin': "የተሽከርካሪ ቡድን ባለቤቶች እና አስተዳዳሪዎች፦ በኢሜይልዎ ይግቡ።",
+  'stay_signed_in_hint_fleet': "ጉዞዎችዎ ከበስተጀርባ መመዝገባቸውን እንዲቀጥሉ ይህን ያብሩት። በጋራ ስልክ ላይ ያጥፉት።",
 
 };

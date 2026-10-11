@@ -1090,5 +1090,9 @@ const Map<String, String> hiTexts = {
   'get_fleet_app': "ControlMiles Fleet डाउनलोड करें",
   'fleet_admin_email_login': "फ्लीट मालिक या एडमिन? ईमेल से साइन इन करें",
   'fleet_driver_id_login': "फ्लीट ड्राइवर या बस मॉनिटर? अपनी ड्राइवर ID से साइन इन करें",
+  'login_tagline_fleet': "अपने फ्लीट पर नियंत्रण रखें।",
+  'fleet_sign_in_sub_driver': "अपने फ्लीट से मिली ड्राइवर ID और पासवर्ड का उपयोग करें।",
+  'fleet_sign_in_sub_admin': "फ्लीट मालिक और एडमिन: अपने ईमेल से साइन इन करें।",
+  'stay_signed_in_hint_fleet': "इसे चालू रखें ताकि आपकी यात्राएँ बैकग्राउंड में रिकॉर्ड होती रहें। साझा फ़ोन पर इसे बंद करें।",
 
 };

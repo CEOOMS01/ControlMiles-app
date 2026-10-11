@@ -1169,5 +1169,9 @@ const Map<String, String> enTexts = {
   'get_fleet_app': "Get ControlMiles Fleet",
   'fleet_admin_email_login': "Fleet owner or admin? Sign in with email",
   'fleet_driver_id_login': "Fleet driver or bus monitor? Sign in with your driver ID",
+  'login_tagline_fleet': "Keep control of your fleet.",
+  'fleet_sign_in_sub_driver': "Use the driver ID and password from your fleet.",
+  'fleet_sign_in_sub_admin': "Fleet owners and admins: sign in with your email.",
+  'stay_signed_in_hint_fleet': "Keep this on so your trips keep recording in the background. Turn it off on a shared phone.",
 
 };

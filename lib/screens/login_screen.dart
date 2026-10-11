@@ -541,34 +541,43 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          Text(
-            appState.tr('app_name'),
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8),
-          ),
-          // Fleet app: "Fleet" in black, as in the logo, on a cream tag so it
-          // stays readable on the dark header (owner's request, 2026-10-11).
-          if (AppFlavor.isFleet) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF6EE),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Fleet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.black,
+          // Fleet app: "ControlMiles" + a black "Fleet" on a cream tag, on one
+          // line (owner's request, 2026-10-11); the tag keeps it readable on
+          // the dark header.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  appState.tr('app_name'),
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8),
                 ),
-              ),
+                if (AppFlavor.isFleet) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF6EE),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Fleet',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
           const SizedBox(height: 4),
           Text(
-            appState.tr('login_tagline'),
+            appState.tr(AppFlavor.isFleet ? 'login_tagline_fleet' : 'login_tagline'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.75)),
           ),
@@ -602,9 +611,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? 'login_create_account_sub'
                 : _justSignedUp
                     ? 'signup_check_email'
-                    : _hasSignedInBefore
-                        ? 'login_welcome_back_sub'
-                        : 'login_sign_in_sub'),
+                    : AppFlavor.isFleet
+                        ? (_isDriverIdMode ? 'fleet_sign_in_sub_driver' : 'fleet_sign_in_sub_admin')
+                        : _hasSignedInBefore
+                            ? 'login_welcome_back_sub'
+                            : 'login_sign_in_sub'),
             style: TextStyle(fontSize: 13.5, color: subColor),
           ),
           const SizedBox(height: 20),
@@ -831,12 +842,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            if (!_isDriverIdMode)
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
-                child: Text(appState.tr('forgot_password'),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
+            // Drivers too: their account has the email they registered with,
+            // and the reset goes there.
+            TextButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
+              child: Text(appState.tr('forgot_password'),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
           ],
         ),
         InkWell(
@@ -858,7 +870,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(appState.tr('stay_signed_in'), style: TextStyle(fontSize: 13, color: textColor)),
                       const SizedBox(height: 2),
-                      Text(appState.tr('stay_signed_in_hint'),
+                      Text(appState.tr(AppFlavor.isFleet ? 'stay_signed_in_hint_fleet' : 'stay_signed_in_hint'),
                           style: TextStyle(fontSize: 11.5, height: 1.35, color: hintColor)),
                     ],
                   ),
@@ -1026,12 +1038,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Text(
-          appState.tr('Olympus Mont Systems LLC'),
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-        ),
-        Text(
           appState.tr('powered_by_footer'),
           style: const TextStyle(fontSize: 10, color: Colors.grey),
+        ),
+        Text(
+          appState.tr('Olympus Mont Systems LLC'),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
         ),
       ],
     );
