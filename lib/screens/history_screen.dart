@@ -12,6 +12,7 @@ import '../models/session_section.dart';
 import '../models/gig_app.dart';
 import '../errors/app_error.dart';
 import '../utils/duration_format.dart';
+import '../onboarding/product_tour.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -47,7 +48,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _tourScope.register();
     _loadHistory();
+  }
+
+  // Product tour (2026-10-11): one tip on the newest trip, the first time
+  // History opens with trips in it.
+  static const _tour = 'history';
+  final _tourScope = TourScope(_tour);
+  final _tTrip = GlobalKey();
+  bool _tourChecked = false;
+
+  void _startTour({bool force = false}) {
+    ProductTour.run(context, id: TourIds.history, scope: _tour, keys: [_tTrip], force: force);
+  }
+
+  @override
+  void dispose() {
+    _tourScope.unregister();
+    super.dispose();
   }
 
   Future<void> _loadHistory() async {
@@ -314,6 +333,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
         actions: [
+          if (_sessions.isNotEmpty) TourHelpButton(onPressed: () => _startTour(force: true)),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
@@ -333,6 +353,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Icon(Icons.history_rounded, size: 48, color: labelCol),
                       const SizedBox(height: 12),
                       Text(appState.tr('no_data'), style: TextStyle(color: labelCol, fontSize: 15)),
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          appState.tr('ptour_history_empty'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: labelCol, fontSize: 13, height: 1.4),
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -423,7 +452,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                     final showDateDivider = index == 0 || currentDate != previousDate;
 
-                    return Column(
+                    if (index == 0 && !_tourChecked) {
+                      _tourChecked = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) _startTour();
+                      });
+                    }
+
+                    final item = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (showMonthDivider)
@@ -548,6 +584,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                         ),
                       ],
+                    );
+                    if (index != 0) return item;
+                    return TourTarget(
+                      showcaseKey: _tTrip,
+                      scope: _tour,
+                      step: 1,
+                      total: 1,
+                      titleKey: 'ptour_trip_title',
+                      bodyKey: 'ptour_trip_body',
+                      child: item,
                     );
                   },
                 ),

@@ -27,6 +27,7 @@ import '../widgets/gig_app_selector.dart';
 import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
 import '../utils/permission_recovery_service.dart';
+import '../onboarding/product_tour.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -38,6 +39,18 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen>
     with WidgetsBindingObserver {
   bool loading = true;
+
+  // Product tour (2026-10-11): spotlights over the real controls.
+  static const _tour = 'dashboard';
+  final _tourScope = TourScope(_tour);
+  final _tVehicle = GlobalKey();
+  final _tApps = GlobalKey();
+  final _tStart = GlobalKey();
+  final _tMiles = GlobalKey();
+  final _tBottom = GlobalKey();
+  final _tMenu = GlobalKey();
+  final _tFirstTrip = GlobalKey();
+  bool _tourChecked = false;
   bool trackingActive = false;
 
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -115,11 +128,42 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _tourScope.register();
     _initDashboard();
     _setupRealTimeListeners();
     _loadActiveVehicle();
     TrackingController.autoFlashEvent.addListener(_onAutoFlashEvent);
     TrackingController.segmentDiscarded.addListener(_onSegmentDiscarded);
+  }
+
+  List<GlobalKey> get _dashboardTourKeys => [_tVehicle, _tApps, _tStart, _tMiles, _tBottom, _tMenu];
+
+  // Once the screen has its data: the welcome sheet the first time, then the
+  // dashboard tour. Never while a trip is being recorded.
+  Future<void> _maybeStartTour() async {
+    if (_tourChecked || loading || _vehicleLoading) return;
+    _tourChecked = true;
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted || TrackingController.currentState != TrackingState.idle) return;
+    if (!await ProductTour.isSeen(TourIds.welcome)) {
+      if (!mounted) return;
+      final go = await ProductTour.showWelcome(context);
+      if (!go) {
+        await ProductTour.markSeen(TourIds.dashboard);
+        return;
+      }
+    }
+    if (!mounted) return;
+    await ProductTour.run(context, id: TourIds.dashboard, scope: _tour, keys: _dashboardTourKeys);
+  }
+
+  // First finished trip: point at History.
+  void _maybeFirstTripTip() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ProductTour.run(context, id: TourIds.firstTrip, scope: _tour, keys: [_tFirstTrip]);
+      }
+    });
   }
 
   // A segment with no miles was removed from the trip (at a switch, manual
@@ -482,6 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _autoFlashTimer?.cancel();
     TrackingController.autoFlashEvent.removeListener(_onAutoFlashEvent);
     TrackingController.segmentDiscarded.removeListener(_onSegmentDiscarded);
+    _tourScope.unregister();
     super.dispose();
   }
 
@@ -1162,6 +1207,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         : appState.tr('mile_short');
 
     if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (!_tourChecked && !_vehicleLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartTour());
+    }
     if (_headerMilesLoadedFor != null && _headerMilesLoadedFor != appState.headerMilesPeriod) {
       _headerMilesLoadedFor = appState.headerMilesPeriod;
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadHeaderMiles());
@@ -1182,6 +1230,22 @@ class _DashboardScreenState extends State<DashboardScreen>
         scrolledUnderElevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
         titleSpacing: 0,
+        leading: Builder(
+          builder: (ctx) => TourTarget(
+            showcaseKey: _tMenu,
+            scope: _tour,
+            step: 6,
+            total: 6,
+            titleKey: 'ptour_menu_title',
+            bodyKey: 'ptour_menu_body',
+            radius: const BorderRadius.all(Radius.circular(24)),
+            child: IconButton(
+              icon: const Icon(Icons.menu_rounded),
+              tooltip: MaterialLocalizations.of(ctx).openAppDrawerTooltip,
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
+          ),
+        ),
         title: Row(
           children: [
             Icon(_isDaytime ? Icons.wb_sunny_rounded : Icons.nightlight_round,
@@ -1219,7 +1283,15 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           Padding(
             padding: const EdgeInsets.only(right: kPageGutter),
-            child: Column(
+            child: TourTarget(
+              showcaseKey: _tMiles,
+              scope: _tour,
+              step: 4,
+              total: 6,
+              titleKey: 'ptour_miles_title',
+              bodyKey: 'ptour_miles_body',
+              radius: const BorderRadius.all(Radius.circular(10)),
+              child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1239,6 +1311,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         .toLowerCase(),
                     style: const TextStyle(fontSize: 11, color: Color(0xFFC9BFA9))),
               ],
+            ),
             ),
           ),
         ],
@@ -1281,14 +1354,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                       children: [
                         // Light blue (2026-10-09, trial): the tracking card
                         // stands out from the white cards.
-                        _buildVehicleCard(
+                        TourTarget(
+                          showcaseKey: _tVehicle,
+                          scope: _tour,
+                          step: 1,
+                          total: 6,
+                          titleKey: 'ptour_vehicle_title',
+                          bodyKey: 'ptour_vehicle_body',
+                          radius: BorderRadius.zero,
+                          child: _buildVehicleCard(
                           appState: appState,
                           isDark: isDark,
                           cardBg: isDark ? const Color(0xFF15222C) : const Color(0xFFE6F0F8),
                           borderColor: isDark ? const Color(0xFF22384A) : const Color(0xFFBDD6EA),
                           tripMilesValue: displayValue,
                           tripMilesUnit: unitLabel,
-                          trackingRow: TrackingActionButton(
+                          trackingRow: TourTarget(
+                showcaseKey: _tStart,
+                scope: _tour,
+                step: 3,
+                total: 6,
+                titleKey: 'ptour_start_title',
+                bodyKey: 'ptour_start_body',
+                child: TrackingActionButton(
                 compact: true,
                 selectedGigApp: _selectedGigApp,
                 selectedIrsPurpose: _selectedIrsPurpose,
@@ -1300,6 +1388,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   _loadRecentSessions();
                   _loadTodaySummary();
                   _loadMonthSummary();
+                  _maybeFirstTripTip();
                 },
                 // Subscription-tier enforcement (explicit user requirement,
                 // 2026-09-04): reuses the exact canStart/cannotStartMessage
@@ -1344,6 +1433,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // resolving false triggers that path regardless), which
                 // would just be a redundant second message stacked on top.
               ),
+              ),
+                        ),
                         ),
                   // Auto-detect start/stop flash (2026-09-08): a full-bleed,
                   // non-interactive colored fade over the tracking card --
@@ -1401,7 +1492,15 @@ class _DashboardScreenState extends State<DashboardScreen>
               // _pollForMidTripSwitch), so the status card stays up
               // throughout instead of handing back to the manual
               // carousel.
-              appState.autoDetectEnabled
+              TourTarget(
+                showcaseKey: _tApps,
+                scope: _tour,
+                step: 2,
+                total: 6,
+                titleKey: appState.autoDetectEnabled ? 'ptour_auto_title' : 'ptour_apps_title',
+                bodyKey: appState.autoDetectEnabled ? 'ptour_auto_body' : 'ptour_apps_body',
+                radius: BorderRadius.zero,
+                child: appState.autoDetectEnabled
                           ? _buildAutoDetectStatusCard(appState, isDark)
                           : GigAppSelector(
                               selectedGigApp: _selectedGigApp,
@@ -1411,6 +1510,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               onCustomSelected: (appId, irsPurpose) =>
                                   _handleAppSelection(appId, irsPurpose: irsPurpose),
                             ),
+              ),
 
               // (The "TRACKING ACTIVE: APP" chip lived here -- the tracking
               // card's status line shows the same thing now.)
@@ -1727,10 +1827,24 @@ class _DashboardScreenState extends State<DashboardScreen>
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
+          child: TourTarget(
+            showcaseKey: _tBottom,
+            scope: _tour,
+            step: 5,
+            total: 6,
+            titleKey: 'ptour_bottom_title',
+            bodyKey: 'ptour_bottom_body',
+            child: Row(
         children: [
           Expanded(
-            child: ElevatedButton.icon(
+            child: TourTarget(
+              showcaseKey: _tFirstTrip,
+              scope: _tour,
+              step: 1,
+              total: 1,
+              titleKey: 'ptour_first_trip_title',
+              bodyKey: 'ptour_first_trip_body',
+              child: ElevatedButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/history'),
               icon: const Icon(Icons.history),
               label: Text(appState.tr('history').toUpperCase()),
@@ -1741,6 +1855,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
+            ),
             ),
           ),
           const SizedBox(width: 12),
@@ -1760,6 +1875,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ],
       ),
+          ),
         ),
       ),
     );

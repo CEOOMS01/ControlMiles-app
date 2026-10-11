@@ -18,6 +18,7 @@ import '../routes/app_routes.dart';
 import '../services/report_service.dart';
 import '../widgets/cm_card_header.dart';
 import '../utils/duration_format.dart';
+import '../onboarding/product_tour.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -122,11 +123,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
+    _tourScope.register();
     // BUG FIX (ver ReportsScreen.argThisWeek arriba): la carga inicial ya
     // no dispara acá -- depende de si esta apertura trae el argumento
     // "esta semana" o no, y `ModalRoute.of(context)` solo está disponible
     // una vez que el widget tiene un BuildContext adjunto al árbol de
     // rutas, lo que pasa recién en didChangeDependencies, no en initState.
+  }
+
+  // Product tour (2026-10-11): this screen's tips the first time it opens.
+  static const _tour = 'reports';
+  final _tourScope = TourScope(_tour);
+  final _tRange = GlobalKey();
+  final _tSummary = GlobalKey();
+  final _tPdf = GlobalKey();
+  bool _tourChecked = false;
+
+  void _startTour({bool force = false}) {
+    ProductTour.run(context,
+        id: TourIds.reports, scope: _tour, keys: [_tRange, _tSummary, _tPdf], force: force);
+  }
+
+  @override
+  void dispose() {
+    _tourScope.unregister();
+    super.dispose();
   }
 
   @override
@@ -580,7 +601,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
         iconTheme: IconThemeData(
             color: isDark ? Colors.white : const Color(0xFF1C1812)),
         actions: [
-          IconButton(
+          TourHelpButton(onPressed: () => _startTour(force: true)),
+          TourTarget(
+            showcaseKey: _tRange,
+            scope: _tour,
+            step: 1,
+            total: 3,
+            titleKey: 'ptour_range_title',
+            bodyKey: 'ptour_range_body',
+            radius: const BorderRadius.all(Radius.circular(24)),
+            child: IconButton(
             icon: const Icon(Icons.date_range_rounded),
             onPressed: () async {
               final picked = await showDateRangePicker(
@@ -615,6 +645,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               }
             },
           ),
+          ),
         ],
       ),
       body: _isLoading
@@ -645,6 +676,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildBody(
       AppState appState, bool isDark, Color cardBg, Color border) {
+    if (!_tourChecked) {
+      _tourChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startTour();
+      });
+    }
     return RefreshIndicator(
       onRefresh: () async {
         await _loadSessions();
@@ -659,10 +696,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
           // calendario -- el selector de rango (ícono de calendario en el
           // AppBar) sigue funcionando igual, solo perdió su card dedicada.
           SliverToBoxAdapter(
-            child: _buildSummaryCard(appState, isDark, border),
+            child: TourTarget(
+              showcaseKey: _tSummary,
+              scope: _tour,
+              step: 2,
+              total: 3,
+              titleKey: 'ptour_summary_title',
+              bodyKey: 'ptour_summary_body',
+              child: _buildSummaryCard(appState, isDark, border),
+            ),
           ),
           SliverToBoxAdapter(
-            child: _buildGlobalPdfButton(appState),
+            child: TourTarget(
+              showcaseKey: _tPdf,
+              scope: _tour,
+              step: 3,
+              total: 3,
+              titleKey: 'ptour_pdf_title',
+              bodyKey: 'ptour_pdf_body',
+              child: _buildGlobalPdfButton(appState),
+            ),
           ),
           if (_sessions.isEmpty)
             SliverFillRemaining(

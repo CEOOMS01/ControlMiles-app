@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../onboarding/product_tour.dart';
 import '../config/app_flavor.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
@@ -95,7 +96,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _tourScope.unregister();
     super.dispose();
+  }
+
+  // Product tour (2026-10-11, gig app): the two settings people miss -- the
+  // tax-preparer code and background reliability.
+  static const _tour = 'settings';
+  final _tourScope = TourScope(_tour);
+  final _tPortal = GlobalKey();
+  final _tReliability = GlobalKey();
+  bool _tourChecked = false;
+
+  void _startTour({bool force = false}) {
+    ProductTour.run(context,
+        id: TourIds.settings, scope: _tour, keys: [_tPortal, _tReliability], force: force);
   }
 
   @override
@@ -129,6 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _tourScope.register();
     if (GigAppDetectionService.instance.isSupported) {
       _refreshUsageAccessStatus();
     }
@@ -198,12 +214,21 @@ class _SettingsScreenState extends State<SettingsScreen>
     // Theme.of(context).brightness, mismo patrón isDark que el resto de la
     // app (dashboard_screen.dart/history_screen.dart/main_drawer.dart).
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (AppFlavor.isGig && !_tourChecked) {
+      _tourChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startTour();
+      });
+    }
 
     return Scaffold(
       backgroundColor: isDark
           ? const Color(0xFF12100C)
           : const Color(0xFFFAF6EE),
       appBar: AppBar(
+        actions: [
+          if (AppFlavor.isGig) TourHelpButton(onPressed: () => _startTour(force: true)),
+        ],
         title: Text(
           appState.tr('settings').toUpperCase(),
           style: const TextStyle(
@@ -240,14 +265,32 @@ class _SettingsScreenState extends State<SettingsScreen>
             // the "no login needed for your preparer" pitch is actually
             // true for the driver too, not just the preparer.
             _buildSectionHeader(appState, 'report_portal_section', isDark),
-            _buildReportPortalSection(appState, isDark),
+            TourTarget(
+              showcaseKey: _tPortal,
+              scope: _tour,
+              step: 1,
+              total: 2,
+              titleKey: 'ptour_portal_title',
+              bodyKey: 'ptour_portal_body',
+              child: _buildReportPortalSection(appState, isDark),
+            ),
           ],
 
           _buildSectionHeader(appState, 'preferences', isDark),
           _buildPreferencesSection(appState, isDark),
 
           _buildSectionHeader(appState, 'background_reliability_section', isDark),
-          _buildBackgroundReliabilitySection(appState, isDark),
+          AppFlavor.isGig
+              ? TourTarget(
+                  showcaseKey: _tReliability,
+                  scope: _tour,
+                  step: 2,
+                  total: 2,
+                  titleKey: 'ptour_reliability_title',
+                  bodyKey: 'ptour_reliability_body',
+                  child: _buildBackgroundReliabilitySection(appState, isDark),
+                )
+              : _buildBackgroundReliabilitySection(appState, isDark),
 
           _buildSectionHeader(appState, 'about_app', isDark),
           _buildAboutSection(appState, isDark),
@@ -1034,12 +1077,23 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
           const SizedBox(height: 10),
-          // First-run tour + "What's new", replayable (2026-10-09).
+          // Gig: "App tour" replays the product tour from the dashboard
+          // (2026-10-11, replaces "Tutorial & what's new"); the Fleet app
+          // keeps its own tour for now.
           _buildLegalLinkRow(
             icon: Icons.school_rounded,
-            label: appState.tr('tutorial_whats_new'),
+            label: appState.tr(AppFlavor.isGig ? 'ptour_replay' : 'tutorial_whats_new'),
             isDark: isDark,
-            onTap: () => AppTourService.replay(context),
+            onTap: () async {
+              if (AppFlavor.isFleet) {
+                AppTourService.replay(context);
+                return;
+              }
+              await ProductTour.resetAll();
+              await ProductTour.markSeen(TourIds.welcome);
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (r) => false);
+            },
           ),
           const SizedBox(height: 10),
           // Personal plans and the IRS mileage method belong to the gig app;

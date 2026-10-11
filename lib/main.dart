@@ -299,7 +299,8 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
           return InviteLandingScreen(token: token);
         },
         AppRoutes.shiftEnded: (_) => const ShiftEndedScreen(),
-        AppRoutes.dashboard: (_) => const AppTourGate(child: DashboardScreen()),
+        // Gig: the product tour lives inside the dashboard (product_tour.dart).
+        AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.reports: (_) => const ReportsScreen(),
         AppRoutes.history: (_) => const HistoryScreen(),
