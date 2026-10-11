@@ -30,4 +30,8 @@ class AppFlavor {
 
   static const gigStoreUrl = 'https://play.google.com/store/apps/details?id=$gigPackage';
   static const fleetStoreUrl = 'https://play.google.com/store/apps/details?id=$fleetPackage';
+
+  // The gig app's "drive for a fleet? get ControlMiles Fleet" link stays
+  // hidden until Fleet is live on Google Play (the store page would 404).
+  static const fleetAppOnPlay = false;
 }

@@ -979,6 +979,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildOtherAppHint(AppState appState, bool isDark) {
     final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
     final isFleet = AppFlavor.isFleet;
+    if (!isFleet && !AppFlavor.fleetAppOnPlay) return const SizedBox.shrink();
     return Column(
       children: [
         if (isFleet)
@@ -1035,17 +1036,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ====================== FOOTER ======================
   Widget _buildFooter(AppState appState) {
-    return Column(
-      children: [
-        Text(
-          appState.tr('powered_by_footer'),
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
-        ),
-        Text(
-          appState.tr('Olympus Mont Systems LLC'),
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-        ),
-      ],
+    // One line, trade name (owner's request, 2026-10-11): Olimsys
+    // Development is Olympus Mont Systems LLC's brand; the legal name stays
+    // in Settings > About and the legal documents.
+    return Text.rich(
+      TextSpan(
+        style: const TextStyle(fontSize: 11, color: Colors.grey),
+        children: [
+          TextSpan(text: '${appState.tr('powered_by_footer')} '),
+          const TextSpan(
+            text: 'Olimsys Development',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.3),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
