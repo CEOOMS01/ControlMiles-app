@@ -540,7 +540,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            appState.tr('app_name'),
+            AppFlavor.isFleet ? 'ControlMiles Fleet' : appState.tr('app_name'),
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8),
           ),
           const SizedBox(height: 4),
