@@ -24,7 +24,16 @@ const corsHeaders = {
 };
 
 const CGC_ENDPOINT = Deno.env.get('CGC_ENDPOINT') ?? '';
-const CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
+
+// Each app has its own CGC Core identity (2026-10-11): the key itself tells
+// CGC Core which app is calling, so one app can't report as another. The
+// shared CGC_API_KEY is only a fallback until every per-app secret is set.
+const CGC_KEYS: Record<string, string> = {
+  'controlmiles': Deno.env.get('CGC_API_KEY_CONTROLMILES') ?? '',
+  'controlmiles-fleet': Deno.env.get('CGC_API_KEY_CONTROLMILES_FLEET') ?? '',
+};
+const LEGACY_CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
+const cgcKeyFor = (app: string) => CGC_KEYS[app] || LEGACY_CGC_API_KEY;
 
 // Security hardening (2026-08-28): this endpoint deliberately requires no
 // signed-in user (see comment above) -- that also makes it the one
@@ -77,7 +86,7 @@ async function isRateLimited(clientId: string): Promise<boolean> {
 // (api/v1/endpoints/monitor.py's ALLOWED_APP_SOURCES) -- this is just the
 // same client-side pre-check LedgiProof's report-error already does, to
 // fail fast without a round trip for an obviously wrong app_source.
-const ALLOWED_APP_SOURCES = new Set(['controlmiles']);
+const ALLOWED_APP_SOURCES = new Set(['controlmiles', 'controlmiles-fleet']);
 
 interface ErrorReportBody {
   app_source: string;
@@ -117,7 +126,8 @@ Deno.serve(async (req: Request) => {
       return respond({ accepted: false, reason: 'Invalid app_source' }, 400);
     }
 
-    if (!CGC_ENDPOINT || !CGC_API_KEY) {
+    const cgcApiKey = cgcKeyFor(body.app_source);
+    if (!CGC_ENDPOINT || !cgcApiKey) {
       // Monitoring not configured for this environment -- drop silently, not an error.
       return respond({ accepted: false, reason: 'monitoring_not_configured' }, 200);
     }
@@ -143,7 +153,7 @@ Deno.serve(async (req: Request) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${CGC_API_KEY}`,
+          Authorization: `Bearer ${cgcApiKey}`,
         },
         body: JSON.stringify(payload),
         signal: controller.signal,

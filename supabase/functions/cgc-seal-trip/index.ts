@@ -39,7 +39,15 @@ const corsHeaders = {
 };
 
 const CGC_ENDPOINT = Deno.env.get('CGC_ENDPOINT') ?? '';
-const CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
+// Each app signs in to CGC Core with its own key (2026-10-11): a personal
+// trip is a ControlMiles (gig) decision, a fleet trip a ControlMiles Fleet
+// one. The shared CGC_API_KEY is only a fallback until both are set.
+const CGC_KEYS: Record<string, string> = {
+  'controlmiles': Deno.env.get('CGC_API_KEY_CONTROLMILES') ?? '',
+  'controlmiles-fleet': Deno.env.get('CGC_API_KEY_CONTROLMILES_FLEET') ?? '',
+};
+const LEGACY_CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
+const cgcKeyFor = (app: string) => CGC_KEYS[app] || LEGACY_CGC_API_KEY;
 const CGC_TIMEOUT_MS = 10000; // Vercel cold starts on CGC Core (SCM/KMS,
 // TCO, ComplianceEngine init) can comfortably exceed 5s on the first call
 // after idle -- same value LedgiProof's report-error uses, tuned live.
@@ -143,7 +151,10 @@ Deno.serve(async (req: Request) => {
       return respond({ sealed: false, reason: 'Session is not closed yet' }, 400);
     }
 
-    if (!CGC_ENDPOINT || !CGC_API_KEY) {
+    const appSource = session.organization_id ? 'controlmiles-fleet' : 'controlmiles';
+    const cgcApiKey = cgcKeyFor(appSource);
+    if (!CGC_ENDPOINT || !cgcApiKey) {
+      console.warn(`[cgc-seal-trip] CGC_ENDPOINT / CGC key for ${appSource} not set -- trip not sealed`);
       return respond({ sealed: false, reason: 'CGC governance not configured' }, 200);
     }
 
@@ -169,7 +180,7 @@ Deno.serve(async (req: Request) => {
     form.set('input_data', JSON.stringify(inputData));
     form.set('user_email', userData.user.email ?? 'unknown@controlmiles');
     form.set('data_domains', JSON.stringify(['mileage_tracking']));
-    form.set('app_source', 'controlmiles');
+    form.set('app_source', appSource);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CGC_TIMEOUT_MS);
@@ -180,7 +191,7 @@ Deno.serve(async (req: Request) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${CGC_API_KEY}`,
+          Authorization: `Bearer ${cgcApiKey}`,
         },
         body: form.toString(),
         signal: controller.signal,
@@ -198,16 +209,25 @@ Deno.serve(async (req: Request) => {
     const data = await cgcRes.json();
     const decisionId: string | undefined = data?.decision_id;
 
-    if (decisionId) {
-      // Same userClient -- RLS governs this write too (owner or org
-      // admin), consistent with the read above.
-      await userClient
-        .from('sessions')
-        .update({ cgc_decision_id: decisionId, cgc_sealed_at: new Date().toISOString() })
-        .eq('id', session.id);
+    if (!decisionId) {
+      console.warn(`[cgc-seal-trip] CGC Core answered without decision_id: ${JSON.stringify(data).slice(0, 300)}`);
+      return respond({ sealed: false, reason: 'No decision_id from CGC Core' }, 200);
     }
 
-    return respond({ sealed: !!decisionId, decision_id: decisionId ?? null });
+    // Same userClient -- RLS governs this write too (owner or org admin).
+    // Audit 2026-10-10: this write used to fail silently (the closed-trip
+    // freeze rejected it, and the error was never read) -- no trip was
+    // ever sealed. fn_freeze_closed_session now allows the seal once.
+    const { error: sealError } = await userClient
+      .from('sessions')
+      .update({ cgc_decision_id: decisionId, cgc_sealed_at: new Date().toISOString() })
+      .eq('id', session.id);
+    if (sealError) {
+      console.error(`[cgc-seal-trip] could not store the seal for ${session.id}: ${sealError.message}`);
+      return respond({ sealed: false, reason: 'Seal not stored', decision_id: decisionId }, 200);
+    }
+
+    return respond({ sealed: true, decision_id: decisionId });
   } catch (err: any) {
     if (err?.name === 'AbortError') {
       return respond({ sealed: false, reason: 'CGC Core timeout' }, 200);

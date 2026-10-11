@@ -11,6 +11,7 @@
 // kind worth catching. Never throws: a broken monitoring pipe must never
 // itself become a source of errors in the app it's monitoring.
 import 'package:flutter/foundation.dart';
+import '../config/app_flavor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CgcMonitorService {
@@ -24,7 +25,8 @@ class CgcMonitorService {
       await Supabase.instance.client.functions.invoke(
         'report-error',
         body: {
-          'app_source': 'controlmiles',
+          // Its own identity in CGC Core per app (2026-10-11).
+          'app_source': AppFlavor.isFleet ? 'controlmiles-fleet' : 'controlmiles',
           'environment': kReleaseMode ? 'production' : 'development',
           'severity': severity,
           'message': message,
