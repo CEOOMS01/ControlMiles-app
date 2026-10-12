@@ -890,7 +890,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     final types = <(String, String, IconData)>[
       (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
       (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
-      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
+      // The weekly summary opens the personal Reports: gig app only (the
+      // Fleet app has no personal trips; fleet reports live on the web).
+      if (AppFlavor.isGig)
+        (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
       if (appState.premiumEntitled) ...[
         (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
         (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),

@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ControlMiles Fleet only (merged into src/main/AndroidManifest.xml). -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Gig-app-only permissions, removed from the Fleet app: Usage Access
+         detects which gig app is open (auto-detect), and personal plans
+         are sold through Google Play Billing in the gig app only (fleets
+         pay on controlmiles.com). Play reviews PACKAGE_USAGE_STATS as a
+         sensitive permission; the Fleet app must not declare it. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:node="remove"/>
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove"/>
     <application>
         <activity android:name=".MainActivity">
             <!-- Fleet driver invite deep link: Android App Links for

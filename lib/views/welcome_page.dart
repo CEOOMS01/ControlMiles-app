@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
+import '../config/app_flavor.dart';
 import '../services/gig_app_detection_service.dart';
 import '../utils/permission_recovery_service.dart';
 
@@ -110,7 +111,9 @@ class _WelcomePageState extends State<WelcomePage> {
   static const String _usageAccessAskedKey = 'controlmiles_usage_access_asked';
 
   Future<void> _requestUsageAccessOnce() async {
-    if (!GigAppDetectionService.instance.isSupported) return;
+    // Gig app only: it detects which gig app is open. The Fleet app has no
+    // auto-detect and doesn't even declare the permission (fleet manifest).
+    if (AppFlavor.isFleet || !GigAppDetectionService.instance.isSupported) return;
 
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_usageAccessAskedKey) ?? false) return;
@@ -313,7 +316,7 @@ class _WelcomePageState extends State<WelcomePage> {
                     // se concede desde Ajustes del sistema. Se lista aquí para
                     // que el cliente sepa qué se le va a pedir antes de que le
                     // aparezca la pantalla de Ajustes.
-                    if (GigAppDetectionService.instance.isSupported)
+                    if (AppFlavor.isGig && GigAppDetectionService.instance.isSupported)
                       _PermissionTile(icon: Icons.apps_rounded, title: appState.tr('usage_access'), desc: appState.tr('usage_access_desc')),
                   ],
                 ),

@@ -8,6 +8,69 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.3.1+38 — 2026-10-12
+
+### Fixed (Gig / Fleet separation review)
+- **Fleet app no longer asks for Usage Access**: the onboarding permission
+  list and the one-time Usage Access prompt are gig-only (they power the
+  gig-app auto-detect, which the Fleet app doesn't have).
+- **Fleet app no longer declares gig-only permissions**:
+  `PACKAGE_USAGE_STATS` (a sensitive permission in Play review) and
+  `com.android.vending.BILLING` are removed in the fleet manifest; personal
+  plans are sold in the gig app only and fleets pay on controlmiles.com.
+- **Weekly summary notification is gig-only**: it opens the personal
+  Reports, which the Fleet app doesn't use; the toggle is hidden there.
+
+### Changed
+- The Fleet app reports errors to CGC Core as `controlmiles-fleet`, and
+  each app seals trips with its own CGC key (df382b8; backend applied).
+
+## 1.3.0+37 — 2026-10-11
+
+### Fixed
+- Settings -> "App tour" pops back to the dashboard that's already open and
+  plays the tour on top of it; on 1.3.0+36 the replaced dashboard
+  unregistered the new tour scope and rendered blank. The old 4-card tour /
+  "What's new" is gone from both apps (c16324b).
+
+## 1.3.0+36 — 2026-10-10
+
+### Added
+- **Gig product tour** with spotlight coach marks (showcaseview): a welcome
+  sheet once per account, 6 spotlights on the dashboard, first-visit tips on
+  Reports, History and Settings with a "?" to replay, "App tour" in
+  Settings; seen tours saved per account (user_onboarding.tour_seen)
+  (66767cf).
+
+### Changed
+- Report header: ControlMiles logo, "ControlMiles Reports" and the app
+  slogan (8e8cd01).
+- **Fleet app branding**: its own launcher icon, "ControlMiles Fleet" sign-in
+  with the "Keep control of your fleet." slogan; fleet drivers and bus
+  monitors sign in with their driver ID, owners/admins with email
+  (3f1e1cc, 4b49cc8, 1692f46).
+- Sign-in footer "Powered by Olimsys Development"; the gig app's Fleet
+  download link stays hidden until Fleet is on Google Play (82e37f2).
+
+## 1.2.0+35 — 2026-10-10
+
+### Changed
+- **Two store apps from one codebase** (Android product flavors): **gig** =
+  `com.olimsys.controlmiles` "ControlMiles" (personal trips, Google Play
+  plans, auto-detect, IRS reports) and **fleet** =
+  `com.olimsys.controlmiles.fleet` "ControlMiles Fleet" (fleet drivers, bus
+  monitors and the owner's quick look; driver-ID login, no self sign-up, no
+  Play plans). The mode comes from the flavor (and in Fleet, the member's
+  role), not `profiles.account_type`. The `/invite` App Link moved to the
+  Fleet app. Each app resumes only its own kind of open trip. Removed
+  screens neither app reaches (role chooser, account type, create company,
+  fleet roster, state mileage). Missing translations fall back to English
+  (de8d9ff; backend applied).
+
+### Fixed
+- Live maps wait for the map style before adding annotations; GPS stream
+  errors no longer crash (76252c8).
+
 ## 1.1.32+34 — 2026-10-09
 
 ### Fixed
