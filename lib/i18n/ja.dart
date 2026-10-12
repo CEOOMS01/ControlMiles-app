@@ -441,6 +441,7 @@ const Map<String, String> jaTexts = {
   'tour_skip': "スキップ",
   'tour_next': "次へ",
   'tour_done': "はじめる",
+  'tour_got_it': "わかりました",
   'monitor_home_title': "スクールバス添乗員",
   'monitor_hello': "こんにちは、{name} さん",
   'monitor_hint': "今日のスクールバスルートです。運転手がルートを開始したら、開いて児童リストを最新に保ってください。",

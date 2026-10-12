@@ -913,6 +913,7 @@ const Map<String, String> deTexts = {
   'tour_skip': "Überspringen",
   'tour_next': "Weiter",
   'tour_done': "Los geht's",
+  'tour_got_it': "Verstanden",
   'monitor_home_title': "Busbegleitung",
   'monitor_hello': "Hallo, {name}",
   'monitor_hint': "Deine Schulbusrouten heute. Wenn der Fahrer eine Route startet, öffne sie und halte die Schülerliste aktuell.",

@@ -924,6 +924,7 @@ const Map<String, String> frTexts = {
   'tour_skip': "Passer",
   'tour_next': "Suivant",
   'tour_done': "Commencer",
+  'tour_got_it': "Compris",
   'monitor_home_title': "Accompagnateur",
   'monitor_hello': "Bonjour, {name}",
   'monitor_hint': "Vos circuits scolaires du jour. Quand le chauffeur démarre un circuit, ouvrez-le et tenez la liste des élèves à jour.",

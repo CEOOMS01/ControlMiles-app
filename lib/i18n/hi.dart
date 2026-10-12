@@ -452,6 +452,7 @@ const Map<String, String> hiTexts = {
   'tour_skip': "छोड़ें",
   'tour_next': "आगे",
   'tour_done': "शुरू करें",
+  'tour_got_it': "समझ गया",
   'monitor_home_title': "बस मॉनिटर",
   'monitor_hello': "नमस्ते, {name}",
   'monitor_hint': "आज के आपके स्कूल बस रूट। ड्राइवर रूट शुरू करे तो उसे खोलें और छात्र सूची अपडेट रखें।",

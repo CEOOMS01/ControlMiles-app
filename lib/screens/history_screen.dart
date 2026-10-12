@@ -357,7 +357,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Text(
-                          appState.tr('ptour_history_empty'),
+                          tourText(appState, 'ptour_history_empty'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: labelCol, fontSize: 13, height: 1.4),
                         ),

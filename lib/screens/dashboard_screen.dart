@@ -161,12 +161,40 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Settings -> "App tour": play it here, on top of this dashboard.
   void _onTourReplay() {
     if (!mounted) return;
+    // The tour never plays over a trip being recorded: say so instead of
+    // silently doing nothing.
+    if (TrackingController.currentState != TrackingState.idle) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.read<AppState>().tr('ptour_after_trip'))),
+      );
+      return;
+    }
     _tourChecked = false;
     _maybeStartTour();
   }
 
   // First finished trip: point at History.
-  void _maybeFirstTripTip() {
+  // Only when it really is the first trip: someone who already had trips
+  // before the tour existed is not told "your first trip is in History".
+  Future<void> _maybeFirstTripTip() async {
+    if (await ProductTour.isSeen(TourIds.firstTrip)) return;
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final closed = await _supabase
+          .from('sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .isFilter('organization_id', null)
+          .eq('is_closed', true)
+          .limit(2);
+      if ((closed as List).length > 1) {
+        await ProductTour.markSeen(TourIds.firstTrip);
+        return;
+      }
+    } catch (_) {
+      return; // offline: try again after the next trip
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ProductTour.run(context, id: TourIds.firstTrip, scope: _tour, keys: [_tFirstTrip]);

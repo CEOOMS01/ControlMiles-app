@@ -913,6 +913,7 @@ const Map<String, String> ptTexts = {
   'tour_skip': "Pular",
   'tour_next': "Próximo",
   'tour_done': "Começar",
+  'tour_got_it': "Entendi",
   'monitor_home_title': "Monitor do ônibus",
   'monitor_hello': "Olá, {name}",
   'monitor_hint': "Suas rotas escolares de hoje. Quando o motorista iniciar uma rota, abra-a e mantenha a lista de alunos em dia.",

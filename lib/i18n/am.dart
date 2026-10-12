@@ -428,6 +428,7 @@ const Map<String, String> amTexts = {
   'tour_skip': "ዝለል",
   'tour_next': "ቀጣይ",
   'tour_done': "ጀምር",
+  'tour_got_it': "ገባኝ",
   'monitor_home_title': "የአውቶቡስ ተቆጣጣሪ",
   'monitor_hello': "ሰላም፣ {name}",
   'monitor_hint': "የዛሬ የትምህርት ቤት አውቶቡስ መስመሮችዎ። ሹፌሩ መስመር ሲጀምር ይክፈቱት እና የተማሪዎችን ዝርዝር ወቅታዊ ያድርጉ።",

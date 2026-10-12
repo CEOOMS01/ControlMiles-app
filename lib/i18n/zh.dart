@@ -913,6 +913,7 @@ const Map<String, String> zhTexts = {
   'tour_skip': "跳过",
   'tour_next': "下一步",
   'tour_done': "开始使用",
+  'tour_got_it': "知道了",
   'monitor_home_title': "校车随车员",
   'monitor_hello': "您好，{name}",
   'monitor_hint': "这是您今天的校车路线。司机开始路线后，请打开并保持学生名单最新。",

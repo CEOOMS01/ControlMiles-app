@@ -442,6 +442,7 @@ const Map<String, String> koTexts = {
   'tour_skip': "건너뛰기",
   'tour_next': "다음",
   'tour_done': "시작하기",
+  'tour_got_it': "확인",
   'monitor_home_title': "버스 도우미",
   'monitor_hello': "안녕하세요, {name}님",
   'monitor_hint': "오늘의 통학 버스 노선입니다. 기사가 노선을 시작하면 열어서 학생 명단을 최신으로 유지하세요.",

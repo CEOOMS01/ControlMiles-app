@@ -8,6 +8,23 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.3.2+39 — 2026-10-12
+
+### Fixed (gig product tour review)
+- The tour names the trip button as the app shows it in each language
+  (`{start}` / `{end}` from the button's own texts): Spanish said
+  "START / END" while the button reads "INICIAR / FIN", and the other 9
+  languages fell back to English names.
+- "Your miles" says the period the person chose (week, month or year)
+  instead of always "this week".
+- A single tip (History, first trip) ends with "Got it" ("Entendido"), not
+  "Get started"; new `tour_got_it` in 11 languages.
+- "Trip saved -- your first trip is in History" shows only on the real first
+  trip; accounts that already had trips before the tour don't get it.
+- Settings -> "App tour" during a trip now says to end the trip first (it
+  used to do nothing).
+- Spanish: Reports' date tip reads naturally.
+
 ## 1.3.1+38 — 2026-10-12
 
 ### Fixed (Gig / Fleet separation review)

@@ -456,6 +456,7 @@ const Map<String, String> arTexts = {
   'tour_skip': "تخطٍّ",
   'tour_next': "التالي",
   'tour_done': "ابدأ",
+  'tour_got_it': "فهمت",
   'monitor_home_title': "مرافق الحافلة",
   'monitor_hello': "مرحبًا، {name}",
   'monitor_hint': "خطوط الحافلة المدرسية لك اليوم. عندما يبدأ السائق خطًا، افتحه وحافظ على تحديث قائمة الطلاب.",

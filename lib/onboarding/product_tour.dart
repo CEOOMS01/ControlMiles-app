@@ -276,7 +276,7 @@ class _TourCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              appState.tr(bodyKey),
+              tourText(appState, bodyKey),
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
@@ -294,7 +294,8 @@ class _TourCard extends StatelessWidget {
                 const Spacer(),
                 FilledButton(
                   onPressed: last ? view.dismiss : () => view.next(),
-                  child: Text(appState.tr(last ? 'tour_done' : 'tour_next')),
+                  // "Get started" ends a multi-step tour; a single tip is "Got it".
+                  child: Text(appState.tr(!last ? 'tour_next' : (total > 1 ? 'tour_done' : 'tour_got_it'))),
                 ),
               ],
             ),
@@ -363,6 +364,13 @@ class _WelcomeSheet extends StatelessWidget {
     );
   }
 }
+
+/// A tour text with the real names of the trip button in the app's
+/// language ({start} / {end}), so the tip says what the button says.
+String tourText(AppState appState, String key) => appState
+    .tr(key)
+    .replaceAll('{start}', appState.tr('start').toUpperCase())
+    .replaceAll('{end}', appState.tr('end').toUpperCase());
 
 /// "?" for an app bar: replays that screen's tips.
 class TourHelpButton extends StatelessWidget {
