@@ -110,7 +110,7 @@ class _DriverSettingsSheet extends StatelessWidget {
             ),
             // The driver's own safety score lives here (2026-09-30), not
             // on the main screen. Bus monitors don't drive: no score.
-            if (!appState.isMonitor) ListTile(
+            if (!appState.isMonitor && appState.hasFeature('safety_scores')) ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.speed_rounded, color: Theme.of(context).colorScheme.primary),
               title: Text(

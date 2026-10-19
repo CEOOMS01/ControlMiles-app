@@ -150,6 +150,13 @@ Deno.serve(async (req: Request) => {
   for (const a of anomalies as Anomaly[]) {
     byOrg.set(a.organization_id, [...(byOrg.get(a.organization_id) ?? []), a]);
   }
+  // Fuel alerts are a plan feature (fn_org_features, 2026-10-19): fleets
+  // whose plan doesn't include them get no email.
+  for (const orgId of [...byOrg.keys()]) {
+    const { data: hasAlerts } = await admin.rpc('fn_org_feature_internal', { p_org_id: orgId, p_feature: 'fuel_alerts' });
+    if (hasAlerts !== true) byOrg.delete(orgId);
+  }
+  if (byOrg.size === 0) return respond({ orgs: 0, sent: 0 });
 
   const vehicleIds = [...new Set(anomalies.map((a) => a.vehicle_id))];
   const purchaseIds = [...new Set(anomalies.map((a) => a.purchase_id))];

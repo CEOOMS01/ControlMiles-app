@@ -444,7 +444,8 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
     var openMode = false;
     if (resolved == null && orgId != null) {
       final assignmentMode = await _vehicleService.getVehicleAssignmentMode(orgId);
-      openMode = assignmentMode == 'open';
+      if (!mounted) return;
+      openMode = assignmentMode == 'open' && context.read<AppState>().hasFeature('open_assignment');
     }
 
     // Read-only ("modo lectura del lado del conductor" -- explicit user
@@ -458,7 +459,8 @@ class _DriverOperationsScreenState extends State<DriverOperationsScreen>
       setState(() {
         _vehicle = resolved;
         _todayShift = todayShift;
-        _ownVehicleAllowed = ownAllowed;
+        // Owner-operators only where the service includes them (fn_org_features).
+        _ownVehicleAllowed = ownAllowed && context.read<AppState>().hasFeature('owner_operators');
         _pretripRequired = pretripRequired;
         // A shift's vehicle rides into the trip the same way an
         // open-mode pick does.

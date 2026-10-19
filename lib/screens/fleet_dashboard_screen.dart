@@ -163,13 +163,17 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
                         Row(
                           children: [
                             stat(Icons.navigation_rounded, appState.tr('owner_stat_on_trip'), '$_onTrip / $_vehicles'),
-                            const SizedBox(width: 12),
-                            stat(
-                              Icons.local_gas_station_rounded,
-                              appState.tr('owner_stat_fuel_alerts'),
-                              '$_openAlerts',
-                              accent: _openAlerts > 0 ? const Color(0xFFDC2626) : null,
-                            ),
+                            // Fuel alerts and the live map come with the plan
+                            // (fn_org_features): left out when not included.
+                            if (appState.hasFeature('fuel_alerts')) ...[
+                              const SizedBox(width: 12),
+                              stat(
+                                Icons.local_gas_station_rounded,
+                                appState.tr('owner_stat_fuel_alerts'),
+                                '$_openAlerts',
+                                accent: _openAlerts > 0 ? const Color(0xFFDC2626) : null,
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -178,6 +182,7 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
                             stat(Icons.speed_rounded, appState.tr('fleet_stat_month_miles'), _monthMiles.toStringAsFixed(1)),
                           ],
                         ),
+                        if (appState.hasFeature('live_map')) ...[
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
@@ -195,6 +200,7 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
                             ),
                           ),
                         ),
+                        ],
                         const SizedBox(height: 20),
                         Container(
                           padding: const EdgeInsets.all(16),

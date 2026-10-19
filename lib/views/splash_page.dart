@@ -2,6 +2,7 @@
 // lib/views/splash_page.dart
 
 import 'package:flutter/material.dart';
+import '../config/app_flavor.dart';
 import '../services/login_prefs.dart';
 import '../services/local_storage_service.dart';
 import 'package:provider/provider.dart';
@@ -52,6 +53,19 @@ class _SplashPageState extends State<SplashPage> {
       // the background tracking behind it) must not be cut off.
       if (appState.isAuthenticated &&
           !await LoginPrefs.staySignedIn() &&
+          !await LocalStorageService.hasActiveTrip()) {
+        await appState.signOutAndClear();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        return;
+      }
+
+      // 1c) Fleet app: a team member who was made an admin is asked
+      // "Admin / Team fleet" again (user rule, 2026-10-19) -- signed out
+      // here so they come back in as Admin. Never during a trip.
+      if (AppFlavor.isFleet &&
+          appState.isAuthenticated &&
+          await LoginPrefs.fleetPromoted() &&
           !await LocalStorageService.hasActiveTrip()) {
         await appState.signOutAndClear();
         if (!mounted) return;

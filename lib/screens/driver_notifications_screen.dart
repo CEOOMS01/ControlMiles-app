@@ -148,7 +148,7 @@ class _DriverNotificationsScreenState extends State<DriverNotificationsScreen> {
             final (icon, color, title, text) = _render(appState, n);
             return InkWell(
               borderRadius: BorderRadius.circular(14),
-              onTap: n.kind == 'safety_summary'
+              onTap: n.kind == 'safety_summary' && appState.hasFeature('safety_scores')
                   ? () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const DriverSafetyScoreScreen()),

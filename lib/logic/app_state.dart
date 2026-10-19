@@ -9,6 +9,7 @@ import '../config/app_flavor.dart';
 import '../i18n/app_texts.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
+import '../services/login_prefs.dart';
 import '../models/organization.dart';
 import '../tracking/auto_trip_detection_service.dart';
 
@@ -154,12 +155,20 @@ class AppState extends ChangeNotifier {
       AppFlavor.isFleet && _fleetManagerRoles.contains(_memberRole);
   bool get isFleetDriver =>
       AppFlavor.isFleet && _fleetDriverRoles.contains(_memberRole);
-  static const _fleetManagerRoles = {'owner', 'admin', 'operator'};
-  static const _fleetDriverRoles = {'driver', 'monitor'};
+  // Admin = owner and admins; Team fleet = everyone else, operators
+  // included (user rule, 2026-10-19: they sign in with their user ID).
+  static const _fleetManagerRoles = {'owner', 'admin'};
+  static const _fleetDriverRoles = {'driver', 'monitor', 'operator'};
   String? get memberRole => _memberRole;
   bool get isMonitor => isFleetDriver && _memberRole == 'monitor';
   String? get fleetTemplate => _fleetTemplate;
   bool get isSchoolFleet => _fleetTemplate == 'school_transport';
+
+  // What the fleet's service and plan include (fn_org_features, 2026-10-19).
+  // The database enforces it; the app only uses it to leave out what the
+  // fleet doesn't have -- no button, no card, no "not available".
+  Set<String> _orgFeatures = {};
+  bool hasFeature(String feature) => _orgFeatures.contains(feature);
   DateTime? get accountCreatedAt => _accountCreatedAt;
   bool get isFleetAccount => isFleetAdmin || isFleetDriver;
 
@@ -330,6 +339,26 @@ class AppState extends ChangeNotifier {
       final String? effectiveOrgId = AppFlavor.isFleet ? fleetOrgId : null;
       changed = changed || _defaultOrgId != effectiveOrgId;
 
+      if (AppFlavor.isFleet && newMemberRole != null) {
+        await _syncFleetEntry(newMemberRole);
+      }
+      if (AppFlavor.isFleet) {
+        Set<String> newFeatures = {};
+        if (fleetOrgId != null) {
+          try {
+            final f = await Supabase.instance.client
+                .rpc('fn_org_features', params: {'p_org_id': fleetOrgId});
+            newFeatures = {for (final x in (f as List? ?? const [])) x as String};
+          } catch (e) {
+            debugPrint('[AppState] org features fetch failed: $e');
+            newFeatures = _orgFeatures;
+          }
+        }
+        if (newFeatures.length != _orgFeatures.length || !newFeatures.containsAll(_orgFeatures)) {
+          _orgFeatures = newFeatures;
+          notifyListeners();
+        }
+      }
       if (newMemberRole != _memberRole || newFleetTemplate != _fleetTemplate) {
         _memberRole = newMemberRole;
         _fleetTemplate = newFleetTemplate;
@@ -385,6 +414,7 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_member_role');
     await prefs.remove('controlmiles_fleet_template');
     _memberRole = null;
+    _orgFeatures = {};
     _fleetTemplate = null;
         }
 
@@ -674,6 +704,23 @@ class AppState extends ChangeNotifier {
   // ============================================================
   // TRADUCCIÓN
   // ============================================================
+  /// Keeps the Fleet app's saved "Admin / Team fleet" answer in line with
+  /// the member's real role: a team member promoted to admin is asked
+  /// again; an admin moved back to the team just signs in as Team fleet;
+  /// a phone that never answered (older version) gets it from the role.
+  Future<void> _syncFleetEntry(String role) async {
+    final isAdmin = _fleetManagerRoles.contains(role);
+    final entry = await LoginPrefs.fleetEntry();
+    if (isAdmin && entry == 'team') {
+      await LoginPrefs.setFleetEntry(null);
+      await LoginPrefs.setFleetPromoted(true);
+    } else if (!isAdmin && entry != 'team') {
+      await LoginPrefs.setFleetEntry('team');
+    } else if (isAdmin && entry == null && !await LoginPrefs.fleetPromoted()) {
+      await LoginPrefs.setFleetEntry('admin');
+    }
+  }
+
   String tr(String key) {
     return AppTexts.getText(key, _currentLanguage);
   }

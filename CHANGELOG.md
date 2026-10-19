@@ -8,6 +8,26 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.3.5+42 — 2026-10-19
+
+### Changed (Fleet app: one way in)
+- The Fleet app's sign-in asks once **"Admin"** or **"Team fleet"** and
+  remembers it on the phone. Admin = the company's owner and admins (email
+  or Google). Team fleet = everyone else -- drivers, operators, bus aides --
+  with their user ID (CM-D####); a "?" explains it. The old "sign in with
+  email / with your driver ID" toggle is gone.
+- Asked again only when a team member is made an admin (at sign-in with
+  their ID, or on the next app start when no trip is running). An admin
+  moved back to the team just signs in as Team fleet.
+- Operators now use the team side of the app (they were on the owner's
+  screen).
+- The app shows only what the fleet's service and plan include
+  (`fn_org_features`): live map and fuel alerts on the owner's screen,
+  safety score, own-vehicle registration, open vehicle pick, IFTA state on
+  fuel receipts.
+- "Bus monitor" -> "Bus aide"; "Driver ID" -> "User ID".
+- New test `test/fleet_entry_prefs_test.dart`.
+
 ## 1.3.4+41 — 2026-10-18
 
 ### Fixed (product tour never showed)

@@ -85,24 +85,44 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _hasSignedInBefore = false;
   bool _justSignedUp = false;
   bool _staySignedIn = true;
+  // Fleet app (user rule, 2026-10-19): the one sign-in screen first asks
+  // "Admin" or "Team fleet" and remembers it (LoginPrefs.fleetEntry).
+  // null = not answered yet (or asked again after a promotion).
+  String? _fleetEntry;
+  bool _fleetEntryLoaded = false;
+  bool _fleetPromoted = false;
 
   @override
   void initState() {
     super.initState();
     // Gig / Fleet split (2026-10-11): the Fleet app has no self sign-up
-    // (owners sign up on controlmiles.com, drivers get a code) and opens
-    // on the driver-ID tab; the gig app is email / Google only.
+    // (owners sign up on controlmiles.com, team members get a code); the
+    // gig app is email / Google only. In the Fleet app the saved
+    // Admin / Team fleet answer decides email vs. user ID.
     _isLoginMode = AppFlavor.isFleet || !widget.startInSignupMode;
-    _isDriverIdMode = AppFlavor.isFleet || widget.startInDriverIdMode;
+    _isDriverIdMode = widget.startInDriverIdMode;
     _loadLoginPrefs();
   }
 
   Future<void> _loadLoginPrefs() async {
     final prefs = await LoginPrefs.load();
     final hasSignedInBefore = await LoginPrefs.hasSignedInBefore();
+    String? fleetEntry;
+    var fleetPromoted = false;
+    if (AppFlavor.isFleet) {
+      if (widget.startInDriverIdMode) await LoginPrefs.setFleetEntry('team');
+      fleetEntry = await LoginPrefs.fleetEntry();
+      fleetPromoted = await LoginPrefs.fleetPromoted();
+    }
     if (!mounted) return;
     setState(() {
       _hasSignedInBefore = hasSignedInBefore;
+      if (AppFlavor.isFleet) {
+        _fleetEntry = fleetEntry;
+        _fleetPromoted = fleetPromoted;
+        _isDriverIdMode = fleetEntry == 'team';
+      }
+      _fleetEntryLoaded = true;
       _rememberId = prefs.remember;
       _staySignedIn = prefs.staySignedIn;
       if (prefs.remember) {
@@ -196,42 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (_isLoginMode) {
         await _authService.signIn(email, password);
 
-        // BUG FIX (found live, 2026-09-18): the driver/email mode toggle
-        // above was only ever a UI default -- nothing stopped a plain
-        // 'driver' from just picking the Email tab and signing in with
-        // their real email/password anyway, which is exactly what the
-        // explicit user request ("eliminamos el login por correo para
-        // los driver fleet only") was supposed to prevent. Checked here,
-        // not server-side: this is a UX/process guardrail, not a
-        // security boundary -- a driver who got in this way ends up with
-        // the exact same RLS-scoped session (same auth.uid(), same
-        // organization_members.member_role) as if they'd used the
-        // correct Driver ID tab, so there's no extra access to gate at
-        // the RLS layer, only the login PATH to correct. Scoped to
-        // member_role == 'driver' specifically -- operator/admin/owner
-        // still need email (they use the web dashboard too), only the
-        // base driver tier is ID-only.
-        // Gig / Fleet split: only the Fleet app enforces this -- in the gig
-        // app the same person signs in with email for their personal miles.
-        final justSignedIn = Supabase.instance.client.auth.currentUser;
-        if (justSignedIn != null && AppFlavor.isFleet) {
-          final memberRows = await Supabase.instance.client
-              .from('organization_members')
-              .select('member_role')
-              .eq('user_id', justSignedIn.id)
-              .eq('is_active', true);
-          final roles = {
-            for (final r in memberRows as List) r['member_role'] as String?,
-          };
-          if (roles.contains('driver') &&
-              !roles.any((r) => r == 'owner' || r == 'admin' || r == 'operator')) {
-            await Supabase.instance.client.auth.signOut();
-            if (!mounted) return;
-            setState(() => _isLoading = false);
-            _showError(appState.tr('fleet_driver_must_use_id_login'));
-            return;
-          }
-        }
+        if (!await _checkFleetEntry(appState)) return;
       } else {
         await _authService.signUp(
           email,
@@ -296,6 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await _authService.signInWithDriverId('CM-$digits'.toUpperCase(), password);
       if (!mounted) return;
+      if (!await _checkFleetEntry(appState)) return;
       await _afterSuccessfulAuth(appState);
     } catch (e) {
       if (mounted) {
@@ -305,6 +291,69 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // Fleet app: the account must match the saved answer (user rule,
+  // 2026-10-19). Admin is for the company's owner and admins; everyone
+  // else is Team fleet and signs in with their user ID. A team member who
+  // signs in with their ID after being made an admin is asked the question
+  // again (and signs in as Admin). Not a security boundary -- RLS scopes
+  // the session by role either way -- it keeps one way in per person.
+  Future<bool> _checkFleetEntry(AppState appState) async {
+    if (!AppFlavor.isFleet) return true;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return true;
+    final rows = await Supabase.instance.client
+        .from('organization_members')
+        .select('member_role')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+    final roles = {for (final r in rows as List) r['member_role'] as String?}..remove(null);
+    final isAdmin = roles.contains('owner') || roles.contains('admin');
+
+    if (_isDriverIdMode && isAdmin) {
+      await Supabase.instance.client.auth.signOut();
+      await LoginPrefs.setFleetEntry(null);
+      await LoginPrefs.setFleetPromoted(true);
+      if (!mounted) return false;
+      setState(() {
+        _isLoading = false;
+        _fleetEntry = null;
+        _fleetPromoted = true;
+        _passwordController.clear();
+      });
+      return false;
+    }
+    if (!_isDriverIdMode && roles.isNotEmpty && !isAdmin) {
+      await Supabase.instance.client.auth.signOut();
+      await LoginPrefs.setFleetEntry('team');
+      if (!mounted) return false;
+      setState(() {
+        _isLoading = false;
+        _fleetEntry = 'team';
+        _isDriverIdMode = true;
+        _passwordController.clear();
+      });
+      _showError(appState.tr('fleet_team_use_user_id'));
+      return false;
+    }
+    if (_fleetPromoted) await LoginPrefs.setFleetPromoted(false);
+    return true;
+  }
+
+  Future<void> _chooseFleetEntry(String entry) async {
+    await LoginPrefs.setFleetEntry(entry);
+    if (!mounted) return;
+    setState(() {
+      _fleetEntry = entry;
+      _isDriverIdMode = entry == 'team';
+    });
+  }
+
+  Future<void> _changeFleetEntry() async {
+    await LoginPrefs.setFleetEntry(null);
+    if (!mounted) return;
+    setState(() => _fleetEntry = null);
   }
 
   Future<void> _afterSuccessfulAuth(AppState appState) async {
@@ -410,6 +459,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final signedIn = await _authService.signInWithGoogle();
       if (!signedIn || !mounted) return;
+      if (!await _checkFleetEntry(appState)) return;
       await _afterSuccessfulAuth(appState);
     } catch (e) {
       debugPrint('[Login] Google sign-in failed: $e');
@@ -498,8 +548,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 child: KeyedSubtree(
-                                  key: ValueKey('$_isLoginMode-$_isDriverIdMode'),
-                                  child: _buildCardContent(appState, isDark),
+                                  key: ValueKey('$_isLoginMode-$_isDriverIdMode-$_fleetEntry-$_fleetEntryLoaded'),
+                                  child: AppFlavor.isFleet && !_fleetEntryLoaded
+                                      ? const SizedBox(height: 240)
+                                      : AppFlavor.isFleet && _fleetEntry == null
+                                          ? _buildFleetEntryChoice(appState, isDark)
+                                          : _buildCardContent(appState, isDark),
                                 ),
                               ),
                             ),
@@ -971,36 +1025,172 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ====================== OTHER APP HINT ======================
-  // Gig: "drive for a fleet? get ControlMiles Fleet". Fleet: every driver
-  // and bus monitor signs in with their CM-D ID (the email is only used to
-  // register, user rule 2026-10-11); owners and admins get a small "sign in
-  // with email" link, and create / manage their fleet on controlmiles.com.
-  Widget _buildOtherAppHint(AppState appState, bool isDark) {
-    final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
-    final isFleet = AppFlavor.isFleet;
-    if (!isFleet && !AppFlavor.fleetAppOnPlay) return const SizedBox.shrink();
+  // ====================== FLEET: ADMIN / TEAM FLEET ======================
+  // One sign-in screen for the Fleet app (user rule, 2026-10-19), like
+  // Samsara and Motive: the company's owner and admins sign in with their
+  // email; everyone else on the team signs in with the user ID the company
+  // gave them (CM-D####). Asked once and remembered on this phone.
+  Widget _buildFleetEntryChoice(AppState appState, bool isDark) {
+    final titleColor = isDark ? Colors.white : const Color(0xFF1C1812);
+    final subColor = isDark ? Colors.white60 : const Color(0xFF6B6250);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          appState.tr('fleet_entry_title'),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
+        ),
+        const SizedBox(height: 4),
+        Text(appState.tr('fleet_entry_sub'), style: TextStyle(fontSize: 13.5, color: subColor)),
+        if (_fleetPromoted) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3E93CA).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              appState.tr('fleet_entry_promoted'),
+              style: TextStyle(fontSize: 13, color: titleColor),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        _fleetEntryOption(
+          isDark: isDark,
+          icon: Icons.admin_panel_settings_outlined,
+          title: appState.tr('fleet_entry_admin'),
+          body: appState.tr('fleet_entry_admin_sub'),
+          onTap: () => _chooseFleetEntry('admin'),
+        ),
+        const SizedBox(height: 12),
+        _fleetEntryOption(
+          isDark: isDark,
+          icon: Icons.groups_outlined,
+          title: appState.tr('fleet_entry_team'),
+          body: appState.tr('fleet_entry_team_sub'),
+          onTap: () => _chooseFleetEntry('team'),
+          onHelp: () => _showTeamFleetHelp(appState),
+        ),
+        const SizedBox(height: 16),
+        _buildOwnerHint(appState, subColor),
+        const SizedBox(height: 8),
+        _buildFooter(appState),
+      ],
+    );
+  }
+
+  Widget _fleetEntryOption({
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String body,
+    required VoidCallback onTap,
+    VoidCallback? onHelp,
+  }) {
+    final titleColor = isDark ? Colors.white : const Color(0xFF1C1812);
+    final subColor = isDark ? Colors.white60 : const Color(0xFF6B6250);
+    return Material(
+      color: isDark ? const Color(0xFF26211A) : const Color(0xFFF6F2EA),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _isLoading ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+          child: Row(
+            children: [
+              Icon(icon, size: 30, color: const Color(0xFF1F5F8B)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: titleColor)),
+                    const SizedBox(height: 2),
+                    Text(body, style: TextStyle(fontSize: 12.5, color: subColor)),
+                  ],
+                ),
+              ),
+              if (onHelp != null)
+                IconButton(
+                  tooltip: '?',
+                  icon: Icon(Icons.help_outline_rounded, color: subColor),
+                  onPressed: onHelp,
+                )
+              else
+                const SizedBox(width: 48),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTeamFleetHelp(AppState appState) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('fleet_entry_team_help_title')),
+        content: Text(appState.tr('fleet_entry_team_help')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('ok'))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOwnerHint(AppState appState, Color muted) {
     return Column(
       children: [
-        if (isFleet)
-          TextButton(
-            onPressed: _isLoading
-                ? null
-                : () => setState(() => _isDriverIdMode = !_isDriverIdMode),
-            child: Text(appState.tr(
-                _isDriverIdMode ? 'fleet_admin_email_login' : 'fleet_driver_id_login')),
-          ),
         Text(
-          appState.tr(isFleet ? 'fleet_join_owner_hint' : 'gig_fleet_app_hint'),
+          appState.tr('fleet_join_owner_hint'),
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 12, color: muted),
         ),
         TextButton(
           onPressed: () => launchUrl(
-            Uri.parse(isFleet ? 'https://controlmiles.com/signup' : AppFlavor.fleetStoreUrl),
+            Uri.parse('https://controlmiles.com/signup'),
             mode: LaunchMode.externalApplication,
           ),
-          child: Text(appState.tr(isFleet ? 'fleet_join_open_web' : 'get_fleet_app')),
+          child: Text(appState.tr('fleet_join_open_web')),
+        ),
+      ],
+    );
+  }
+
+  // ====================== OTHER APP HINT ======================
+  // Gig: "drive for a fleet? get ControlMiles Fleet". Fleet: a small link
+  // back to the Admin / Team fleet question (in case the wrong one was
+  // picked), and for admins, where to create and manage the fleet.
+  Widget _buildOtherAppHint(AppState appState, bool isDark) {
+    final muted = isDark ? Colors.white60 : const Color(0xFF6B6250);
+    if (AppFlavor.isFleet) {
+      return Column(
+        children: [
+          TextButton(
+            onPressed: _isLoading ? null : _changeFleetEntry,
+            child: Text(appState.tr(_isDriverIdMode ? 'fleet_entry_not_team' : 'fleet_entry_not_admin')),
+          ),
+          if (!_isDriverIdMode) _buildOwnerHint(appState, muted),
+        ],
+      );
+    }
+    if (!AppFlavor.fleetAppOnPlay) return const SizedBox.shrink();
+    return Column(
+      children: [
+        Text(
+          appState.tr('gig_fleet_app_hint'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: muted),
+        ),
+        TextButton(
+          onPressed: () => launchUrl(
+            Uri.parse(AppFlavor.fleetStoreUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Text(appState.tr('get_fleet_app')),
         ),
       ],
     );

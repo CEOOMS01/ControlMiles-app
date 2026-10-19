@@ -63,4 +63,41 @@ class LoginPrefs {
 
   static Future<void> markSignedIn() async =>
       (await SharedPreferences.getInstance()).setBool(_kHasSignedIn, true);
+
+  // Fleet app entry (user rule, 2026-10-19): one sign-in screen asks once
+  // "Admin" or "Team fleet" and remembers the answer on this phone. Admin =
+  // the company's owner and admins (email). Team fleet = everyone else --
+  // drivers, operators, bus aides -- with their CM-D user ID. Asked again
+  // only when a team member is promoted to admin (AppState notices it).
+  static const _kFleetEntry = 'controlmiles_fleet_entry';
+  static const _kFleetPromoted = 'controlmiles_fleet_promoted';
+
+  /// 'admin', 'team', or null when the question hasn't been answered.
+  static Future<String?> fleetEntry() async {
+    final v = (await SharedPreferences.getInstance()).getString(_kFleetEntry);
+    return v == 'admin' || v == 'team' ? v : null;
+  }
+
+  static Future<void> setFleetEntry(String? entry) async {
+    final p = await SharedPreferences.getInstance();
+    if (entry == null) {
+      await p.remove(_kFleetEntry);
+    } else {
+      await p.setString(_kFleetEntry, entry);
+    }
+  }
+
+  /// A team member on this phone was made an admin: the question is shown
+  /// again with a short note, until they sign in as Admin.
+  static Future<bool> fleetPromoted() async =>
+      (await SharedPreferences.getInstance()).getBool(_kFleetPromoted) ?? false;
+
+  static Future<void> setFleetPromoted(bool value) async {
+    final p = await SharedPreferences.getInstance();
+    if (value) {
+      await p.setBool(_kFleetPromoted, true);
+    } else {
+      await p.remove(_kFleetPromoted);
+    }
+  }
 }

@@ -93,21 +93,13 @@ class _FuelPurchaseCaptureScreenState extends State<FuelPurchaseCaptureScreen> {
     _loadProfile();
   }
 
+  // The state picker is for IFTA, which only some services include
+  // (fn_org_features, 2026-10-19).
   Future<void> _loadProfile() async {
-    final orgId = widget.vehicle.organizationId;
-    if (orgId != null) {
-      try {
-        final org = await Supabase.instance.client
-            .from('organizations')
-            .select('industry_template, show_all_modules')
-            .eq('id', orgId)
-            .maybeSingle();
-        final profile = org?['industry_template'] as String? ?? 'general';
-        final showAll = org?['show_all_modules'] as bool? ?? false;
-        final ifta = showAll || const ['general', 'trucking', 'construction'].contains(profile);
-        if (mounted) setState(() => _showState = ifta);
-        if (!ifta) return;
-      } catch (_) {}
+    if (widget.vehicle.organizationId != null) {
+      final ifta = context.read<AppState>().hasFeature('ifta');
+      setState(() => _showState = ifta);
+      if (!ifta) return;
     }
     _prefillStateFromLocation();
   }
