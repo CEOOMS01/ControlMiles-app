@@ -130,10 +130,15 @@ class ProductTour {
   }) async {
     if (!force && await isSeen(id)) return;
     if (!context.mounted) return;
-    final present = keys.where((k) => k.currentContext != null).toList();
+    // BUG FIX (2026-10-18, the tour never showed since 1.3.0): showcaseview
+    // 5.x keeps the GlobalKey only as a registry id -- it is never attached
+    // to an element, so `key.currentContext` was always null and every tour
+    // stopped here with "no targets". isTargetRendered is the 5.x way.
+    final view = ShowcaseView.getNamed(scope);
+    final present = keys.where(view.isTargetRendered).toList();
     if (present.isEmpty) return;
     await markSeen(id);
-    ShowcaseView.getNamed(scope).startShowCase(present);
+    view.startShowCase(present);
   }
 
   /// Welcome sheet; true = "Show me around".

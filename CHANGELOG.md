@@ -8,6 +8,18 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.3.4+41 — 2026-10-18
+
+### Fixed (product tour never showed)
+- The product tour (welcome -> dashboard spotlights, and the "?" in History,
+  Reports and Settings) never appeared on any phone since 1.3.0:
+  `ProductTour.run` looked for targets with `key.currentContext`, which
+  showcaseview 5.x never sets (it keeps the key only as a registry id), so
+  every tour stopped with "no targets". It now asks
+  `ShowcaseView.isTargetRendered`.
+- New test `test/product_tour_test.dart`: the "?" replay puts the tour card
+  on screen (fails on the old code).
+
 ## 1.3.3+40 — 2026-10-18
 
 ### Fixed (screens too big on testers' phones)
