@@ -159,8 +159,8 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             // Fleet Phase 3: null for Gig -- see the param's own doc comment
             // in tracking_controller.dart for why this needs to be threaded
             // through at all (RLS visibility for fleet admins).
-            organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
-            preSelectedVehicleId: appState.isFleetDriver ? widget.preSelectedVehicleId : null,
+            organizationId: null,
+            preSelectedVehicleId: null,
             shiftBlockId: shiftBlockId,
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {

@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_flavor.dart';
 
 /// Clase centralizada para gestionar todas las rutas de la aplicación
 /// Evita hardcodear strings de rutas en múltiples lugares
@@ -24,40 +23,6 @@ class AppRoutes {
   // limpia en clearAll() -- sobrevive logout, mismo criterio que dark_mode/
   // lang/unit_system). Ver AppRoutes.getInitialRoute().
   static const String roleChooser = '/role-chooser';
-
-  // ============================================================
-  // FLEET MODULE -- ControlMiles Gig / ControlMiles Fleet
-  // ============================================================
-  static const String accountType = '/account-type';
-  static const String createOrganization = '/create-organization';
-  // Reached only when the caller picked "Fleet Driver" on roleChooser --
-  // claims a fleet_driver_slots row (admin-created, CM-D####) via a
-  // one-time code. See ClaimDriverSlotScreen / claim_driver_slot RPC.
-  static const String claimDriverSlot = '/claim-driver-slot';
-  static const String fleetDashboard = '/fleet-dashboard';
-  static const String fleetRoster = '/fleet-roster';
-  static const String fleetLiveMap = '/fleet-live-map';
-  static const String fleetStateMileage = '/fleet-state-mileage';
-  // REVERSES the Fleet Phase 3 decision documented right above this line
-  // in git history (fleet_driver reusing `dashboard`) -- explicit user
-  // requirement for a genuinely restricted driver-ops flow: pre-trip
-  // checklist, tracking, mid-trip incident reports, live self-map, and
-  // nothing else. See DriverOperationsScreen's own header comment for
-  // the full reasoning on why this is a deliberate divergence, not an
-  // accidental duplication of the earlier decision's mistake.
-  static const String driverOperations = '/driver-operations';
-  static const String pendingInvite = '/pending-invite';
-  // Reached via the https://controlmiles.com/invite/<token> deep link (see
-  // AndroidManifest.xml's App Links intent-filter + main.dart's AppLinks
-  // listener), or pushed directly with the token as arguments. Distinct
-  // from pendingInvite above -- that's for an EXISTING member's in-app
-  // organization_members row; this is the pre-account/pre-membership link
-  // an admin emails out (see driver_invites/accept_driver_invite).
-  static const String inviteLanding = '/invite-landing';
-  // Fleet Sprint 3 (shift-scoped privacy, 2026-09-09): reached ONLY by a
-  // fleet_driver ending their turno -- see ShiftEndedScreen's own header
-  // comment. Never reached from Gig's Dashboard.
-  static const String shiftEnded = '/shift-ended';
 
   // ============================================================
   // RUTAS PRINCIPALES
@@ -123,17 +88,6 @@ class AppRoutes {
         splash,
         welcome,
         roleChooser,
-        accountType,
-        createOrganization,
-        claimDriverSlot,
-        driverOperations,
-        fleetDashboard,
-        fleetRoster,
-        fleetLiveMap,
-        fleetStateMileage,
-        pendingInvite,
-        inviteLanding,
-        shiftEnded,
         home,
         dashboard,
         tracking,
@@ -172,15 +126,6 @@ class AppRoutes {
   static const List<String> mainRoutes = [
     home,
     dashboard,
-    fleetDashboard,
-    driverOperations,
-  ];
-
-  static const List<String> fleetSetupRoutes = [
-    accountType,
-    createOrganization,
-    claimDriverSlot,
-    pendingInvite,
   ];
 
   static const List<String> trackingRoutes = [
@@ -286,17 +231,6 @@ class AppRoutes {
 
       case home: return 'Home';
       case dashboard: return 'Dashboard';
-      case accountType: return 'Account Type';
-      case createOrganization: return 'Create Organization';
-      case claimDriverSlot: return 'Claim Driver Slot';
-      case fleetDashboard: return 'Fleet Dashboard';
-      case fleetRoster: return 'Fleet Roster';
-      case fleetLiveMap: return 'Fleet Live Map';
-      case fleetStateMileage: return 'Fleet State Mileage';
-      case driverOperations: return 'Driver Operations';
-      case pendingInvite: return 'Pending Invite';
-      case inviteLanding: return 'Invite Landing';
-      case shiftEnded: return 'Shift Ended';
 
       case tracking: return 'Tracking';
       case trackingActive: return 'Tracking Active';
@@ -367,66 +301,16 @@ class AppRoutes {
     return null; 
   }
 
-  /// Ruta correcta para un usuario ya autenticado, en un solo lugar --
-  /// antes esta decisión vivía duplicada (y desincronizada) en
-  /// splash_page.dart, login_screen.dart y welcome_page.dart. La
-  /// desincronización fue real: splash nunca supo de cuentas Fleet, así que
-  /// un fleet_admin que reabría la app (sesión ya activa, sin pasar por
-  /// LoginScreen) aterrizaba en el Dashboard de Gig. Orden de prioridad:
-  /// onboarding de permisos -> invitaciones pendientes (aplica aunque la
-  /// cuenta sea 'gig' -- alguien puede recibir su primera invitación de
-  /// flota después de meses usando el modo individual) -> elección
-  /// Gig/Fleet -> destino final según el tipo de cuenta.
+  /// Where the app opens: sign-in, then the permissions onboarding, then
+  /// the personal dashboard. One place for splash, login and welcome.
+  /// Fleets use ControlMiles Fleet, its own app since 2026-10-19.
   static String getInitialRoute({
     required bool isAuthenticated,
     required bool onboardingCompleted,
-    bool hasPendingInvites = false,
-    bool accountTypeChosen = true,
-    bool isFleetAdmin = false,
-    // Default true so the two call sites that are always already
-    // authenticated (login_screen.dart, welcome_page.dart) never need to
-    // pass this -- the check below only ever matters when !isAuthenticated,
-    // which only happens from splash_page.dart's cold-start call.
-    bool hasSeenRoleChooser = true,
-    // REVERSES the Fleet Phase 3 note this replaced (fleet_driver used to
-    // share `dashboard` with Gig -- see DriverOperationsScreen's own
-    // header comment for why that changed). Default false, not true,
-    // unlike isFleetAdmin -- a caller that forgets to pass this should
-    // fail toward the existing Gig dashboard, not toward a driver-only
-    // screen that assumes an assigned fleet vehicle exists.
-    bool isFleetDriver = false,
   }) {
-    // "What brings you to ControlMiles?" is asked AFTER the account exists
-    // (explicit user request, 2026-09-30), not before sign-up: signed out
-    // always lands on login; a signed-in account with no type yet gets the
-    // role chooser below. hasSeenRoleChooser is kept for callers but no
-    // longer routes anywhere.
     if (!isAuthenticated) return login;
     if (!onboardingCompleted) return welcome;
-    // Gig / Fleet split (2026-10-11): the gig app is personal-only -- no
-    // fleet invites, no role choice, always the personal dashboard.
-    if (AppFlavor.isGig) return dashboard;
-    // Fleet app: invites first, then the home for the member's role, and a
-    // member of no fleet yet lands on "join with your code".
-    if (hasPendingInvites) return pendingInvite;
-    // BUG FIX (found live, real account): account_type/default_org_id are
-    // set atomically server-side by create_organization/claim_driver_slot,
-    // but accountTypeChosen used to only ever get set by a SEPARATE
-    // client-side call AFTER the RPC returned -- if the app closed/lost
-    // network between those two steps, an account could end up with a
-    // real fleet_admin/fleet_driver status and a real org, yet
-    // accountTypeChosen still false. That silently routed a fleet admin
-    // with two real organizations back to the Gig/Fleet choice screen,
-    // whose Fleet card has no "you already have one" check and just
-    // offers to create another. The RPCs now set accountTypeChosen
-    // atomically too (real root-cause fix), but this check is reordered
-    // as well, on purpose: isFleetAdmin/isFleetDriver are a STRONGER
-    // signal than the separate boolean (they mean account_type itself is
-    // already resolved), so they win regardless of whether that flag
-    // ever desyncs again for some other reason.
-    if (isFleetAdmin) return fleetDashboard;
-    if (isFleetDriver) return driverOperations;
-    return claimDriverSlot;
+    return dashboard;
   }
 
   static List<String> get breadcrumbExcluded => [

@@ -348,7 +348,7 @@ class AutoTripDetectionService {
     if (user != null) {
       final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
         user.id,
-        organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
+        organizationId: null,
       );
       if (activeVehicle != null) {
         final existing = await OdometerCaptureService()

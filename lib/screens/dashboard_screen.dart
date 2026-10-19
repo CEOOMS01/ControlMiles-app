@@ -12,10 +12,8 @@ import '../tracking/tracking_controller.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../models/gig_app.dart';
 import '../models/vehicle.dart';
-import '../models/vehicle_inspection.dart';
 import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
-import '../screens/vehicle_inspection_screen.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../widgets/full_bleed.dart';
@@ -737,10 +735,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       // es el único punto de esta rama (ver su comentario en
       // VehicleService), el mismo que usa tracking_controller.dart al
       // arrancar un viaje.
-      final appState = context.read<AppState>();
       final vehicle = await _vehicleService.getActiveOrAssignedVehicle(
         user.id,
-        organizationId: appState.isFleetDriver ? appState.defaultOrgId : null,
+        organizationId: null,
       );
       if (!mounted) return;
       setState(() {
@@ -1513,7 +1510,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               // not just what happens after tapping it. Basic/Free always
               // fall through to the plain GigAppSelector carousel below,
               // same as if auto-detect were simply off.
-              if (appState.isGig &&
+              if (
                   appState.premiumEntitled &&
                   TrackingController.currentState == TrackingState.idle) ...[
                 const Gutter(child: AutoDetectAppsButton()),
@@ -1642,16 +1639,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     final headerRow = CmCardHeader(title: appState.tr('vehicle'));
 
-    // Fleet Phase 3: a fleet_driver's vehicle comes from their admin
-    // (assigned_driver_id), not from AppRoutes.vehicle (VehicleScreen is
-    // owner_user_id CRUD -- a driver can't add/edit/delete an org vehicle
-    // there, so sending them to it on tap would be a dead end). No new
-    // "fleet vehicle detail" screen is built this pass -- the card is
-    // simply non-interactive for a fleet driver, and its empty state
-    // explains WHY there's nothing to tap instead of inviting an action
-    // that doesn't apply to them.
-    final isFleetDriver = appState.isFleetDriver;
-
     // BUG FIX (silencioso, reportado por el usuario): antes TODA la card
     // estaba envuelta en un InkWell que navegaba a VehicleScreen, así que
     // tocar el timer, las millas o el mapa también abría el menú de vehículo.
@@ -1666,12 +1653,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             headerRow,
             InkWell(
-              onTap: isFleetDriver ? null : _goToVehicleProfile,
+              onTap: _goToVehicleProfile,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(kPageGutter, 12, kPageGutter, 14),
-                child: isFleetDriver
-                    ? Text(appState.tr('fleet_no_vehicle_assigned'))
-                    : Row(
+                child: Row(
                         children: [
                           Expanded(
                             child: Text(appState.tr('add_vehicle_prompt')),
@@ -1713,7 +1698,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       width: 92,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: isFleetDriver ? null : _goToVehicleProfile,
+                        onTap: _goToVehicleProfile,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1744,8 +1729,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                if (!isFleetDriver)
-                                  Icon(Icons.keyboard_arrow_down_rounded,
+                                Icon(Icons.keyboard_arrow_down_rounded,
                                       size: 18, color: labelColor),
                               ],
                             ),
@@ -1801,48 +1785,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
             ),
-            // Fleet Phase 4: DVIR-style pre/post-trip inspection, only
-            // relevant for a fleet driver's assigned vehicle -- a Gig
-            // owner's personal vehicle has no fleet admin to report to, so
-            // there's no one for a checklist submission to be visible to.
-            if (isFleetDriver) ...[
-              Divider(height: 1, color: borderColor),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 10),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _startInspection(_activeVehicle!),
-                    icon: const Icon(Icons.checklist_rounded, size: 18),
-                    label: Text(appState.tr('inspection_start').toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                  ),
-                ),
-              ),
-            ],
             tripStatsSection,
             trackingSection,
           ],
         ),
-    );
-  }
-
-  Future<void> _startInspection(Vehicle vehicle) async {
-    final result = await Navigator.push<VehicleInspection>(
-      context,
-      MaterialPageRoute(builder: (_) => VehicleInspectionScreen(vehicle: vehicle)),
-    );
-    if (result == null || !mounted) return;
-
-    final appState = context.read<AppState>();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.isPass
-            ? appState.tr('inspection_result_pass')
-            : appState.tr('inspection_result_fail')),
-        backgroundColor: result.isPass ? Colors.green.shade600 : Colors.orange.shade700,
-        duration: const Duration(seconds: 3),
-      ),
     );
   }
 

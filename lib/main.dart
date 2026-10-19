@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:app_links/app_links.dart';
 
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
@@ -44,14 +43,6 @@ import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/vehicle_screen.dart';
-import 'screens/claim_driver_slot_screen.dart';
-import 'screens/monitor_home_screen.dart';
-import 'screens/fleet_dashboard_screen.dart';
-import 'screens/fleet_live_map_screen.dart';
-import 'screens/pending_invite_screen.dart';
-import 'screens/invite_landing_screen.dart';
-import 'config/app_flavor.dart';
-import 'screens/shift_ended_screen.dart';
 
 // GlobalKey usado por NotificationService para navegar a Reports cuando se
 // toca la notificación de resumen semanal, sin depender de un BuildContext
@@ -168,60 +159,21 @@ class ControlMilesApp extends StatefulWidget {
 class _ControlMilesAppState extends State<ControlMilesApp> {
   final AppLifecycleObserver _lifecycleObserver = AppLifecycleObserver();
 
-  // Fleet driver invite deep link (Sprint 1 close, 2026-09-09): handles
-  // both a cold start FROM the link (getInitialLink) and the link arriving
-  // while the app is already running (uriLinkStream) -- app_links covers
-  // both cases through one API. Only https://controlmiles.com/invite/<token>
-  // is handled; anything else is ignored rather than guessed at.
-  final _appLinks = AppLinks();
-  StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
-    // Fleet invite links open the Fleet app only; personal plans (Google
-    // Play Billing) exist in the gig app only -- fleets pay on the web.
-    if (AppFlavor.isFleet) {
-      _initDeepLinks();
-    } else {
-      // Listen from app start so a purchase finished while the app was
-      // closed is still verified and completed.
-      PlayBillingService.instance.start(
-        onVerified: () => context.read<AppState>().fetchUserProfile(),
-      );
-    }
-  }
-
-  Future<void> _initDeepLinks() async {
-    try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) _handleIncomingLink(initialUri);
-    } catch (_) {
-      // Best-effort -- a malformed/unreadable initial link must never
-      // block normal app startup.
-    }
-
-    _linkSubscription = _appLinks.uriLinkStream.listen(
-      _handleIncomingLink,
-      onError: (_) {},
+    // Listen from app start so a Google Play purchase finished while the
+    // app was closed is still verified and completed.
+    PlayBillingService.instance.start(
+      onVerified: () => context.read<AppState>().fetchUserProfile(),
     );
-  }
-
-  void _handleIncomingLink(Uri uri) {
-    if (uri.host != 'controlmiles.com' || uri.pathSegments.length < 2) return;
-    if (uri.pathSegments[0] != 'invite') return;
-
-    final token = uri.pathSegments[1];
-    if (token.isEmpty) return;
-
-    navigatorKey.currentState?.pushNamed(AppRoutes.inviteLanding, arguments: token);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(_lifecycleObserver);
-    _linkSubscription?.cancel();
     super.dispose();
   }
 
@@ -231,7 +183,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: AppFlavor.isFleet ? 'ControlMiles Fleet' : 'ControlMiles',
+      title: 'ControlMiles',
       debugShowCheckedModeBanner: false,
 
       // LOCALIZACIÓN
@@ -280,12 +232,9 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       routes: {
         AppRoutes.splash: (_) => const SplashPage(),
         AppRoutes.login: (context) {
-          // 'signup' / 'driver_id' starting modes.
+          // 'signup' starting mode.
           final args = ModalRoute.of(context)!.settings.arguments as String?;
-          return LoginScreen(
-            startInSignupMode: args == 'signup',
-            startInDriverIdMode: args == 'driver_id',
-          );
+          return LoginScreen(startInSignupMode: args == 'signup');
         },
         AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
         AppRoutes.resetPassword: (context) {
@@ -293,16 +242,6 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
           return ResetPasswordScreen(email: email);
         },
         AppRoutes.welcome: (_) => const WelcomePage(),
-        AppRoutes.claimDriverSlot: (_) => const ClaimDriverSlotScreen(),
-        AppRoutes.driverOperations: (_) => const FleetMemberHome(),
-        AppRoutes.fleetDashboard: (_) => const FleetDashboardScreen(),
-        AppRoutes.fleetLiveMap: (_) => const FleetLiveMapScreen(),
-        AppRoutes.pendingInvite: (_) => const PendingInviteScreen(),
-        AppRoutes.inviteLanding: (context) {
-          final token = ModalRoute.of(context)!.settings.arguments as String? ?? '';
-          return InviteLandingScreen(token: token);
-        },
-        AppRoutes.shiftEnded: (_) => const ShiftEndedScreen(),
         // Gig: the product tour lives inside the dashboard (product_tour.dart).
         AppRoutes.dashboard: (_) => const DashboardScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),

@@ -269,7 +269,7 @@ Questions about these Terms and general inquiries: info@controlmiles.com. Suppor
 // versions lead with the organization/company relationship instead,
 // since that's what's actually relevant to a Fleet admin or a driver
 // operating under one -- shown instead of the individual versions
-// in the ControlMiles Fleet app (AppFlavor.isFleet, see settings_screen.dart).
+// in the ControlMiles Fleet app (its own project, ../controlmiles-fleet).
 // Strengthened alongside the individual versions above, same date/reasons.
 const String privacyPolicyFleetEn = '''
 Last updated: $legalDocumentsLastUpdated

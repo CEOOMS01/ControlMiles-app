@@ -5,12 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/app_flavor.dart';
 import '../i18n/app_texts.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
-import '../services/login_prefs.dart';
-import '../models/organization.dart';
 import '../tracking/auto_trip_detection_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -58,13 +55,6 @@ class AppState extends ChangeNotifier {
   // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
   String _accountType = 'gig';
   String? _defaultOrgId;
-  // Role in the default fleet (2026-10-09): 'monitor' (bus monitor, School
-  // transportation fleets) gets MonitorHomeScreen instead of the driver's
-  // trip screen. Null for gig / not loaded yet.
-  String? _memberRole;
-  // The default fleet's type (organizations.industry_template), e.g.
-  // 'school_transport' -- decides which "What's new" notes apply.
-  String? _fleetTemplate;
   // Gates paid Gig features (starting with automatic trip detection).
   // Kept in sync server-side from Google Play subscriptions
   // (verify-play-purchase / play-rtdn -> recompute_personal_entitlements),
@@ -90,11 +80,6 @@ class AppState extends ChangeNotifier {
   // disclaimer can honestly say which method the numbers reflect,
   // not so the app itself changes any calculation based on it.
   String _mileageMethod = 'standard';
-  // Deliberately NOT cached to SharedPreferences like accountType/etc --
-  // invites can arrive or get withdrawn at any time, so a stale disk copy
-  // risks showing an already-handled invite (or hiding a brand new one).
-  // Always fetched fresh in _init() and after any accept/decline.
-  List<PendingInvite> _pendingInvites = [];
 
   // ============================================================
   // ONBOARDING
@@ -146,31 +131,7 @@ class AppState extends ChangeNotifier {
   bool get baseEntitled => _baseEntitled;
   String get mileageMethod => _mileageMethod;
   bool get accountTypeChosen => _accountTypeChosen;
-  // Gig / Fleet split (2026-10-11): the app's mode comes from which app
-  // this is (AppFlavor) plus, in the Fleet app, the member's role in their
-  // fleet -- never from profiles.account_type, which one person with both
-  // apps installed would keep flipping. The gig app is always personal.
-  bool get isGig => AppFlavor.isGig;
-  bool get isFleetAdmin =>
-      AppFlavor.isFleet && _fleetManagerRoles.contains(_memberRole);
-  bool get isFleetDriver =>
-      AppFlavor.isFleet && _fleetDriverRoles.contains(_memberRole);
-  // Admin = owner and admins; Team fleet = everyone else, operators
-  // included (user rule, 2026-10-19: they sign in with their user ID).
-  static const _fleetManagerRoles = {'owner', 'admin'};
-  static const _fleetDriverRoles = {'driver', 'monitor', 'operator'};
-  String? get memberRole => _memberRole;
-  bool get isMonitor => isFleetDriver && _memberRole == 'monitor';
-  String? get fleetTemplate => _fleetTemplate;
-  bool get isSchoolFleet => _fleetTemplate == 'school_transport';
-
-  // What the fleet's service and plan include (fn_org_features, 2026-10-19).
-  // The database enforces it; the app only uses it to leave out what the
-  // fleet doesn't have -- no button, no card, no "not available".
-  Set<String> _orgFeatures = {};
-  bool hasFeature(String feature) => _orgFeatures.contains(feature);
   DateTime? get accountCreatedAt => _accountCreatedAt;
-  bool get isFleetAccount => isFleetAdmin || isFleetDriver;
 
   // ============================================================
   // SUBSCRIPTION-TIER ENFORCEMENT (explicit user requirement, 2026-09-04)
@@ -190,7 +151,7 @@ class AppState extends ChangeNotifier {
   /// has run out -- the ONLY thing this blocks is starting a NEW trip
   /// (see TrackingActionButton's canStart), never viewing existing data.
   bool get isFreeTrialExpired {
-    if (isFleetAccount || _tierEnforcementExempt) return false;
+    if (_tierEnforcementExempt) return false;
     if (_premiumEntitled || _baseEntitled) return false;
     if (_accountCreatedAt == null) return false;
     return DateTime.now().difference(_accountCreatedAt!).inDays > _freeTrialDays;
@@ -201,7 +162,7 @@ class AppState extends ChangeNotifier {
   /// this state as its own named tier in the Subscription screen instead
   /// of leaving it implicit.
   bool get isOnFreeTrial {
-    if (isFleetAccount || _tierEnforcementExempt) return false;
+    if (_tierEnforcementExempt) return false;
     if (_premiumEntitled || _baseEntitled) return false;
     return !isFreeTrialExpired;
   }
@@ -221,11 +182,9 @@ class AppState extends ChangeNotifier {
   /// Premium caps at 5 -- Premium used to be unlimited here, a real gap
   /// since the server-side trigger enforced no cap for it either).
   int? get maxVehicles {
-    if (isFleetAccount || _tierEnforcementExempt) return null;
+    if (_tierEnforcementExempt) return null;
     return _premiumEntitled ? 5 : 1;
   }
-  List<PendingInvite> get pendingInvites => _pendingInvites;
-  bool get hasPendingInvites => _pendingInvites.isNotEmpty;
 
   bool get isAuthenticated => Supabase.instance.client.auth.currentUser != null;
   String? get currentUserId => Supabase.instance.client.auth.currentUser?.id;
@@ -243,7 +202,6 @@ class AppState extends ChangeNotifier {
     if (isAuthenticated) {
       await fetchUserProfile();
       await fetchAccountTypeChosen();
-      await fetchPendingInvites();
     }
 
     _isInitialized = true;
@@ -267,7 +225,6 @@ class AppState extends ChangeNotifier {
       final String? newDisplayId = data?['display_id'] as String?;
       final String? newFirstName = data?['first_name'] as String?;
       final String newAccountType = data?['account_type'] as String? ?? 'gig';
-      final String? newDefaultOrgId = data?['default_org_id'] as String?;
       final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
       final bool newBaseEntitled = data?['base_entitled'] as bool? ?? false;
       // IRS Fase 3 (2026-08-28): which deduction method the driver is
@@ -306,81 +263,11 @@ class AppState extends ChangeNotifier {
         await prefs.setBool('controlmiles_auto_detect_enabled', false);
       }
 
-      // Fleet app only: the member's role decides the home screen (manager
-      // look vs driver ops). Their default fleet first, else the fleet they
-      // joined most recently. The gig app never reads fleet membership.
-      String? newMemberRole;
-      String? newFleetTemplate;
-      String? fleetOrgId = newDefaultOrgId;
-      if (AppFlavor.isFleet) {
-        try {
-          final rows = await Supabase.instance.client
-              .from('organization_members')
-              .select('organization_id, member_role, joined_at, organizations(industry_template)')
-              .eq('user_id', user.id)
-              .eq('is_active', true)
-              .order('joined_at', ascending: false);
-          final list = List<Map<String, dynamic>>.from(rows);
-          final m = list.where((r) => r['organization_id'] == newDefaultOrgId).firstOrNull ??
-              list.firstOrNull;
-          fleetOrgId = m?['organization_id'] as String?;
-          newMemberRole = m?['member_role'] as String?;
-          final org = m?['organizations'];
-          newFleetTemplate = (org is Map ? org['industry_template'] : null) as String?;
-        } catch (e) {
-          debugPrint('[AppState] member role fetch failed: $e');
-          fleetOrgId = _defaultOrgId;
-          newMemberRole = _memberRole;
-          newFleetTemplate = _fleetTemplate;
-        }
-      }
-      // The fleet this app works with: the Fleet app's own fleet, none in
-      // the gig app (personal trips only).
-      final String? effectiveOrgId = AppFlavor.isFleet ? fleetOrgId : null;
-      changed = changed || _defaultOrgId != effectiveOrgId;
-
-      if (AppFlavor.isFleet && newMemberRole != null) {
-        await _syncFleetEntry(newMemberRole);
-      }
-      if (AppFlavor.isFleet) {
-        Set<String> newFeatures = {};
-        if (fleetOrgId != null) {
-          try {
-            final f = await Supabase.instance.client
-                .rpc('fn_org_features', params: {'p_org_id': fleetOrgId});
-            newFeatures = {for (final x in (f as List? ?? const [])) x as String};
-          } catch (e) {
-            debugPrint('[AppState] org features fetch failed: $e');
-            newFeatures = _orgFeatures;
-          }
-        }
-        if (newFeatures.length != _orgFeatures.length || !newFeatures.containsAll(_orgFeatures)) {
-          _orgFeatures = newFeatures;
-          notifyListeners();
-        }
-      }
-      if (newMemberRole != _memberRole || newFleetTemplate != _fleetTemplate) {
-        _memberRole = newMemberRole;
-        _fleetTemplate = newFleetTemplate;
-        final prefs = await SharedPreferences.getInstance();
-        if (newMemberRole != null) {
-          await prefs.setString('controlmiles_member_role', newMemberRole);
-        } else {
-          await prefs.remove('controlmiles_member_role');
-        }
-        if (newFleetTemplate != null) {
-          await prefs.setString('controlmiles_fleet_template', newFleetTemplate);
-        } else {
-          await prefs.remove('controlmiles_fleet_template');
-        }
-        if (!changed) notifyListeners();
-      }
-
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
         _accountType = newAccountType;
-        _defaultOrgId = effectiveOrgId;
+        _defaultOrgId = null;
         _premiumEntitled = newPremiumEntitled;
         _baseEntitled = newBaseEntitled;
         _mileageMethod = newMileageMethod;
@@ -411,11 +298,6 @@ class AppState extends ChangeNotifier {
           await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
         } else {
           await prefs.remove('controlmiles_default_org_id');
-    await prefs.remove('controlmiles_member_role');
-    await prefs.remove('controlmiles_fleet_template');
-    _memberRole = null;
-    _orgFeatures = {};
-    _fleetTemplate = null;
         }
 
         notifyListeners();
@@ -453,31 +335,6 @@ class AppState extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('[AppState] Error fetching account_type_chosen: $e');
-    }
-  }
-
-  /// Fleet Phase 2: pending organization_members rows (is_active = false)
-  /// for the current user. org_members_select_own (RLS) already lets a
-  /// member see their own row regardless of is_active -- no policy change
-  /// was needed for this to work.
-  Future<void> fetchPendingInvites() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      final data = await Supabase.instance.client
-          .from('organization_members')
-          .select('id, organization_id, invited_at, organizations(name)')
-          .eq('user_id', user.id)
-          .eq('is_active', false)
-          .order('invited_at', ascending: false);
-
-      _pendingInvites = List<Map<String, dynamic>>.from(data)
-          .map(PendingInvite.fromMap)
-          .toList();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('[AppState] Error fetching pending invites: $e');
     }
   }
 
@@ -704,23 +561,6 @@ class AppState extends ChangeNotifier {
   // ============================================================
   // TRADUCCIÓN
   // ============================================================
-  /// Keeps the Fleet app's saved "Admin / Team fleet" answer in line with
-  /// the member's real role: a team member promoted to admin is asked
-  /// again; an admin moved back to the team just signs in as Team fleet;
-  /// a phone that never answered (older version) gets it from the role.
-  Future<void> _syncFleetEntry(String role) async {
-    final isAdmin = _fleetManagerRoles.contains(role);
-    final entry = await LoginPrefs.fleetEntry();
-    if (isAdmin && entry == 'team') {
-      await LoginPrefs.setFleetEntry(null);
-      await LoginPrefs.setFleetPromoted(true);
-    } else if (!isAdmin && entry != 'team') {
-      await LoginPrefs.setFleetEntry('team');
-    } else if (isAdmin && entry == null && !await LoginPrefs.fleetPromoted()) {
-      await LoginPrefs.setFleetEntry('admin');
-    }
-  }
-
   String tr(String key) {
     return AppTexts.getText(key, _currentLanguage);
   }
@@ -763,10 +603,8 @@ class AppState extends ChangeNotifier {
 
       // Fleet module
       _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
-      // Gig app: personal only, even if an older build cached a fleet here.
-      _defaultOrgId = AppFlavor.isFleet ? prefs.getString('controlmiles_default_org_id') : null;
-      _memberRole = AppFlavor.isFleet ? prefs.getString('controlmiles_member_role') : null;
-      _fleetTemplate = prefs.getString('controlmiles_fleet_template');
+      // Personal app: no fleet, even if an older build cached one here.
+      _defaultOrgId = null;
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;
       _tierEnforcementExempt = prefs.getBool('controlmiles_tier_enforcement_exempt') ?? false;
@@ -805,7 +643,6 @@ class AppState extends ChangeNotifier {
     _autoDetectEnabled = false;
     _selectedGigAppIds = [];
     await AutoTripDetectionService.instance.setEnabled(false);
-    _pendingInvites = [];
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
     // logout (see the field's own doc comment above).
     _pendingIntendedRole = null;

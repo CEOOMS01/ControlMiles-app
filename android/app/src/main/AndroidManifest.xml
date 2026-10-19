@@ -120,8 +120,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- The https://controlmiles.com/invite deep link lives only in the
-                 Fleet app: android/app/src/fleet/AndroidManifest.xml. -->
         </activity>
 
         <!-- Starts the Live Update promoter with the app process (also when only

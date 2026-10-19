@@ -6,13 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../onboarding/product_tour.dart';
-import '../config/app_flavor.dart';
 import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
-import '../models/organization.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
-import '../services/organization_service.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
@@ -38,7 +35,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
-  final OrganizationService _organizationService = OrganizationService();
   bool _isDeletingAccount = false;
   bool _isTogglingAutoDetect = false;
   // Usage Access is a "special access" permission granted from system
@@ -127,18 +123,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (mounted) setState(() => _hasUsageAccess = granted);
   }
 
-  // Explicit user requirement (mobile Settings, fleet_admin only): show
-  // the org's name and let its owner/admin rename or delete it. Rename
-  // ports the same web capability (organizations_update_admin RLS);
-  // delete is new -- routes through delete_organization (SECURITY
-  // DEFINER RPC), never a raw client DELETE, since 6 child tables have
-  // NO ACTION on organization_id and a raw DELETE would either fail
-  // outright or, for an org without those rows, silently cascade through
-  // vehicles/members/routes while leaving every member's account_type
-  // desynced. See organization_service.dart's own comment.
-  Organization? _organization;
-  bool _isLoadingOrg = false;
-
   @override
   void initState() {
     super.initState();
@@ -150,22 +134,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     _refreshBackgroundReliabilityStatus();
     _loadNotificationTypePrefs();
 
-    final appState = context.read<AppState>();
-    if (appState.isFleetAdmin) {
-      _loadOrganization(appState);
-    }
-  }
-
-  Future<void> _loadOrganization(AppState appState) async {
-    final orgId = appState.defaultOrgId;
-    if (orgId == null) return;
-    setState(() => _isLoadingOrg = true);
-    try {
-      final org = await _organizationService.getOrganization(orgId);
-      if (mounted) setState(() => _organization = org);
-    } finally {
-      if (mounted) setState(() => _isLoadingOrg = false);
-    }
   }
 
   Future<void> _handleAutoDetectToggle(AppState appState, bool value) async {
@@ -213,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     // Theme.of(context).brightness, mismo patrón isDark que el resto de la
     // app (dashboard_screen.dart/history_screen.dart/main_drawer.dart).
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (AppFlavor.isGig && !_tourChecked) {
+    if (!_tourChecked) {
       _tourChecked = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startTour();
@@ -226,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           : const Color(0xFFFAF6EE),
       appBar: AppBar(
         actions: [
-          if (AppFlavor.isGig) TourHelpButton(onPressed: () => _startTour(force: true)),
+          TourHelpButton(onPressed: () => _startTour(force: true)),
         ],
         title: Text(
           appState.tr('settings').toUpperCase(),
@@ -247,13 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           _buildSectionHeader(appState, 'language', isDark),
           _buildLanguageSection(appState, isDark),
 
-          if (appState.isFleetAdmin &&
-              (_isLoadingOrg || _organization != null)) ...[
-            _buildSectionHeader(appState, 'organization_section_title', isDark),
-            _buildOrganizationSection(appState, isDark),
-          ],
-
-          if (appState.isGig) ...[
+          ...[
             _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
             _buildAutoDetectSection(appState, isDark),
 
@@ -279,17 +241,15 @@ class _SettingsScreenState extends State<SettingsScreen>
           _buildPreferencesSection(appState, isDark),
 
           _buildSectionHeader(appState, 'background_reliability_section', isDark),
-          AppFlavor.isGig
-              ? TourTarget(
-                  showcaseKey: _tReliability,
-                  scope: _tour,
-                  step: 2,
-                  total: 2,
-                  titleKey: 'ptour_reliability_title',
-                  bodyKey: 'ptour_reliability_body',
-                  child: _buildBackgroundReliabilitySection(appState, isDark),
-                )
-              : _buildBackgroundReliabilitySection(appState, isDark),
+          TourTarget(
+            showcaseKey: _tReliability,
+            scope: _tour,
+            step: 2,
+            total: 2,
+            titleKey: 'ptour_reliability_title',
+            bodyKey: 'ptour_reliability_body',
+            child: _buildBackgroundReliabilitySection(appState, isDark),
+          ),
 
           _buildSectionHeader(appState, 'about_app', isDark),
           _buildAboutSection(appState, isDark),
@@ -502,54 +462,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         child: LanguageSelectorTile(
           onChanged: (lang) => _showChangeConfirmation(context, appState, lang),
-        ),
-      ),
-    );
-  }
-
-  // Fleet owner/admin (2026-09-30, explicit user request): the app keeps
-  // the minimum; renaming or deleting the fleet, drivers, vehicles and
-  // every other setting are managed on controlmiles.com.
-  Widget _buildOrganizationSection(AppState appState, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
-    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
-
-    if (_isLoadingOrg) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_organization == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: ListTile(
-            leading: Icon(Icons.desktop_windows_rounded, color: Theme.of(context).colorScheme.primary),
-            title: Text(
-              _organization!.name,
-              style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
-            ),
-            subtitle: Text(
-              appState.tr('owner_manage_on_web_body'),
-              style: TextStyle(color: subTextColor, fontSize: 12),
-            ),
-            trailing: Icon(Icons.open_in_new_rounded, color: subTextColor, size: 18),
-            onTap: () => launchUrl(
-              Uri.parse('https://controlmiles.com/admin/settings'),
-              mode: LaunchMode.externalApplication,
-            ),
-          ),
         ),
       ),
     );
@@ -890,10 +802,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final types = <(String, String, IconData)>[
       (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
       (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
-      // The weekly summary opens the personal Reports: gig app only (the
-      // Fleet app has no personal trips; fleet reports live on the web).
-      if (AppFlavor.isGig)
-        (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
+      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
       if (appState.premiumEntitled) ...[
         (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
         (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
@@ -1082,7 +991,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           // "App tour" (2026-10-11, replaces "Tutorial & what's new"): back
           // to the dashboard that's already open; the tour plays on top of it
           // (ProductTour.replayRequested). Gig app only for now.
-          if (AppFlavor.isGig) ...[
+          ...[
             _buildLegalLinkRow(
               icon: Icons.school_rounded,
               label: appState.tr('ptour_replay'),
@@ -1094,9 +1003,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             const SizedBox(height: 10),
           ],
-          // Personal plans and the IRS mileage method belong to the gig app;
-          // fleets are billed on controlmiles.com (Gig / Fleet split).
-          if (AppFlavor.isGig) ...[
+          // Personal plans and the IRS mileage method.
+          ...[
             _buildMileageMethodRow(appState, isDark),
             const SizedBox(height: 10),
             _buildLegalLinkRow(
@@ -1121,9 +1029,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   // individual version doesn't cover an admin's own
                   // obligations around driver data, which is the
                   // relationship that's actually live in the Fleet app.
-                  body: AppFlavor.isFleet
-                      ? privacyPolicyFleetEn
-                      : privacyPolicyEn,
+                  body: privacyPolicyEn,
                 ),
               ),
             ),
@@ -1138,9 +1044,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               MaterialPageRoute(
                 builder: (_) => LegalDocumentScreen(
                   titleKey: 'terms_conditions',
-                  body: AppFlavor.isFleet
-                      ? termsOfServiceFleetEn
-                      : termsOfServiceEn,
+                  body: termsOfServiceEn,
                 ),
               ),
             ),

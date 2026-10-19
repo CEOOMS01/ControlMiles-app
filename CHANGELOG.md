@@ -5,8 +5,24 @@ first. Every app change bumps `version` in `pubspec.yaml`
 (`MAJOR.MINOR.PATCH+BUILD`; the build number must always go up for Google
 Play) and adds an entry below.
 
-Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
-changes there are not app releases and are not recorded here.
+This is the changelog of **ControlMiles** (`com.olimsys.controlmiles`), the
+personal app. Until 2026-10-19 the same project also built ControlMiles
+Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
+changelog. Fleet management and billing live on the web (controlmiles.com).
+The shared Supabase backend stays here (`supabase/`).
+
+## 1.3.6+43 — 2026-10-19
+
+### Changed (Fleet split into its own project)
+- ControlMiles Fleet moved to `controlmilesproject/controlmiles-fleet`.
+  This project builds only the personal app: no more `--flavor`
+  (`flutter build appbundle --release`).
+- Removed everything fleet-only: fleet owner and team screens, school
+  runs, classes, invites and driver-ID sign-in, fleet roles and plan
+  features, the invite deep link and `app_links`. Sign-in is email /
+  Google; the app opens on sign-in -> permissions -> personal dashboard.
+- Tests: `app_routes_initial_route_test.dart` replaces the flavor test;
+  fleet-only tests moved with Fleet.
 
 ## 1.3.5+42 — 2026-10-19
 

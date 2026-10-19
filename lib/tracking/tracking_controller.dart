@@ -9,7 +9,6 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import '../config/app_flavor.dart';
 import '../models/session_section.dart';
 import '../services/audit_service.dart';
 import '../services/cgc_governance_service.dart';
@@ -1453,9 +1452,8 @@ class TrackingController {
           .select('*, session_sections(*)')
           .eq('user_id', user.id)
           .eq('is_closed', false);
-      final sessions = await (AppFlavor.isFleet
-              ? openTrips.not('organization_id', 'is', null)
-              : openTrips.isFilter('organization_id', null))
+      final sessions = await openTrips
+          .isFilter('organization_id', null)
           .order('start_time', ascending: false)
           .limit(1);
 
