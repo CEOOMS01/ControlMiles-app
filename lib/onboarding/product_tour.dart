@@ -314,8 +314,9 @@ class _WelcomeSheet extends StatelessWidget {
     final appState = context.watch<AppState>();
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Scrolls on short phones / large text instead of overflowing (2026-10-18).
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,

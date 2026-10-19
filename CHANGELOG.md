@@ -8,6 +8,25 @@ Play) and adds an entry below.
 Fleet features and fleet billing live on the web (controlmiles.com, Stripe):
 changes there are not app releases and are not recorded here.
 
+## 1.3.3+40 — 2026-10-18
+
+### Fixed (screens too big on testers' phones)
+- Phones at the factory display size (360-412 dp wide; a Galaxy S23+ is
+  384 dp) showed every screen ~25-30% too big: the layouts were tuned on a
+  phone set to a smaller display size (~500 dp).
+- The whole app now lays out on a canvas at least 480 dp wide and is scaled
+  down to the screen (`ScreenFitScope`, `lib/theme/screen_fit.dart`): 0.80x
+  on a 384 dp phone, never below 0.75x; tablets and wide phones unchanged.
+  Done in the binding (`ScreenFitBinding`, a larger device pixel ratio), not
+  with a Transform, so the product tour's coach marks, maps and touches stay
+  aligned; dialogs, sheets and snackbars scale with everything else.
+- The system font size is kept within 0.85x-1.3x; it used to grow every
+  fixed-height card, button and carousel without a ceiling.
+- The tour's welcome sheet scrolls instead of clipping on short screens.
+- New test `test/screen_fit_layout_test.dart`: the scale per screen width,
+  the text clamp, and sign-in / carousel / trip row without overflow at
+  360x640, 384x832, 412x915 and the 480 dp canvas with text 1.0-2.0x.
+
 ## 1.3.2+39 — 2026-10-12
 
 ### Fixed (gig product tour review)

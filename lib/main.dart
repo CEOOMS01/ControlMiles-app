@@ -23,6 +23,7 @@ import 'logic/app_state.dart';
 import 'i18n/app_texts.dart';
 import 'theme/app_colors.dart';
 import 'theme/cm_colors.dart';
+import 'theme/screen_fit.dart';
 
 // Servicios de Hardware y Fondo
 import 'tracking/background_gps_service.dart';
@@ -59,7 +60,8 @@ import 'screens/shift_ended_screen.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Draws the app scaled to stock-size phones (lib/theme/screen_fit.dart).
+  ScreenFitBinding.ensureInitialized();
 
   // BUG FIX (2026-08-29, real bug the user actually saw): DateFormat
   // patterns with a month name ('MMMM', used by Reports/History's
@@ -241,11 +243,15 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      // RTL Support
+      // RTL Support + screen fit (2026-10-18, testers on stock phones saw
+      // every screen too big): text scale clamp and compact density, see
+      // ScreenFitScope.
       builder: (context, child) {
-        return Directionality(
-          textDirection: appState.currentLanguage.textDirection,
-          child: child!,
+        return ScreenFitScope(
+          child: Directionality(
+            textDirection: appState.currentLanguage.textDirection,
+            child: child!,
+          ),
         );
       },
 
