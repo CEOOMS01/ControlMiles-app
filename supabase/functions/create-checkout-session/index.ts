@@ -27,8 +27,14 @@
 // per-unit Prices ($12.99 / $19.99 / $27.99 per vehicle; Enterprise is
 // self-serve for driving schools, 2026-10-19). Until they are set this answers
 // configured:false, never a fake success.
+//
+// Driving schools (2026-10-20) have their own per-vehicle Prices and pay for
+// branches beyond the plan's included ones (_shared/school_pricing.ts). A
+// school with more branches than the chosen plan allows gets
+// TOO_MANY_BRANCHES instead of a checkout.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { SCHOOL_BRANCH_PRICE_IDS, SCHOOL_PRICE_IDS, schoolBranchExtras } from '../_shared/school_pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -115,8 +121,22 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Not authorized for this organization' }, 403);
     }
 
-    const priceId =
-      fleetTier === 'enterprise'
+    const { data: org, error: orgError } = await adminClient
+      .from('organizations')
+      .select('stripe_customer_id, subscription_status, industry_template')
+      .eq('id', organizationId)
+      .maybeSingle();
+    if (orgError || !org) {
+      return respond({ error: 'Organization not found' }, 404);
+    }
+    if (LIVE_STATUSES.has(org.subscription_status ?? '')) {
+      return respond({ error: 'ALREADY_SUBSCRIBED' }, 409);
+    }
+
+    const isSchool = org.industry_template === 'driving_school';
+    const priceId = isSchool
+      ? SCHOOL_PRICE_IDS[fleetTier]
+      : fleetTier === 'enterprise'
         ? STRIPE_PRICE_ID_FLEET_ENTERPRISE
         : fleetTier === 'growth'
           ? STRIPE_PRICE_ID_FLEET_GROWTH
@@ -125,16 +145,27 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Fleet subscriptions are not configured yet', configured: false }, 200);
     }
 
-    const { data: org, error: orgError } = await adminClient
-      .from('organizations')
-      .select('stripe_customer_id, subscription_status')
-      .eq('id', organizationId)
-      .maybeSingle();
-    if (orgError || !org) {
-      return respond({ error: 'Organization not found' }, 404);
-    }
-    if (LIVE_STATUSES.has(org.subscription_status ?? '')) {
-      return respond({ error: 'ALREADY_SUBSCRIBED' }, 409);
+    // Driving schools: branches beyond the plan's included ones.
+    let branchExtras = 0;
+    let branchPriceId = '';
+    if (isSchool) {
+      const { count: activeBranches, error: branchError } = await adminClient
+        .from('branches')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('is_archived', false);
+      if (branchError) throw branchError;
+      const rule = schoolBranchExtras(fleetTier, activeBranches ?? 0);
+      if (rule.overMax) {
+        return respond({ error: 'TOO_MANY_BRANCHES', max: rule.max }, 409);
+      }
+      branchExtras = rule.extras;
+      if (branchExtras > 0) {
+        branchPriceId = fleetTier === 'growth' ? SCHOOL_BRANCH_PRICE_IDS.growth : SCHOOL_BRANCH_PRICE_IDS.starter;
+        if (!branchPriceId) {
+          return respond({ error: 'Branch billing is not configured yet', configured: false }, 200);
+        }
+      }
     }
 
     const { data: seats, error: seatsError } = await adminClient.rpc('fn_org_billable_vehicles', {
@@ -149,6 +180,10 @@ Deno.serve(async (req: Request) => {
     form.set('cancel_url', CHECKOUT_CANCEL_URL);
     form.set('line_items[0][price]', priceId);
     form.set('line_items[0][quantity]', String(quantity));
+    if (branchExtras > 0) {
+      form.set('line_items[1][price]', branchPriceId);
+      form.set('line_items[1][quantity]', String(branchExtras));
+    }
     form.set('client_reference_id', organizationId);
     if (org.stripe_customer_id) {
       form.set('customer', org.stripe_customer_id);
@@ -169,7 +204,7 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/x-www-form-urlencoded',
         Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
         // One checkout per org/tier/seat count per minute even on double-click.
-        'Idempotency-Key': `fleet-checkout-${organizationId}-${fleetTier}-${quantity}-${Math.floor(Date.now() / 60000)}`,
+        'Idempotency-Key': `fleet-checkout-${organizationId}-${fleetTier}-${quantity}-${branchExtras}-${Math.floor(Date.now() / 60000)}`,
       },
       body: form.toString(),
     });
@@ -181,7 +216,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const session = await stripeRes.json();
-    return respond({ url: session.url, configured: true, quantity });
+    return respond({ url: session.url, configured: true, quantity, branch_extras: branchExtras });
   } catch (err: any) {
     console.error('[create-checkout-session] Unexpected error:', err);
     return respond({ error: 'Internal error' }, 500);

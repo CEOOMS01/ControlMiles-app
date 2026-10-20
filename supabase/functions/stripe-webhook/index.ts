@@ -21,6 +21,12 @@
 // - A stale subscription can't overwrite a newer one on the same org.
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  SCHOOL_BRANCH_PRICE_IDS,
+  SCHOOL_PRICE_IDS,
+  isSchoolBranchPrice,
+  schoolBranchExtras,
+} from '../_shared/school_pricing.ts';
 
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '';
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
@@ -141,11 +147,18 @@ function must<T extends { error: any }>(result: T, what: string): T {
 // The plan comes from the PRICE, not metadata: a Starter -> Growth switch in
 // the Stripe customer portal changes the price but keeps the checkout's
 // metadata.tier.
+// A driving school's subscription can also carry an extra-branches item
+// (2026-10-20); the vehicle item is the one that isn't a branch price.
+function vehicleItem(sub: any): any {
+  const items: any[] = sub.items?.data ?? [];
+  return items.find((i) => !isSchoolBranchPrice(i?.price?.id)) ?? items[0];
+}
+
 function fleetTier(sub: any): 'starter' | 'growth' | 'enterprise' {
-  const priceId = sub.items?.data?.[0]?.price?.id;
-  if (priceId && priceId === STRIPE_PRICE_ID_FLEET_ENTERPRISE) return 'enterprise';
-  if (priceId && priceId === STRIPE_PRICE_ID_FLEET_GROWTH) return 'growth';
-  if (priceId && priceId === STRIPE_PRICE_ID_FLEET_STARTER) return 'starter';
+  const priceId = vehicleItem(sub)?.price?.id;
+  if (priceId && (priceId === STRIPE_PRICE_ID_FLEET_ENTERPRISE || priceId === SCHOOL_PRICE_IDS.enterprise)) return 'enterprise';
+  if (priceId && (priceId === STRIPE_PRICE_ID_FLEET_GROWTH || priceId === SCHOOL_PRICE_IDS.growth)) return 'growth';
+  if (priceId && (priceId === STRIPE_PRICE_ID_FLEET_STARTER || priceId === SCHOOL_PRICE_IDS.starter)) return 'starter';
   const t = sub.metadata?.tier;
   return t === 'enterprise' ? 'enterprise' : t === 'growth' ? 'growth' : 'starter';
 }
@@ -183,7 +196,7 @@ async function applyFleetSubscription(db: SupabaseClient, sub: any) {
       stripe_subscription_id: sub.id,
       subscription_tier: fleetTier(sub),
       subscription_status: sub.status,
-      subscription_vehicle_count: sub.items?.data?.[0]?.quantity ?? null,
+      subscription_vehicle_count: vehicleItem(sub)?.quantity ?? null,
       subscription_updated_at: new Date().toISOString(),
     }).eq('id', organizationId),
     'update organization',
@@ -236,11 +249,14 @@ async function syncFleetSeats(db: SupabaseClient, invoice: any) {
 
   const sub = await stripeApi(`subscriptions/${subId}`);
   if (sub.metadata?.scope !== 'fleet' || !sub.metadata?.organization_id) return;
-  const item = sub.items?.data?.[0];
+  const item = vehicleItem(sub);
   if (!item) return;
+  const organizationId: string = sub.metadata.organization_id;
+
+  await syncSchoolBranches(db, sub, organizationId);
 
   const { data: seats } = must(
-    await db.rpc('fn_org_billable_vehicles', { p_org_id: sub.metadata.organization_id }),
+    await db.rpc('fn_org_billable_vehicles', { p_org_id: organizationId }),
     'count billable vehicles',
   );
   const quantity = Math.max(Number(seats) || 1, 1);
@@ -255,10 +271,53 @@ async function syncFleetSeats(db: SupabaseClient, invoice: any) {
   must(
     await db.from('organizations')
       .update({ subscription_vehicle_count: quantity, subscription_updated_at: new Date().toISOString() })
-      .eq('id', sub.metadata.organization_id),
+      .eq('id', organizationId),
     'update seat count',
   );
-  console.log(`[stripe-webhook] org ${sub.metadata.organization_id} seats ${item.quantity} -> ${quantity}`);
+  console.log(`[stripe-webhook] org ${organizationId} seats ${item.quantity} -> ${quantity}`);
+}
+
+/**
+ * Driving schools: before a renewal, bill the branches beyond the plan's
+ * included ones (at most the plan's maximum), at that plan's branch price.
+ */
+async function syncSchoolBranches(db: SupabaseClient, sub: any, organizationId: string) {
+  const { data: org } = must(
+    await db.from('organizations').select('industry_template').eq('id', organizationId).maybeSingle(),
+    'load organization',
+  );
+  if (org?.industry_template !== 'driving_school') return;
+
+  const tier = fleetTier(sub);
+  const { count } = must(
+    await db.from('branches')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('is_archived', false),
+    'count branches',
+  );
+  const { extras } = schoolBranchExtras(tier, count ?? 0);
+  const wantPrice = tier === 'growth' ? SCHOOL_BRANCH_PRICE_IDS.growth : tier === 'starter' ? SCHOOL_BRANCH_PRICE_IDS.starter : '';
+  const current = (sub.items?.data ?? []).find((i: any) => isSchoolBranchPrice(i?.price?.id));
+
+  // Wrong plan's branch price (plan changed in the portal) or nothing to bill: remove it.
+  if (current && (extras === 0 || current.price.id !== wantPrice)) {
+    await stripeApi(`subscription_items/${current.id}?proration_behavior=none`, { method: 'DELETE' });
+  }
+  if (extras === 0 || !wantPrice) return;
+
+  const form = new URLSearchParams();
+  form.set('quantity', String(extras));
+  form.set('proration_behavior', 'none');
+  if (current && current.price.id === wantPrice) {
+    if (current.quantity === extras) return;
+    await stripeApi(`subscription_items/${current.id}`, { method: 'POST', body: form.toString() });
+  } else {
+    form.set('subscription', sub.id);
+    form.set('price', wantPrice);
+    await stripeApi('subscription_items', { method: 'POST', body: form.toString() });
+  }
+  console.log(`[stripe-webhook] org ${organizationId} extra branches -> ${extras}`);
 }
 
 Deno.serve(async (req: Request) => {
