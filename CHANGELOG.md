@@ -11,6 +11,13 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## Backend — 2026-10-19 (no app release)
+
+- Driving school students, phase 1 (used by ControlMiles Fleet and the web):
+  migration `20261019120000_driving_school_students.sql` (applied),
+  edge function `send-class-reminders` (new, not deployed), Enterprise tier
+  in `create-checkout-session` and `stripe-webhook` (not deployed).
+
 ## 1.3.6+43 — 2026-10-19
 
 ### Changed (Fleet split into its own project)

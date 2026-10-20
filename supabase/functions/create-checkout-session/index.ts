@@ -23,8 +23,9 @@
 // - Personal (gig) plans are sold only in the app through Google Play
 //   (user decision 2026-09-29); the old personal Stripe path is closed.
 //
-// STRIPE_PRICE_ID_FLEET_STARTER / _GROWTH: recurring monthly per-unit
-// Prices ($12.99 / $19.99 per vehicle). Until they are set this answers
+// STRIPE_PRICE_ID_FLEET_STARTER / _GROWTH / _ENTERPRISE: recurring monthly
+// per-unit Prices ($12.99 / $19.99 / $27.99 per vehicle; Enterprise is
+// self-serve for driving schools, 2026-10-19). Until they are set this answers
 // configured:false, never a fake success.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -38,6 +39,7 @@ const corsHeaders = {
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
 const STRIPE_PRICE_ID_FLEET_STARTER = Deno.env.get('STRIPE_PRICE_ID_FLEET_STARTER') ?? '';
 const STRIPE_PRICE_ID_FLEET_GROWTH = Deno.env.get('STRIPE_PRICE_ID_FLEET_GROWTH') ?? '';
+const STRIPE_PRICE_ID_FLEET_ENTERPRISE = Deno.env.get('STRIPE_PRICE_ID_FLEET_ENTERPRISE') ?? '';
 
 const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://controlmiles.com';
 const CHECKOUT_SUCCESS_URL = `${SITE_URL}/admin/settings?billing=success`;
@@ -97,7 +99,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const organizationId = String(body?.organization_id ?? '');
-    const fleetTier = body?.tier === 'growth' ? 'growth' : 'starter';
+    const fleetTier = body?.tier === 'enterprise' ? 'enterprise' : body?.tier === 'growth' ? 'growth' : 'starter';
     if (!organizationId) {
       return respond({ error: 'Missing organization_id' }, 400);
     }
@@ -113,7 +115,12 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Not authorized for this organization' }, 403);
     }
 
-    const priceId = fleetTier === 'growth' ? STRIPE_PRICE_ID_FLEET_GROWTH : STRIPE_PRICE_ID_FLEET_STARTER;
+    const priceId =
+      fleetTier === 'enterprise'
+        ? STRIPE_PRICE_ID_FLEET_ENTERPRISE
+        : fleetTier === 'growth'
+          ? STRIPE_PRICE_ID_FLEET_GROWTH
+          : STRIPE_PRICE_ID_FLEET_STARTER;
     if (!STRIPE_SECRET_KEY || !priceId) {
       return respond({ error: 'Fleet subscriptions are not configured yet', configured: false }, 200);
     }

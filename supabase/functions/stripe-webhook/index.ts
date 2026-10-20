@@ -29,6 +29,7 @@ const CGC_API_KEY = Deno.env.get('CGC_API_KEY') ?? '';
 const CGC_PLAN_FOR_SUBSCRIBED = Deno.env.get('CGC_PLAN_FOR_SUBSCRIBED') ?? 'STANDARD';
 const STRIPE_PRICE_ID_FLEET_STARTER = Deno.env.get('STRIPE_PRICE_ID_FLEET_STARTER') ?? '';
 const STRIPE_PRICE_ID_FLEET_GROWTH = Deno.env.get('STRIPE_PRICE_ID_FLEET_GROWTH') ?? '';
+const STRIPE_PRICE_ID_FLEET_ENTERPRISE = Deno.env.get('STRIPE_PRICE_ID_FLEET_ENTERPRISE') ?? '';
 
 // past_due keeps access while Stripe retries the card (see
 // fn_org_effective_tier); unpaid/canceled/incomplete* do not.
@@ -140,11 +141,13 @@ function must<T extends { error: any }>(result: T, what: string): T {
 // The plan comes from the PRICE, not metadata: a Starter -> Growth switch in
 // the Stripe customer portal changes the price but keeps the checkout's
 // metadata.tier.
-function fleetTier(sub: any): 'starter' | 'growth' {
+function fleetTier(sub: any): 'starter' | 'growth' | 'enterprise' {
   const priceId = sub.items?.data?.[0]?.price?.id;
+  if (priceId && priceId === STRIPE_PRICE_ID_FLEET_ENTERPRISE) return 'enterprise';
   if (priceId && priceId === STRIPE_PRICE_ID_FLEET_GROWTH) return 'growth';
   if (priceId && priceId === STRIPE_PRICE_ID_FLEET_STARTER) return 'starter';
-  return sub.metadata?.tier === 'growth' ? 'growth' : 'starter';
+  const t = sub.metadata?.tier;
+  return t === 'enterprise' ? 'enterprise' : t === 'growth' ? 'growth' : 'starter';
 }
 
 async function applyFleetSubscription(db: SupabaseClient, sub: any) {
