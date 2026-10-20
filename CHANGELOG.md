@@ -11,6 +11,16 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## Backend — 2026-10-20 (no app release)
+
+- Driving school phase 2 (used by ControlMiles Fleet and the web):
+  migration `20261019150000_driving_school_phase2.sql` (applied): programs,
+  instructor availability and time off, portal booking and cancellation,
+  package balance, state certificate fields, SMS consent, freed-time
+  notices. `send-class-reminders` now also emails freed times (deployed).
+- Driving school cars use the monthly odometer cycle, existing and new
+  (migration `20261020100000_driving_school_monthly_odometer.sql`, applied).
+
 ## Backend — 2026-10-19 (no app release)
 
 - Driving school students, phase 1 (used by ControlMiles Fleet and the web):
