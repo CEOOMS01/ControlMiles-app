@@ -20,6 +20,9 @@
 //     (inf) at the 16th-car price. The quantity stays the vehicle count, so
 //     checkout and the renewal sync in stripe-webhook need no math.
 //   STRIPE_PRICE_ID_SCHOOL_BRANCH_STARTER / _GROWTH: per unit, per extra branch.
+//   STRIPE_PRICE_ID_SCHOOL_DOMAIN: $29 / month, the enrollment page on the
+//     school's own address (Enterprise, user decision 2026-10-20), billed
+//     while the address is live.
 
 export type FleetTier = 'starter' | 'growth' | 'enterprise';
 
@@ -54,6 +57,13 @@ export function schoolBranchExtras(tier: FleetTier, activeBranches: number): { e
 /** Most cars a plan allows (Starter 10; fn_vehicles_school_limit enforces it). */
 export const SCHOOL_MAX_CARS: Record<FleetTier, number | null> = { starter: 10, growth: null, enterprise: null };
 
+export const SCHOOL_DOMAIN_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID_SCHOOL_DOMAIN') ?? '';
+
 export function isSchoolBranchPrice(priceId: string | undefined | null): boolean {
   return !!priceId && Object.values(SCHOOL_BRANCH_PRICE_IDS).includes(priceId);
+}
+
+/** An add-on item (extra branches, own address), never the vehicle item. */
+export function isSchoolExtraPrice(priceId: string | undefined | null): boolean {
+  return isSchoolBranchPrice(priceId) || (!!priceId && priceId === SCHOOL_DOMAIN_PRICE_ID);
 }

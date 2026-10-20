@@ -24,7 +24,9 @@ import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import {
   SCHOOL_BRANCH_PRICE_IDS,
   SCHOOL_PRICE_IDS,
+  SCHOOL_DOMAIN_PRICE_ID,
   isSchoolBranchPrice,
+  isSchoolExtraPrice,
   schoolBranchExtras,
 } from '../_shared/school_pricing.ts';
 
@@ -151,7 +153,7 @@ function must<T extends { error: any }>(result: T, what: string): T {
 // (2026-10-20); the vehicle item is the one that isn't a branch price.
 function vehicleItem(sub: any): any {
   const items: any[] = sub.items?.data ?? [];
-  return items.find((i) => !isSchoolBranchPrice(i?.price?.id)) ?? items[0];
+  return items.find((i) => !isSchoolExtraPrice(i?.price?.id)) ?? items[0];
 }
 
 function fleetTier(sub: any): 'starter' | 'growth' | 'enterprise' {
@@ -254,6 +256,7 @@ async function syncFleetSeats(db: SupabaseClient, invoice: any) {
   const organizationId: string = sub.metadata.organization_id;
 
   await syncSchoolBranches(db, sub, organizationId);
+  await syncSchoolDomain(db, sub, organizationId);
 
   const { data: seats } = must(
     await db.rpc('fn_org_billable_vehicles', { p_org_id: organizationId }),
@@ -275,6 +278,32 @@ async function syncFleetSeats(db: SupabaseClient, invoice: any) {
     'update seat count',
   );
   console.log(`[stripe-webhook] org ${organizationId} seats ${item.quantity} -> ${quantity}`);
+}
+
+/**
+ * Driving schools on Enterprise: before a renewal, bill $29 for the
+ * enrollment page on the school's own address while it is live (2026-10-20).
+ */
+async function syncSchoolDomain(db: SupabaseClient, sub: any, organizationId: string) {
+  if (!SCHOOL_DOMAIN_PRICE_ID) return;
+  const { data: page } = must(
+    await db.from('ds_public_pages').select('domain_status').eq('organization_id', organizationId).maybeSingle(),
+    'load public page',
+  );
+  const live = page?.domain_status === 'verified' && fleetTier(sub) === 'enterprise';
+  const current = (sub.items?.data ?? []).find((i: any) => i?.price?.id === SCHOOL_DOMAIN_PRICE_ID);
+  if (live && !current) {
+    const form = new URLSearchParams();
+    form.set('subscription', sub.id);
+    form.set('price', SCHOOL_DOMAIN_PRICE_ID);
+    form.set('quantity', '1');
+    form.set('proration_behavior', 'none');
+    await stripeApi('subscription_items', { method: 'POST', body: form.toString() });
+    console.log(`[stripe-webhook] org ${organizationId} own address billed`);
+  } else if (!live && current) {
+    await stripeApi(`subscription_items/${current.id}?proration_behavior=none`, { method: 'DELETE' });
+    console.log(`[stripe-webhook] org ${organizationId} own address no longer billed`);
+  }
 }
 
 /**
