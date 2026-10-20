@@ -31,10 +31,12 @@
 // Driving schools (2026-10-20) have their own per-vehicle Prices and pay for
 // branches beyond the plan's included ones (_shared/school_pricing.ts). A
 // school with more branches than the chosen plan allows gets
-// TOO_MANY_BRANCHES instead of a checkout.
+// TOO_MANY_BRANCHES instead of a checkout, and one with more cars than the
+// plan allows (Starter: 10) TOO_MANY_VEHICLES. School prices are graduated
+// tiers on the vehicle count (base with 3 cars, then per car).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { SCHOOL_BRANCH_PRICE_IDS, SCHOOL_PRICE_IDS, schoolBranchExtras } from '../_shared/school_pricing.ts';
+import { SCHOOL_BRANCH_PRICE_IDS, SCHOOL_MAX_CARS, SCHOOL_PRICE_IDS, schoolBranchExtras } from '../_shared/school_pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -173,6 +175,11 @@ Deno.serve(async (req: Request) => {
     });
     if (seatsError) throw seatsError;
     const quantity = Math.max(Number(seats) || 1, 1);
+    // Driving schools: Starter allows up to 10 cars.
+    const maxCars = isSchool ? SCHOOL_MAX_CARS[fleetTier] : null;
+    if (maxCars != null && quantity > maxCars) {
+      return respond({ error: 'TOO_MANY_VEHICLES', max: maxCars }, 409);
+    }
 
     const form = new URLSearchParams();
     form.set('mode', 'subscription');

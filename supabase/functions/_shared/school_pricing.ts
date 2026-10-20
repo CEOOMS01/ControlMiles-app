@@ -1,18 +1,25 @@
 // Olympus Mont Systems LLC - ControlMiles
 // supabase/functions/_shared/school_pricing.ts
 //
-// Driving school pricing (user decision 2026-10-20; driving schools only --
+// Driving school pricing (user decisions 2026-10-20; driving schools only --
 // other services keep the fleet prices until their own pricing is set):
-//   per vehicle / month: Starter $14.99, Growth $24.99, Enterprise $34.99
+//   monthly base with 3 cars and the software, then per extra car:
+//     Starter    $59  + $12.99 per car, up to 10 cars
+//     Growth     $125 + $19.99 per car (cars 4-15), $16.99 from the 16th
+//     Enterprise $175 + $27.99 per car (cars 4-15), $23.99 from the 16th
 //   branches: Starter 1 included + up to 1 extra at $24.99 / month,
 //             Growth 2 included + up to 2 extra at $19.99 / month each,
 //             Enterprise unlimited.
 // The same numbers live in fn_org_branch_allowance_internal (database limit)
 // and src/lib/school-pricing.ts (web).
 //
-// Stripe Prices (recurring monthly, per unit), set as function secrets:
-//   STRIPE_PRICE_ID_SCHOOL_STARTER / _GROWTH / _ENTERPRISE  (per vehicle)
-//   STRIPE_PRICE_ID_SCHOOL_BRANCH_STARTER / _GROWTH         (per extra branch)
+// Stripe Prices (recurring monthly), set as function secrets:
+//   STRIPE_PRICE_ID_SCHOOL_STARTER / _GROWTH / _ENTERPRISE: graduated tiered
+//     prices on the vehicle count -- tier 1 up to 3 with the base as its flat
+//     amount and 0 per unit, tier 2 up to 15 at the extra-car price, tier 3
+//     (inf) at the 16th-car price. The quantity stays the vehicle count, so
+//     checkout and the renewal sync in stripe-webhook need no math.
+//   STRIPE_PRICE_ID_SCHOOL_BRANCH_STARTER / _GROWTH: per unit, per extra branch.
 
 export type FleetTier = 'starter' | 'growth' | 'enterprise';
 
@@ -43,6 +50,9 @@ export function schoolBranchExtras(tier: FleetTier, activeBranches: number): { e
     max: rule.max,
   };
 }
+
+/** Most cars a plan allows (Starter 10; fn_vehicles_school_limit enforces it). */
+export const SCHOOL_MAX_CARS: Record<FleetTier, number | null> = { starter: 10, growth: null, enterprise: null };
 
 export function isSchoolBranchPrice(priceId: string | undefined | null): boolean {
   return !!priceId && Object.values(SCHOOL_BRANCH_PRICE_IDS).includes(priceId);
