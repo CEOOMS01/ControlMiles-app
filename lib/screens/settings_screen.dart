@@ -1024,11 +1024,6 @@ class _SettingsScreenState extends State<SettingsScreen>
               MaterialPageRoute(
                 builder: (_) => LegalDocumentScreen(
                   titleKey: 'privacy_policy',
-                  // Explicit user request (2026-08-28): Fleet accounts see
-                  // the organization/company-framed version -- the
-                  // individual version doesn't cover an admin's own
-                  // obligations around driver data, which is the
-                  // relationship that's actually live in the Fleet app.
                   body: privacyPolicyEn,
                 ),
               ),

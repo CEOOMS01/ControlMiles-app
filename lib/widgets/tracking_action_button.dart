@@ -31,35 +31,11 @@ class TrackingActionButton extends StatefulWidget {
   // above, just for the opposite transition.
   final VoidCallback? onTripStarted;
 
-  // Roadmap gap closed (pedido explícito): a failed or missing DVIR
-  // inspection should block tracking from starting -- v1 deliberately
-  // left this unenforced (see driver_operations_screen.dart's own
-  // comment on the pre-trip checklist card). Optional and Gig-only-safe
-  // by construction: DashboardScreen (Gig) never passes this, so `idle`
-  // there behaves exactly as before -- no DVIR concept applies to a
-  // personal vehicle. When provided and it resolves false, `_message`
-  // is shown instead of starting.
+  // Optional start gate (Dashboard uses it for the free-trial check). When
+  // provided and it resolves false, the trip does not start and
+  // cannotStartMessage, if any, is shown.
   final Future<bool> Function()? canStart;
   final String? cannotStartMessage;
-
-  // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): the
-  // vehicle a driver picked themselves via FleetVehiclePickerScreen when
-  // their org's vehicle_assignment_mode is 'open'. Threaded straight
-  // through to TrackingController.startTripFlow -- see its own doc
-  // comment. Always null for Gig and for 'fixed'-mode fleet drivers.
-  final String? preSelectedVehicleId;
-
-  // Hourly classes (fleet shift blocks, 2026-09-29): called right before
-  // the trip starts. Starts the class server-side (start_shift_block, which
-  // enforces the start window) and returns its id so the trip is tied to
-  // it; throws when the class can't start (shown like any other error).
-  // Returns null when there is no class schedule -- a plain fleet trip --
-  // and '' when no class can start right now (the caller already told the
-  // driver why), which cancels the start.
-  final Future<String?> Function()? startShiftBlock;
-  // The class was started but the trip then didn't (odometer/GPS step
-  // failed or was abandoned): undo it so the class can be started again.
-  final Future<void> Function(String blockId)? onShiftBlockStartFailed;
 
   // Gig dashboard tracking card (2026-10-01, explicit user request): one
   // row -- status text on the left, START/PAUSE/RESUME + END pills on the
@@ -74,9 +50,6 @@ class TrackingActionButton extends StatefulWidget {
     this.onTripStarted,
     this.canStart,
     this.cannotStartMessage,
-    this.preSelectedVehicleId,
-    this.startShiftBlock,
-    this.onShiftBlockStartFailed,
     this.compact = false,
   });
 
@@ -133,10 +106,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
               // gate) by passing null cannotStartMessage on purpose --
               // showing this snackbar too would just stack a redundant,
               // possibly mismatched message on top of whatever canStart
-              // already showed. Fleet's DVIR gate is unaffected: it always
-              // passes its own cannotStartMessage explicitly (see
-              // driver_operations_screen.dart), never relies on this
-              // fallback text.
+              // already showed.
               if (mounted && widget.cannotStartMessage != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -150,24 +120,14 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
             }
             if (!mounted) return;
           }
-          final shiftBlockId = await widget.startShiftBlock?.call();
-          if (!mounted || shiftBlockId == '') return;
           await TrackingController.startTripFlow(
             context: context,
             gigApp: gigApp,
             irsPurpose: gigApp == 'custom' ? widget.selectedIrsPurpose : null,
-            // Fleet Phase 3: null for Gig -- see the param's own doc comment
-            // in tracking_controller.dart for why this needs to be threaded
-            // through at all (RLS visibility for fleet admins).
-            organizationId: null,
-            preSelectedVehicleId: null,
-            shiftBlockId: shiftBlockId,
           );
           if (TrackingController.currentState == TrackingState.running && mounted) {
             _pulseController.repeat();
             widget.onTripStarted?.call();
-          } else if (shiftBlockId != null) {
-            await widget.onShiftBlockStartFailed?.call(shiftBlockId);
           }
           break;
 
@@ -353,12 +313,9 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     }
 
     // Fires DESPUÉS de que stopTracking() confirmó el cierre real Y de
-    // que la foto de cierre semanal obligatoria ya se
-    // resolvió -- reordenado (2026-09-09) porque el caller de Fleet
-    // (DriverOperationsScreen) necesita esperar exactamente este punto
-    // antes de navegar a la pantalla de "Turno finalizado"; navegar
-    // antes habría desmontado este widget a mitad del diálogo semanal
-    // obligatorio.
+    // que la foto de cierre semanal obligatoria ya se resolvió: un caller
+    // que navegue al recibirlo no desmonta este widget a mitad del diálogo
+    // semanal obligatorio.
     widget.onTripEnded?.call();
   }
 

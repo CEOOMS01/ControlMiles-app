@@ -52,16 +52,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // Explicit user requirement (2026-09-04): if this email has no
-      // ControlMiles account, send NO email at all -- just an in-app
-      // notice. See AuthService.emailHasAccount's own comment for the
-      // security tradeoff this deliberately accepts.
-      final hasAccount = await _authService.emailHasAccount(email);
-      if (!hasAccount) {
-        if (mounted) _showSnack(appState.tr('email_not_linked_to_controlmiles'), error: true);
-        return;
-      }
-
+      // Same answer whether or not the email has an account (owner's rule,
+      // 2026-10-22): a public screen must never tell anyone which emails
+      // exist. Supabase only sends the code to a real account.
       await _authService.requestPasswordReset(email);
       if (!mounted) return;
       _showSnack(appState.tr('reset_code_sent'));

@@ -22,49 +22,6 @@ class AuthService {
     }
   }
 
-  // Fleet driver ID login (explicit user request, 2026-09-17): a
-  // fleet_driver account logs in with their CM-D#### id instead of email
-  // -- Supabase Auth itself only ever authenticates by email, so
-  // resolve-driver-login is the server-side translation layer (never
-  // exposes which email a display_id maps to, does the real password
-  // check itself, see its own header comment for the enumeration/rate-
-  // limit reasoning). This just hands the resulting token pair to the
-  // local SDK -- setSession() with BOTH tokens hydrates a real session
-  // immediately, without a second network round-trip to refresh one.
-  Future<void> signInWithDriverId(String displayId, String password) async {
-    try {
-      final response = await _supabase.functions.invoke(
-        'resolve-driver-login',
-        body: {'display_id': displayId, 'password': password},
-      );
-
-      final data = response.data;
-      if (data is! Map || data['access_token'] == null || data['refresh_token'] == null) {
-        throw Exception('Invalid driver ID or password');
-      }
-
-      await _supabase.auth.setSession(
-        data['refresh_token'] as String,
-        accessToken: data['access_token'] as String,
-      );
-    } on AuthException catch (e) {
-      throw Exception(e.message);
-    } on FunctionsHttpException catch (e) {
-      // The edge function's real 401 error body -- functions.invoke throws
-      // for any non-2xx status rather than returning it, so this (not the
-      // inline check above) is what actually catches an invalid driver
-      // ID/password in practice. Same generic message regardless of the
-      // underlying reason, matching resolve-driver-login's own
-      // enumeration-resistance contract (see its header comment).
-      final details = e.details;
-      final message = (details is Map ? details['error'] as String? : null) ?? 'Invalid driver ID or password';
-      throw Exception(message);
-    } catch (e) {
-      if (e is Exception) rethrow;
-      throw Exception('Login failed: ${e.toString()}');
-    }
-  }
-
   // Crear cuenta con Email y Contraseña + Metadatos
   // BUG FIX (pedido explícito): antes, si no llegaba firstName, se
   // fabricaba uno con el prefijo del email (split_part) -- el signup real
@@ -80,9 +37,8 @@ class AuthService {
   // si el usuario después visitaba Profile y los llenaba a mano. Ahora se
   // piden los dos en el mismo formulario de registro.
   Future<void> signUp(String email, String password, {String? firstName, String? lastName}) async {
-    AuthResponse res;
     try {
-      res = await _supabase.auth.signUp(
+      await _supabase.auth.signUp(
         email: email,
         password: password,
         // ENVIAR METADATOS: Esto ayuda a que el Trigger de la DB
@@ -97,14 +53,10 @@ class AuthService {
     } catch (e) {
       throw Exception("Registration failed: ${e.toString()}");
     }
-    // Silent failure found live (2026-09-30): signing up with an email that
-    // already has an account returns no error -- Supabase answers with a
-    // user that has no identities, to avoid revealing which emails exist --
-    // and the app carried on as if the account had been created. Surface it
-    // as "already registered" (AppError 401) so the person signs in instead.
-    if (res.user != null && (res.user!.identities?.isEmpty ?? false)) {
-      throw Exception('Email already registered');
-    }
+    // An email that already has an account gets the same answer as a new
+    // one (Supabase returns a user with no identities and no session, and
+    // the caller shows "check your email"): a public screen must never
+    // reveal which emails exist (owner's rule, 2026-10-22).
   }
 
   // ════════════════════════════════════════════════════════════
@@ -120,33 +72,6 @@ class AuthService {
   // Reset Password → agregar {{ .Token }} al cuerpo del email para que
   // llegue el código de 6 dígitos, no solo el link.
   // ════════════════════════════════════════════════════════════
-
-  /// Chequeo previo al paso 1 (explicit user requirement, 2026-09-04): si
-  /// el email no tiene cuenta en ControlMiles, NO se manda ningún correo --
-  /// la pantalla muestra un aviso in-app en su lugar. Va contra la práctica
-  /// estándar de Supabase (resetPasswordForEmail responde igual exista o no
-  /// el email, justo para evitar que alguien pueda enumerar cuentas reales
-  /// probando emails al azar) -- decisión explícita del usuario, no un
-  /// descuido; el tradeoff de seguridad real está documentado en el propio
-  /// edge function (supabase/functions/check-email-exists/index.ts).
-  /// Falla ABIERTO hacia "sí existe" si el chequeo mismo falla (red caída,
-  /// rate limit, etc.) -- así un problema de este chequeo nunca le bloquea
-  /// a un usuario real la posibilidad de resetear su contraseña.
-  Future<bool> emailHasAccount(String email) async {
-    try {
-      final response = await _supabase.functions.invoke(
-        'check-email-exists',
-        body: {'email': email.trim()},
-      );
-      final data = response.data;
-      if (data is Map && data['exists'] is bool) {
-        return data['exists'] as bool;
-      }
-      return true;
-    } catch (e) {
-      return true;
-    }
-  }
 
   /// Paso 1: pide a Supabase que envíe el código de reseteo al email.
   Future<void> requestPasswordReset(String email) async {

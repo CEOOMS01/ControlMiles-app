@@ -19,9 +19,26 @@ to exist in `errors.ts`, not `app_error.dart`). Add a code to a platform's
 class only once something on that platform can actually throw it — this
 table stays the complete list either way.
 
+Since 2026-10-22 the personal app (this repo) only carries the codes a gig
+driver can hit; the fleet-only codes (412-414, 416-419, 422-424, 426) live in
+the ControlMiles Fleet app's `AppError`.
+
 Implementations:
 - Mobile: `lib/errors/app_error.dart` (`AppError` class)
 - Web: `src/lib/errors.ts` (`AppError` class)
+
+## Two rules every error follows (owner, 2026-10-22)
+
+1. **No public screen reveals whether an email or an ID has an account.**
+   Sign-in, sign-up, password reset and ID sign-in answer the same way
+   whether the account exists or not: a wrong ID and a wrong password are
+   the same `400`; sign-up with a taken email shows the same "check your
+   email" as a new one (so `401` is never shown on sign-up); password reset
+   always says the code was sent. `check-email-exists` is retired for this
+   reason.
+2. **Edge functions answer every error as `{ error, code }`**, the code from
+   this table and the message one `AppError.from()` recognizes, so the
+   clients show the right code instead of guessing from text.
 
 ## Ranges
 

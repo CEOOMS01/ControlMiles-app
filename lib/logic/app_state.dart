@@ -47,14 +47,8 @@ class AppState extends ChangeNotifier {
   String? _firstName;
 
   // ============================================================
-  // FLEET MODULE -- Gig / Fleet account type
+  // SUBSCRIPTION
   // ============================================================
-  // profiles.account_type ya existe en DB (default 'gig', trigger
-  // tr_enforce_fleet_org exige organization_members activo para
-  // fleet_admin/fleet_driver) desde antes de que ningún código Dart lo
-  // leyera. Mismo patrón de caché que userDisplayId/firstName arriba.
-  String _accountType = 'gig';
-  String? _defaultOrgId;
   // Gates paid Gig features (starting with automatic trip detection).
   // Kept in sync server-side from Google Play subscriptions
   // (verify-play-purchase / play-rtdn -> recompute_personal_entitlements),
@@ -85,25 +79,6 @@ class AppState extends ChangeNotifier {
   // ONBOARDING
   // ============================================================
   bool _permissionsCompleted = false;
-  // user_onboarding.account_type_chosen -- separado de _accountType porque
-  // 'gig' es tanto el default real como "todavía no eligió", así que
-  // account_type solo no alcanza para distinguir ambos casos.
-  bool _accountTypeChosen = false;
-
-  // ============================================================
-  // FIRST-LAUNCH ROLE CHOOSER (Gig App Driver / Fleet Driver / Fleet
-  // Admin) -- shown once per DEVICE, before any account exists, so this
-  // can only live in SharedPreferences, never user_onboarding. Deliberately
-  // NOT removed in clearAll() (device-level, survives logout -- same
-  // category as dark_mode/lang/unit_system). pendingIntendedRole IS a
-  // per-signup-session value though: cleared once welcome_page.dart
-  // consumes it, and on sign-out.
-  // ============================================================
-  bool _hasSeenRoleChooser = false;
-  String? _pendingIntendedRole; // 'gig' | 'fleet_driver' | 'fleet_admin'
-
-  bool get hasSeenRoleChooser => _hasSeenRoleChooser;
-  String? get pendingIntendedRole => _pendingIntendedRole;
 
   // ============================================================
   // GETTERS
@@ -125,19 +100,14 @@ class AppState extends ChangeNotifier {
   String? get userDisplayId => _userDisplayId;
   String? get firstName => _firstName;
   bool get permissionsCompleted => _permissionsCompleted;
-  String get accountType => _accountType;
-  String? get defaultOrgId => _defaultOrgId;
   bool get premiumEntitled => _premiumEntitled;
   bool get baseEntitled => _baseEntitled;
   String get mileageMethod => _mileageMethod;
-  bool get accountTypeChosen => _accountTypeChosen;
   DateTime? get accountCreatedAt => _accountCreatedAt;
 
   // ============================================================
   // SUBSCRIPTION-TIER ENFORCEMENT (explicit user requirement, 2026-09-04)
-  // Fleet is entirely out of scope (isFleetAccount check on every getter
-  // below) -- that's a separate pricing model, not built yet. Mirrors the
-  // server-side triggers/RPC exactly (fn_enforce_trial_or_subscription,
+  // Mirrors the server-side triggers/RPC exactly (fn_enforce_trial_or_subscription,
   // fn_enforce_vehicle_count_limit, check_and_log_pdf_export) -- these
   // getters are for instant client-side UX only, never the real floor.
   // ============================================================
@@ -168,7 +138,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Days left in the Started trial, floored at 0. Null when not
-  /// applicable (subscribed, exempt, Fleet, or unknown account age).
+  /// applicable (subscribed, exempt, or unknown account age).
   int? get freeTrialDaysLeft {
     if (!isOnFreeTrial || _accountCreatedAt == null) return null;
     final elapsed = DateTime.now().difference(_accountCreatedAt!).inDays;
@@ -176,7 +146,7 @@ class AppState extends ChangeNotifier {
     return remaining < 0 ? 0 : remaining;
   }
 
-  /// null = unlimited (exempt or Fleet). 5 for Premium, 1 for Started
+  /// null = unlimited (exempt). 5 for Premium, 1 for Started
   /// (trial) or Basic -- mirrors fn_enforce_vehicle_count_limit exactly
   /// (explicit user requirement, 2026-09-09: Started/Basic both cap at 1,
   /// Premium caps at 5 -- Premium used to be unlimited here, a real gap
@@ -201,7 +171,6 @@ class AppState extends ChangeNotifier {
 
     if (isAuthenticated) {
       await fetchUserProfile();
-      await fetchAccountTypeChosen();
     }
 
     _isInitialized = true;
@@ -218,13 +187,12 @@ class AppState extends ChangeNotifier {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('display_id, first_name, account_type, default_org_id, premium_entitled, base_entitled, mileage_method, created_at, tier_enforcement_exempt')
+          .select('display_id, first_name, premium_entitled, base_entitled, mileage_method, created_at, tier_enforcement_exempt')
           .eq('id', user.id)
           .maybeSingle();
 
       final String? newDisplayId = data?['display_id'] as String?;
       final String? newFirstName = data?['first_name'] as String?;
-      final String newAccountType = data?['account_type'] as String? ?? 'gig';
       final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
       final bool newBaseEntitled = data?['base_entitled'] as bool? ?? false;
       // IRS Fase 3 (2026-08-28): which deduction method the driver is
@@ -239,7 +207,6 @@ class AppState extends ChangeNotifier {
       final bool newTierEnforcementExempt = data?['tier_enforcement_exempt'] as bool? ?? false;
       bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
-          _accountType != newAccountType ||
           _premiumEntitled != newPremiumEntitled ||
           _baseEntitled != newBaseEntitled ||
           _mileageMethod != newMileageMethod ||
@@ -266,8 +233,6 @@ class AppState extends ChangeNotifier {
       if (changed) {
         _userDisplayId = newDisplayId;
         _firstName = newFirstName;
-        _accountType = newAccountType;
-        _defaultOrgId = null;
         _premiumEntitled = newPremiumEntitled;
         _baseEntitled = newBaseEntitled;
         _mileageMethod = newMileageMethod;
@@ -285,7 +250,6 @@ class AppState extends ChangeNotifier {
         } else {
           await prefs.remove('controlmiles_first_name');
         }
-        await prefs.setString('controlmiles_account_type', _accountType);
         await prefs.setBool('controlmiles_premium_entitled', _premiumEntitled);
         await prefs.setBool('controlmiles_base_entitled', _baseEntitled);
         await prefs.setBool('controlmiles_tier_enforcement_exempt', _tierEnforcementExempt);
@@ -294,67 +258,11 @@ class AppState extends ChangeNotifier {
         } else {
           await prefs.remove('controlmiles_account_created_at');
         }
-        if (_defaultOrgId != null) {
-          await prefs.setString('controlmiles_default_org_id', _defaultOrgId!);
-        } else {
-          await prefs.remove('controlmiles_default_org_id');
-        }
 
         notifyListeners();
       }
     } catch (e) {
       debugPrint('[AppState] Error fetching profile: $e');
-    }
-  }
-
-  /// Refresca account_type/default_org_id contra la DB sin esperar al
-  /// próximo fetchUserProfile() -- se llama justo después de
-  /// createOrganization() para que isFleetAdmin ya sea true en la misma
-  /// sesión, sin pedirle al usuario que reinicie la app.
-  Future<void> refreshAccountType() => fetchUserProfile();
-
-  /// user_onboarding.account_type_chosen -- si ya se marcó, la app nunca
-  /// vuelve a mostrar la pantalla de elección Gig/Fleet para esta cuenta.
-  Future<void> fetchAccountTypeChosen() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      final data = await Supabase.instance.client
-          .from('user_onboarding')
-          .select('account_type_chosen')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-      final bool chosen = data?['account_type_chosen'] as bool? ?? false;
-      if (_accountTypeChosen != chosen) {
-        _accountTypeChosen = chosen;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('controlmiles_account_type_chosen', chosen);
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('[AppState] Error fetching account_type_chosen: $e');
-    }
-  }
-
-  Future<void> completeAccountTypeChoice() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    _accountTypeChosen = true;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('controlmiles_account_type_chosen', true);
-
-    try {
-      await Supabase.instance.client.from('user_onboarding').upsert({
-        'user_id': user.id,
-        'account_type_chosen': true,
-      }, onConflict: 'user_id');
-    } catch (e) {
-      debugPrint('[AppState] Warning: could not persist account_type_chosen: $e');
     }
   }
 
@@ -520,45 +428,6 @@ class AppState extends ChangeNotifier {
   }
 
   // ============================================================
-  // FIRST-LAUNCH ROLE CHOOSER
-  // ============================================================
-
-  /// Called when a new user picks a card on RoleChooserScreen. Marks the
-  /// chooser seen (never shown again on this device) and remembers which
-  /// destination signup should skip ahead to once welcome/permissions is
-  /// done -- see WelcomePage._completeOnboarding.
-  Future<void> chooseIntendedRole(String role) async {
-    _hasSeenRoleChooser = true;
-    _pendingIntendedRole = role;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('controlmiles_has_seen_role_chooser', true);
-    await prefs.setString('controlmiles_pending_intended_role', role);
-  }
-
-  /// "Already have an account? Sign in" on RoleChooserScreen -- marks the
-  /// chooser seen without setting an intended role, so a returning user
-  /// reinstalling on a new device just goes to normal LoginScreen from
-  /// here on, never a role picker.
-  Future<void> skipRoleChooser() async {
-    _hasSeenRoleChooser = true;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('controlmiles_has_seen_role_chooser', true);
-  }
-
-  Future<void> clearPendingIntendedRole() async {
-    if (_pendingIntendedRole == null) return;
-    _pendingIntendedRole = null;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('controlmiles_pending_intended_role');
-  }
-
-  // ============================================================
   // TRADUCCIÓN
   // ============================================================
   String tr(String key) {
@@ -601,20 +470,11 @@ class AppState extends ChangeNotifier {
       // Nombre (saludo del Dashboard)
       _firstName = prefs.getString('controlmiles_first_name');
 
-      // Fleet module
-      _accountType = prefs.getString('controlmiles_account_type') ?? 'gig';
-      // Personal app: no fleet, even if an older build cached one here.
-      _defaultOrgId = null;
       _premiumEntitled = prefs.getBool('controlmiles_premium_entitled') ?? false;
       _baseEntitled = prefs.getBool('controlmiles_base_entitled') ?? false;
       _tierEnforcementExempt = prefs.getBool('controlmiles_tier_enforcement_exempt') ?? false;
       final cachedCreatedAt = prefs.getString('controlmiles_account_created_at');
       _accountCreatedAt = cachedCreatedAt != null ? DateTime.tryParse(cachedCreatedAt) : null;
-      _accountTypeChosen = prefs.getBool('controlmiles_account_type_chosen') ?? false;
-
-      // First-launch role chooser (device-level, see clearAll())
-      _hasSeenRoleChooser = prefs.getBool('controlmiles_has_seen_role_chooser') ?? false;
-      _pendingIntendedRole = prefs.getString('controlmiles_pending_intended_role');
 
     } catch (e) {
       debugPrint('[AppState] Error loading preferences: $e');
@@ -629,13 +489,10 @@ class AppState extends ChangeNotifier {
     _firstName = null;
     _currentSessionId = null;
     _permissionsCompleted = false;
-    _accountType = 'gig';
-    _defaultOrgId = null;
     _premiumEntitled = false;
     _baseEntitled = false;
     _tierEnforcementExempt = false;
     _accountCreatedAt = null;
-    _accountTypeChosen = false;
     // A different account on this same device shouldn't inherit the
     // previous account's premium auto-detect choice, and the listening
     // service must stop -- it has no idle account to attribute a
@@ -643,21 +500,19 @@ class AppState extends ChangeNotifier {
     _autoDetectEnabled = false;
     _selectedGigAppIds = [];
     await AutoTripDetectionService.instance.setEnabled(false);
-    // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
-    // logout (see the field's own doc comment above).
-    _pendingIntendedRole = null;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('controlmiles_user_display_id');
     await prefs.remove('controlmiles_first_name');
     await prefs.remove('controlmiles_permissions_completed');
-    await prefs.remove('controlmiles_account_type');
     await prefs.remove('controlmiles_premium_entitled');
     await prefs.remove('controlmiles_base_entitled');
     await prefs.remove('controlmiles_tier_enforcement_exempt');
     await prefs.remove('controlmiles_account_created_at');
     await prefs.remove('controlmiles_auto_detect_enabled');
     await prefs.remove('controlmiles_selected_gig_app_ids');
+    // Keys older builds wrote for the fleet side; removed so nothing stale stays.
+    await prefs.remove('controlmiles_account_type');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,8 +18,6 @@ import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
-import 'driver_safety_monitor.dart';
-import '../services/speed_limit_service.dart';
 import 'background_gps_service.dart';
 import 'auto_trip_detection_service.dart';
 import 'route_recorder.dart';
@@ -36,13 +33,9 @@ class TrackingController {
   static TrackingState currentState = TrackingState.idle;
   static String? currentGigApp;
 
-  // Fleet Phase 5: live map. SessionSection has no organizationId field
-  // (the DB row does, the model never grew one -- see startTripFlow's own
-  // comment on organizationId), so these two are kept the same way
-  // activeSessionId/currentGigApp already are: plain static state set once
-  // at trip start, not derived from a model each tick.
+  // The trip's vehicle, set once at trip start (same lifecycle as
+  // activeSessionId/currentGigApp); read when the trip closes.
   static String? activeVehicleId;
-  static String? activeOrganizationId;
 
   // Driver's own live position, for DriverOperationsScreen's real-time
   // self-map -- fed from the SAME antifraud-validated GPS ticks already
@@ -99,16 +92,6 @@ class TrackingController {
 
   static DateTime _lastDbUpdateTime = DateTime.now();
   static DateTime _lastAuditLogTime = DateTime.now();
-  static DateTime _lastLocationUpdateTime = DateTime.now();
-
-  // Live-map heartbeat (found live 2026-09-30: a fleet trip started with
-  // the phone standing still never appeared on the admin's map -- the
-  // location was only sent from _smartSync, i.e. on a GPS tick, and the
-  // 10 m distance filter produces no ticks while stopped). Sends the
-  // position right when a fleet trip starts and then every 60 s when no
-  // tick has updated it. Only vehicles.last_* is touched -- never
-  // breadcrumbs, whose gaps are how idling is measured.
-  static Timer? _liveHeartbeat;
   static DateTime _lastBreadcrumbTime = DateTime.now();
 
   static double _totalSectionMiles = 0.0;
@@ -174,7 +157,6 @@ class TrackingController {
     activeSection = null;
     currentGigApp = null;
     activeVehicleId = null;
-    activeOrganizationId = null;
     currentState = TrackingState.idle;
     _totalSectionMiles = 0.0;
     _totalSessionMiles = 0.0;
@@ -184,11 +166,8 @@ class TrackingController {
     _runSegmentStartedAt = null;
     livePosition.value = null;
     liveRoute.value = const [];
-    _liveHeartbeat?.cancel();
-    _liveHeartbeat = null;
     startedViaAutoDetect = false;
     AntifraudEngine.reset();
-    DriverSafetyMonitor.reset();
     LocalStorageService.clearAllCheckpoint();
   }
 
@@ -199,26 +178,6 @@ class TrackingController {
     required BuildContext context,
     required String gigApp,
     String? irsPurpose,
-    // Fleet Phase 3: null for a Gig trip. When the caller is a fleet_driver,
-    // this is AppState.defaultOrgId -- written onto sessions/session_sections
-    // so sessions_select/sections_select RLS (is_org_member(organization_id),
-    // built in Phase 1) actually has something to match against. Before this,
-    // NOTHING ever wrote organization_id on a real trip -- the org-visibility
-    // policy existed but a fleet admin would never have seen a single driver
-    // trip through it, since the column was always null regardless of who
-    // was driving.
-    String? organizationId,
-    // Hourly class (fleet shift block, 2026-09-29): the class this trip
-    // belongs to. Already started server-side (start_shift_block); the
-    // insert trigger tr_sessions_link_shift_block ties the two together.
-    String? shiftBlockId,
-    // Fleet Sprint 4 (open/rotating vehicle assignment, 2026-09-09): only
-    // meaningful alongside organizationId, when that org's
-    // vehicle_assignment_mode is 'open' -- the driver picked this vehicle
-    // themselves via FleetVehiclePickerScreen just before calling this.
-    // null in 'fixed' mode (the existing assigned_driver_id lookup keeps
-    // deciding it, unchanged) and always null for Gig.
-    String? preSelectedVehicleId,
     // Premium auto-detect (explicit user requirement): when true AND a
     // shift-start odometer reading was already captured at activation
     // time, skip OdometerCaptureScreen entirely and carry that reading
@@ -243,29 +202,15 @@ class TrackingController {
       // en verdad se estaba grabando. Se adjunta acá, en el único punto
       // real de creación de sesión. Si el usuario no tiene vehículo activo,
       // el viaje arranca igual con vehicle_id en null (no bloqueante).
-      //
-      // Fleet Phase 3: getActiveOrAssignedVehicle() es el único punto de la
-      // rama Gig/Fleet para "qué vehículo" -- ver su comentario en
-      // VehicleService antes de reimplementar esta decisión en otro lado.
-      final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
-        user.id,
-        organizationId: organizationId,
-        preSelectedVehicleId: preSelectedVehicleId,
-      );
+      final activeVehicle = await VehicleService().getActiveVehicle(user.id);
 
-      // Fleet Phase 5: live map needs these on every GPS tick (see
-      // _smartSync) -- set once here, cleared in _resetState(), same
-      // lifecycle as activeSessionId/currentGigApp.
       activeVehicleId = activeVehicle?.id;
-      activeOrganizationId = organizationId;
 
       // Crear sesión principal
       await Supabase.instance.client.from('sessions').insert({
         "id": sessionId,
         "user_id": user.id,
         "vehicle_id": activeVehicle?.id,
-        "organization_id": organizationId,
-        "shift_block_id": ?shiftBlockId,
         "start_time": DateTime.now().toUtc().toIso8601String(),
         "session_status": "active",
         "is_closed": false,
@@ -274,7 +219,6 @@ class TrackingController {
       });
 
       activeSessionId = sessionId;
-      _startLiveHeartbeat();
 
       // BUG FIX: context llega como parámetro desde el caller (un widget
       // State) y ya pasó por dos await reales (getActiveOrAssignedVehicle +
@@ -454,7 +398,6 @@ class TrackingController {
         sessionId: sessionId,
         gigApp: gigApp,
         irsPurpose: irsPurpose,
-        organizationId: organizationId,
       );
 
       if (!sectionStarted || activeSection == null) {
@@ -539,7 +482,6 @@ class TrackingController {
     required String sessionId,
     required String gigApp,
     String? irsPurpose,
-    String? organizationId,
   }) async {
     // NOTA: switchSection() ya NO llama a startNewSection() — usa el RPC
     // atómico switch_gig_app_section() directamente (ver comentario en
@@ -565,7 +507,6 @@ class TrackingController {
             'id': sectionId,
             'session_id': sessionId,
             'user_id': user.id,
-            'organization_id': organizationId,
             'gig_app': gigApp,
             // IRS Fase 3 (2026-08-28): driving for a named gig platform is
             // unambiguously business use -- tag it as such automatically
@@ -590,7 +531,6 @@ class TrackingController {
       // (ya viene así de la fila recién insertada).
       _runSegmentStartedAt = DateTime.now();
       AntifraudEngine.reset();
-      DriverSafetyMonitor.reset();
 
       await _saveLocalCheckpoint();
 
@@ -780,7 +720,6 @@ class TrackingController {
       // la nueva posición de partida sin sumar distancia, igual que ocurre en
       // startNewSection() y switchSection().
       AntifraudEngine.reset();
-      DriverSafetyMonitor.reset();
 
       activeSection = activeSection!.copyWith(
         status: 'active',
@@ -903,7 +842,6 @@ class TrackingController {
       _totalSectionMiles = 0.0;
       _runSegmentStartedAt = DateTime.now();
       AntifraudEngine.reset();
-      DriverSafetyMonitor.reset();
 
       await _saveLocalCheckpoint();
 
@@ -1388,7 +1326,7 @@ class TrackingController {
         }
         await _rescheduleForgottenTripReminderIfRunning();
         await _reschedulePauseReminderIfPaused();
-        unawaited(_resumeLiveHeartbeat());
+        unawaited(_restoreTripVehicle());
         _logDebug(
           'RECOVERY_OK',
           'Recovered 100% offline from local checkpoint',
@@ -1408,7 +1346,7 @@ class TrackingController {
         }
         await _rescheduleForgottenTripReminderIfRunning();
         await _reschedulePauseReminderIfPaused();
-        unawaited(_resumeLiveHeartbeat());
+        unawaited(_restoreTripVehicle());
         _logDebug(
           'RECOVERY_OK',
           'Recovered from local storage (section hydrated via DB)',
@@ -1509,7 +1447,7 @@ class TrackingController {
         await _reschedulePauseReminderIfPaused();
 
         await _saveLocalCheckpoint();
-        unawaited(_resumeLiveHeartbeat());
+        unawaited(_restoreTripVehicle());
         _logDebug('RECOVERY_OK', 'Recovered from database');
       } else {
         // Sesión abierta pero sin ninguna sección activa/pausada — estado
@@ -1765,32 +1703,6 @@ class TrackingController {
       }
     }
 
-    // Fleet Phase 5: live map. Fleet-only (update_vehicle_location itself
-    // also no-ops on a Gig vehicle server-side, but skipping the call
-    // entirely here avoids a useless round-trip on every Gig trip tick).
-    // Failures are swallowed -- a live-map write is not trip-critical, and
-    // must never be able to interrupt mileage tracking the way a thrown
-    // exception here would (this whole method is awaited from
-    // processGpsTick's hot path).
-    if (activeOrganizationId != null &&
-        activeVehicleId != null &&
-        now.difference(_lastLocationUpdateTime).inSeconds >= 15) {
-      _lastLocationUpdateTime = now;
-      try {
-        await Supabase.instance.client.rpc(
-          'update_vehicle_location',
-          params: {
-            'p_vehicle_id': activeVehicleId,
-            'p_latitude': latitude,
-            'p_longitude': longitude,
-            'p_speed': speed,
-          },
-        );
-      } catch (e) {
-        _logError('LIVE_LOCATION_SYNC_ERROR', e.toString());
-      }
-    }
-
     // Continuous GPS trail for the trip -- originally Fleet-only (IFTA
     // state-mileage attribution, Phase 6), now extended to EVERY trip
     // (explicit user request, 2026-09-20: "esto se va a extender a Gig
@@ -1806,14 +1718,12 @@ class TrackingController {
     // organization_id/vehicle_id from the session row server-side (never
     // trusts them from the client), and drops obviously-invalid fixes
     // before they ever reach the table. Failures are swallowed for the
-    // same reason as the blocks above: not trip-critical, must never
+    // same reason as the miles sync above: not trip-critical, must never
     // interrupt mileage tracking itself.
-    // 2026-10-04: gig trips draw their route from RouteRecorder's polyline,
-    // so their breadcrumb drops to one every 5 min (still enough for the
-    // abandoned-trip check); fleet trips keep 60 s (IFTA state miles, idle,
-    // fuel anomalies are computed from breadcrumbs).
-    final breadcrumbEverySeconds = activeOrganizationId != null ? 60 : 300;
-    if (now.difference(_lastBreadcrumbTime).inSeconds >= breadcrumbEverySeconds) {
+    // 2026-10-04: trips draw their route from RouteRecorder's polyline, so
+    // the breadcrumb is one every 5 min (still enough for the abandoned-trip
+    // check).
+    if (now.difference(_lastBreadcrumbTime).inSeconds >= 300) {
       _lastBreadcrumbTime = now;
       try {
         await Supabase.instance.client.functions.invoke(
@@ -1830,136 +1740,24 @@ class TrackingController {
         _logError('BREADCRUMB_SYNC_ERROR', e.toString());
       }
     }
-
-    // Driver safety events (harsh braking / hard acceleration / speeding)
-    // -- see driver_safety_monitor.dart's own header comment for why this
-    // is a separate class from AntifraudEngine. Fleet-only, same gate as
-    // the two blocks above, but deliberately UNthrottled (unlike
-    // breadcrumbs/live-location) -- a harsh-braking episode needs
-    // per-tick evaluation, not a once-every-15-60s sample. _smartSync
-    // itself is only reached from processGpsTick after result.isValid
-    // already gated it (see processGpsTick's own early return), so no
-    // extra validity check is needed here.
-    if (activeOrganizationId != null && activeVehicleId != null) {
-      final safetyEvent = DriverSafetyMonitor.evaluate(
-        speed: speed,
-        timestamp: now,
-      );
-      if (safetyEvent != null) {
-        // Real fix (explicit user request, 2026-09-18): 'speeding' used
-        // to be logged purely off DriverSafetyMonitor's fixed ~75mph
-        // ceiling -- that ceiling now only marks a CANDIDATE. Confirm it
-        // against the real posted limit for this exact spot before
-        // deciding whether to actually write the event. Harsh
-        // braking/hard acceleration aren't road-limit events, so they
-        // skip this entirely and log exactly as before.
-        double? speedLimitMps;
-        String? speedLimitSource;
-        var shouldLog = true;
-
-        if (safetyEvent.type == 'speeding') {
-          final limitResult = await SpeedLimitService.lookup(
-            latitude: latitude,
-            longitude: longitude,
-          );
-          final confirmedLimitMps = limitResult.limitMps;
-          if (confirmedLimitMps != null) {
-            speedLimitMps = confirmedLimitMps;
-            speedLimitSource = limitResult.source;
-            // 10% tolerance over the real posted limit -- the same
-            // margin real-world speed-enforcement/telematics products
-            // use, so a driver doing 57 in a 55 doesn't get flagged for
-            // GPS/rounding noise while someone genuinely speeding still
-            // does.
-            shouldLog = safetyEvent.speedMps > confirmedLimitMps * 1.10;
-          } else {
-            // No tagged road found nearby, or the lookup failed/timed
-            // out -- never silently drop a real candidate just because
-            // enrichment didn't come back; fall back to the original
-            // fixed-threshold judgment, honestly labeled as such.
-            speedLimitSource = 'fixed_fallback';
-          }
-        }
-
-        if (shouldLog) {
-          try {
-            await Supabase.instance.client.from('driver_safety_events').insert({
-              'organization_id': activeOrganizationId,
-              'vehicle_id': activeVehicleId,
-              'user_id': Supabase.instance.client.auth.currentUser!.id,
-              'session_id': sessionId,
-              'section_id': section.id,
-              'event_type': safetyEvent.type,
-              'speed_mps': safetyEvent.speedMps,
-              'speed_limit_mps': speedLimitMps,
-              'speed_limit_source': speedLimitSource,
-              'latitude': latitude,
-              'longitude': longitude,
-              'recorded_at': now.toIso8601String(),
-            });
-          } catch (e) {
-            _logError('SAFETY_EVENT_SYNC_ERROR', e.toString());
-          }
-        }
-      }
-    }
   }
 
   /// After a trip is recovered (app restarted, or the background GPS
-  /// isolate woke up): the vehicle/fleet of the trip were never restored,
-  /// so the live map and safety events silently stopped for the rest of
-  /// the trip (found 2026-09-30). Read them back from the session row,
-  /// then make sure the heartbeat runs.
-  static Future<void> _resumeLiveHeartbeat() async {
+  /// isolate woke up) the trip's vehicle is not in the local checkpoint:
+  /// read it back from the session row, so closing the trip can still
+  /// record the vehicle's odometer.
+  static Future<void> _restoreTripVehicle() async {
     final sessionId = activeSessionId;
-    if (sessionId != null && (activeVehicleId == null || activeOrganizationId == null)) {
-      try {
-        final row = await Supabase.instance.client
-            .from('sessions')
-            .select('vehicle_id, organization_id')
-            .eq('id', sessionId)
-            .maybeSingle();
-        activeVehicleId ??= row?['vehicle_id'] as String?;
-        activeOrganizationId ??= row?['organization_id'] as String?;
-      } catch (e) {
-        _logError('RECOVER_TRIP_VEHICLE_ERROR', e.toString());
-      }
-    }
-    if (_liveHeartbeat?.isActive ?? false) return;
-    _startLiveHeartbeat();
-  }
-
-  static void _startLiveHeartbeat() {
-    _liveHeartbeat?.cancel();
-    if (activeOrganizationId == null || activeVehicleId == null) return;
-    _sendHeartbeatLocation(force: true);
-    _liveHeartbeat = Timer.periodic(const Duration(seconds: 60), (_) => _sendHeartbeatLocation());
-  }
-
-  static Future<void> _sendHeartbeatLocation({bool force = false}) async {
-    final vehicleId = activeVehicleId;
-    if (vehicleId == null || activeOrganizationId == null) return;
-    if (!force && DateTime.now().difference(_lastLocationUpdateTime).inSeconds < 55) return;
+    if (sessionId == null || activeVehicleId != null) return;
     try {
-      final pos = await geo.Geolocator.getLastKnownPosition() ??
-          await geo.Geolocator.getCurrentPosition(
-            locationSettings: const geo.LocationSettings(
-              accuracy: geo.LocationAccuracy.high,
-              timeLimit: Duration(seconds: 15),
-            ),
-          );
-      _lastLocationUpdateTime = DateTime.now();
-      await Supabase.instance.client.rpc(
-        'update_vehicle_location',
-        params: {
-          'p_vehicle_id': vehicleId,
-          'p_latitude': pos.latitude,
-          'p_longitude': pos.longitude,
-          'p_speed': pos.speed < 0 ? 0 : pos.speed,
-        },
-      );
+      final row = await Supabase.instance.client
+          .from('sessions')
+          .select('vehicle_id')
+          .eq('id', sessionId)
+          .maybeSingle();
+      activeVehicleId ??= row?['vehicle_id'] as String?;
     } catch (e) {
-      _logError('LIVE_LOCATION_HEARTBEAT_ERROR', e.toString());
+      _logError('RECOVER_TRIP_VEHICLE_ERROR', e.toString());
     }
   }
 

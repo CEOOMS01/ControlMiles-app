@@ -346,10 +346,7 @@ class AutoTripDetectionService {
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
-        user.id,
-        organizationId: null,
-      );
+      final activeVehicle = await VehicleService().getActiveVehicle(user.id);
       if (activeVehicle != null) {
         final existing = await OdometerCaptureService()
             .currentWeekStartReading(activeVehicle.id);

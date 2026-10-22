@@ -1,0 +1,25 @@
+-- Domain boundaries check. Read-only; returns one row per boundary break.
+--
+-- Since 20261022140000_domain_registry_and_guard.sql the rules live in the
+-- database: the event trigger `domain_guard` runs them on every
+-- CREATE FUNCTION / CREATE TRIGGER / CREATE TABLE in public and stops the
+-- migration that breaks one. This query runs every rule over the whole
+-- schema, for a periodic look or after a change made with the bypass
+-- (set local cm.skip_domain_check = 'on').
+--
+-- Rules:
+--   R1  a function touches gig tables and fleet-side tables
+--   R2  a function touches school_bus and driving_school tables
+--   R3  a trigger on a core table that is not in ops.domain_triggers
+--   R4  a registered trigger without its WHEN guard
+--   R5  a function builds SQL at run time (EXECUTE) and is not allowed by name
+--   R6  a public table that is not in ops.domain_tables
+--   R7  a public function with more than one version (same name, other arguments)
+--
+-- Daily result and every use of the bypass (20261022160000):
+--   select * from ops.domain_check_log order by checked_at desc limit 20;
+--
+-- Adding a table or trigger: insert its row in ops.domain_tables /
+-- ops.domain_triggers in the same migration, before the CREATE statement.
+
+select * from ops.domain_violations();

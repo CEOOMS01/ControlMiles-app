@@ -729,16 +729,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       // "activo" (vehicles.is_active/is_primary existían en la DB pero
       // nadie los leía ni escribía). Ahora usa el flag real, gestionado
       // desde Profile vía VehicleService.
-      //
-      // Fleet Phase 3: para un fleet_driver, "el vehículo activo" es el que
-      // su admin le asignó, no uno propio -- getActiveOrAssignedVehicle()
-      // es el único punto de esta rama (ver su comentario en
-      // VehicleService), el mismo que usa tracking_controller.dart al
-      // arrancar un viaje.
-      final vehicle = await _vehicleService.getActiveOrAssignedVehicle(
-        user.id,
-        organizationId: null,
-      );
+      final vehicle = await _vehicleService.getActiveVehicle(user.id);
       if (!mounted) return;
       setState(() {
         _activeVehicle = vehicle;
@@ -1425,9 +1416,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   _maybeFirstTripTip();
                 },
                 // Subscription-tier enforcement (explicit user requirement,
-                // 2026-09-04): reuses the exact canStart/cannotStartMessage
-                // hook Fleet's DVIR gate already established -- Dashboard
-                // (Gig) never passed it before now. Only blocks STARTING a
+                // 2026-09-04): TrackingActionButton's canStart hook. Only blocks STARTING a
                 // new trip; existing data/reports stay fully visible. Shows
                 // the same upgrade dialog auto_detect_apps_button.dart's
                 // premium gate already uses, not just a plain snackbar --
