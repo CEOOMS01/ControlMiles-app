@@ -457,7 +457,6 @@ const Map<String, String> arTexts = {
   'error_service_date_required': 'تاريخ الخدمة مطلوب.',
   'sections_count_label': '{count} أقسام',
   'vehicle_make_other': 'أخرى',
-  'email_not_linked_to_controlmiles': 'هذا البريد الإلكتروني غير مرتبط بأي حساب في ControlMiles.',
 
   'free_trial_expired_title': 'انتهت فترتك التجريبية المجانية',
   'free_trial_expired_body': 'انتهت فترتك التجريبية المجانية البالغة 15 يومًا. اشترك في Basic أو Premium لمواصلة تسجيل الرحلات.',

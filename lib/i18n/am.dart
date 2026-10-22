@@ -436,7 +436,6 @@ const Map<String, String> amTexts = {
   'error_service_date_required': 'የአገልግሎት ቀን ያስፈልጋል።',
   'sections_count_label': '{count} ክፍሎች',
   'vehicle_make_other': 'ሌላ',
-  'email_not_linked_to_controlmiles': 'ይህ ኢሜይል ከየትኛውም ControlMiles መለያ ጋር የተገናኘ አይደለም።',
 
   'free_trial_expired_title': 'ነጻ የሙከራ ጊዜዎ አልቋል',
   'free_trial_expired_body': 'የ15 ቀን ነጻ የሙከራ ጊዜዎ አልቋል። ጉዞዎችን መከታተል ለመቀጠል Basic ወይም Premium ይመዝገቡ።',

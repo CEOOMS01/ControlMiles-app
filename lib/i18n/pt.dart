@@ -675,7 +675,6 @@ const Map<String, String> ptTexts = {
   'error_service_date_required': 'A data do serviço é obrigatória.',
   'sections_count_label': '{count} seções',
   'vehicle_make_other': 'Outra',
-  'email_not_linked_to_controlmiles': 'Esse e-mail não está vinculado a nenhuma conta do ControlMiles.',
 
   'free_trial_expired_title': 'Seu teste grátis terminou',
   'free_trial_expired_body': 'Seus 15 dias de teste grátis terminaram. Assine o Basic ou Premium para continuar registrando viagens.',

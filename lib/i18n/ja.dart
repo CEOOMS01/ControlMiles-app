@@ -449,7 +449,6 @@ const Map<String, String> jaTexts = {
   'error_service_date_required': '整備日は必須です。',
   'sections_count_label': '{count}件のセクション',
   'vehicle_make_other': 'その他',
-  'email_not_linked_to_controlmiles': 'このメールアドレスはControlMilesアカウントに紐付けられていません。',
 
   'free_trial_expired_title': '無料トライアルが終了しました',
   'free_trial_expired_body': '15日間の無料トライアルが終了しました。走行記録を続けるにはBasicまたはPremiumにご登録ください。',

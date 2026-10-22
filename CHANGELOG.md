@@ -11,6 +11,24 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## 1.3.8+45 — 2026-10-22
+
+### Security
+- Forgot password no longer asks whether the email has an account: it
+  always says the code was sent (Supabase only sends it to a real one).
+- Sign-up with an email that already has an account shows the same
+  "check your email" as a new one, instead of "already registered".
+
+## Backend — 2026-10-22 (no app release)
+
+- School bus parents, step 1 (`20261022180000_school_guardians.sql`,
+  applied): guardian accounts with their own ID (CM-######), links to their
+  students, invitations by email; a parent is never an organization member.
+- `resolve-driver-login` (v7) also signs in a parent ID; every error answers
+  `{ error, code }` from ERROR_CODES.md (wrong ID and wrong password are the
+  same 400). `send-guardian-invite` (new, Resend). `check-email-exists`
+  retired: always answers "exists", so it reveals nothing.
+
 ## 1.3.7+44 — 2026-10-22
 
 Fleet leftovers removed; the app is personal-only all the way down.

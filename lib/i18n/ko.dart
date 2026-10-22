@@ -450,7 +450,6 @@ const Map<String, String> koTexts = {
   'error_service_date_required': '서비스 날짜는 필수입니다.',
   'sections_count_label': '구간 {count}개',
   'vehicle_make_other': '기타',
-  'email_not_linked_to_controlmiles': '이 이메일은 ControlMiles 계정에 연결되어 있지 않습니다.',
 
   'free_trial_expired_title': '무료 체험이 종료되었습니다',
   'free_trial_expired_body': '15일 무료 체험이 종료되었습니다. 계속 이동 기록을 추적하려면 Basic 또는 Premium을 구독하세요.',

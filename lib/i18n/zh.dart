@@ -675,7 +675,6 @@ const Map<String, String> zhTexts = {
   'error_service_date_required': '服务日期为必填项。',
   'sections_count_label': '{count} 个路段',
   'vehicle_make_other': '其他',
-  'email_not_linked_to_controlmiles': '该邮箱未关联任何 ControlMiles 账户。',
 
   'free_trial_expired_title': '免费试用已结束',
   'free_trial_expired_body': '您的 15 天免费试用已结束。订阅 Basic 或 Premium 以继续记录行程。',

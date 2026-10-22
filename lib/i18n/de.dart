@@ -675,7 +675,6 @@ const Map<String, String> deTexts = {
   'error_service_date_required': 'Das Servicedatum ist erforderlich.',
   'sections_count_label': '{count} Abschnitte',
   'vehicle_make_other': 'Andere',
-  'email_not_linked_to_controlmiles': 'Diese E-Mail ist mit keinem ControlMiles-Konto verknüpft.',
 
   'free_trial_expired_title': 'Deine kostenlose Testphase ist beendet',
   'free_trial_expired_body': 'Deine 15-tägige kostenlose Testphase ist abgelaufen. Abonniere Basic oder Premium, um weiter Fahrten zu erfassen.',

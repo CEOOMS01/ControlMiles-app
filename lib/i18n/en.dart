@@ -721,7 +721,6 @@ const Map<String, String> enTexts = {
   // needing tr(), the real brand names (Toyota, Honda, ...) are correct
   // as-is.
   'vehicle_make_other': 'Other',
-  'email_not_linked_to_controlmiles': 'That email isn\'t linked to a ControlMiles account.',
 
   // ============================================================
   // SUBSCRIPTION-TIER ENFORCEMENT (2026-09-04)

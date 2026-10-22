@@ -700,7 +700,6 @@ const Map<String, String> esTexts = {
   'error_service_date_required': 'La fecha de servicio es obligatoria.',
   'sections_count_label': '{count} secciones',
   'vehicle_make_other': 'Otra',
-  'email_not_linked_to_controlmiles': 'Ese correo no está vinculado a ninguna cuenta de ControlMiles.',
 
   'free_trial_expired_title': 'Tu prueba gratis terminó',
   'free_trial_expired_body': 'Tus 15 días de prueba gratis se acabaron. Suscribite a Basic o Premium para seguir registrando viajes.',

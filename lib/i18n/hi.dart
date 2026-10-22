@@ -457,7 +457,6 @@ const Map<String, String> hiTexts = {
   'error_service_date_required': 'सेवा तिथि आवश्यक है।',
   'sections_count_label': '{count} सेक्शन',
   'vehicle_make_other': 'अन्य',
-  'email_not_linked_to_controlmiles': 'यह ईमेल किसी ControlMiles खाते से जुड़ा नहीं है।',
 
   'free_trial_expired_title': 'आपका फ्री ट्रायल समाप्त हो गया है',
   'free_trial_expired_body': 'आपका 15-दिन का फ्री ट्रायल समाप्त हो गया है। ट्रिप ट्रैक करना जारी रखने के लिए Basic या Premium सब्सक्राइब करें।',

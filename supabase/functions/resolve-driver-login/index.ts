@@ -2,7 +2,8 @@
 // supabase/functions/resolve-driver-login/index.ts
 //
 // Fleet driver ID login (explicit user request, 2026-09-17): a
-// fleet_driver account logs in with their CM-D#### ID instead of email --
+// fleet_driver account logs in with their CM-D#### ID instead of email
+// (and, since 2026-10-22, a school bus parent with their CM-###### ID) --
 // but Supabase Auth itself only ever authenticates by email under the
 // hood, so this is the translation layer. No user JWT exists on this
 // call (the caller isn't logged in yet -- that's the whole point),
@@ -12,13 +13,13 @@
 // signInWithPassword using the anon key, server-side -- exactly what the
 // Supabase client SDK itself does, just proxied through here instead of
 // called directly from the device), so it's a genuine credential-guessing
-// target unlike check-email-exists' own disclosed enumeration tradeoff.
+// target.
 // Two independent defenses, both required:
 //   1. The error response is IDENTICAL whether the ID doesn't exist, the
 //      ID exists but isn't claimed, or the password is wrong -- never
 //      reveals which case it was, so this can't be used to enumerate
-//      real driver IDs the way check-email-exists deliberately can for
-//      emails.
+//      real IDs (owner's rule: no public screen reveals which emails or
+//      IDs exist).
 //   2. Rate-limited on BOTH the caller's IP AND the display_id itself
 //      (dual-key, unlike every other rate limiter in this project) --
 //      IP alone doesn't stop an attacker spread across many IPs from
@@ -57,9 +58,12 @@ async function isRateLimited(adminClient: ReturnType<typeof createClient>, fnNam
   return !data;
 }
 
-// Same generic message for every failure mode, on purpose -- see this
-// file's own header comment.
-const GENERIC_ERROR = 'Invalid driver ID or password';
+// Every error carries its code from ERROR_CODES.md and a message the apps'
+// AppError.from() recognizes. A wrong ID and a wrong password are the SAME
+// error on purpose (400, invalid credentials) -- see this file's header.
+const INVALID_CREDENTIALS = { error: 'Invalid credentials', code: 400 };
+const RATE_LIMITED = { error: 'Too many attempts. Try again in a few minutes.', code: 420 };
+const UNEXPECTED = { error: 'Unexpected server error', code: 701 };
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -77,7 +81,7 @@ Deno.serve(async (req: Request) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     if (await isRateLimited(adminClient, 'resolve-driver-login-ip', clientIp)) {
-      return respond({ error: GENERIC_ERROR }, 429);
+      return respond(RATE_LIMITED, 429);
     }
 
     let displayId: string | undefined;
@@ -87,20 +91,22 @@ Deno.serve(async (req: Request) => {
       displayId = typeof body?.display_id === 'string' ? body.display_id.trim().toUpperCase() : undefined;
       password = typeof body?.password === 'string' ? body.password : undefined;
     } catch {
-      return respond({ error: 'Invalid JSON body' }, 400);
+      return respond(UNEXPECTED, 400);
     }
 
     if (!displayId || !password) {
-      return respond({ error: GENERIC_ERROR }, 400);
+      return respond(INVALID_CREDENTIALS, 400);
     }
 
     if (await isRateLimited(adminClient, 'resolve-driver-login-id', displayId)) {
-      return respond({ error: GENERIC_ERROR }, 429);
+      return respond(RATE_LIMITED, 429);
     }
 
-    // Only a CLAIMED slot (claimed_by not null) has a real account behind
-    // it -- an admin-created, not-yet-confirmed slot has no password to
-    // check against at all.
+    // Only a CLAIMED driver slot (claimed_by not null) has a real account
+    // behind it -- an admin-created, not-yet-confirmed slot has no password
+    // to check against at all. Not a driver ID: a school bus parent's ID
+    // (CM-######, school_guardians, 2026-10-22), active and accepted.
+    // Same error (400, invalid credentials) either way.
     const { data: slot, error: slotError } = await adminClient
       .from('fleet_driver_slots')
       .select('claimed_by')
@@ -108,18 +114,25 @@ Deno.serve(async (req: Request) => {
       .not('claimed_by', 'is', null)
       .maybeSingle();
 
-    if (slotError || !slot?.claimed_by) {
-      return respond({ error: GENERIC_ERROR }, 401);
+    let accountId: string | null = slotError ? null : (slot?.claimed_by ?? null);
+    if (!accountId) {
+      const { data: guardianUser, error: guardianError } = await adminClient
+        .rpc('guardian_login_user', { p_display_id: displayId });
+      accountId = guardianError ? null : ((guardianUser as string | null) ?? null);
+    }
+
+    if (!accountId) {
+      return respond(INVALID_CREDENTIALS, 401);
     }
 
     const { data: profile, error: profileError } = await adminClient
       .from('profiles')
       .select('email')
-      .eq('id', slot.claimed_by)
+      .eq('id', accountId)
       .maybeSingle();
 
     if (profileError || !profile?.email) {
-      return respond({ error: GENERIC_ERROR }, 401);
+      return respond(INVALID_CREDENTIALS, 401);
     }
 
     // The real password check -- same mechanism the client SDK itself
@@ -132,7 +145,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (signInError || !signInData.session) {
-      return respond({ error: GENERIC_ERROR }, 401);
+      return respond(INVALID_CREDENTIALS, 401);
     }
 
     return respond({
@@ -141,6 +154,6 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err: any) {
     console.error('[resolve-driver-login] Unexpected error:', err);
-    return respond({ error: GENERIC_ERROR }, 500);
+    return respond(UNEXPECTED, 500);
   }
 });

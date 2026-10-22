@@ -27,6 +27,19 @@ Implementations:
 - Mobile: `lib/errors/app_error.dart` (`AppError` class)
 - Web: `src/lib/errors.ts` (`AppError` class)
 
+## Two rules every error follows (owner, 2026-10-22)
+
+1. **No public screen reveals whether an email or an ID has an account.**
+   Sign-in, sign-up, password reset and ID sign-in answer the same way
+   whether the account exists or not: a wrong ID and a wrong password are
+   the same `400`; sign-up with a taken email shows the same "check your
+   email" as a new one (so `401` is never shown on sign-up); password reset
+   always says the code was sent. `check-email-exists` is retired for this
+   reason.
+2. **Edge functions answer every error as `{ error, code }`**, the code from
+   this table and the message one `AppError.from()` recognizes, so the
+   clients show the right code instead of guessing from text.
+
 ## Ranges
 
 | Range | Meaning | What belongs here |
