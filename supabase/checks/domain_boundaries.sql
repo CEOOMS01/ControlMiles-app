@@ -15,6 +15,9 @@
 --   R5  a function builds SQL at run time (EXECUTE) and is not allowed by name
 --   R6  a public table that is not in ops.domain_tables
 --
+-- Daily result and every use of the bypass (20261022160000):
+--   select * from ops.domain_check_log order by checked_at desc limit 20;
+--
 -- Adding a table or trigger: insert its row in ops.domain_tables /
 -- ops.domain_triggers in the same migration, before the CREATE statement.
 
