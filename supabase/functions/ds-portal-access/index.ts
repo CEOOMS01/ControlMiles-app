@@ -30,7 +30,7 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const SENDER_EMAIL = 'account@controlmiles.com';
-const LINK_BASE = 'https://controlmiles.com/portal/access';
+const LINK_BASE = 'https://controlmiles.com/lessons/access';
 
 // Every error carries its code from ERROR_CODES.md.
 const SESSION_EXPIRED = { error: 'Your session expired. Please sign in again.', code: 402 };
