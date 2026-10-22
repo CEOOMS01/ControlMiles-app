@@ -1,9 +1,8 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/widgets/driver_live_map_view.dart
 //
-// A driver's own live-position map -- explicitly NOT the fleet-wide
-// admin FleetLiveMapScreen (every vehicle + geofences). Just this
-// driver's current position, moving in real time.
+// A driver's own live-position map: just this driver's current
+// position, moving in real time.
 //
 // Two position sources depending on `compact`:
 //   - Full (compact: false): fed directly from TrackingController.livePosition,
@@ -24,8 +23,8 @@
 //
 // MIGRATION (2026-09-22): flutter_map + raw tile.openstreetmap.org ->
 // MapLibre Native + the same self-hosted PMTiles basemap used everywhere
-// else in the app now (see fleet_live_map_screen.dart's own header
-// comment for the full OSM-policy reasoning). The rotating "you are
+// else in the app now (OpenStreetMap's tile policy forbids heavy
+// commercial use of tile.openstreetmap.org). The rotating "you are
 // here" puck stays a plain Flutter Icon + Transform.rotate overlaid at
 // the map's fixed center -- NOT a MapLibre Symbol annotation -- since a
 // Symbol needs a registered bitmap icon and this widget only ever shows

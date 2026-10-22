@@ -68,28 +68,16 @@ class AppError {
   static const sessionExpired = AppError(402, 'session_expired_error');
   static const vehicleLimitReached = AppError(410, 'vehicle_limit_reached_error');
   static const freeTrialExpired = AppError(411, 'free_trial_expired_body');
-  static const orgMembershipRevoked = AppError(412, 'org_access_revoked_body');
-  static const fleetSubscriptionRequired = AppError(413, 'fleet_subscription_required_error');
-  static const fleetGrowthRequired = AppError(414, 'fleet_growth_required_error');
   /// submit_vehicle_odometer_checkpoint: `ODOMETER_BELOW_REGISTERED:<value>`
   /// -- the reading is lower than what this vehicle already has on record
   /// (usually the wrong vehicle is selected). Found live 2026-09-29: it
   /// reached the screen as a raw PostgrestException.
   static AppError odometerBelowRegistered(String registered) =>
       AppError(415, 'odometer_below_registered_error', params: {'value': registered});
-  // Hourly classes (start_shift_block / close_my_workday, 2026-09-29).
-  static AppError shiftBlockTooEarly(String opensAt) =>
-      AppError(416, 'shift_block_too_early_error', params: {'time': opensAt});
-  static const shiftBlockWindowClosed = AppError(417, 'shift_block_window_closed_error');
-  static const shiftBlockAnotherInProgress = AppError(418, 'shift_block_another_in_progress_error');
-  static const workdayAlreadyClosed = AppError(419, 'workday_already_closed_error');
-  static const workdayBlockInProgress = AppError(422, 'workday_block_in_progress_error');
-  static const fleetTypeLocked = AppError(423, 'fleet_type_locked_error');
-  static const fleetTypeOwnerOnly = AppError(424, 'fleet_type_owner_only_error');
   // Gig / Fleet split (2026-10-11, tr_sessions_block_cross_app_open_trip):
-  // a personal trip and a company trip can't be open at the same time.
+  // a personal trip can't start while a company trip is open in
+  // ControlMiles Fleet.
   static const activeFleetTrip = AppError(425, 'active_fleet_trip_error');
-  static const activePersonalTrip = AppError(426, 'active_personal_trip_error');
   static const rateLimited = AppError(420, 'rate_limited_error');
   static const duplicateEntry = AppError(430, 'duplicate_entry_error');
   static const subscriptionsNotConfigured = AppError(440, 'subscriptions_not_configured');
@@ -157,15 +145,6 @@ class AppError {
       _ => error.toString().replaceFirst('Exception: ', ''),
     };
 
-    final tooEarly = RegExp(r'SHIFT_BLOCK_TOO_EARLY:(.+)$').firstMatch(text);
-    if (tooEarly != null) return shiftBlockTooEarly(tooEarly.group(1)!.trim());
-    if (text.contains('SHIFT_BLOCK_WINDOW_CLOSED')) return shiftBlockWindowClosed;
-    if (text.contains('SHIFT_BLOCK_ANOTHER_IN_PROGRESS')) return shiftBlockAnotherInProgress;
-    if (text.contains('WORKDAY_ALREADY_CLOSED')) return workdayAlreadyClosed;
-    if (text.contains('WORKDAY_BLOCK_IN_PROGRESS')) return workdayBlockInProgress;
-    if (text.contains('FLEET_TYPE_LOCKED')) return fleetTypeLocked;
-    if (text.contains('FLEET_TYPE_OWNER_ONLY')) return fleetTypeOwnerOnly;
-
     final belowRegistered = RegExp(r'ODOMETER_BELOW_REGISTERED:([\d.]+)').firstMatch(text);
     if (belowRegistered != null) {
       final v = double.tryParse(belowRegistered.group(1)!)?.round() ?? 0;
@@ -179,10 +158,6 @@ class AppError {
     if (text.contains('VEHICLE_LIMIT_REACHED')) return vehicleLimitReached;
     if (text.contains('FREE_TRIAL_EXPIRED')) return freeTrialExpired;
     if (text.contains('ACTIVE_FLEET_TRIP')) return activeFleetTrip;
-    if (text.contains('ACTIVE_PERSONAL_TRIP')) return activePersonalTrip;
-    if (text.contains('ORG_MEMBERSHIP_REVOKED')) return orgMembershipRevoked;
-    if (text.contains('FLEET_SUBSCRIPTION_REQUIRED')) return fleetSubscriptionRequired;
-    if (text.contains('FLEET_GROWTH_REQUIRED')) return fleetGrowthRequired;
     if (text.contains('Invalid login credentials') || text.contains('Invalid credentials')) {
       return invalidCredentials;
     }

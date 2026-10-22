@@ -35,16 +35,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   final Map<String, bool> _expandedSessions = {};
 
-  // Fleets where this user is owner/admin. Rule (user, 2026-09-29): a
-  // fleet trip can only be deleted by its fleet's owner or admin -- not
-  // the driver, not an operator (enforced by RLS sessions_delete; this
-  // only hides a button that would be refused anyway).
-  Set<String> _adminOrgIds = {};
-
-  bool _canDelete(TrackingSession session) =>
-      session.organizationId == null ||
-      _adminOrgIds.contains(session.organizationId);
-
   @override
   void initState() {
     super.initState();
@@ -90,16 +80,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           .gte('start_time', last12Months.toIso8601String())
           .order('start_time', ascending: false);
 
-      final adminRows = await Supabase.instance.client
-          .from('organization_members')
-          .select('organization_id')
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .inFilter('member_role', ['owner', 'admin']);
-      final adminOrgIds = {
-        for (final r in adminRows as List) r['organization_id'] as String,
-      };
-
       final sessions = <TrackingSession>[];
       final sectionsMap = <String, List<SessionSection>>{};
 
@@ -141,7 +121,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (mounted) {
         setState(() {
           _sessions = sessions;
-          _adminOrgIds = adminOrgIds;
           _sections = sectionsMap;
           _totalMiles = milesAccumulator;
           _totalDurationSeconds = durationAccumulator;
@@ -535,8 +514,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               ],
                                             ),
                                           ),
-                                          if (_canDelete(session))
-                                            IconButton(
+                                          IconButton(
                                               icon: Icon(Icons.delete_outline_rounded,
                                                   size: 20, color: Colors.red.shade400),
                                               tooltip: appState.tr('delete_trip'),

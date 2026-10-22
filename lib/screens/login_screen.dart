@@ -18,9 +18,7 @@ import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  // Set by RoleChooserScreen so a brand-new user lands directly on the
-  // signup form instead of needing an extra tap on "Sign up" -- the
-  // chooser already told us their intent.
+  // Opens straight on the signup form instead of sign-in.
   final bool startInSignupMode;
 
   const LoginScreen({super.key, this.startInSignupMode = false});
@@ -239,7 +237,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // Acá se refresca contra la DB para la cuenta que acaba de
     // autenticarse, así se pise cualquier valor viejo cacheado.
     await appState.fetchUserProfile();
-    await appState.fetchAccountTypeChosen();
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
@@ -268,11 +265,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Fleet Phase 2: la decisión de a dónde ir ahora vive en un solo
-    // lugar (AppRoutes.getInitialRoute) -- splash_page.dart y
-    // welcome_page.dart usan la misma llamada, en vez de cada uno
-    // mantener su propia copia del if/else (que fue exactamente lo que
-    // dejó a splash_page.dart sin enterarse de cuentas Fleet).
+    // La decisión de a dónde ir vive en un solo lugar
+    // (AppRoutes.getInitialRoute), compartido con splash_page.dart y
+    // welcome_page.dart.
     final targetRoute = AppRoutes.getInitialRoute(
       isAuthenticated: true,
       onboardingCompleted: hasSeenWelcome,
@@ -434,9 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          // Fleet app: "ControlMiles" + a black "Fleet" on a cream tag, on one
-          // line (owner's request, 2026-10-11); the tag keeps it readable on
-          // the dark header.
+          // App name on one line, scaled down on narrow screens.
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(

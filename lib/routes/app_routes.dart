@@ -17,12 +17,6 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String splash = '/splash';
   static const String welcome = '/welcome'; // Nueva ruta de bienvenida y permisos
-  // Primera pantalla que ve un dispositivo nuevo, antes de login/signup --
-  // Gig App Driver / Fleet Driver / Fleet Admin. Se muestra una sola vez
-  // por dispositivo (AppState.hasSeenRoleChooser, SharedPreferences, NO se
-  // limpia en clearAll() -- sobrevive logout, mismo criterio que dark_mode/
-  // lang/unit_system). Ver AppRoutes.getInitialRoute().
-  static const String roleChooser = '/role-chooser';
 
   // ============================================================
   // RUTAS PRINCIPALES
@@ -87,7 +81,6 @@ class AppRoutes {
         resetPassword,
         splash,
         welcome,
-        roleChooser,
         home,
         dashboard,
         tracking,
@@ -120,7 +113,6 @@ class AppRoutes {
     resetPassword,
     splash,
     welcome,
-    roleChooser,
   ];
 
   static const List<String> mainRoutes = [
@@ -227,7 +219,6 @@ class AppRoutes {
       case resetPassword: return 'Reset Password';
       case splash: return 'Splash Screen';
       case welcome: return 'Welcome & Permissions';
-      case roleChooser: return 'Role Chooser';
 
       case home: return 'Home';
       case dashboard: return 'Dashboard';
@@ -316,7 +307,6 @@ class AppRoutes {
   static List<String> get breadcrumbExcluded => [
         splash,
         welcome,
-        roleChooser,
         login,
         register,
         notFound,

@@ -11,6 +11,36 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## 1.3.7+44 — 2026-10-22
+
+Fleet leftovers removed; the app is personal-only all the way down.
+
+- Trips: no live-map heartbeat, vehicle location updates, driving-safety
+  events or speed-limit lookups (fleet-only, never ran for personal trips).
+  Breadcrumbs stay at one every 5 minutes. After a recovered trip the app
+  still restores the trip's vehicle, so the closing odometer is recorded.
+- Vehicles: only personal vehicles (`organization_id IS NULL`) are listed,
+  made active or cleared; a driver-owned truck registered with a fleet
+  belongs to ControlMiles Fleet.
+- Removed: fleet vehicle picker and hourly-class hooks on the start button,
+  fleet-admin delete rule in History, fleet account type / default org /
+  role chooser state, driver-ID sign-in, the fleet-only error codes
+  (412-414, 416-419, 422-424, 426; 425 stays: a company trip open in Fleet
+  still blocks a personal one), the Fleet privacy/terms texts, ~330 unused
+  fleet strings in all 11 languages, and the unused IFTA, driver-safety,
+  speed-limit and cloud-status services.
+
+## Backend — 2026-10-22 (no app release)
+
+- Service boundaries in the shared database: triggers on shared tables run
+  only for their own service (`20261022120000_trigger_domain_guards.sql`),
+  `vehicles.fleet_template`, the domain registry (`ops.domain_*`) and a
+  guard that stops any migration crossing gig / fleet / school bus /
+  driving school (`20261022140000_domain_registry_and_guard.sql`), and a
+  daily full check with a log of every bypass
+  (`20261022160000_domain_guard_log_and_daily_check.sql`). All applied.
+  Check: `supabase/checks/domain_boundaries.sql`.
+
 ## Backend — 2026-10-20 (no app release)
 
 - Driving school phase 2 (used by ControlMiles Fleet and the web):

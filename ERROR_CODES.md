@@ -19,6 +19,10 @@ to exist in `errors.ts`, not `app_error.dart`). Add a code to a platform's
 class only once something on that platform can actually throw it — this
 table stays the complete list either way.
 
+Since 2026-10-22 the personal app (this repo) only carries the codes a gig
+driver can hit; the fleet-only codes (412-414, 416-419, 422-424, 426) live in
+the ControlMiles Fleet app's `AppError`.
+
 Implementations:
 - Mobile: `lib/errors/app_error.dart` (`AppError` class)
 - Web: `src/lib/errors.ts` (`AppError` class)

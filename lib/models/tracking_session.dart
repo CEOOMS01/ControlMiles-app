@@ -9,9 +9,6 @@ class TrackingSession {
   final double totalMiles;
   final int? totalDurationSeconds;
   final String? vehicleId;
-  // null = gig trip (the driver's own); set = fleet trip, which only the
-  // fleet's owner/admin may delete (RLS sessions_delete, 2026-09-29).
-  final String? organizationId;
   final String? sessionHash;
   final bool isClosed;
   final String? dateKey;
@@ -42,7 +39,6 @@ class TrackingSession {
     required this.totalMiles,
     this.totalDurationSeconds,
     this.vehicleId,
-    this.organizationId,
     this.sessionHash,
     required this.isClosed,
     this.dateKey,
@@ -108,7 +104,6 @@ class TrackingSession {
       // crear la sesión, y el modelo lo mapea para que cualquier pantalla
       // pueda mostrarlo.
       vehicleId: map['vehicle_id'],
-      organizationId: map['organization_id'],
       sessionHash: map['session_hash'],
       isClosed: map['is_closed'] ?? false,
       dateKey: map['date_key'],
@@ -125,7 +120,6 @@ class TrackingSession {
       'total_miles': totalMiles,
       'total_duration_seconds': totalDurationSeconds,
       'vehicle_id': vehicleId,
-      'organization_id': organizationId,
       'session_hash': sessionHash,
       'is_closed': isClosed,
       'date_key': dateKey,
@@ -147,7 +141,6 @@ class TrackingSession {
     double? totalMiles,
     int? totalDurationSeconds,
     String? vehicleId,
-    String? organizationId,
     String? sessionHash,
     bool? isClosed,
     String? dateKey,
@@ -161,7 +154,6 @@ class TrackingSession {
       totalMiles: totalMiles ?? this.totalMiles,
       totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
       vehicleId: vehicleId ?? this.vehicleId,
-      organizationId: organizationId ?? this.organizationId,
       sessionHash: sessionHash ?? this.sessionHash,
       isClosed: isClosed ?? this.isClosed,
       dateKey: dateKey ?? this.dateKey,

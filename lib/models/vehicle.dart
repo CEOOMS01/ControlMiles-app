@@ -21,20 +21,6 @@ class Vehicle {
   final bool isActive;
   final bool isArchived;
   final DateTime? createdAt;
-  // Fleet Phase 2 -- both null for every Gig-mode vehicle (owner_user_id is
-  // the relevant column there instead).
-  final String? organizationId;
-  final String? assignedDriverId;
-
-  // Fleet Phase 5 -- live map. Written by update_vehicle_location (RPC),
-  // never by the client directly. All null until the vehicle's first
-  // fleet-trip GPS tick; a Gig vehicle never gets these written at all
-  // (live location is fleet-only by design).
-  final double? lastLatitude;
-  final double? lastLongitude;
-  final double? lastSpeed;
-  final DateTime? lastLocationAt;
-
   // IRS Fase 3 (2026-08-28): "date vehicle placed in service" -- one of
   // the annual-summary fields the IRS recommends recording, per the
   // audit in [[project_controlmiles]]. Nullable, no backfill -- shown
@@ -69,19 +55,10 @@ class Vehicle {
     this.isActive = false,
     this.isArchived = false,
     this.createdAt,
-    this.organizationId,
-    this.assignedDriverId,
-    this.lastLatitude,
-    this.lastLongitude,
-    this.lastSpeed,
-    this.lastLocationAt,
     this.placedInServiceDate,
     this.vin,
     this.odometerCycle = 'weekly',
   });
-
-  bool get isFleetVehicle => organizationId != null;
-  bool get hasLiveLocation => lastLatitude != null && lastLongitude != null;
 
   static double? _toDoubleOrNull(dynamic v) {
     if (v == null) return null;
@@ -106,14 +83,6 @@ class Vehicle {
       createdAt: map['created_at'] != null
           ? DateTime.tryParse(map['created_at'] as String)
           : null,
-      organizationId: map['organization_id'] as String?,
-      assignedDriverId: map['assigned_driver_id'] as String?,
-      lastLatitude: _toDoubleOrNull(map['last_latitude']),
-      lastLongitude: _toDoubleOrNull(map['last_longitude']),
-      lastSpeed: _toDoubleOrNull(map['last_speed']),
-      lastLocationAt: map['last_location_at'] != null
-          ? DateTime.tryParse(map['last_location_at'] as String)
-          : null,
       placedInServiceDate: map['placed_in_service_date'] != null
           ? DateTime.tryParse(map['placed_in_service_date'] as String)
           : null,
@@ -125,9 +94,8 @@ class Vehicle {
   /// "Toyota Corolla" — usado en tarjetas/listas donde make+model van juntos.
   String get displayName => '$make $model'.trim();
 
-  /// Label for chips/lists. Found live 2026-09-29: a fleet vehicle with no
-  /// make/model showed as a raw UUID fragment ("3ef1c9"); its CM-T ID is
-  /// the identifier admins actually see everywhere else.
+  /// Label for chips/lists. A vehicle with no make/model shows its CM-T ID
+  /// instead of a raw UUID fragment.
   String get label {
     final name = displayName;
     if (name.isEmpty) return displayId ?? id.substring(0, 6);

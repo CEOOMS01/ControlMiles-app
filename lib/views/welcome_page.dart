@@ -188,14 +188,10 @@ class _WelcomePageState extends State<WelcomePage> {
 
       await _markWelcomeSeen(user.id);
       appState.completePermissionsSetup();
-      await appState.fetchAccountTypeChosen();
 
       if (!mounted) return;
 
-      // Fleet Phase 2: same centralized routing decision as
-      // login_screen.dart/splash_page.dart -- a first-time user might
-      // already have a pending fleet invite waiting (sent while they were
-      // still finishing permissions setup).
+      // Same routing decision as login_screen.dart/splash_page.dart.
       final targetRoute = AppRoutes.getInitialRoute(
         isAuthenticated: true,
         onboardingCompleted: true,
