@@ -24,6 +24,7 @@ import '../routes/app_routes.dart';
 import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
 import '../screens/reports_screen.dart';
+import '../tracking/gps_watchdog.dart';
 import '../theme/app_colors.dart';
 
 class NotificationService {
@@ -54,6 +55,12 @@ class NotificationService {
   // Tracking debe persistir... le dice al driver que la app está activa").
   // El próximo id libre es 1013 (usado acá).
   static const int _pausedStatusNotificationId = 1013;
+  // GPS off / no signal alerts (GpsWatchdog). 1014 is the next free id.
+  static const int _gpsAlertNotificationId = 1014;
+  static const String _gpsAlertChannelId = 'controlmiles_gps_alert';
+  static const String _gpsAlertChannelName = 'Alertas de GPS';
+  static const String _gpsAlertChannelDescription =
+      'Avisos cuando el GPS del teléfono se apaga o no hay señal durante un viaje';
 
   static const String _channelId = 'controlmiles_reminders';
   static const String _channelName = 'Recordatorios';
@@ -204,6 +211,12 @@ class NotificationService {
     await androidPlugin?.createNotificationChannel(switchConfirmChannel);
     await androidPlugin?.createNotificationChannel(pauseReminderChannel);
     await androidPlugin?.createNotificationChannel(pausedStatusChannel);
+    await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
+      _gpsAlertChannelId,
+      _gpsAlertChannelName,
+      description: _gpsAlertChannelDescription,
+      importance: Importance.high,
+    ));
   }
 
   Future<void> _requestPermissions() async {
@@ -608,6 +621,46 @@ class NotificationService {
 
   Future<void> cancelPausedTrackingNotification() async {
     await _plugin.cancel(_pausedStatusNotificationId);
+  }
+
+  /// GPS alert for a running or GPS-paused trip. Like the paused indicator, it is not an
+  /// optional reminder, so it ignores the per-type notification toggles. Stays until the
+  /// watchdog clears it (GPS fixed, trip resumed or ended).
+  Future<void> showGpsAlert(GpsIssue issue) async {
+    if (!_initialized) return;
+    final (titleKey, bodyKey) = switch (issue) {
+      GpsIssue.gpsOff => ('gps_off_title', 'gps_off_body'),
+      GpsIssue.permissionOff => ('gps_perm_title', 'gps_perm_body'),
+      GpsIssue.gpsBackOn => ('gps_back_title', 'gps_back_body'),
+      GpsIssue.noSignal => ('gps_nosig_title', 'gps_nosig_body'),
+      GpsIssue.none => ('', ''),
+    };
+    if (titleKey.isEmpty) return;
+    final title = await _tr(titleKey);
+    final body = await _tr(bodyKey);
+
+    await _plugin.show(
+      _gpsAlertNotificationId,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _gpsAlertChannelId,
+          _gpsAlertChannelName,
+          channelDescription: _gpsAlertChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          autoCancel: false,
+          onlyAlertOnce: true,
+          styleInformation: BigTextStyleInformation(body),
+          color: kBrandSeed,
+        ),
+      ),
+    );
+  }
+
+  Future<void> cancelGpsAlert() async {
+    await _plugin.cancel(_gpsAlertNotificationId);
   }
 
   // ============================================================

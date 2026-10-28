@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
+import '../tracking/gps_watchdog.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../services/odometer_capture_service.dart';
 import '../errors/app_error.dart';
@@ -193,6 +194,24 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
         case TrackingState.paused:
           // Mismo criterio: el pulso solo vuelve a animar si resumeTracking()
           // confirmó que de verdad reanudó (GPS + DB + estado).
+          // Resuming with GPS (or its permission) off would restart the clock with no way to
+          // record miles: tell the driver what to fix instead of a generic failure.
+          if (!await GpsWatchdog.locationReady()) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(appState.tr('gps_resume_blocked')),
+                  backgroundColor: Colors.orange.shade800,
+                  action: SnackBarAction(
+                    label: appState.tr('gps_open_settings'),
+                    textColor: Colors.white,
+                    onPressed: GpsWatchdog.openSettings,
+                  ),
+                ),
+              );
+            }
+            break;
+          }
           final resumedOk = await TrackingController.resumeTracking();
           if (resumedOk) {
             if (mounted) _pulseController.repeat();

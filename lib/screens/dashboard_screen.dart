@@ -22,6 +22,7 @@ import '../widgets/driver_live_map_view.dart';
 import '../widgets/main_drawer.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
+import '../widgets/gps_issue_banner.dart';
 import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
 import '../utils/permission_recovery_service.dart';
@@ -1526,6 +1527,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               // _pollForMidTripSwitch), so the status card stays up
               // throughout instead of handing back to the manual
               // carousel.
+              const GpsIssueBanner(),
+
               TourTarget(
                 showcaseKey: _tApps,
                 scope: _tour,

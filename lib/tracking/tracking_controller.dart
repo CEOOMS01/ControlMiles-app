@@ -22,6 +22,7 @@ import 'antifraud_engine.dart';
 import 'driver_safety_monitor.dart';
 import '../services/speed_limit_service.dart';
 import 'background_gps_service.dart';
+import 'gps_watchdog.dart';
 import 'auto_trip_detection_service.dart';
 import 'route_recorder.dart';
 
@@ -35,6 +36,11 @@ class TrackingController {
   static String? activeSessionId;
   static TrackingState currentState = TrackingState.idle;
   static String? currentGigApp;
+
+  // When the location engine last delivered ANY point (accepted or rejected by the antifraud
+  // check): proof the phone is receiving a position. GpsWatchdog reads it to tell "no signal"
+  // from a parked vehicle.
+  static DateTime? lastGpsTickAt;
 
   // Fleet Phase 5: live map. SessionSection has no organizationId field
   // (the DB row does, the model never grew one -- see startTripFlow's own
@@ -1128,6 +1134,8 @@ class TrackingController {
 
     if (activeSection == null || currentState != TrackingState.running) return;
 
+    lastGpsTickAt = DateTime.now();
+
     final prevLat = AntifraudEngine.lastLat;
     final prevLng = AntifraudEngine.lastLng;
 
@@ -1316,6 +1324,7 @@ class TrackingController {
 
   static Future<void> initializeOrRecover() async {
     await _recoverActiveState(startGps: true);
+    GpsWatchdog.start();
     // Routes of segments that closed while offline (or before the app died).
     unawaited(RouteRecorder.uploadPending(exceptSectionId: activeSection?.id));
   }
