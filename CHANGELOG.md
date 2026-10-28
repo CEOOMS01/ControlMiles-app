@@ -30,6 +30,23 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.7+44 — 2026-10-28
+
+### Added
+- GPS watchdog during a trip. If the phone's GPS (or the app's location
+  permission) is switched off, the trip pauses after a few seconds: no time
+  and no miles are counted while it is off, and the driver gets a
+  notification and a dashboard banner asking to turn it back on. When GPS
+  returns the banner asks to tap Resume (it never resumes by itself). Resume
+  is blocked while GPS is still off.
+- "No GPS signal" notice when GPS is on but the phone cannot get a position
+  for 3+ minutes (tunnel, garage). The trip keeps running; miles are not
+  counted until the signal returns. A parked vehicle is not flagged.
+- Audit events `GPS_OFF_PAUSE` and `LOCATION_PERMISSION_OFF_PAUSE`.
+  A paused trip keeps the existing reminders (1, 2, 4 h) and the server
+  closes it after 12 h without activity.
+- Tests: `gps_watchdog_test.dart`. Texts in English and Spanish.
+
 ## 1.3.6+43 — 2026-10-19
 
 ### Changed (Fleet split into its own project)
