@@ -30,6 +30,22 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.8+45 — 2026-10-30
+
+- The "Custom/Truck" card is now **General**, with a new icon, and it is the
+  first card in the list.
+- Drag & drop: press and hold a card, then drag to reorder (Basic and Premium).
+- Premium: choose which apps appear in the list; only those are shown and
+  watched by automatic detection (General always shows).
+- Odometer photos now follow the calendar: **monthly** (the 1st) for everyone,
+  **twice a month** (the 1st and the 15th) for Premium. The weekly option is
+  gone and ending a trip no longer forces a closing photo; starting a trip
+  still needs the photo of the current period. Migration
+  `20261030024841_odometer_two_cycles.sql` (applied).
+- Odometer reader: ignores the trip meter, fixes O/I read as digits, prefers
+  numbers at or above the vehicle's last odometer, and logs what it read vs.
+  what the driver confirmed (numbers only) to improve it.
+
 ## 1.3.7+44 — 2026-10-28
 
 ### Added
