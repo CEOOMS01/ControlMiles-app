@@ -20,6 +20,8 @@ import 'package:flutter/services.dart';
 
 import 'package:provider/provider.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 
 
@@ -139,6 +141,9 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
   double? _pendingOdometerValue;
   bool _pendingWasOcrSource = false;
   double? _pendingOcrConfidence;
+  // What the camera read when the photo was taken, kept apart from the
+  // number the driver finally confirms so both go to the OCR feedback log.
+  double? _pendingOcrReadValue;
 
 
 
@@ -187,6 +192,8 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
+
+    _loadOdometerFloor();
 
     _initCamera();
 
@@ -241,6 +248,23 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
   }
 
 
+
+  /// The vehicle's last odometer on record helps the reader prefer the
+  /// plausible number on a dashboard full of digits.
+  Future<void> _loadOdometerFloor() async {
+    final id = widget.vehicleId;
+    if (id == null) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('vehicles')
+          .select('odometer')
+          .eq('id', id)
+          .maybeSingle();
+      _ocrService.expectedFloor = (row?['odometer'] as num?)?.toDouble();
+    } catch (e) {
+      debugPrint('[OCR] floor lookup failed: $e');
+    }
+  }
 
   Future<void> _initCamera() async {
 
@@ -542,6 +566,8 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
 
         _pendingOcrConfidence = confidence;
 
+        _pendingOcrReadValue = _lastOcrResult?.value;
+
       });
 
     } catch (e) {
@@ -611,6 +637,13 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
             );
 
 
+
+      unawaited(_captureService.logOcrFeedback(
+        vehicleId: widget.vehicleId,
+        ocrValue: _pendingOcrReadValue,
+        ocrConfidence: _pendingOcrConfidence,
+        finalValue: _pendingOdometerValue!,
+      ));
 
       if (!mounted) return;
 

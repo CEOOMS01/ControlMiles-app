@@ -316,6 +316,10 @@ class OdometerCaptureService {
     if (cycle == 'monthly') {
       return DateTime(date.year, date.month, 1);
     }
+    // 2026-10-29: readings on the 1st and on the 15th.
+    if (cycle == 'semimonthly') {
+      return DateTime(date.year, date.month, date.day >= 15 ? 15 : 1);
+    }
     if (cycle != 'biweekly') {
       return monday;
     }
@@ -465,6 +469,9 @@ class OdometerCaptureService {
       'p_file_hash': fileHash,
       'p_ocr_source': ocrSource,
       'p_ocr_confidence': ocrConfidence,
+      // The driver's own calendar day decides which period this reading
+      // belongs to (the same date _cycleStartFor used to ask for a photo).
+      'p_capture_date': _dateOnly(DateTime.now()),
     });
 
     return {
@@ -489,7 +496,31 @@ class OdometerCaptureService {
       'p_vehicle_id': vehicleId,
       'p_odometer_value': odometerValue,
       'p_odometer_image_url': odometerImageUrl,
+      'p_capture_date': _dateOnly(DateTime.now()),
     });
+  }
+
+  /// Training data for the odometer reader: what the camera read vs. what
+  /// the driver confirmed (numbers only, no photo). Best effort -- a failure
+  /// here must never get in the way of the capture itself.
+  Future<void> logOcrFeedback({
+    required String? vehicleId,
+    required double? ocrValue,
+    required double? ocrConfidence,
+    required double finalValue,
+  }) async {
+    if (ocrValue == null) return;
+    try {
+      await _supabase.from('odometer_ocr_feedback').insert({
+        'vehicle_id': vehicleId,
+        'ocr_value': ocrValue,
+        'ocr_confidence': ocrConfidence,
+        'final_value': finalValue,
+        'was_edited': (ocrValue - finalValue).abs() > 0.5,
+      });
+    } catch (e) {
+      debugPrint('[ControlMiles] logOcrFeedback failed: $e');
+    }
   }
 
   // SECURITY/BUG FIX (2026-09-04, found during IRS-compliance + security

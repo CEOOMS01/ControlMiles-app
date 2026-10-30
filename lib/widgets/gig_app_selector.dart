@@ -8,7 +8,9 @@ import 'full_bleed.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
+import '../routes/app_routes.dart';
 import 'cm_card_header.dart';
+import 'gig_app_shift_selector_sheet.dart';
 
 class GigAppSelector extends StatelessWidget {
   final String? selectedGigApp;
@@ -48,7 +50,11 @@ class GigAppSelector extends StatelessWidget {
     // "casi negro" que ya usaban las otras 3 pantallas) y Custom/Truck pasa
     // de azul 0xFF2563EB a gris pizarra 0xFF475569 (decisión explícita del
     // usuario al consolidar).
-    final List<GigApp> apps = GigAppCatalog.all;
+    final List<GigApp> apps = appState.carouselGigApps(
+      alwaysShow: (activeGigApp != null && activeGigApp!.isNotEmpty)
+          ? activeGigApp
+          : selectedGigApp,
+    );
 
     final isTracking = activeGigApp != null && activeGigApp!.isNotEmpty;
 
@@ -84,8 +90,11 @@ class GigAppSelector extends StatelessWidget {
           // blue (explicit user request, 2026-10-01), solid so it reads on brown.
           CmCardHeader(
             title: appState.tr('active_activity'),
-            trailing: isTracking
-                ? Container(
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isTracking)
+                  Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFF3E93CA),
@@ -95,8 +104,21 @@ class GigAppSelector extends StatelessWidget {
                       'ON LIVE',
                       style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
                     ),
-                  )
-                : null,
+                  ),
+                IconButton(
+                  tooltip: appState.tr('shift_apps_picker_title'),
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 20,
+                  color: Colors.white,
+                  icon: Icon(
+                    appState.premiumEntitled
+                        ? Icons.tune_rounded
+                        : Icons.lock_outline_rounded,
+                  ),
+                  onPressed: () => _openAppPicker(context, appState),
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -117,10 +139,27 @@ class GigAppSelector extends StatelessWidget {
               blendMode: BlendMode.dstIn,
               child: SizedBox(
                 height: 108,
-                child: ListView.builder(
+                // Drag & drop (2026-10-29): long-press a card, then drag to
+                // reorder. A plain tap still selects it.
+                child: ReorderableListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: kPageGutter),
                   scrollDirection: Axis.horizontal,
+                  buildDefaultDragHandles: false,
                   itemCount: apps.length,
+                  proxyDecorator: (child, index, animation) =>
+                      Material(color: Colors.transparent, child: child),
+                  onReorderItem: (oldIndex, newIndex) {
+                    HapticFeedback.selectionClick();
+                    final visible = apps.map((a) => a.id).toList();
+                    visible.insert(newIndex, visible.removeAt(oldIndex));
+                    // Apps hidden by the Premium picker keep their place
+                    // after the visible ones.
+                    final hidden = appState
+                        .carouselGigApps()
+                        .map((a) => a.id)
+                        .where((id) => !visible.contains(id));
+                    appState.setGigAppOrder([...visible, ...hidden]);
+                  },
                   itemBuilder: (context, index) {
                     final app = apps[index];
                     final isSelected = selectedGigApp == app.id;
@@ -129,7 +168,10 @@ class GigAppSelector extends StatelessWidget {
 
                     final baseColor = app.color;
 
-                    return GestureDetector(
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey(app.id),
+                      index: index,
+                      child: GestureDetector(
                       onTap: () {
                         HapticFeedback.mediumImpact();
 
@@ -225,11 +267,50 @@ class GigAppSelector extends StatelessWidget {
                           ),
                         ),
                       ),
+                      ),
                     );
                   },
                 ),
               ),
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(kPageGutter, 0, kPageGutter, 10),
+            child: Text(
+              appState.tr('gig_reorder_hint'),
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white38 : const Color(0xFFA39A86),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Premium: choose which apps the carousel (and auto-detect) shows.
+  void _openAppPicker(BuildContext context, AppState appState) {
+    if (appState.premiumEntitled) {
+      showGigAppShiftSelectorSheet(context);
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('premium_feature_locked_title')),
+        content: Text(appState.tr('premium_feature_locked_body_apps')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(appState.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, AppRoutes.subscription);
+            },
+            child: Text(appState.tr('upgrade_plan')),
           ),
         ],
       ),

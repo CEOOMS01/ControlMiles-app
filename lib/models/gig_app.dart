@@ -47,6 +47,17 @@ class GigAppCatalog {
   // de nominative fair use. Ver [[project_controlmiles]] / la revisión de
   // riesgo legal de esta misma fecha.
   static const List<GigApp> all = [
+    // 2026-10-29 (pedido explícito): "Custom/Truck" pasa a ser "General" --
+    // un nombre para cualquier conductor, no solo camioneros -- con ícono
+    // nuevo, y a ser la PRIMERA tarjeta del carrusel (antes la última, ver
+    // el bug #1 del batch de 4). El id interno sigue siendo 'custom': hay
+    // viajes, reportes y checks (isCustom) que dependen de él.
+    GigApp(
+      id: 'custom',
+      name: 'General',
+      icon: Icons.dashboard_customize_rounded,
+      color: Color(0xFF574F40),
+    ),
     GigApp(
       id: 'uber',
       name: 'Uber',
@@ -250,19 +261,6 @@ class GigAppCatalog {
       name: 'Curri',
       icon: Icons.construction_rounded,
       color: Color(0xFF1F7A54),
-    ),
-    // BUG FIX (pedido explícito): Custom/Truck tenía dos colores distintos
-    // según la pantalla — azul #2563EB en el carrusel (gig_app_selector.dart)
-    // vs. gris pizarra #475569 en Dashboard/Reports/Historial. Se unificó
-    // a #475569 (el que ya usaban 3 de las 4 pantallas).
-    // BUG FIX (pedido explícito, bug #1 del batch de 4): Custom debe ser
-    // siempre la última tarjeta del carrusel (extremo derecho) — se movió
-    // al final de la lista, después de Roadie.
-    GigApp(
-      id: 'custom',
-      name: 'Custom/Truck',
-      icon: Icons.local_shipping_rounded,
-      color: Color(0xFF574F40),
     ),
   ];
 

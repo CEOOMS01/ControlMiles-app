@@ -72,6 +72,17 @@ class OdometerOcrService {
   /// Tolerance: two reads are "the same" if they differ by less than this %
   static const double kStabilizeTolerance = 0.01; // 1 %
 
+  // ── Prior knowledge (2026-10-29) ──────────────────────────────────────────
+
+  /// Last odometer already on record for the vehicle. An odometer never goes
+  /// down (the server rejects it too), so a candidate below this is almost
+  /// certainly a misread -- a trip meter, a clock, a dropped digit.
+  double? expectedFloor;
+
+  /// How far above [expectedFloor] a real reading plausibly is (a heavy
+  /// driver can cover this in a month); inside it a candidate gets a bonus.
+  static const double kPlausibleGain = 8000;
+
   // ── State ─────────────────────────────────────────────────────────────────
 
   final TextRecognizer _recognizer =
@@ -274,12 +285,7 @@ class OdometerOcrService {
 
     for (final block in recognized.blocks) {
       for (final line in block.lines) {
-        // Strip spaces, commas, periods — common OCR noise on dashboards
-        final clean = line.text.replaceAll(RegExp(r'[\s,.\-]'), '');
-
-        // Match 4–7 consecutive digit sequences
-        for (final match in RegExp(r'\d{4,7}').allMatches(clean)) {
-          final digits = match.group(0)!;
+        for (final digits in candidateDigits(line.text)) {
           final value = int.tryParse(digits);
           if (value == null) continue;
           if (value < kMinOdometer || value > kMaxOdometer) continue;
@@ -308,13 +314,52 @@ class OdometerOcrService {
 
     final candidates = raw.map((c) {
       final sizeScore = maxBoxHeight > 0 ? (c.boxHeight / maxBoxHeight).clamp(0.0, 1.0) : 1.0;
-      final confidence = (c.digitScore * 0.40) + (c.lineConf * 0.25) + (sizeScore * 0.35);
-      return _Candidate(c.value, confidence);
+      var confidence = (c.digitScore * 0.40) + (c.lineConf * 0.25) + (sizeScore * 0.35);
+      confidence *= priorFactor(c.value, expectedFloor);
+      return _Candidate(c.value, confidence.clamp(0.0, 1.0));
     }).toList();
 
     candidates.sort((a, b) => b.confidence.compareTo(a.confidence));
 
     return candidates.first;
+  }
+
+  /// Digit runs worth considering in one recognized line of text.
+  ///
+  /// - A trip meter looks like "123.4" (one decimal digit); that run is
+  ///   skipped. A thousands separator ("87,324") has 3 digits after it, so
+  ///   it still reads as a whole odometer.
+  /// - Worn digits are often read as letters: O->0 and I/l/|->1 are mapped,
+  ///   but only inside a run that already has at least 3 real digits.
+  /// - Spaces, commas, periods and dashes between digits are ignored, as
+  ///   before ("87 324", "87,324").
+  @visibleForTesting
+  static List<String> candidateDigits(String text) {
+    final noTripMeter = text.replaceAll(RegExp(r'(?<![\d.,])\d{1,4}[.,]\d(?!\d)'), ' ');
+    // Tenths after a whole odometer ("87324.5") must not become a 6th digit.
+    final noTenths = noTripMeter.replaceAll(RegExp(r'(?<=\d{3})[.,]\d(?!\d)'), '');
+    final stripped = noTenths.replaceAll(RegExp(r'[\s,.\-]'), '');
+    final out = <String>[];
+    for (final run in RegExp(r'[0-9OoIl|]{4,}').allMatches(stripped)) {
+      final raw = run.group(0)!;
+      if (RegExp(r'\d').allMatches(raw).length < 3) continue;
+      final mapped = raw.replaceAll(RegExp(r'[Oo]'), '0').replaceAll(RegExp(r'[Il|]'), '1');
+      for (final m in RegExp(r'\d{4,7}').allMatches(mapped)) {
+        out.add(m.group(0)!);
+      }
+    }
+    return out;
+  }
+
+  /// Multiplier for a candidate given the vehicle's last known odometer:
+  /// below it = unlikely (x0.4), within a plausible gain above it = more
+  /// likely (x1.15), beyond that = neutral. No floor known = neutral.
+  @visibleForTesting
+  static double priorFactor(double value, double? floor) {
+    if (floor == null || floor <= 0) return 1.0;
+    if (value < floor) return 0.4;
+    if (value <= floor + kPlausibleGain) return 1.15;
+    return 1.0;
   }
 
   /// 5–6 digit numbers are typical odometer readings → highest score

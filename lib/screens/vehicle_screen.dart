@@ -210,15 +210,16 @@ class _VehicleScreenState extends State<VehicleScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (final cycle in const ['weekly', 'biweekly', 'monthly'])
+                // 2026-10-29 (pedido explícito): only two calendar cycles.
+                // Monthly (photo on the 1st) is for everyone; semimonthly
+                // (the 1st and the 15th) is Premium, same lock pattern as
+                // AutoDetectAppsButton.
+                for (final cycle in const ['monthly', 'semimonthly'])
                   RadioListTile<String>(
                     value: cycle,
-                    // Explicit user requirement (2026-09-18): Basic stays fixed
-                    // on weekly; only Premium can pick biweekly/monthly. Same
-                    // lock pattern as AutoDetectAppsButton -- weekly itself is
-                    // never locked (everyone already has it).
                     title: Text(appState.tr('odometer_cycle_$cycle')),
-                    secondary: (cycle != 'weekly' && !appState.premiumEntitled)
+                    subtitle: Text(appState.tr('odometer_cycle_${cycle}_hint')),
+                    secondary: (cycle == 'semimonthly' && !appState.premiumEntitled)
                         ? const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey)
                         : null,
                   ),
@@ -231,7 +232,7 @@ class _VehicleScreenState extends State<VehicleScreen>
 
     if (selected == null || selected == v.odometerCycle) return;
 
-    if (selected != 'weekly' && !appState.premiumEntitled) {
+    if (selected == 'semimonthly' && !appState.premiumEntitled) {
       if (!mounted) return;
       showDialog(
         context: context,

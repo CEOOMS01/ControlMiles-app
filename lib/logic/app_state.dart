@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../i18n/app_texts.dart';
+import '../models/gig_app.dart';
 import '../services/notification_service.dart';
 import '../services/auth_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
@@ -33,6 +34,10 @@ class AppState extends ChangeNotifier {
   // -- this flag only tracks whether the user has chosen to turn it on.
   bool _autoDetectEnabled = false;
   List<String> _selectedGigAppIds = [];
+  // Order of the carousel cards, set by drag & drop (2026-10-29, Basic and
+  // Premium). Device-level like the other carousel prefs. Ids missing here
+  // (new catalog entries) are appended in catalog order.
+  List<String> _gigAppOrder = [];
   bool _isInitialized = false;
   String? _currentSessionId;
 
@@ -448,6 +453,37 @@ class AppState extends ChangeNotifier {
     await prefs.setStringList('controlmiles_selected_gig_app_ids', _selectedGigAppIds);
   }
 
+  List<String> get gigAppOrder => List.unmodifiable(_gigAppOrder);
+
+  Future<void> setGigAppOrder(List<String> ids) async {
+    _gigAppOrder = List.of(ids);
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('controlmiles_gig_app_order', _gigAppOrder);
+  }
+
+  /// The carousel's cards, in the user's drag & drop order. For Premium
+  /// accounts that picked apps (see the shift selector), only those apps
+  /// plus General are shown; [alwaysShow] keeps the app of a trip in
+  /// progress visible even if it is not in the picked set.
+  List<GigApp> carouselGigApps({String? alwaysShow}) {
+    final catalog = GigAppCatalog.all;
+    final byId = {for (final app in catalog) app.id: app};
+    final ordered = <GigApp>[
+      for (final id in _gigAppOrder)
+        if (byId.containsKey(id)) byId[id]!,
+    ];
+    final placed = ordered.map((a) => a.id).toSet();
+    ordered.addAll(catalog.where((a) => !placed.contains(a.id)));
+
+    if (!premiumEntitled || _selectedGigAppIds.isEmpty) return ordered;
+    final keep = _selectedGigAppIds.toSet();
+    return ordered
+        .where((a) => a.id == 'custom' || a.id == alwaysShow || keep.contains(a.id))
+        .toList();
+  }
+
   /// IRS Fase 3 (2026-08-28): writes straight to profiles.mileage_method
   /// -- no local device caching needed (unlike autoDetectEnabled/etc,
   /// this has no offline-critical read path, it's just report metadata).
@@ -591,6 +627,7 @@ class AppState extends ChangeNotifier {
       // Detección automática de viajes (premium, Gig-only)
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
       _selectedGigAppIds = prefs.getStringList('controlmiles_selected_gig_app_ids') ?? [];
+      _gigAppOrder = prefs.getStringList('controlmiles_gig_app_order') ?? [];
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
@@ -642,6 +679,7 @@ class AppState extends ChangeNotifier {
     // detected trip to once signed out.
     _autoDetectEnabled = false;
     _selectedGigAppIds = [];
+    _gigAppOrder = [];
     await AutoTripDetectionService.instance.setEnabled(false);
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
     // logout (see the field's own doc comment above).
@@ -658,6 +696,7 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_account_created_at');
     await prefs.remove('controlmiles_auto_detect_enabled');
     await prefs.remove('controlmiles_selected_gig_app_ids');
+    await prefs.remove('controlmiles_gig_app_order');
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

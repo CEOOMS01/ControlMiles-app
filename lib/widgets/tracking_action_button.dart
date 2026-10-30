@@ -7,8 +7,6 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
 import '../tracking/gps_watchdog.dart';
-import '../screens/odometer_capture_screen.dart';
-import '../services/odometer_capture_service.dart';
 import '../errors/app_error.dart';
 
 class TrackingActionButton extends StatefulWidget {
@@ -243,19 +241,6 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
   Future<void> _handleEndTrip(AppState appState) async {
     if (TrackingController.activeSessionId == null) return;
 
-    // Weekly odometer checkpoint (explicit user request, 2026-09-03):
-    // ending a trip no longer requires an odometer photo -- that
-    // requirement moved to once per Mon-Sun calendar week (see
-    // TrackingController.startTripFlow). Captured before stopTracking()
-    // resets TrackingController's static state, so there's still a
-    // vehicle id to offer the weekly closing photo against below.
-    final vehicleIdForClose = TrackingController.activeVehicleId;
-
-    // Sunday-close hardening (explicit user request, 2026-09-08): captured
-    // before stopTracking() clears activeSessionId, same reasoning as
-    // vehicleIdForClose above -- need this trip's own start_time to decide
-    // whether ITS week's close should be mandatory.
-
     // BUG FIX (pedido explícito, alerta de hallazgos relacionados): antes
     // el pulso se reseteaba y Dashboard recargaba Recent Trips sin
     // confirmar que stopTracking() de verdad cerró la sesión -- si el
@@ -298,86 +283,11 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
 
     if (mounted) setState(() {});
 
-    // This week's CLOSING photo -- required, not offered.
-    //
-    // CHANGED 2026-09-16 (explicit user request): "necesito que se force la
-    // apertura de semana y la del cierre, ya que si no forzo al cliente a
-    // tomar las dos capturas semanales se pierde la evidencia."
-    //
-    // Before this, the close was optional every day except Sunday: the
-    // dialog offered a "Later" button, and a driver who always tapped it
-    // never produced a single closing photo. The server-side roll-forward
-    // still kept the MILEAGE arithmetic correct (the next capture closes
-    // whatever week was left open), but that is not the same thing as
-    // having the evidence: the week ended with no photographed closing
-    // reading, which is exactly the artifact an IRS reviewer would ask
-    // for. Arithmetic survived; proof did not.
-    //
-    // Now it is mandatory on every weekday, matching the opening capture,
-    // which has always been unskippable (a trip simply cannot start
-    // without it -- needsCheckpointStartThisWeek in tracking_controller).
-    // Two photos per working week, both enforced, no way to end up with
-    // only one.
-    //
-    // The Sunday-specific branch this replaces is gone: since every day is
-    // mandatory now, reading the session's start_time to decide was dead
-    // weight (and a network round trip on every trip end).
-    if (mounted && vehicleIdForClose != null) {
-      var needsClose = await OdometerCaptureService()
-          .needsCheckpointEndThisWeek(vehicleIdForClose);
-
-      // Loops until the closing reading actually lands. No "Later", no
-      // barrier dismiss, no back gesture -- the only way out is taking the
-      // photo (or the widget being unmounted, which the mounted checks
-      // handle and which the next trip end will simply ask again about).
-      while (needsClose) {
-        if (!mounted) break;
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => PopScope(
-            canPop: false,
-            child: AlertDialog(
-              title: Text(appState.tr('weekly_odometer_close_title_mandatory')),
-              content: Text(appState.tr('weekly_odometer_close_body_mandatory')),
-              actions: [
-                FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(appState.tr('take_photo')),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        if (!mounted) break;
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OdometerCaptureScreen(
-              isStart: false,
-              weeklyCheckpointMode: true,
-              vehicleId: vehicleIdForClose,
-            ),
-          ),
-        );
-
-        if (!mounted) break;
-        // Re-checked against the server, not assumed: if the capture was
-        // abandoned or rejected, needsClose stays true and the loop asks
-        // again instead of letting the week close without evidence.
-        needsClose = await OdometerCaptureService()
-            .needsCheckpointEndThisWeek(vehicleIdForClose);
-      }
-    }
-
-    // Fires DESPUÉS de que stopTracking() confirmó el cierre real Y de
-    // que la foto de cierre semanal obligatoria ya se
-    // resolvió -- reordenado (2026-09-09) porque el caller de Fleet
-    // (DriverOperationsScreen) necesita esperar exactamente este punto
-    // antes de navegar a la pantalla de "Turno finalizado"; navegar
-    // antes habría desmontado este widget a mitad del diálogo semanal
-    // obligatorio.
+    // 2026-10-29 (pedido explícito): ya no se fuerza foto de cierre al terminar un
+    // viaje. Las fotos son por calendario (el 1 de cada mes, o el 1 y el 15 en
+    // Premium): la primera foto de un periodo nuevo cierra el anterior (roll-forward
+    // del servidor), y iniciar un viaje sigue bloqueado hasta que exista la foto del
+    // periodo en curso (needsCheckpointStartThisWeek en tracking_controller).
     widget.onTripEnded?.call();
   }
 

@@ -234,7 +234,7 @@ class VehicleService {
   // vehicles_update RLS already allows the owner to write any column on
   // their own vehicle.
   Future<void> updateOdometerCycle(String vehicleId, String cycle) async {
-    assert(['weekly', 'biweekly', 'monthly'].contains(cycle));
+    assert(['weekly', 'biweekly', 'monthly', 'semimonthly'].contains(cycle));
     await _supabase
         .from('vehicles')
         .update({'odometer_cycle': cycle})
