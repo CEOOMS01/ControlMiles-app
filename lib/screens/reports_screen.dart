@@ -17,6 +17,7 @@ import '../models/vehicle.dart';
 import '../routes/app_routes.dart';
 import '../services/report_service.dart';
 import '../widgets/cm_card_header.dart';
+import '../widgets/full_bleed.dart';
 import '../utils/duration_format.dart';
 import '../onboarding/product_tour.dart';
 
@@ -682,6 +683,30 @@ class _ReportsScreenState extends State<ReportsScreen> {
         if (mounted) _startTour();
       });
     }
+    // BUG FIX (pedido explícito, batch de 4 bugs): reemplaza la card
+    // de rango de fechas por una card "Summary" con el total del día
+    // calendario -- el selector de rango (ícono de calendario en el
+    // AppBar) sigue funcionando igual, solo perdió su card dedicada.
+    // 2026-10-31: the card sits OUTSIDE the scroll view so it stays on screen
+    // while the trips scroll (like History's "Last 12 months" card).
+    return Column(
+      children: [
+        TourTarget(
+          showcaseKey: _tSummary,
+          scope: _tour,
+          step: 2,
+          total: 3,
+          titleKey: 'ptour_summary_title',
+          bodyKey: 'ptour_summary_body',
+          child: _buildSummaryCard(appState, isDark, border),
+        ),
+        Expanded(child: _buildScrollingBody(appState, isDark, cardBg, border)),
+      ],
+    );
+  }
+
+  Widget _buildScrollingBody(
+      AppState appState, bool isDark, Color cardBg, Color border) {
     return RefreshIndicator(
       onRefresh: () async {
         await _loadSessions();
@@ -691,21 +716,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // BUG FIX (pedido explícito, batch de 4 bugs): reemplaza la card
-          // de rango de fechas por una card "Summary" con el total del día
-          // calendario -- el selector de rango (ícono de calendario en el
-          // AppBar) sigue funcionando igual, solo perdió su card dedicada.
-          SliverToBoxAdapter(
-            child: TourTarget(
-              showcaseKey: _tSummary,
-              scope: _tour,
-              step: 2,
-              total: 3,
-              titleKey: 'ptour_summary_title',
-              bodyKey: 'ptour_summary_body',
-              child: _buildSummaryCard(appState, isDark, border),
-            ),
-          ),
           SliverToBoxAdapter(
             child: TourTarget(
               showcaseKey: _tPdf,
@@ -774,18 +784,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
         );
 
+    // Full-width band like the Dashboard cards (2026-10-31): hairline top and
+    // bottom, no side borders, no rounded corners.
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: fullBleedCard(color: cardBg, border: border),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CmCardHeader(title: appState.tr('summary'), padding: const EdgeInsets.fromLTRB(16, 10, 16, 10)),
+          CmCardHeader(title: appState.tr('summary')),
           // BUG FIX (pedido explícito): TOTAL y TODAY vivían apilados uno
           // debajo del otro, sin ninguna separación visual que dejara claro
           // que son dos cifras distintas (una es el total del período, la
@@ -797,7 +804,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               children: [
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+                    padding: const EdgeInsets.fromLTRB(kPageGutter, 12, 12, 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -830,7 +837,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 VerticalDivider(width: 1, thickness: 1, color: border),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(12, 12, kPageGutter, 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -845,21 +852,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(strokeWidth: 2))
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _infoChip(
-                                    icon: Icons.speed_rounded,
-                                    label: fmtMiles(_todayMiles),
-                                    isDark: isDark,
-                                  ),
-                                  _infoChip(
-                                    icon: Icons.timer_outlined,
-                                    label: fmtDuration(_todayDurationSec),
-                                    isDark: isDark,
-                                  ),
-                                ],
+                            // Always side by side, however long the time is
+                            // (2026-10-31): it scales down instead of wrapping.
+                            : FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    _infoChip(
+                                      icon: Icons.speed_rounded,
+                                      label: fmtMiles(_todayMiles),
+                                      isDark: isDark,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _infoChip(
+                                      icon: Icons.timer_outlined,
+                                      label: fmtDuration(_todayDurationSec),
+                                      isDark: isDark,
+                                    ),
+                                  ],
+                                ),
                               ),
                       ],
                     ),
@@ -1104,7 +1116,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: CmCardHeader(title: appState.tr('trip_details'), inset: true),
+                    child: CmCardHeader(title: appState.tr('trip_details'), hug: true),
                   ),
                   Wrap(
                     spacing: 8,

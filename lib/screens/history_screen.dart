@@ -12,6 +12,7 @@ import '../models/session_section.dart';
 import '../models/gig_app.dart';
 import '../errors/app_error.dart';
 import '../utils/duration_format.dart';
+import '../widgets/cm_card_header.dart';
 import '../onboarding/product_tour.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -377,41 +378,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     // the state that was carefully kept accurate.
                     Container(
                       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      padding: const EdgeInsets.all(14),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: cardBg,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: borderCol),
                       ),
-                      child: Row(
+                      // Brown title strip like Reports' Summary (2026-10-31).
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.calendar_month_rounded, size: 18, color: labelCol),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
+                          CmCardHeader(title: appState.tr('last_12_months')),
+                          Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
                               children: [
-                                Text(
-                                  appState.tr('last_12_months'),
-                                  style: TextStyle(fontSize: 12, color: labelCol, fontWeight: FontWeight.w600),
+                                Icon(Icons.calendar_month_rounded, size: 18, color: labelCol),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _firstStart != null && _lastEnd != null
+                                      ? Text(
+                                          '${DateFormat('MMM d').format(_firstStart!.toLocal())} - ${DateFormat('MMM d').format(_lastEnd!.toLocal())}',
+                                          style: TextStyle(fontSize: 12, color: labelCol, fontWeight: FontWeight.w600),
+                                        )
+                                      : const SizedBox.shrink(),
                                 ),
-                                if (_firstStart != null && _lastEnd != null)
-                                  Text(
-                                    '${DateFormat('MMM d').format(_firstStart!.toLocal())} - ${DateFormat('MMM d').format(_lastEnd!.toLocal())}',
-                                    style: TextStyle(fontSize: 10.5, color: labelCol),
-                                  ),
+                                Text(
+                                  '${_totalMiles.toStringAsFixed(1)} mi',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _formatDuration(_totalDurationSeconds),
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                                ),
                               ],
                             ),
-                          ),
-                          Text(
-                            '${_totalMiles.toStringAsFixed(1)} mi',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            _formatDuration(_totalDurationSeconds),
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
                           ),
                         ],
                       ),

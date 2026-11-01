@@ -18,6 +18,9 @@ class CmCardHeader extends StatelessWidget {
   // Inside a card that already has padding: a rounded bar instead of an
   // edge-to-edge strip.
   final bool inset;
+  // A label that covers only its text (rounded, left-aligned) instead of the
+  // card's whole width (2026-10-31: Trip details, so the Reports list is lighter).
+  final bool hug;
 
   const CmCardHeader({
     super.key,
@@ -25,6 +28,7 @@ class CmCardHeader extends StatelessWidget {
     this.trailing,
     this.padding = const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 10),
     this.inset = false,
+    this.hug = false,
   });
 
   static const brown = Color(0xFF2E281F);
@@ -34,6 +38,22 @@ class CmCardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (hug) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? brownDark : brown,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: text),
+          ),
+        ),
+      );
+    }
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(

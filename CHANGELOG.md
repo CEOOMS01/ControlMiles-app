@@ -30,6 +30,14 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.9+46 — 2026-10-31
+
+- Reports: the Summary card is now a full-width band (like the Dashboard),
+  stays on screen while the trips scroll, and Today's miles and time are
+  always side by side.
+- Reports: the "Trip details" brown label now covers only its text.
+- History: the "Last 12 months" card has the brown title strip.
+
 ## 1.3.8+45 — 2026-10-30
 
 - The "Custom/Truck" card is now **General**, with a new icon, and it is the
