@@ -37,6 +37,11 @@ The shared Supabase backend stays here (`supabase/`).
   Nothing starts on its own and your location is not used. Local
   notifications only, English and Spanish; it can also be muted from the
   notification types sheet.
+- My work places (Premium, same sheet): save places with "Add my current
+  location". Staying about 2 minutes at one during your work hours shows
+  "You arrived at X -- start tracking?", and leaving one with a trip running
+  shows "Stop tracking?". Reminders only. Places stay on the phone. Needs
+  location "all the time".
 
 ## 1.3.9+46 — 2026-10-31
 

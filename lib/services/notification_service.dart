@@ -357,6 +357,7 @@ class NotificationService {
   static const String prefGigAppSwitch = 'notif_type_gig_app_switch';
   static const String prefAutoTripStarted = 'notif_type_auto_trip_started';
   static const String prefWorkSchedule = 'notif_type_work_schedule';
+  static const String prefWorkPlaces = 'notif_type_work_places';
 
   /// Todos activados por defecto -- silenciar es siempre una decisión
   /// explícita del usuario, nunca el estado inicial.
@@ -791,6 +792,65 @@ class NotificationService {
         debugPrint('[NotificationService] work schedule alarm failed: $e');
       }
     }
+  }
+
+  // Work places (Premium): arrival / exit reminders from WorkPlaceService.
+  // Ids 1040 and 1041. Shown with `show`, so they fire the moment the
+  // geofence event arrives, even from a killed app.
+  static const int _workPlaceArrivalId = 1040;
+  static const int _workPlaceExitId = 1041;
+
+  Future<void> showWorkPlaceArrival(String placeName) =>
+      _showWorkPlace(_workPlaceArrivalId, 'work_place_arrival_title', 'work_place_arrival_body', placeName);
+
+  Future<void> showWorkPlaceExit(String placeName) =>
+      _showWorkPlace(_workPlaceExitId, 'work_place_exit_title', 'work_place_exit_body', placeName);
+
+  Future<void> _showWorkPlace(int id, String titleKey, String bodyKey, String placeName) async {
+    // May run in a headless isolate (app closed), where init() has never run.
+    // Light setup only: no permission requests -- init() would open system
+    // settings screens, which must never happen from the background.
+    if (!_initialized) {
+      try {
+        await _plugin.initialize(
+          const InitializationSettings(
+            android: AndroidInitializationSettings('@drawable/ic_stat_tracking'),
+            iOS: DarwinInitializationSettings(
+              requestAlertPermission: false,
+              requestBadgePermission: false,
+              requestSoundPermission: false,
+            ),
+          ),
+          onDidReceiveNotificationResponse: _onNotificationTapped,
+        );
+        await _createAndroidChannel();
+        _initialized = true;
+      } catch (e) {
+        debugPrint('[NotificationService] work place light init failed: $e');
+        return;
+      }
+    }
+    if (!await _isEnabledInPrefs()) return;
+    final title = (await _tr(titleKey)).replaceAll('{place}', placeName);
+    final body = await _tr(bodyKey);
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _workChannelId,
+          _workChannelName,
+          channelDescription: _workChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          color: kBrandSeed,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
+      ),
+      payload: id == _workPlaceArrivalId ? 'work_place_arrival' : 'work_place_exit',
+    );
   }
 
   Future<void> _scheduleWorkAlarm(

@@ -47,6 +47,7 @@ import 'package:tracelet/tracelet.dart' as tl;
 
 import '../../i18n/app_texts.dart';
 import '../../models/gig_app.dart';
+import '../../services/work_place_service.dart';
 import '../tracking_controller.dart';
 import '../live_update_bridge.dart';
 import '../location_profile.dart';
@@ -72,6 +73,13 @@ class TraceletEngine {
   // (see bg_geolocation_engine.dart, unchanged there).
   static void _headlessTask(tl.HeadlessEvent event) async {
     debugPrint('[TraceletEngine] Headless: ${event.name}');
+
+    // Work places (Gig Premium): arrival / exit reminders, also when the app
+    // is closed. See WorkPlaceService.
+    if (event.name == 'geofence') {
+      await WorkPlaceService.handleEvent(tl.GeofenceEvent.fromMap(event.event));
+      return;
+    }
 
     if (event.name != 'location') return;
 
@@ -178,6 +186,9 @@ class TraceletEngine {
         AutoTripDetectionService.instance.handleMotionChange(location.isMoving);
       });
 
+      // Work places: geofence transitions while the app is open.
+      tl.Tracelet.geofenceStream.listen(WorkPlaceService.handleEvent);
+
       _isInitialized = true;
       debugPrint('[TraceletEngine] Initialized successfully');
     } catch (e) {
@@ -230,7 +241,9 @@ class TraceletEngine {
         title: labels.title,
         text: labels.body,
       );
-      if (!state.enabled) {
+      // `enabled` is also true in geofence-only mode (work places, idle): that
+      // is NOT a running GPS, so a trip must still call start() then.
+      if (!state.enabled || state.trackingMode != tl.TrackingMode.location) {
         state = await tl.Tracelet.start();
       }
       _instance.isTracking = state.enabled;
@@ -269,6 +282,8 @@ class TraceletEngine {
       await tl.Tracelet.stop();
       _instance.isTracking = false;
       debugPrint('[TraceletEngine] GPS Tracking Stopped');
+      // stop() also stops the geofences: resume the work-place reminders.
+      await WorkPlaceService.rearmAfterTrip();
     } catch (e) {
       debugPrint('[TraceletEngine ERROR] Stop failed: $e');
     }

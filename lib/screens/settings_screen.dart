@@ -13,6 +13,9 @@ import '../services/auth_service.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
 import '../services/work_schedule.dart';
+import '../services/work_places.dart';
+import '../services/work_place_service.dart';
+import 'package:tracelet/tracelet.dart' as tl;
 import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
@@ -82,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       NotificationService.prefGigAppSwitch,
       NotificationService.prefAutoTripStarted,
       NotificationService.prefWorkSchedule,
+      NotificationService.prefWorkPlaces,
     ];
     final loaded = <String, bool>{};
     for (final k in keys) {
@@ -138,6 +142,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     WorkSchedule.load().then((s) {
       if (mounted) setState(() => _workSchedule = s);
     });
+    WorkPlaceStore.load().then((p) {
+      if (mounted) setState(() => _workPlaces = p);
+    });
   }
 
   // Work-hours reminder: the copy the UI paints; the truth is in
@@ -160,6 +167,78 @@ class _SettingsScreenState extends State<SettingsScreen>
         .map((d) => names[d % 7])
         .join(' ');
     return '$days · ${_formatMinutes(_workSchedule.startMinutes)} – ${_formatMinutes(_workSchedule.endMinutes)}';
+  }
+
+  List<WorkPlace> _workPlaces = [];
+
+  Future<void> _removeWorkPlace(WorkPlace place) async {
+    final next = _workPlaces.where((p) => p.id != place.id).toList();
+    setState(() => _workPlaces = next);
+    await WorkPlaceStore.save(next);
+    await WorkPlaceService.sync();
+  }
+
+  /// Saves the place where the driver is standing right now.
+  Future<void> _addCurrentWorkPlace(AppState appState, BuildContext sheetContext) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!appState.premiumEntitled) {
+      _showPremiumLockedDialog(appState);
+      return;
+    }
+    if (_workPlaces.length >= WorkPlace.maxPlaces) {
+      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_limit'))));
+      return;
+    }
+    // Arrival reminders from a closed app need "Allow all the time".
+    var always = await Permission.locationAlways.status;
+    if (!always.isGranted) {
+      await Permission.locationWhenInUse.request();
+      always = await Permission.locationAlways.request();
+      if (!always.isGranted) {
+        messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_need_always'))));
+        return;
+      }
+    }
+
+    final controller = TextEditingController();
+    if (!sheetContext.mounted) return;
+    final name = await showDialog<String>(
+      context: sheetContext,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('work_places_name_title')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 40,
+          decoration: InputDecoration(hintText: appState.tr('work_places_name_hint')),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(appState.tr('work_places_save')),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+
+    try {
+      final location = await tl.Tracelet.getCurrentPosition(timeout: 20, persist: false);
+      final place = WorkPlace(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        radius: WorkPlace.defaultRadius,
+      );
+      final next = [..._workPlaces, place];
+      setState(() => _workPlaces = next);
+      await WorkPlaceStore.save(next);
+      await WorkPlaceService.sync();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_no_location'))));
+    }
   }
 
   void _showWorkScheduleSheet(AppState appState, bool isDark) {
@@ -278,6 +357,44 @@ class _SettingsScreenState extends State<SettingsScreen>
                     Text(
                       appState.tr('work_reminder_footer'),
                       style: TextStyle(fontSize: 12, color: subTextColor),
+                    ),
+                    const Divider(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(appState.tr('work_places_title'),
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
+                        ),
+                        if (!appState.premiumEntitled)
+                          Icon(Icons.lock_outline_rounded, size: 18, color: subTextColor),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(appState.tr('work_places_hint'),
+                        style: TextStyle(fontSize: 12, color: subTextColor)),
+                    const SizedBox(height: 8),
+                    for (final place in _workPlaces)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.place_outlined, color: primary),
+                        title: Text(place.name, style: TextStyle(color: textColor)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          onPressed: () async {
+                            await _removeWorkPlace(place);
+                            setSheetState(() {});
+                          },
+                        ),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await _addCurrentWorkPlace(appState, sheetContext);
+                        setSheetState(() {});
+                      },
+                      icon: const Icon(Icons.my_location_rounded, size: 18),
+                      label: Text(appState.tr('work_places_add')),
                     ),
                   ],
                 ),
@@ -974,6 +1091,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
       (NotificationService.prefWorkSchedule, 'notif_type_work_schedule', Icons.schedule_rounded),
       if (appState.premiumEntitled) ...[
+        (NotificationService.prefWorkPlaces, 'notif_type_work_places', Icons.place_outlined),
         (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
         (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
       ],
@@ -1033,6 +1151,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                           setSheetState(() => _notifTypeEnabled[prefKey] = v);
                           setState(() => _notifTypeEnabled[prefKey] = v);
                           await NotificationService.instance.setTypeEnabled(prefKey, v);
+                          if (prefKey == NotificationService.prefWorkPlaces) {
+                            await WorkPlaceService.sync();
+                          }
                         },
                       ),
                       const SizedBox(height: 8),
