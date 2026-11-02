@@ -30,6 +30,14 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.10+47 — 2026-11-01
+
+- Work hours reminder (Settings, below Auto-detect): pick the days and the
+  start and end time, and the phone reminds you to start and stop tracking.
+  Nothing starts on its own and your location is not used. Local
+  notifications only, English and Spanish; it can also be muted from the
+  notification types sheet.
+
 ## 1.3.9+46 — 2026-10-31
 
 - Reports: the Summary card is now a full-width band (like the Dashboard),

@@ -25,6 +25,7 @@ import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
 import '../screens/reports_screen.dart';
 import '../tracking/gps_watchdog.dart';
+import 'work_schedule.dart';
 import '../theme/app_colors.dart';
 
 class NotificationService {
@@ -57,6 +58,15 @@ class NotificationService {
   static const int _pausedStatusNotificationId = 1013;
   // GPS off / no signal alerts (GpsWatchdog). 1014 is the next free id.
   static const int _gpsAlertNotificationId = 1014;
+  // Work-hours reminder (Gig): one weekly alarm per selected day, for the
+  // start (1020..1026) and the end (1030..1036), base + weekday - 1. Do not
+  // reuse ids 1020..1036 for anything else.
+  static const int _workStartBaseId = 1020;
+  static const int _workEndBaseId = 1030;
+  static const String _workChannelId = 'controlmiles_work_schedule';
+  static const String _workChannelName = 'Recordatorio de horario';
+  static const String _workChannelDescription =
+      'Aviso a la hora de inicio y de fin de tu horario de trabajo para iniciar o parar el tracking';
   static const String _gpsAlertChannelId = 'controlmiles_gps_alert';
   static const String _gpsAlertChannelName = 'Alertas de GPS';
   static const String _gpsAlertChannelDescription =
@@ -173,6 +183,9 @@ class NotificationService {
     final enabled = await _isEnabledInPrefs();
     if (enabled) {
       await scheduleWeeklySummaryReminder();
+      // Also re-registers the work-hours alarms, so the texts follow the
+      // current language and a changed time zone is picked up.
+      await rescheduleWorkSchedule();
     }
   }
 
@@ -211,6 +224,12 @@ class NotificationService {
     await androidPlugin?.createNotificationChannel(switchConfirmChannel);
     await androidPlugin?.createNotificationChannel(pauseReminderChannel);
     await androidPlugin?.createNotificationChannel(pausedStatusChannel);
+    await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
+      _workChannelId,
+      _workChannelName,
+      description: _workChannelDescription,
+      importance: Importance.high,
+    ));
     await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
       _gpsAlertChannelId,
       _gpsAlertChannelName,
@@ -337,6 +356,7 @@ class NotificationService {
   static const String prefWeeklySummary = 'notif_type_weekly_summary';
   static const String prefGigAppSwitch = 'notif_type_gig_app_switch';
   static const String prefAutoTripStarted = 'notif_type_auto_trip_started';
+  static const String prefWorkSchedule = 'notif_type_work_schedule';
 
   /// Todos activados por defecto -- silenciar es siempre una decisión
   /// explícita del usuario, nunca el estado inicial.
@@ -357,8 +377,11 @@ class NotificationService {
       if (prefKey == prefWeeklySummary) {
         await _plugin.cancel(_weeklySummaryNotificationId);
       }
+      if (prefKey == prefWorkSchedule) await cancelWorkSchedule();
     } else if (prefKey == prefWeeklySummary) {
       await scheduleWeeklySummaryReminder();
+    } else if (prefKey == prefWorkSchedule) {
+      await rescheduleWorkSchedule();
     }
   }
 
@@ -383,6 +406,7 @@ class NotificationService {
   Future<void> setEnabled(bool enabled) async {
     if (enabled) {
       await scheduleWeeklySummaryReminder();
+      await rescheduleWorkSchedule();
       // El recordatorio de viaje olvidado se programa solo cuando arranca
       // un viaje real (ver TrackingController.startTripFlow) — no hay
       // nada que reprogramar acá si no hay tracking activo ahora mismo.
@@ -715,6 +739,96 @@ class NotificationService {
 
   Future<void> cancelWeeklySummaryReminder() async {
     await _plugin.cancel(_weeklySummaryNotificationId);
+  }
+
+  // ============================================================
+  // WORK-HOURS REMINDER (Gig)
+  // ============================================================
+  /// Cancels every work-hours alarm (all 7 weekdays, start and end).
+  Future<void> cancelWorkSchedule() async {
+    for (var weekday = 1; weekday <= 7; weekday++) {
+      await _plugin.cancel(_workStartBaseId + weekday - 1);
+      await _plugin.cancel(_workEndBaseId + weekday - 1);
+    }
+  }
+
+  /// Re-registers the work-hours alarms from the saved [WorkSchedule]: always
+  /// cancels the old ones first, then (if the schedule is on, notifications
+  /// are on and this type isn't muted) sets one weekly alarm per selected
+  /// day for the start and for the end. The alarms are weekly one-shots: an
+  /// ignored notification is never repeated. Called from the Settings sheet
+  /// after every change, and from init()/setEnabled() so it survives a
+  /// language change, an app update or a time-zone change.
+  Future<void> rescheduleWorkSchedule() async {
+    if (!_initialized) return;
+    await cancelWorkSchedule();
+
+    final schedule = await WorkSchedule.load();
+    if (!schedule.enabled || schedule.days.isEmpty) return;
+    if (!await _isEnabledInPrefs()) return;
+    if (!await isTypeEnabled(prefWorkSchedule)) return;
+
+    final startTitle = await _tr('work_reminder_start_title');
+    final startBody = await _tr('work_reminder_start_body');
+    final endTitle = await _tr('work_reminder_end_title');
+    final endBody = await _tr('work_reminder_end_body');
+    final mode = await _canScheduleExactAlarms()
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    // A shift that ends at or before its start time (night work) ends the
+    // next calendar day.
+    final overnight = schedule.endMinutes <= schedule.startMinutes;
+
+    for (final weekday in schedule.days) {
+      final endWeekday = overnight ? (weekday % 7) + 1 : weekday;
+      try {
+        await _scheduleWorkAlarm(_workStartBaseId + weekday - 1, startTitle,
+            startBody, 'work_start', weekday, schedule.startMinutes, mode);
+        await _scheduleWorkAlarm(_workEndBaseId + weekday - 1, endTitle,
+            endBody, 'work_end', endWeekday, schedule.endMinutes, mode);
+      } catch (e) {
+        debugPrint('[NotificationService] work schedule alarm failed: $e');
+      }
+    }
+  }
+
+  Future<void> _scheduleWorkAlarm(
+    int id,
+    String title,
+    String body,
+    String payload,
+    int weekday,
+    int minutesAfterMidnight,
+    AndroidScheduleMode mode,
+  ) {
+    final now = tz.TZDateTime.now(tz.local);
+    var when = tz.TZDateTime(tz.local, now.year, now.month, now.day,
+        minutesAfterMidnight ~/ 60, minutesAfterMidnight % 60);
+    while (when.weekday != weekday || !when.isAfter(now)) {
+      when = when.add(const Duration(days: 1));
+    }
+    return _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      when,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _workChannelId,
+          _workChannelName,
+          channelDescription: _workChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          color: kBrandSeed,
+        ),
+        iOS: DarwinNotificationDetails(),
+        macOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: mode,
+      payload: payload,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
   }
 
   Future<void> cancelAll() async {
