@@ -207,6 +207,10 @@ class VehicleService {
       'odometer': odometer,
       'is_active': setAsActive,
       'is_primary': setAsActive,
+      // 2026-11-01: new personal vehicles start on the annual cycle (two
+      // odometer photos a year). Sent explicitly -- the column default stays
+      // 'weekly' for Fleet and for older app versions.
+      'odometer_cycle': 'annual',
       'placed_in_service_date': placedInServiceDate?.toIso8601String().split('T')[0],
       'vin': (vin == null || vin.trim().isEmpty) ? null : vin.trim().toUpperCase(),
     });
@@ -234,7 +238,7 @@ class VehicleService {
   // vehicles_update RLS already allows the owner to write any column on
   // their own vehicle.
   Future<void> updateOdometerCycle(String vehicleId, String cycle) async {
-    assert(['weekly', 'biweekly', 'monthly', 'semimonthly'].contains(cycle));
+    assert(['weekly', 'biweekly', 'monthly', 'semimonthly', 'annual', 'daily'].contains(cycle));
     await _supabase
         .from('vehicles')
         .update({'odometer_cycle': cycle})

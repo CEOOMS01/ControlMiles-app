@@ -303,16 +303,55 @@ class OdometerCaptureService {
   /// round trip on every trip start/end. Fetches the vehicle's own
   /// cycle+anchor+created_at (one row, cheap) rather than trusting a
   /// cached value that could be stale if the cycle was just changed.
-  Future<DateTime> _cycleStartFor(String vehicleId, DateTime date) async {
-    final row = await _supabase
+  Future<Map<String, dynamic>?> _vehicleCycleRow(String vehicleId) {
+    return _supabase
         .from('vehicles')
         .select('odometer_cycle, odometer_cycle_anchor, created_at')
         .eq('id', vehicleId)
         .maybeSingle();
+  }
 
+  /// This vehicle's checkpoint row for the current period, or null if none.
+  ///
+  /// Annual (2026-11-01): the period is the calendar year and ANY checkpoint
+  /// already dated inside it is the year's row (the latest one) -- a vehicle
+  /// that was on the monthly cycle and has a reading from 2026-10-01 must not
+  /// be asked again for a "start of year" photo. Mirrors the rule in
+  /// submit_vehicle_odometer_checkpoint (migration 20261101120000).
+  Future<Map<String, dynamic>?> _currentCheckpoint(String vehicleId, String columns) async {
+    final vehicleRow = await _vehicleCycleRow(vehicleId);
+    final now = DateTime.now();
+    final table = _supabase.from('vehicle_odometer_checkpoints');
+    if (vehicleRow?['odometer_cycle'] == 'annual') {
+      return table
+          .select(columns)
+          .eq('vehicle_id', vehicleId)
+          .gte('week_start_date', _dateOnly(DateTime(now.year, 1, 1)))
+          .lt('week_start_date', _dateOnly(DateTime(now.year + 1, 1, 1)))
+          .order('week_start_date', ascending: false)
+          .limit(1)
+          .maybeSingle();
+    }
+    final cycleStart = _cycleStartFromRow(vehicleRow, now);
+    return table
+        .select(columns)
+        .eq('vehicle_id', vehicleId)
+        .eq('week_start_date', _dateOnly(cycleStart))
+        .maybeSingle();
+  }
+
+  DateTime _cycleStartFromRow(Map<String, dynamic>? row, DateTime date) {
     final cycle = (row?['odometer_cycle'] as String?) ?? 'weekly';
     final monday = mondayOf(date);
 
+    // 2026-11-01: one reading per calendar year (new default) and a reserved
+    // per-day cycle (not offered in the app yet).
+    if (cycle == 'annual') {
+      return DateTime(date.year, 1, 1);
+    }
+    if (cycle == 'daily') {
+      return DateTime(date.year, date.month, date.day);
+    }
     if (cycle == 'monthly') {
       return DateTime(date.year, date.month, 1);
     }
@@ -362,13 +401,7 @@ class OdometerCaptureService {
   /// cycle's missed close) and starting a trip needs zero odometer
   /// friction.
   Future<bool> needsCheckpointStartThisWeek(String vehicleId) async {
-    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
-    final row = await _supabase
-        .from('vehicle_odometer_checkpoints')
-        .select('start_odometer_value')
-        .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', _dateOnly(cycleStart))
-        .maybeSingle();
+    final row = await _currentCheckpoint(vehicleId, 'start_odometer_value');
     return row == null || row['start_odometer_value'] == null;
   }
 
@@ -379,13 +412,10 @@ class OdometerCaptureService {
   Future<({double value, String imageUrl})?> currentWeekStartReading(
     String vehicleId,
   ) async {
-    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
-    final row = await _supabase
-        .from('vehicle_odometer_checkpoints')
-        .select('start_odometer_value, start_odometer_image_url')
-        .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', _dateOnly(cycleStart))
-        .maybeSingle();
+    final row = await _currentCheckpoint(
+      vehicleId,
+      'start_odometer_value, start_odometer_image_url',
+    );
     final value = row?['start_odometer_value'];
     final imageUrl = row?['start_odometer_image_url'] as String?;
     if (value == null || imageUrl == null) return null;
@@ -396,13 +426,10 @@ class OdometerCaptureService {
   /// the mandatory-closing-photo flow uses this to decide whether to force
   /// the dialog after a trip ends.
   Future<bool> needsCheckpointEndThisWeek(String vehicleId) async {
-    final cycleStart = await _cycleStartFor(vehicleId, DateTime.now());
-    final row = await _supabase
-        .from('vehicle_odometer_checkpoints')
-        .select('start_odometer_value, end_odometer_value')
-        .eq('vehicle_id', vehicleId)
-        .eq('week_start_date', _dateOnly(cycleStart))
-        .maybeSingle();
+    final row = await _currentCheckpoint(
+      vehicleId,
+      'start_odometer_value, end_odometer_value',
+    );
     if (row == null) return false; // nothing started this cycle yet -- start takes priority, not end
     return row['start_odometer_value'] != null && row['end_odometer_value'] == null;
   }

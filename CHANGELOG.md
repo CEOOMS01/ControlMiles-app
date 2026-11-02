@@ -42,6 +42,12 @@ The shared Supabase backend stays here (`supabase/`).
   "You arrived at X -- start tracking?", and leaving one with a trip running
   shows "Stop tracking?". Reminders only. Places stay on the phone. Needs
   location "all the time".
+- Odometer photos: new default cycle "Once a year" (two photos: start and end
+  of the year) for every new vehicle; monthly stays free and twice a month is
+  Premium. Existing vehicles keep their cycle. In the annual cycle any photo
+  already taken this year counts, so the app never asks twice. Server side:
+  migration `20261101120000_odometer_annual_cycle.sql` (applied); weekly and
+  daily cycles exist there but are not offered in the app yet.
 
 ## 1.3.9+46 — 2026-10-31
 
