@@ -166,7 +166,10 @@ class _VehicleScreenState extends State<VehicleScreen>
     if (limitMatch != null) {
       return appState.tr('vehicle_limit_reached_body').replaceFirst('{max}', limitMatch.group(1)!);
     }
-    return raw.replaceFirst('Exception: ', '');
+    // Anything else goes through the shared registry: never the raw
+    // database text (found live 2026-11-03: "permission denied for function").
+    final appError = AppError.from(e);
+    return appError.display(appState.tr(appError.messageKey));
   }
 
   Future<void> _setActiveVehicle(String vehicleId, AppState appState) async {
@@ -552,9 +555,12 @@ class _VehicleScreenState extends State<VehicleScreen>
       }
     } catch (e) {
       if (mounted) {
-        final message = e.toString().replaceFirst('Exception: ', '');
+        final appError = AppError.from(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(appError.display(appState.tr(appError.messageKey))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

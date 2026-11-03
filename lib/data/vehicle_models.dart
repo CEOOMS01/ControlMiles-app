@@ -22,67 +22,100 @@ const Map<String, List<String>> kVehicleModelsByMake = {
   'Toyota': [
     'Corolla', 'Camry', 'RAV4', 'Highlander', 'Tacoma', 'Tundra', 'Prius',
     'Sienna', '4Runner', 'Sequoia', 'Avalon', 'Yaris', 'C-HR', 'Venza',
+    'Corolla Cross', 'RAV4 Prime', 'Prius Prime', 'Crown', 'Crown Signia',
+    'Grand Highlander', 'Land Cruiser', 'GR86', 'GR Corolla', 'Supra',
+    'Mirai', 'bZ4X',
   ],
   'Nissan': [
-    'Sentra', 'Altima', 'Versa', 'Rogue', 'Murano', 'Pathfinder', 'Frontier',
-    'Titan', 'Kicks', 'Maxima', 'Armada', 'NV200',
+    'Sentra', 'Altima', 'Versa', 'Rogue', 'Murano', 'Pathfinder',
+    'Frontier', 'Titan', 'Kicks', 'Maxima', 'Armada', 'NV200', 'Leaf',
+    'Ariya', 'Nissan Z', 'GT-R', 'Kicks Play',
   ],
   'Honda': [
     'Civic', 'Accord', 'CR-V', 'Pilot', 'HR-V', 'Odyssey', 'Ridgeline',
-    'Fit', 'Passport', 'Insight',
+    'Fit', 'Passport', 'Insight', 'Prologue',
   ],
   'Ford': [
     'F-150', 'F-250', 'F-350', 'Escape', 'Explorer', 'Edge', 'Expedition',
     'Ranger', 'Transit', 'Transit Connect', 'Bronco', 'Maverick', 'Mustang',
-    'Fusion', 'Focus',
+    'Fusion', 'Focus', 'Bronco Sport', 'Mustang Mach-E', 'F-450', 'F-550',
+    'E-Transit', 'E-Series',
   ],
   'Chevrolet': [
     'Silverado 1500', 'Silverado 2500', 'Equinox', 'Traverse', 'Tahoe',
     'Suburban', 'Malibu', 'Cruze', 'Colorado', 'Blazer', 'Trax', 'Express',
-    'Impala',
+    'Impala', 'Silverado HD', 'Silverado EV', 'Equinox EV', 'Blazer EV',
+    'Bolt EV', 'Bolt EUV', 'Trailblazer', 'Corvette', 'Camaro',
+    'BrightDrop',
   ],
   'Jeep': [
     'Wrangler', 'Grand Cherokee', 'Cherokee', 'Compass', 'Renegade',
-    'Gladiator', 'Wagoneer',
+    'Gladiator', 'Wagoneer', 'Grand Cherokee L', 'Grand Wagoneer',
+    'Wagoneer L', 'Wagoneer S', 'Recon',
   ],
   'Hyundai': [
     'Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Kona', 'Palisade', 'Accent',
-    'Venue', 'Ioniq',
+    'Venue', 'Ioniq', 'Ioniq 5', 'Ioniq 6', 'Ioniq 9', 'Santa Cruz', 'Nexo',
   ],
   'Kia': [
     'Forte', 'Optima', 'K5', 'Sportage', 'Sorento', 'Soul', 'Telluride',
-    'Rio', 'Seltos', 'Carnival',
+    'Rio', 'Seltos', 'Carnival', 'Niro', 'EV6', 'EV9', 'K4', 'EV3',
+    'Stinger',
   ],
   'RAM': ['1500', '2500', '3500', 'ProMaster', 'ProMaster City'],
   'GMC': [
     'Sierra 1500', 'Sierra 2500', 'Terrain', 'Acadia', 'Yukon', 'Canyon',
-    'Savana',
+    'Savana', 'Sierra HD', 'Sierra EV', 'Yukon XL', 'Hummer EV',
   ],
-  'Dodge': ['Charger', 'Challenger', 'Durango', 'Journey', 'Grand Caravan'],
+  'Dodge': [
+    'Charger', 'Challenger', 'Durango', 'Journey', 'Grand Caravan',
+    'Hornet',
+  ],
   'Chrysler': ['Pacifica', '300', 'Voyager', 'Town & Country'],
   'Volkswagen': [
-    'Jetta', 'Passat', 'Golf', 'Tiguan', 'Atlas', 'Taos', 'Beetle',
+    'Jetta', 'Passat', 'Golf', 'Tiguan', 'Atlas', 'Taos', 'Beetle', 'ID.4',
+    'ID. Buzz', 'Atlas Cross Sport', 'GTI', 'Golf R', 'Jetta GLI', 'Arteon',
   ],
   'BMW': [
     'Serie 3', 'Serie 5', 'Serie 7', 'X1', 'X3', 'X5', 'X7', 'Serie 2',
   ],
   'Mercedes-Benz': [
     'Clase C', 'Clase E', 'Clase S', 'GLA', 'GLB', 'GLC', 'GLE', 'GLS',
-    'Sprinter', 'Metris',
+    'Sprinter', 'Metris', 'CLA', 'Clase G', 'CLE', 'EQB', 'EQE', 'EQS',
   ],
   'Audi': ['A3', 'A4', 'A6', 'Q3', 'Q5', 'Q7', 'Q8'],
   'Subaru': [
-    'Outback', 'Forester', 'Crosstrek', 'Impreza', 'Legacy', 'Ascent', 'WRX',
+    'Outback', 'Forester', 'Crosstrek', 'Impreza', 'Legacy', 'Ascent',
+    'WRX', 'BRZ', 'Solterra', 'Trailseeker', 'Uncharted',
   ],
-  'Mazda': ['Mazda3', 'Mazda6', 'CX-3', 'CX-30', 'CX-5', 'CX-9', 'MX-5'],
-  'Lexus': ['ES', 'IS', 'RX', 'NX', 'GX', 'LX', 'UX'],
-  'Acura': ['ILX', 'TLX', 'RDX', 'MDX', 'Integra'],
-  'Infiniti': ['Q50', 'Q60', 'QX50', 'QX60', 'QX80'],
-  'Buick': ['Encore', 'Enclave', 'Envision', 'Regal'],
-  'Cadillac': ['Escalade', 'XT4', 'XT5', 'XT6', 'CT4', 'CT5'],
-  'Lincoln': ['Navigator', 'Aviator', 'Corsair', 'Nautilus'],
+  'Mazda': [
+    'Mazda3', 'Mazda6', 'CX-3', 'CX-30', 'CX-5', 'CX-9', 'MX-5', 'CX-50',
+    'CX-70', 'CX-90', 'MX-30',
+  ],
+  'Lexus': [
+    'ES', 'IS', 'RX', 'NX', 'GX', 'LX', 'UX', 'LS', 'RC', 'LC', 'RZ', 'TX',
+  ],
+  'Acura': [
+    'ILX', 'TLX', 'RDX', 'MDX', 'Integra', 'ZDX', 'ADX',
+  ],
+  'Infiniti': [
+    'Q50', 'Q60', 'QX50', 'QX60', 'QX80', 'QX55',
+  ],
+  'Buick': [
+    'Encore', 'Enclave', 'Envision', 'Regal', 'Encore GX', 'Envista',
+  ],
+  'Cadillac': [
+    'Escalade', 'XT4', 'XT5', 'XT6', 'CT4', 'CT5', 'Escalade ESV',
+    'Escalade IQ', 'Lyriq', 'Optiq', 'Vistiq',
+  ],
+  'Lincoln': [
+    'Navigator', 'Aviator', 'Corsair', 'Nautilus', 'Navigator L',
+  ],
   'Volvo': ['XC40', 'XC60', 'XC90', 'S60', 'S90'],
-  'Mitsubishi': ['Outlander', 'Eclipse Cross', 'Mirage', 'Lancer'],
+  'Mitsubishi': [
+    'Outlander', 'Eclipse Cross', 'Mirage', 'Lancer', 'Outlander Sport',
+    'Mirage G4',
+  ],
   'Tesla': ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck'],
   'Mini': ['Cooper', 'Countryman', 'Clubman'],
   'Fiat': ['500', '500X', '500L'],
@@ -91,7 +124,9 @@ const Map<String, List<String>> kVehicleModelsByMake = {
   ],
   'Jaguar': ['F-Pace', 'E-Pace', 'XF', 'XE'],
   'Porsche': ['Macan', 'Cayenne', '911', 'Panamera', 'Taycan'],
-  'Genesis': ['G70', 'G80', 'G90', 'GV70', 'GV80'],
+  'Genesis': [
+    'G70', 'G80', 'G90', 'GV70', 'GV80', 'GV60',
+  ],
   'Alfa Romeo': ['Giulia', 'Stelvio', 'Tonale'],
   // Pesados y comerciales: aquí el "modelo" suele ser la serie.
   'Freightliner': ['Cascadia', 'M2 106', 'Sprinter', 'Columbia', 'Coronado'],
