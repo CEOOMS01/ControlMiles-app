@@ -30,6 +30,18 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.10+49 — 2026-11-03
+
+- Vehicles: the add-vehicle and maintenance screens no longer show raw
+  database text; errors go through the shared error registry (code + safe
+  message). The server-side cause of "permission denied for function
+  fn_display_id_blocked" is fixed by migration
+  `20261103120000_display_id_generators_security_definer`.
+- Vehicle list: ~95 newer models (2023-2027) so more cars are found without
+  "Other": Mazda CX-50/CX-70/CX-90/MX-30, Toyota Corolla Cross/Crown/Grand
+  Highlander, Hyundai Ioniq 5/6/9, Kia EV6/EV9/K4, Ford Mustang Mach-E, and more.
+- Errors that were silently ignored in a few places are now logged.
+
 ## 1.3.10+48 — 2026-11-02
 
 - Fix: the live map was blank because the basemap pointed to the disabled
