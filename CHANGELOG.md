@@ -30,6 +30,12 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.10+48 — 2026-11-02
+
+- Fix: the live map was blank because the basemap pointed to the disabled
+  `r2.dev` public URL; it now uses the `controlmiles-tiles` Worker.
+  (+47 was already on Play without this fix, so the build number went up.)
+
 ## 1.3.10+47 — 2026-11-01
 
 - Work hours reminder (Settings, below Auto-detect): pick the days and the
