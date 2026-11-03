@@ -275,6 +275,36 @@ class VehicleService {
   /// a las lecturas de odómetro por foto (vehicle_odometer_checkpoints),
   /// sin mezclar ambas fuentes en una sola cifra (evidencia distinta, ver
   /// comentario de submit_vehicle_odometer_checkpoint).
+  /// Closed personal trips recorded before the user had a car (vehicle_id
+  /// null) that can still be attached to one: not CGC-sealed. Closed trips are
+  /// frozen server-side; only assignTripsToVehicle can fill the blank.
+  Future<({int trips, double miles})> unassignedTrips(String userId) async {
+    final rows = await _supabase
+        .from('sessions')
+        .select('total_miles')
+        .eq('user_id', userId)
+        .filter('organization_id', 'is', null)
+        .eq('is_closed', true)
+        .filter('vehicle_id', 'is', null)
+        .filter('cgc_sealed_at', 'is', null);
+    var miles = 0.0;
+    for (final r in rows) {
+      miles += (r['total_miles'] as num?)?.toDouble() ?? 0;
+    }
+    return (trips: rows.length, miles: miles);
+  }
+
+  /// Attaches every unassigned trip to [vehicleId] (server RPC
+  /// assign_trips_to_vehicle: fills blanks only, never changes a car).
+  Future<({int trips, double miles})> assignTripsToVehicle(String vehicleId) async {
+    final res = await _supabase.rpc('assign_trips_to_vehicle', params: {'p_vehicle_id': vehicleId});
+    final map = Map<String, dynamic>.from(res as Map);
+    return (
+      trips: (map['assigned'] as num?)?.toInt() ?? 0,
+      miles: (map['miles'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
   Future<double> totalTrackedMiles(String vehicleId) async {
     final data = await _supabase
         .from('sessions')

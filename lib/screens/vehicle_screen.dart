@@ -57,6 +57,9 @@ class _VehicleScreenState extends State<VehicleScreen>
   // mano, tanto cuando la marca no tiene catálogo como cuando se elige "Otro".
   final TextEditingController _modelController = TextEditingController();
   String? _selectedModel;
+  // Trips driven before the first car was added (vehicle_id null).
+  int _unassignedTrips = 0;
+  double _unassignedMiles = 0;
   final TextEditingController _colorController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
@@ -111,6 +114,63 @@ class _VehicleScreenState extends State<VehicleScreen>
   // ════════════════════════════════════════════════════════════
   // VEHÍCULOS (movido de ProfileScreen, mismo comportamiento)
   // ════════════════════════════════════════════════════════════
+  Future<void> _loadUnassignedTrips(String userId) async {
+    try {
+      final u = await _vehicleService.unassignedTrips(userId);
+      if (!mounted) return;
+      setState(() {
+        _unassignedTrips = u.trips;
+        _unassignedMiles = u.miles;
+      });
+    } catch (e) {
+      debugPrint('[VehicleScreen] unassigned trips: $e');
+    }
+  }
+
+  Future<void> _assignUnassignedTrips(AppState appState) async {
+    final target = _vehicles.firstWhere((v) => v.isActive, orElse: () => _vehicles.first);
+    final miles = _unassignedMiles.toStringAsFixed(1);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('unassigned_trips_title').replaceFirst('{n}', '$_unassignedTrips')),
+        content: Text(appState
+            .tr('unassigned_trips_confirm')
+            .replaceFirst('{miles}', miles)
+            .replaceFirst('{vehicle}', target.displayName)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(appState.tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(appState.tr('confirm'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final res = await _vehicleService.assignTripsToVehicle(target.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(appState
+            .tr('unassigned_trips_done')
+            .replaceFirst('{n}', '${res.trips}')
+            .replaceFirst('{miles}', res.miles.toStringAsFixed(1))),
+        backgroundColor: Colors.green,
+      ));
+      final userId = _userId;
+      if (userId != null) await _loadUnassignedTrips(userId);
+    } catch (e) {
+      if (mounted) {
+        final appError = AppError.from(e);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(appError.display(appState.tr(appError.messageKey))),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _loadVehicles() async {
     final userId = _userId;
     if (userId == null) return;
@@ -119,6 +179,7 @@ class _VehicleScreenState extends State<VehicleScreen>
       final data = await _vehicleService.listVehicles(userId);
       if (!mounted) return;
       setState(() => _vehicles = data);
+      await _loadUnassignedTrips(userId);
 
       // Mantiene la selección de mantenimiento apuntando a un vehículo
       // válido: prioriza el activo, si no existe usa el primero, si no hay
@@ -645,6 +706,23 @@ class _VehicleScreenState extends State<VehicleScreen>
                         style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                   ),
                 ..._vehicles.map((v) => _buildVehicleCard(v, appState, isDark)),
+                if (_vehicles.isNotEmpty && _unassignedTrips > 0)
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    child: ListTile(
+                      leading: const Icon(Icons.route_rounded),
+                      title: Text(appState
+                          .tr('unassigned_trips_title')
+                          .replaceFirst('{n}', '$_unassignedTrips')),
+                      subtitle: Text(appState
+                          .tr('unassigned_trips_hint')
+                          .replaceFirst('{miles}', _unassignedMiles.toStringAsFixed(1))),
+                      trailing: TextButton(
+                        onPressed: _isLoading ? null : () => _assignUnassignedTrips(appState),
+                        child: Text(appState.tr('unassigned_trips_assign')),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

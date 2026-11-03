@@ -455,6 +455,11 @@ const Map<String, String> esTexts = {
   'vehicle_mileage': 'Kilometraje',
   'vehicle_information': 'Información del vehículo',
   'no_vehicle_registered': 'No hay vehículo registrado',
+  'unassigned_trips_title': '{n} viajes sin vehículo',
+  'unassigned_trips_hint': '{miles} mi registradas antes de añadir un auto',
+  'unassigned_trips_assign': 'Asignar',
+  'unassigned_trips_confirm': '¿Asignar estas {miles} mi a {vehicle}? Solo se cambian los viajes sin vehículo y no se puede deshacer.',
+  'unassigned_trips_done': 'Listo: {n} viajes ({miles} mi) asignados',
   'delete_vehicle_confirmation': '¿Estás seguro de eliminar este vehículo? Su historial de viajes se conservará.',
 
   // ============================================================

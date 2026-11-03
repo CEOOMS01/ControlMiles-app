@@ -465,6 +465,11 @@ const Map<String, String> enTexts = {
   'vehicle_mileage': 'Mileage',
   'vehicle_information': 'Vehicle information',
   'no_vehicle_registered': 'No vehicle registered',
+  'unassigned_trips_title': '{n} trips without a vehicle',
+  'unassigned_trips_hint': '{miles} mi recorded before you added a car',
+  'unassigned_trips_assign': 'Assign',
+  'unassigned_trips_confirm': 'Assign these {miles} mi to {vehicle}? Only trips with no vehicle are changed, and it cannot be undone.',
+  'unassigned_trips_done': 'Done: {n} trips ({miles} mi) assigned',
   'delete_vehicle_confirmation': 'Are you sure you want to delete this vehicle? Its trip history will be kept.',
 
   // ============================================================

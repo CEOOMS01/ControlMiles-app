@@ -30,6 +30,16 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.10+50 — 2026-11-03
+
+- Vehicle screen: trips driven before the user had a car (no vehicle) can now
+  be assigned to a car ("N trips without a vehicle" card, with confirmation).
+  Server side: `assign_trips_to_vehicle` (migration
+  `20261103150000_assign_orphan_trips_to_vehicle`). It only fills a blank
+  vehicle on the user's own closed, unsealed personal trips; closed trips stay
+  frozen for everything else, and each assignment is logged in
+  `trip_vehicle_assignments`. Gig only (Fleet trips always have a vehicle).
+
 ## 1.3.10+49 — 2026-11-03
 
 - Vehicles: the add-vehicle and maintenance screens no longer show raw
