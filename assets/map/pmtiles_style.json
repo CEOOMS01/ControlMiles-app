@@ -5,7 +5,7 @@
   "sources": {
     "protomaps": {
       "type": "vector",
-      "url": "pmtiles://https://pub-e0486b4034e5461d886e22d73471a880.r2.dev/us.pmtiles",
+      "url": "pmtiles://https://controlmiles-tiles.integrations-55b.workers.dev/us.pmtiles",
       "attribution": "© OpenStreetMap contributors · Protomaps"
     }
   },
