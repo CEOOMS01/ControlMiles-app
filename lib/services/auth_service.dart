@@ -1,6 +1,7 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/auth_service.dart - PRODUCTION READY
 
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -274,7 +275,9 @@ class AuthService {
       if (_googleInitialized) {
         try {
           await GoogleSignIn.instance.signOut();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[AuthService] Google sign-out: $e');
+        }
       }
       await _supabase.auth.signOut();
     } catch (e) {

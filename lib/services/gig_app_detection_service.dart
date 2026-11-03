@@ -13,6 +13,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,7 +47,9 @@ class GigAppDetectionService {
     if (!isSupported) return;
     try {
       await _channel.invokeMethod('openUsageAccessSettings');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GigAppDetection] open usage access settings: $e');
+    }
   }
 
   /// Public entry point so callers can pre-warm the catalog at a moment

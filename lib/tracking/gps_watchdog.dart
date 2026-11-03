@@ -89,14 +89,18 @@ class GpsWatchdog {
     _timer = Timer.periodic(checkEvery, (_) => _check());
     try {
       geo.Geolocator.getServiceStatusStream().listen((_) => _check(), onError: (_) {});
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GpsWatchdog] service status stream: $e');
+    }
   }
 
   static Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _pausedByGps = prefs.getBool(_prefsKey) ?? false;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GpsWatchdog] load paused flag: $e');
+    }
   }
 
   static Future<void> _persist(bool v) async {
@@ -104,7 +108,9 @@ class GpsWatchdog {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefsKey, v);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GpsWatchdog] persist paused flag: $e');
+    }
   }
 
   static Future<void> _clear() async {
@@ -251,6 +257,8 @@ class GpsWatchdog {
       } else {
         await geo.Geolocator.openAppSettings();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GpsWatchdog] open location settings: $e');
+    }
   }
 }

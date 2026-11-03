@@ -179,7 +179,9 @@ class TourScope {
   void unregister() {
     try {
       ShowcaseView.getNamed(name).unregister();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ProductTour] unregister showcase: $e');
+    }
   }
 }
 
