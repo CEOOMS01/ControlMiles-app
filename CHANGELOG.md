@@ -30,6 +30,13 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.16+56 — 2026-11-04
+
+- The "Olympus Mont Systems" splash view is gone: the app opens straight into
+  the next screen (a plain page in the app background while it decides where).
+- Permission steps use the app's own palette (`CmColors`) and its amber for the
+  "without it" row; no hard-coded hex left in them.
+
 ## 1.3.15+55 — 2026-11-04
 
 - First-time onboarding like MileIQ: after signing in the driver lands straight

@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
+import '../theme/cm_colors.dart';
 import '../utils/permission_status.dart';
 
 class _Step {
@@ -197,11 +198,11 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
-    final bgColor = isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE);
-    final cardColor = isDark ? const Color(0xFF1C1812) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
-    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6B6250);
+    final bgColor = isDark ? CmColors.night : CmColors.cream;
+    final cardColor = isDark ? CmColors.nightCard : Colors.white;
+    final borderColor = isDark ? CmColors.ink : CmColors.sand;
+    final textColor = isDark ? Colors.white : CmColors.ink;
+    final subTextColor = isDark ? Colors.white70 : CmColors.inkDim;
 
     return PopScope(
       canPop: widget.dismissible, // onboarding: the only way out is through the steps
@@ -361,7 +362,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
             appState.tr('perm_flow_${step.key}_safe'), primary, textColor, subTextColor),
         const SizedBox(height: 18),
         _infoRow(Icons.info_outline_rounded, appState.tr('perm_flow_without_title'),
-            appState.tr('perm_flow_${step.key}_skip'), const Color(0xFFE8A33D), textColor, subTextColor),
+            appState.tr('perm_flow_${step.key}_skip'), CmColors.amber, textColor, subTextColor),
       ],
     );
   }

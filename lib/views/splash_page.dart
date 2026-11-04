@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
-import '../theme/app_colors.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -120,75 +119,12 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    // BUG FIX (pedido explícito, brand color unificado): esta pantalla
-    // fuerza fondo oscuro (Slate 900) sin importar el tema del sistema --
-    // Theme.of(context) tomaría el primary de modo claro si el
-    // dispositivo está en claro, arriesgando contraste contra este fondo
-    // fijo. Se deriva el scheme oscuro explícito del mismo seed de marca
-    // (ver lib/theme/app_colors.dart), no del ThemeData activo.
-    // BUG FIX (pedido explícito, azul muy saturado en oscuro): esta
-    // pantalla es funcionalmente "modo oscuro" siempre (fondo fijo Slate
-    // 900), así que usa kBrandSeedDark -- el mismo seed atenuado que
-    // main.dart ahora usa para darkTheme -- en vez de kBrandSeed.
-    final darkPrimary = ColorScheme.fromSeed(
-      seedColor: kBrandSeedDark,
-      brightness: Brightness.dark,
-    ).primary;
-
+    // No branding screen any more (2026-11-04, explicit request): the system
+    // launch screen already shows the app, and this one only decides the route.
+    // A plain page in the app background, so there is no flash of another color.
     return Scaffold(
-      backgroundColor: const Color(0xFF2E281F), // Slate 900
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo de Olympus Mont Systems
-            Image.asset(
-              'assets/images/logo_olympus.png',
-              width: 140,
-              height: 140,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.hexagon_outlined,
-                size: 100,
-                color: darkPrimary,
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // Título Principal
-            const Text(
-              "OLYMPUS MONT SYSTEMS",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Subtítulo
-            Text(
-              "SECURE / AUDIT / PROGRAMS",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.blue.shade200,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2.5,
-              ),
-            ),
-            const SizedBox(height: 50),
-
-            // Indicador de Carga
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(darkPrimary),
-              strokeWidth: 2,
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: const SizedBox.expand(),
     );
   }
 }
