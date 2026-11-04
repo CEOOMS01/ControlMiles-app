@@ -265,6 +265,10 @@ class _LoginScreenState extends State<LoginScreen> {
         .catchError((_) => null);
 
     final hasSeenWelcome = onboardingResponse?['welcome_seen'] == true;
+    // The splash decides from this device's own flag (cleared on sign-out), so
+    // a returning user who already did the permission steps must get it set
+    // again here, or the next app start sends them through them once more.
+    if (hasSeenWelcome) await appState.completePermissionsSetup();
 
     if (!mounted) return;
 

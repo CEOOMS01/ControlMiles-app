@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/login_prefs.dart';
 import '../services/local_storage_service.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
@@ -66,9 +67,30 @@ class _SplashPageState extends State<SplashPage> {
       // tenía su propio chequeo) siempre aterrizaba en el Dashboard de Gig.
       // getInitialRoute() ahora es la única fuente de verdad para esta
       // decisión (login_screen.dart y welcome_page.dart también la usan).
+      // This device's flag can be missing (cleared on sign-out) for an account
+      // that already finished the permission steps: ask the server before
+      // sending a returning user back through them.
+      var onboardingDone = appState.permissionsCompleted;
+      final authUser = Supabase.instance.client.auth.currentUser;
+      if (!onboardingDone && appState.isAuthenticated && authUser != null) {
+        try {
+          final row = await Supabase.instance.client
+              .from('user_onboarding')
+              .select('welcome_seen')
+              .eq('user_id', authUser.id)
+              .maybeSingle();
+          if (row?['welcome_seen'] == true) {
+            onboardingDone = true;
+            await appState.completePermissionsSetup();
+          }
+        } catch (e) {
+          debugPrint('[Splash] welcome_seen check failed: $e');
+        }
+      }
+
       final targetRoute = AppRoutes.getInitialRoute(
         isAuthenticated: appState.isAuthenticated,
-        onboardingCompleted: appState.permissionsCompleted,
+        onboardingCompleted: onboardingDone,
       );
 
       if (!mounted) return;

@@ -30,6 +30,14 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.14+54 — 2026-11-04
+
+- Fix: a returning user was sent through the first-time welcome and permission
+  steps again after signing out and back in, or on a device whose local flag
+  was cleared. Login and the splash now trust the account's `welcome_seen`
+  (server) and restore this device's flag. The migration
+  `device_permission_status` is applied in production.
+
 ## 1.3.13+53 — 2026-11-03
 
 - Permissions steps: the "allowed" check is now the Olimsys brand blue.
