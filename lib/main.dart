@@ -31,7 +31,7 @@ import 'services/work_place_service.dart';
 import 'services/notification_service.dart';
 
 // Screens & Views
-import 'views/splash_page.dart';
+import 'services/startup_router.dart';
 import 'views/welcome_page.dart';
 import 'screens/login_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -236,9 +236,8 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
       // ========================================================
 
       // RUTAS
-      initialRoute: AppRoutes.splash,
+      home: const _StartupGate(),
       routes: {
-        AppRoutes.splash: (_) => const SplashPage(),
         AppRoutes.login: (context) {
           // 'signup' starting mode.
           final args = ModalRoute.of(context)!.settings.arguments as String?;
@@ -356,4 +355,31 @@ ThemeData _cmTheme(Brightness brightness) {
       ),
     ),
   );
+}
+
+/// Invisible first page: waits for the app state, asks [resolveStartRoute]
+/// where to go and replaces itself. Shows only the app background meanwhile.
+class _StartupGate extends StatefulWidget {
+  const _StartupGate();
+
+  @override
+  State<_StartupGate> createState() => _StartupGateState();
+}
+
+class _StartupGateState extends State<_StartupGate> {
+  @override
+  void initState() {
+    super.initState();
+    _go();
+  }
+
+  Future<void> _go() async {
+    final route = await resolveStartRoute(context.read<AppState>());
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, route);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: const SizedBox.expand());
 }

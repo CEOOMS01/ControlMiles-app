@@ -30,29 +30,25 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## 1.3.16+56 — 2026-11-04
-
-- The "Olympus Mont Systems" splash view is gone: the app opens straight into
-  the next screen (a plain page in the app background while it decides where).
-- Permission steps use the app's own palette (`CmColors`) and its amber for the
-  "without it" row; no hard-coded hex left in them.
-
-## 1.3.15+55 — 2026-11-04
-
-- First-time onboarding like MileIQ: after signing in the driver lands straight
-  on the permission steps. The welcome screen with its permission list and the
-  checkbox are gone; the 18+ / Terms sentence sits under the first Allow button
-  and the acceptance is recorded when it is tapped.
-- Camera is no longer asked at the start (it is asked when the first odometer
-  photo is needed). The Settings permission status still lists it.
-
 ## 1.3.14+54 — 2026-11-04
 
-- Fix: a returning user was sent through the first-time welcome and permission
-  steps again after signing out and back in, or on a device whose local flag
-  was cleared. Login and the splash now trust the account's `welcome_seen`
-  (server) and restore this device's flag. The migration
-  `device_permission_status` is applied in production.
+(Builds 52 and 54-56 were never uploaded to Play; 53 is the last one sent, so
+everything since then ships together as 54.)
+
+- Onboarding like MileIQ: after signing in the driver lands straight on the
+  permission steps, one page per permission (progress bar, why it is asked,
+  "your data is safe", what stops working without it, one Allow button). The
+  welcome screen with its permission list and checkbox are gone; the 18+ /
+  Terms sentence sits under the first Allow button and the acceptance is
+  recorded when it is tapped. Colors come from `CmColors`.
+- Camera is no longer asked at the start (it is asked when the first odometer
+  photo is needed). The Settings permission status still lists it.
+- Fix: a returning user was sent through the welcome and permission steps again
+  after signing out and back in. Login and the start-up check now trust the
+  account's `welcome_seen` (server) and restore this device's flag.
+- No more splash page: the "Olympus Mont Systems" view is gone and the page
+  file with it. The system launch screen is the only splash; the first route is
+  decided by `lib/services/startup_router.dart`.
 
 ## 1.3.13+53 — 2026-11-03
 
