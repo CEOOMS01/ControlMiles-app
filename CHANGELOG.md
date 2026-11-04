@@ -30,6 +30,17 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.11+51 — 2026-11-03
+
+- Work places: each place can have a trip type (work commute, business,
+  charitable, medical, education, moving, personal) or stay gig-only
+  (reminders). New opt-in switch "Start tracking automatically": at a place with
+  a type, inside work hours, the trip starts by itself (only when this week's
+  odometer photo exists and the app is running). A purpose trip (never a
+  gig-app trip) that stays ~3 minutes inside a place with a type is closed and
+  the driver is told. Arrival dwell is now 3 minutes (was 2.5). Leaving a place
+  with a type no longer shows the "stop tracking?" reminder. Gig only.
+
 ## 1.3.10+50 — 2026-11-03
 
 - Vehicle screen: trips driven before the user had a car (no vehicle) can now
