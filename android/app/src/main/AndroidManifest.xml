@@ -14,6 +14,10 @@
          Play Data safety form says no audio is collected, so the merged
          permission is removed (2026-10-06, Play pre-launch review). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <!-- The camera plugin also declares READ_EXTERNAL_STORAGE (old gallery
+         access). Photos go to the app's own cache, so it is removed
+         (2026-11-03): one less file-access entry on the Play listing. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false"/>

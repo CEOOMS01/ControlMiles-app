@@ -13,6 +13,8 @@ import '../services/auth_service.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
 import '../models/gig_app.dart';
+import '../utils/permission_status.dart';
+import '../views/permissions_flow_screen.dart';
 import '../services/work_schedule.dart';
 import '../services/work_places.dart';
 import '../services/work_place_service.dart';
@@ -64,13 +66,29 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _refreshBackgroundReliabilityStatus() async {
     final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
     final exactAlarm = await NotificationService.instance.hasExactAlarmPermission();
+    final perms = <PermKind, bool>{
+      for (final k in _statusKinds) k: await PermissionStatusService.isOk(k),
+    };
     if (mounted) {
       setState(() {
         _ignoringBatteryOptimizations = batteryStatus.isGranted;
         _hasExactAlarmPermission = exactAlarm;
+        _permOk = perms;
       });
     }
   }
+
+  // Location, notifications, activity and camera: the permissions the app
+  // cannot do its job without (2026-11-03). Tapping a row reopens the
+  // step-by-step permissions screen, which skips what is already allowed.
+  static const _statusKinds = [
+    PermKind.location,
+    PermKind.locationAlways,
+    PermKind.notifications,
+    PermKind.motion,
+    PermKind.camera,
+  ];
+  Map<PermKind, bool> _permOk = {};
 
   /// Estado de los toggles por tipo de aviso (pedido explícito
   /// 2026-09-16). La verdad vive en SharedPreferences vía
@@ -1023,6 +1041,38 @@ class _SettingsScreenState extends State<SettingsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
+          for (final kind in _statusKinds) ...[
+            _buildPermissionStatusRow(
+              appState: appState,
+              icon: switch (kind) {
+                PermKind.location => Icons.location_on_outlined,
+                PermKind.locationAlways => Icons.my_location_outlined,
+                PermKind.notifications => Icons.notifications_outlined,
+                PermKind.motion => Icons.directions_walk_rounded,
+                _ => Icons.camera_alt_outlined,
+              },
+              title: appState.tr(switch (kind) {
+                PermKind.location => 'perm_flow_location_title',
+                PermKind.locationAlways => 'perm_flow_always_title',
+                PermKind.notifications => 'perm_flow_notifications_title',
+                PermKind.motion => 'perm_flow_motion_title',
+                _ => 'perm_flow_camera_title',
+              }),
+              subtitle: _permOk[kind] == null
+                  ? appState.tr('checking_status')
+                  : appState.tr(_permOk[kind]! ? 'perm_status_ok' : 'perm_status_missing'),
+              granted: _permOk[kind],
+              isDark: isDark,
+              onTap: () async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PermissionsFlowScreen(dismissible: true)),
+                );
+                await _refreshBackgroundReliabilityStatus();
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
           _buildPermissionStatusRow(
             appState: appState,
             icon: Icons.battery_saver_outlined,

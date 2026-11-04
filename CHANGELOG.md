@@ -30,6 +30,24 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.12+52 — 2026-11-03
+
+- Permissions, one step at a time: location, location "all the time",
+  notifications, physical activity, battery, camera and (Android) Usage Access,
+  each with the reason it is needed and what stops working at 100% without it.
+  The icon turns into a check when allowed and the next step slides in. Only
+  location is required; every other step can be skipped. Already-granted steps
+  are skipped. New `lib/views/permissions_flow_screen.dart` and
+  `lib/utils/permission_status.dart`.
+- Approximate-only location (Android 12+) is now detected and the driver is told
+  to turn on "precise"; the recovery dialog says so instead of "all the time".
+- Settings > background reliability now lists location, location all the time,
+  notifications, activity and camera with a status colour; tapping reopens the
+  permissions steps.
+- Critical permissions for the recovery alert are now location + all the time +
+  precise (camera and activity no longer trigger a location-only message).
+- Manifest: removed READ_EXTERNAL_STORAGE (added by the camera plugin, unused).
+
 ## 1.3.11+51 — 2026-11-03
 
 - Work places: each place can have a trip type (work commute, business,

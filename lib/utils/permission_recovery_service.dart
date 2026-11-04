@@ -21,19 +21,21 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logic/app_state.dart';
+import 'permission_status.dart';
 
 class PermissionRecoveryService {
   /// Verifica si los permisos críticos están concedidos
   static Future<bool> hasCriticalPermissions() async {
+    // Critical = what a trip cannot record without: location, all the time,
+    // and precise (2026-11-03). Camera and physical activity are asked in the
+    // permissions flow but no longer raise this alarm, whose text is about
+    // location only; the Settings status card lists them.
     final locationWhenInUse = await Permission.locationWhenInUse.status;
     final locationAlways = await Permission.locationAlways.status;
-    final camera = await Permission.camera.status;
-    final activity = await Permission.activityRecognition.status;
 
     return locationAlways.isGranted &&
-           camera.isGranted &&
-           activity.isGranted &&
-           locationWhenInUse.isGranted;
+           locationWhenInUse.isGranted &&
+           await PermissionStatusService.isPrecise();
   }
 
   /// Abre la configuración de la app
@@ -90,6 +92,10 @@ class PermissionRecoveryService {
     if (!context.mounted) return;
 
     final appState = context.read<AppState>();
+    // Location given, but only approximate: say that, not "all the time".
+    final approximateOnly = await Permission.locationWhenInUse.isGranted &&
+        !await PermissionStatusService.isPrecise();
+    if (!context.mounted) return;
 
     await showDialog(
       context: context,
@@ -97,7 +103,7 @@ class PermissionRecoveryService {
       builder: (_) => AlertDialog(
         title: Text(appState.tr('permission_required')),
         content: Text(
-          appState.tr('location_always_needed'),
+          appState.tr(approximateOnly ? 'perm_flow_precise_hint' : 'location_always_needed'),
         ),
         actions: [
           TextButton(
