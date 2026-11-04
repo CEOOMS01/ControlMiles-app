@@ -26,6 +26,7 @@ import '../widgets/gps_issue_banner.dart';
 import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
 import '../utils/permission_recovery_service.dart';
+import '../services/permission_report_service.dart';
 import '../onboarding/product_tour.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -130,6 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _tourScope.register();
     ProductTour.replayRequested.addListener(_onTourReplay);
     _initDashboard();
+    unawaited(PermissionReportService.reportIfNeeded());
     _setupRealTimeListeners();
     _loadActiveVehicle();
     TrackingController.autoFlashEvent.addListener(_onAutoFlashEvent);
@@ -578,6 +580,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         // o al armar auto-detect siguen siendo inmediatas y sin límite.
         await PermissionRecoveryService.showRecoveryDialogThrottled(context);
       }
+      unawaited(PermissionReportService.reportIfNeeded());
       await _loadActiveVehicle();
       _syncTrackingUiState();
     } catch (e) {

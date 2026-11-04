@@ -74,7 +74,7 @@ Gig-app detection (optional, premium feature): if you enable Automatic Detection
 
 Purchases: if you buy a subscription, the payment is processed by Google Play (in the app) or Stripe (on the website). We receive the subscription status, plan, and transaction identifiers -- never your full card number.
 
-Device and diagnostic information: device type, operating-system version, app version, and crash or error reports (including the screen or step where the error happened), used for troubleshooting and security.
+Device and diagnostic information: device type, operating-system version, app version, which app permissions are turned on or off (for example, whether location is allowed all the time), and crash or error reports (including the screen or step where the error happened), used for troubleshooting and security. We keep only your latest permission status, and it never includes your location.
 
 Website data: the website uses cookies that are strictly necessary to keep you signed in and to remember your language. We do not use advertising or cross-site tracking cookies.
 

@@ -30,6 +30,15 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.13+53 — 2026-11-03
+
+- Permissions steps: the "allowed" check is now the Olimsys brand blue.
+- The app reports which permissions are on/off (plus app version, OS version and
+  phone model) to `device_permission_status`, one row per user, so support can
+  see why a phone loses miles. No location, no identifiers; the privacy policy
+  now says so. Needs migration `20261104120000_device_permission_status` (the
+  app ignores a missing function and shows nothing to the driver).
+
 ## 1.3.12+52 — 2026-11-03
 
 - Permissions, one step at a time: location, location "all the time",

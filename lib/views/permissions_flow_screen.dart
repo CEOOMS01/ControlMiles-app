@@ -287,8 +287,8 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
   Widget _stepBody(AppState appState, Color primary, Color cardColor, Color borderColor, Color textColor,
       Color subTextColor) {
     final step = _step;
-    const green = Color(0xFF2E9E5B);
-    final iconColor = _success ? green : primary;
+    // The check is the Olimsys brand blue (the theme's primary), not green.
+    final iconColor = primary;
 
     // After allowing location, a phone that gave only "approximate" lands here
     // again: say exactly what to change instead of repeating the same text.
@@ -296,7 +296,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
 
     return Column(
       children: [
-        // The effect: the icon swaps for a check that pops in, in green.
+        // The effect: the icon swaps for a check that pops in, in brand blue.
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
           width: 112,
@@ -324,7 +324,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
         Text(
           _success ? appState.tr('perm_flow_granted') : appState.tr('perm_flow_${step.key}_title'),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _success ? green : textColor),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _success ? primary : textColor),
         ),
         const SizedBox(height: 12),
         Text(
