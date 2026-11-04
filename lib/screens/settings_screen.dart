@@ -12,6 +12,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
+import '../models/gig_app.dart';
 import '../services/work_schedule.dart';
 import '../services/work_places.dart';
 import '../services/work_place_service.dart';
@@ -145,6 +146,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     WorkPlaceStore.load().then((p) {
       if (mounted) setState(() => _workPlaces = p);
     });
+    WorkPlaceStore.autoStart().then((on) {
+      if (mounted) setState(() => _workAutoStart = on);
+    });
   }
 
   // Work-hours reminder: the copy the UI paints; the truth is in
@@ -170,6 +174,29 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   List<WorkPlace> _workPlaces = [];
+  bool _workAutoStart = false;
+
+  /// "What kind of place is this?" -- null result = cancelled, '' = gig work
+  /// place (reminders only), otherwise an IrsPurposeCatalog id.
+  Future<String?> _pickPlacePurpose(AppState appState, BuildContext sheetContext) {
+    return showDialog<String>(
+      context: sheetContext,
+      builder: (ctx) => SimpleDialog(
+        title: Text(appState.tr('work_places_purpose_title')),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: Text(appState.tr('work_places_purpose_gig')),
+          ),
+          for (final id in WorkPlace.purposes)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, id),
+              child: Text(appState.tr(IrsPurposeCatalog.labelKeyFor(id)!)),
+            ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _removeWorkPlace(WorkPlace place) async {
     final next = _workPlaces.where((p) => p.id != place.id).toList();
@@ -222,6 +249,9 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
     if (name == null || name.isEmpty) return;
+    if (!sheetContext.mounted) return;
+    final purpose = await _pickPlacePurpose(appState, sheetContext);
+    if (purpose == null) return;
 
     try {
       final location = await tl.Tracelet.getCurrentPosition(timeout: 20, persist: false);
@@ -231,6 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         radius: WorkPlace.defaultRadius,
+        purpose: purpose.isEmpty ? null : purpose,
       );
       final next = [..._workPlaces, place];
       setState(() => _workPlaces = next);
@@ -380,6 +411,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(Icons.place_outlined, color: primary),
                         title: Text(place.name, style: TextStyle(color: textColor)),
+                        subtitle: Text(
+                          appState.tr(place.purpose == null
+                              ? 'work_places_purpose_gig'
+                              : IrsPurposeCatalog.labelKeyFor(place.purpose)!),
+                          style: TextStyle(fontSize: 12, color: subTextColor),
+                        ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline_rounded),
                           onPressed: () async {
@@ -396,6 +433,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                       icon: const Icon(Icons.my_location_rounded, size: 18),
                       label: Text(appState.tr('work_places_add')),
                     ),
+                    if (_workPlaces.any((p) => p.purpose != null))
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(appState.tr('work_places_autostart'),
+                            style: TextStyle(fontSize: 14, color: textColor)),
+                        subtitle: Text(appState.tr('work_places_autostart_hint'),
+                            style: TextStyle(fontSize: 12, color: subTextColor)),
+                        value: _workAutoStart,
+                        onChanged: (v) async {
+                          setState(() => _workAutoStart = v);
+                          setSheetState(() {});
+                          await WorkPlaceStore.setAutoStart(v);
+                        },
+                      ),
                   ],
                 ),
               ),

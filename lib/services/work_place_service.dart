@@ -4,7 +4,10 @@
 // Work places (2026-11-01, Gig Premium): when the driver stays ~2.5 minutes
 // inside one of their saved places during their work hours, show "Arrived at
 // X -- start tracking?". When they leave a place with a trip running, show
-// "Stop tracking?". Reminders only: nothing starts or stops by itself.
+// "Stop tracking?". Reminders only, unless the driver gave the place a purpose
+// (2026-11-03): then, with the opt-in switch on, arriving starts a trip of that
+// purpose, and a purpose trip that sits ~3 minutes inside a place with a
+// purpose is closed. Gig-app trips are never touched.
 //
 // Uses Tracelet's native geofences (same engine as the trip GPS). Location
 // never leaves the phone for this. Premium only: setPremium() is called by
@@ -14,8 +17,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracelet/tracelet.dart' as tl;
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../tracking/tracking_controller.dart';
 import 'local_storage_service.dart';
 import 'notification_service.dart';
+import 'odometer_capture_service.dart';
+import 'vehicle_service.dart';
 import 'work_places.dart';
 import 'work_schedule.dart';
 
@@ -24,8 +32,9 @@ class WorkPlaceService {
 
   static const _kPremium = 'work_places_premium';
 
-  /// Stay this long inside a place before the arrival reminder (ms).
-  static const int dwellMs = 150000;
+  /// Stay this long inside a place before the arrival reminder, the opt-in
+  /// auto start, or the auto stop of a purpose trip (ms).
+  static const int dwellMs = 180000;
 
   static Future<void> setPremium(bool premium) async {
     final prefs = await SharedPreferences.getInstance();
@@ -95,17 +104,84 @@ class WorkPlaceService {
       }
       final name = (event.extras['name'] as String?) ?? '';
       final tripActive = await LocalStorageService.hasActiveTrip();
+      final place = await _placeFor(event.identifier);
 
       if (event.action == tl.GeofenceAction.dwell) {
-        if (tripActive) return;
+        if (tripActive) {
+          // Parked at a place that has a purpose, with a trip of that kind
+          // running and nothing moving for the dwell time: the trip is over.
+          if (place?.purpose != null && await _autoStop()) {
+            await NotificationService.instance.showWorkPlaceAutoStopped(name);
+          }
+          return;
+        }
         if (!await _insideWorkHours(DateTime.now())) return;
+        if (place?.purpose != null && await WorkPlaceStore.autoStart() && await _autoStart(place!)) {
+          await NotificationService.instance.showWorkPlaceAutoStarted(name);
+          return;
+        }
         await NotificationService.instance.showWorkPlaceArrival(name);
       } else if (event.action == tl.GeofenceAction.exit) {
-        if (!tripActive) return;
+        // Leaving a place that has a purpose is how its trip begins: no
+        // "stop tracking?" reminder there (the arrival closes it instead).
+        if (!tripActive || place?.purpose != null) return;
         await NotificationService.instance.showWorkPlaceExit(name);
       }
     } catch (e) {
       debugPrint('[WorkPlaceService] handleEvent failed: $e');
+    }
+  }
+
+  static Future<WorkPlace?> _placeFor(String geofenceId) async {
+    for (final p in await WorkPlaceStore.load()) {
+      if (p.geofenceId == geofenceId) return p;
+    }
+    return null;
+  }
+
+  /// Opt-in start at a place that has a purpose. Only from the running app
+  /// (it needs the session and the navigator), and only when it can start
+  /// with no screen: if this week's odometer photo is still missing, the
+  /// driver gets the normal reminder instead. Returns true if a trip started.
+  static Future<bool> _autoStart(WorkPlace place) async {
+    try {
+      if (TrackingController.currentState != TrackingState.idle) return false;
+      final nav = NotificationService.instance.navigatorKey?.currentState;
+      final user = Supabase.instance.client.auth.currentUser;
+      if (nav == null || user == null) return false;
+
+      final vehicle = await VehicleService().getActiveOrAssignedVehicle(user.id);
+      if (vehicle != null && await OdometerCaptureService().needsCheckpointStartThisWeek(vehicle.id)) {
+        return false;
+      }
+      if (!nav.mounted) return false;
+
+      await TrackingController.startTripFlow(
+        context: nav.context,
+        gigApp: 'custom',
+        irsPurpose: place.purpose,
+      );
+      return TrackingController.currentState == TrackingState.running;
+    } catch (e) {
+      debugPrint('[WorkPlaceService] auto start failed: $e');
+      return false;
+    }
+  }
+
+  /// Ends a purpose trip (never a gig-app trip, whose long stops are normal).
+  /// Runs only where the trip lives in memory, i.e. the running app; from a
+  /// closed app the exit reminder still shows. Returns true if it closed.
+  static Future<bool> _autoStop() async {
+    try {
+      if (TrackingController.currentState == TrackingState.idle ||
+          TrackingController.activeSessionId == null ||
+          TrackingController.currentGigApp != 'custom') {
+        return false;
+      }
+      return await TrackingController.stopTracking();
+    } catch (e) {
+      debugPrint('[WorkPlaceService] auto stop failed: $e');
+      return false;
     }
   }
 

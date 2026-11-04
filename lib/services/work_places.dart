@@ -16,13 +16,30 @@ class WorkPlace {
   final double longitude;
   final double radius; // meters
 
+  /// What trips to/at this place are (an IrsPurposeCatalog id: 'work',
+  /// 'business', 'charitable'...). null = a gig-work place from before this
+  /// existed: reminders only, as always.
+  final String? purpose;
+
   const WorkPlace({
     required this.id,
     required this.name,
     required this.latitude,
     required this.longitude,
     required this.radius,
+    this.purpose,
   });
+
+  /// Purposes the driver can pick for a place, in display order.
+  static const List<String> purposes = [
+    'work',
+    'business',
+    'charitable',
+    'medical',
+    'education',
+    'moving',
+    'personal',
+  ];
 
   /// Below ~150 m the OS geofences are unreliable (GPS error, Wi-Fi/cell
   /// positioning) and would fire late or not at all.
@@ -44,6 +61,7 @@ class WorkPlace {
         'lat': latitude,
         'lng': longitude,
         'radius': radius,
+        'purpose': purpose,
       };
 
   static WorkPlace? fromJson(Object? raw) {
@@ -60,6 +78,7 @@ class WorkPlace {
       latitude: lat.toDouble(),
       longitude: lng.toDouble(),
       radius: radius is num ? radius.toDouble().clamp(minRadius, maxRadius) : defaultRadius,
+      purpose: raw['purpose'] is String && purposes.contains(raw['purpose']) ? raw['purpose'] as String : null,
     );
   }
 }
@@ -78,6 +97,20 @@ class WorkPlaceStore {
     } catch (_) {
       return [];
     }
+  }
+
+  static const _kAutoStart = 'work_places_auto_start';
+
+  /// Opt-in: start the trip by itself on arriving at a place that has a
+  /// purpose. Off unless the driver turns it on.
+  static Future<bool> autoStart() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kAutoStart) ?? false;
+  }
+
+  static Future<void> setAutoStart(bool on) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kAutoStart, on);
   }
 
   static Future<void> save(List<WorkPlace> places) async {

@@ -806,6 +806,17 @@ class NotificationService {
   Future<void> showWorkPlaceExit(String placeName) =>
       _showWorkPlace(_workPlaceExitId, 'work_place_exit_title', 'work_place_exit_body', placeName);
 
+  // Opt-in automatic start / stop at a place (ids 1042 and 1043): the app
+  // tells the driver what it just did.
+  static const int _workPlaceAutoStartedId = 1042;
+  static const int _workPlaceAutoStoppedId = 1043;
+
+  Future<void> showWorkPlaceAutoStarted(String placeName) => _showWorkPlace(
+      _workPlaceAutoStartedId, 'work_place_autostart_title', 'work_place_autostart_body', placeName);
+
+  Future<void> showWorkPlaceAutoStopped(String placeName) => _showWorkPlace(
+      _workPlaceAutoStoppedId, 'work_place_autostop_title', 'work_place_autostop_body', placeName);
+
   Future<void> _showWorkPlace(int id, String titleKey, String bodyKey, String placeName) async {
     // May run in a headless isolate (app closed), where init() has never run.
     // Light setup only: no permission requests -- init() would open system
@@ -849,7 +860,12 @@ class NotificationService {
         iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
         macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
       ),
-      payload: id == _workPlaceArrivalId ? 'work_place_arrival' : 'work_place_exit',
+      payload: switch (id) {
+        _workPlaceArrivalId => 'work_place_arrival',
+        _workPlaceAutoStartedId => 'work_place_autostarted',
+        _workPlaceAutoStoppedId => 'work_place_autostopped',
+        _ => 'work_place_exit',
+      },
     );
   }
 
