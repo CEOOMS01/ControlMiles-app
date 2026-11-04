@@ -20,6 +20,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
 import '../theme/cm_colors.dart';
+import '../widgets/brand_loader.dart';
 import '../utils/permission_status.dart';
 
 class _Step {
@@ -39,12 +40,30 @@ class PermissionsFlowScreen extends StatefulWidget {
   /// odometer photo is needed, like MileIQ does. Settings lists it.
   final bool includeCamera;
 
+  /// Same for Usage Access (Premium gig-app detection): it is asked when the
+  /// driver turns that feature on, not at first launch.
+  final bool includeUsageAccess;
+
+  /// Asks for ONE permission, in the moment it is needed (the camera when an
+  /// odometer photo is about to be taken, Usage Access when auto-detect is
+  /// turned on). Same page as the first-launch steps, just that one step.
+  final PermKind? only;
+
   /// Onboarding only: runs the first time the driver taps Allow (records the
   /// 18+ / Terms acceptance). While it has not run, the acceptance sentence is
   /// shown under the button, so there is no separate screen or checkbox.
   final Future<void> Function()? onAccept;
 
-  const PermissionsFlowScreen({super.key, this.dismissible = false, this.includeCamera = true, this.onAccept});
+  const PermissionsFlowScreen({super.key, this.dismissible = false, this.includeCamera = true, this.includeUsageAccess = true, this.onAccept, this.only});
+
+  /// Opens the single-step page for [kind] and returns when it closes; the
+  /// caller re-checks the permission itself (the driver may have skipped it).
+  static Future<void> ask(BuildContext context, PermKind kind) async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => PermissionsFlowScreen(dismissible: true, only: kind)),
+    );
+  }
 
   @override
   State<PermissionsFlowScreen> createState() => _PermissionsFlowScreenState();
@@ -63,16 +82,17 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _steps = [
+    _steps = <_Step>[
       const _Step(PermKind.location, Icons.location_on_rounded, 'location', required: true),
       const _Step(PermKind.locationAlways, Icons.my_location_rounded, 'always'),
       const _Step(PermKind.notifications, Icons.notifications_active_rounded, 'notifications'),
       const _Step(PermKind.motion, Icons.directions_walk_rounded, 'motion'),
       if (Platform.isAndroid) const _Step(PermKind.battery, Icons.battery_charging_full_rounded, 'battery'),
-      if (widget.includeCamera) const _Step(PermKind.camera, Icons.camera_alt_rounded, 'camera'),
-      if (GigAppDetectionService.instance.isSupported)
+      if (widget.includeCamera || widget.only != null) const _Step(PermKind.camera, Icons.camera_alt_rounded, 'camera'),
+      if ((widget.includeUsageAccess || widget.only != null) && GigAppDetectionService.instance.isSupported)
         const _Step(PermKind.usageAccess, Icons.apps_rounded, 'usage'),
     ];
+    if (widget.only != null) _steps.removeWhere((st) => st.kind != widget.only);
     _advanceFrom(0);
   }
 
@@ -212,9 +232,10 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: !_ready
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: BrandLoader())
                 : Column(
                     children: [
+                      if (_steps.length > 1)
                       Row(
                         children: [
                           Expanded(
@@ -278,11 +299,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           child: _busy
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                                )
+                              ? const BrandLoader.small(color: Colors.white)
                               : Text(
                                   appState.tr(_needsSettings ? 'perm_flow_open_settings' : 'perm_flow_allow').toUpperCase(),
                                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),

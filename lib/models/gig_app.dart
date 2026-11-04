@@ -302,6 +302,11 @@ class IrsPurposeCatalog {
     'charitable': 'charitable',
     'education': 'education_study',
     'personal': 'personal_other',
+    // Business subtypes (2026-11-04); reports count them as business.
+    'delivery': 'purpose_delivery',
+    'errand': 'purpose_errand',
+    'client': 'purpose_client',
+    'travel': 'purpose_travel',
   };
 
   // id -> texto plano en inglés (para el PDF, que ya es 100% inglés
@@ -315,6 +320,10 @@ class IrsPurposeCatalog {
     'charitable': 'Charitable',
     'education': 'Education',
     'personal': 'Personal',
+    'delivery': 'Delivery',
+    'errand': 'Errands and Supplies',
+    'client': 'Client Visit',
+    'travel': 'Airport and Travel',
   };
 
   static String? labelKeyFor(String? purposeId) =>

@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../legal/legal_documents.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
+import '../widgets/brand_loader.dart';
 import 'permissions_flow_screen.dart';
 
 class WelcomePage extends StatefulWidget {
@@ -66,7 +67,7 @@ class _WelcomePageState extends State<WelcomePage> {
       final done = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
-          builder: (_) => PermissionsFlowScreen(includeCamera: false, onAccept: _recordAcceptance),
+          builder: (_) => PermissionsFlowScreen(includeCamera: false, includeUsageAccess: false, onAccept: _recordAcceptance),
         ),
       );
       if (!mounted) return;
@@ -131,7 +132,7 @@ class _WelcomePageState extends State<WelcomePage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: _isProcessing
-            ? const CircularProgressIndicator()
+            ? const BrandLoader()
             : Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(

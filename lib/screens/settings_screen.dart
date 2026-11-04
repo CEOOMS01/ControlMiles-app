@@ -427,7 +427,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.place_outlined, color: primary),
                         title: Text(place.name, style: TextStyle(color: textColor)),
                         subtitle: Text(
                           appState.tr(place.purpose == null
@@ -443,13 +442,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                           },
                         ),
                       ),
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: () async {
                         await _addCurrentWorkPlace(appState, sheetContext);
                         setSheetState(() {});
                       },
-                      icon: const Icon(Icons.my_location_rounded, size: 18),
-                      label: Text(appState.tr('work_places_add')),
+                      child: Text(appState.tr('work_places_add')),
                     ),
                     if (_workPlaces.any((p) => p.purpose != null))
                       SwitchListTile(
@@ -564,7 +562,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _buildToggleSetting(
-                icon: Icons.schedule_rounded,
                 title: appState.tr('work_reminder_title'),
                 subtitle: _workScheduleSummary(appState),
                 value: _workSchedule.enabled,
@@ -652,7 +649,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       color: Colors.red,
                     ),
                   )
-                : const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                : null,
             title: Text(
               appState.tr('delete_account'),
               style: const TextStyle(
@@ -951,12 +948,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: ListTile(
-                leading: Icon(
-                  _hasUsageAccess
-                      ? Icons.check_circle_rounded
-                      : Icons.apps_rounded,
-                  color: _hasUsageAccess ? Colors.green.shade600 : subTextColor,
-                ),
                 title: Text(
                   appState.tr('gig_app_detection_title'),
                   style: TextStyle(
@@ -1004,7 +995,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           // ocupar espacio en la pantalla principal cuando no se están
           // editando.
           _buildToggleSetting(
-            icon: Icons.notifications_active_outlined,
             title: appState.tr('notifications'),
             subtitle: appState.notificationsEnabled
                 ? appState.tr('notification_types_manage_hint')
@@ -1019,7 +1009,6 @@ class _SettingsScreenState extends State<SettingsScreen>
 
           const SizedBox(height: 10),
           _buildToggleSetting(
-            icon: Icons.straighten_rounded,
             title: appState.tr('metric_system'), // Llave validada
             value: appState.useMetricSystem,
             isDark: isDark,
@@ -1037,75 +1026,116 @@ class _SettingsScreenState extends State<SettingsScreen>
   /// confirmation, so this is the one place a user can check current
   /// status and fix either one without reinstalling.
   Widget _buildBackgroundReliabilitySection(AppState appState, bool isDark) {
+    Future<void> openFlow() async {
+      await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => const PermissionsFlowScreen(dismissible: true)),
+      );
+      await _refreshBackgroundReliabilityStatus();
+    }
+
+    String label(PermKind kind) => appState.tr(switch (kind) {
+          PermKind.location => 'perm_flow_location_title',
+          PermKind.locationAlways => 'perm_flow_always_title',
+          PermKind.notifications => 'perm_flow_notifications_title',
+          PermKind.motion => 'perm_flow_motion_title',
+          _ => 'perm_flow_camera_title',
+        });
+
+    // Every check as (title, state text, on/off, fix action).
+    final items = <(String, String, bool?, VoidCallback)>[
+      for (final kind in _statusKinds)
+        (
+          label(kind),
+          _permOk[kind] == null
+              ? appState.tr('checking_status')
+              : appState.tr(_permOk[kind]! ? 'perm_status_ok' : 'perm_status_missing'),
+          _permOk[kind],
+          openFlow,
+        ),
+      (
+        appState.tr('battery_optimization_title'),
+        _ignoringBatteryOptimizations == null
+            ? appState.tr('checking_status')
+            : appState.tr(_ignoringBatteryOptimizations!
+                ? 'battery_optimization_granted'
+                : 'battery_optimization_missing'),
+        _ignoringBatteryOptimizations,
+        () async {
+          await Permission.ignoreBatteryOptimizations.request();
+          await _refreshBackgroundReliabilityStatus();
+        },
+      ),
+      (
+        appState.tr('exact_alarm_title'),
+        _hasExactAlarmPermission == null
+            ? appState.tr('checking_status')
+            : appState.tr(_hasExactAlarmPermission! ? 'exact_alarm_granted' : 'exact_alarm_missing'),
+        _hasExactAlarmPermission,
+        () async {
+          await NotificationService.instance.requestExactAlarmPermission();
+          await _refreshBackgroundReliabilityStatus();
+        },
+      ),
+    ];
+
+    Widget row((String, String, bool?, VoidCallback) it) => _buildPermissionStatusRow(
+          appState: appState,
+          title: it.$1,
+          subtitle: it.$2,
+          granted: it.$3,
+          isDark: isDark,
+          onTap: it.$4,
+        );
+
+    final off = items.where((it) => it.$3 == false).toList();
+    final on = items.where((it) => it.$3 != false).toList();
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          for (final kind in _statusKinds) ...[
-            _buildPermissionStatusRow(
-              appState: appState,
-              icon: switch (kind) {
-                PermKind.location => Icons.location_on_outlined,
-                PermKind.locationAlways => Icons.my_location_outlined,
-                PermKind.notifications => Icons.notifications_outlined,
-                PermKind.motion => Icons.directions_walk_rounded,
-                _ => Icons.camera_alt_outlined,
-              },
-              title: appState.tr(switch (kind) {
-                PermKind.location => 'perm_flow_location_title',
-                PermKind.locationAlways => 'perm_flow_always_title',
-                PermKind.notifications => 'perm_flow_notifications_title',
-                PermKind.motion => 'perm_flow_motion_title',
-                _ => 'perm_flow_camera_title',
-              }),
-              subtitle: _permOk[kind] == null
-                  ? appState.tr('checking_status')
-                  : appState.tr(_permOk[kind]! ? 'perm_status_ok' : 'perm_status_missing'),
-              granted: _permOk[kind],
-              isDark: isDark,
-              onTap: () async {
-                await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PermissionsFlowScreen(dismissible: true)),
-                );
-                await _refreshBackgroundReliabilityStatus();
-              },
-            ),
+          for (final it in off) ...[
+            row(it),
             const SizedBox(height: 10),
           ],
-          _buildPermissionStatusRow(
-            appState: appState,
-            icon: Icons.battery_saver_outlined,
-            title: appState.tr('battery_optimization_title'),
-            subtitle: _ignoringBatteryOptimizations == null
-                ? appState.tr('checking_status')
-                : (_ignoringBatteryOptimizations!
-                    ? appState.tr('battery_optimization_granted')
-                    : appState.tr('battery_optimization_missing')),
-            granted: _ignoringBatteryOptimizations,
-            isDark: isDark,
-            onTap: () async {
-              await Permission.ignoreBatteryOptimizations.request();
-              await _refreshBackgroundReliabilityStatus();
-            },
-          ),
-          const SizedBox(height: 10),
-          _buildPermissionStatusRow(
-            appState: appState,
-            icon: Icons.alarm_outlined,
-            title: appState.tr('exact_alarm_title'),
-            subtitle: _hasExactAlarmPermission == null
-                ? appState.tr('checking_status')
-                : (_hasExactAlarmPermission!
-                    ? appState.tr('exact_alarm_granted')
-                    : appState.tr('exact_alarm_missing')),
-            granted: _hasExactAlarmPermission,
-            isDark: isDark,
-            onTap: () async {
-              await NotificationService.instance.requestExactAlarmPermission();
-              await _refreshBackgroundReliabilityStatus();
-            },
-          ),
+          if (off.isEmpty && _permOk.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(appState.tr('perm_all_ok'), style: TextStyle(fontSize: 13, color: subTextColor)),
+              ),
+            ),
+          if (on.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1C1812) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                  childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  title: Text(
+                    appState.tr('perm_active_group').replaceAll('{n}', '${on.length}'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF2E281F),
+                    ),
+                  ),
+                  children: [
+                    for (final it in on) ...[
+                      row(it),
+                      const SizedBox(height: 4),
+                    ],
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1113,7 +1143,6 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildPermissionStatusRow({
     required AppState appState,
-    required IconData icon,
     required String title,
     required String subtitle,
     required bool? granted,
@@ -1130,7 +1159,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           title,
           style: TextStyle(
@@ -1186,15 +1214,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     // reach them, with no indication either was Premium-only. Filtered
     // out here instead of touching NotificationService or the toggles
     // list's other 3 entries, which are correct for every tier as-is.
-    final types = <(String, String, IconData)>[
-      (NotificationService.prefPauseReminder, 'notif_type_pause_reminder', Icons.pause_circle_outline),
-      (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip', Icons.timer_outlined),
-      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary', Icons.insights_outlined),
-      (NotificationService.prefWorkSchedule, 'notif_type_work_schedule', Icons.schedule_rounded),
+    final types = <(String, String)>[
+      (NotificationService.prefPauseReminder, 'notif_type_pause_reminder'),
+      (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip'),
+      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary'),
+      (NotificationService.prefWorkSchedule, 'notif_type_work_schedule'),
       if (appState.premiumEntitled) ...[
-        (NotificationService.prefWorkPlaces, 'notif_type_work_places', Icons.place_outlined),
-        (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch', Icons.swap_horiz_rounded),
-        (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started', Icons.play_circle_outline),
+        (NotificationService.prefWorkPlaces, 'notif_type_work_places'),
+        (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch'),
+        (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started'),
       ],
     ];
 
@@ -1235,10 +1263,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    for (final (prefKey, labelKey, icon) in types) ...[
+                    for (final (prefKey, labelKey) in types) ...[
                       _buildToggleSetting(
-                        icon: icon,
-                        title: appState.tr(labelKey),
+                title: appState.tr(labelKey),
                         value: _notifTypeEnabled[prefKey] ?? true,
                         isDark: isDark,
                         onChanged: (v) async {
@@ -1270,7 +1297,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildToggleSetting({
-    required IconData icon,
     required String title,
     required bool value,
     required bool isDark,
@@ -1290,7 +1316,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
       child: ListTile(
         onTap: onTap,
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           title,
           style: TextStyle(
@@ -1385,7 +1410,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           // (ProductTour.replayRequested). Gig app only for now.
           ...[
             _buildLegalLinkRow(
-              icon: Icons.school_rounded,
               label: appState.tr('ptour_replay'),
               isDark: isDark,
               onTap: () async {
@@ -1400,7 +1424,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             _buildMileageMethodRow(appState, isDark),
             const SizedBox(height: 10),
             _buildLegalLinkRow(
-              icon: Icons.workspace_premium_outlined,
               label: appState.tr('subscription'),
               isDark: isDark,
               onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
@@ -1408,7 +1431,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             const SizedBox(height: 10),
           ],
           _buildLegalLinkRow(
-            icon: Icons.privacy_tip_outlined,
             label: appState.tr('privacy_policy'),
             isDark: isDark,
             onTap: () => Navigator.push(
@@ -1428,7 +1450,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           const SizedBox(height: 10),
           _buildLegalLinkRow(
-            icon: Icons.description_outlined,
             label: appState.tr('terms_conditions'),
             isDark: isDark,
             onTap: () => Navigator.push(
@@ -1445,7 +1466,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           // Terms of Use (2026-10-01): rules for using the app, same for
           // every account type (unlike the Terms above).
           _buildLegalLinkRow(
-            icon: Icons.rule_rounded,
             label: appState.tr('terms_of_use'),
             isDark: isDark,
             onTap: () => Navigator.push(
@@ -1466,7 +1486,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           // ODbL and the bundled packages' licenses (MapLibre etc.) --
           // Flutter's LicensePage lists every package license itself.
           _buildLegalLinkRow(
-            icon: Icons.map_outlined,
             label: appState.tr('licenses_map_data'),
             isDark: isDark,
             onTap: () => showLicensePage(
@@ -1482,7 +1501,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           const SizedBox(height: 10),
           _buildLegalLinkRow(
-            icon: Icons.mail_outline_rounded,
             label: appState.tr('send_feedback'),
             isDark: isDark,
             onTap: () => _sendFeedback(appState),
@@ -1530,10 +1548,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(
-          Icons.request_quote_outlined,
-          color: Theme.of(context).colorScheme.primary,
-        ),
         title: Text(
           appState.tr('mileage_method_label'),
           style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
@@ -1562,7 +1576,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildLegalLinkRow({
-    required IconData icon,
     required String label,
     required bool isDark,
     required VoidCallback onTap,
@@ -1575,7 +1588,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           label,
           style: TextStyle(fontWeight: FontWeight.w600, color: textColor),

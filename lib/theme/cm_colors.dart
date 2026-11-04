@@ -24,6 +24,13 @@ class CmColors {
   static const blueBright = Color(0xFF3E93CA); // logo blue, highlights
   static const amber = Color(0xFFBD5B26); // "live" things: active trip, today's routes
 
+  // Official logo blue (sampled from the logo itself: #0275F4) -- more intense
+  // than the app's theme blue. Only the start-up screen uses it, so it reads as
+  // one piece with the system launch screen that shows the same logo.
+  static const logoBlue = Color(0xFF0275F4);
+  // The system launch screen's background (flutter_native_splash `color`).
+  static const splashBg = Color(0xFFF8FAFC);
+
   // Light
   static const cream = Color(0xFFFAF6EE); // page background (was slate-50)
   static const creamDeep = Color(0xFFF3ECDF); // subtle fills (was slate-100)

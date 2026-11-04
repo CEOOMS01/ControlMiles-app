@@ -32,6 +32,7 @@ import 'services/notification_service.dart';
 
 // Screens & Views
 import 'services/startup_router.dart';
+import 'widgets/brand_loader.dart';
 import 'views/welcome_page.dart';
 import 'screens/login_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -373,13 +374,21 @@ class _StartupGateState extends State<_StartupGate> {
     _go();
   }
 
+  // The wheel and its line are the start-up screen: they stay up for at least
+  // a beat, so the turn is seen even when the app is ready at once.
+  static const _minShown = Duration(milliseconds: 900);
+
   Future<void> _go() async {
-    final route = await resolveStartRoute(context.read<AppState>());
+    final appState = context.read<AppState>();
+    final results = await Future.wait<Object?>([
+      resolveStartRoute(appState),
+      Future<void>.delayed(_minShown),
+    ]);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, route);
+    Navigator.pushReplacementNamed(context, results.first! as String);
   }
 
   @override
   Widget build(BuildContext context) =>
-      Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor, body: const SizedBox.expand());
+      BrandSplash(tagline: context.watch<AppState>().tr('splash_tagline'));
 }

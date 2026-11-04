@@ -16,6 +16,7 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
+import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
 import '../widgets/cm_card_header.dart';
 import '../widgets/driver_live_map_view.dart';
@@ -1244,7 +1245,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ? appState.tr('kilometer_short')
         : appState.tr('mile_short');
 
-    if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (loading) return BrandSplash(tagline: appState.tr('splash_tagline'));
     if (!_tourChecked && !_vehicleLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartTour());
     }

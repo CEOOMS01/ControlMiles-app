@@ -67,6 +67,8 @@ import '../services/odometer_capture_service.dart';
 import '../services/vehicle_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../utils/permission_recovery_service.dart';
+import '../utils/permission_status.dart';
+import '../views/permissions_flow_screen.dart';
 
 class AutoTripDetectionService {
   AutoTripDetectionService._internal();
@@ -312,29 +314,15 @@ class AutoTripDetectionService {
     if (GigAppDetectionService.instance.isSupported &&
         !await GigAppDetectionService.instance.hasUsageAccess()) {
       if (!context.mounted) return false;
-      final openSettings = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(appState.tr('usage_access_required_title')),
-          content: Text(appState.tr('usage_access_required_body')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(appState.tr('cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(appState.tr('open_settings')),
-            ),
-          ],
-        ),
-      );
-      if (openSettings == true) {
-        await GigAppDetectionService.instance.openUsageAccessSettings();
+      // The same one-step page as the first launch: why it is needed and what
+      // stops working without it. The page re-checks when the driver comes
+      // back from Settings, so a grant there carries straight on to arming.
+      await PermissionsFlowScreen.ask(context, PermKind.usageAccess);
+      if (!await GigAppDetectionService.instance.hasUsageAccess()) {
+        // No se arma: "armado pero ciego" es exactamente el estado que este
+        // arreglo existe para impedir.
+        return false;
       }
-      // No se arma: "armado pero ciego" es exactamente el estado que este
-      // arreglo existe para impedir.
-      return false;
     }
 
     // Weekly odometer checkpoint (explicit user request, 2026-09-03): if

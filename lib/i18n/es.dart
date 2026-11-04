@@ -242,6 +242,14 @@ const Map<String, String> esTexts = {
   'charitable': 'Caridad / Voluntariado',
   'education_study': 'Educación / Estudio',
   'personal_other': 'Personal / Otros',
+  'purpose_group_recent': 'Recientes',
+  'purpose_group_business': 'Negocio',
+  'purpose_group_personal': 'Personal',
+  'purpose_rate_hint': '\$ tiene tarifa propia',
+  'purpose_delivery': 'Entrega y reparto',
+  'purpose_errand': 'Mandados y suministros',
+  'purpose_client': 'Visita a cliente',
+  'purpose_travel': 'Aeropuerto y viaje',
 
   // ============================================================
   // AJUSTES
@@ -413,6 +421,9 @@ const Map<String, String> esTexts = {
   'accept_terms': "Confirmo que tengo al menos 18 años y acepto los Términos de Servicio y la Política de Privacidad.",
   'perm_status_ok': 'Permitido',
   'perm_status_missing': 'No está completamente permitido. Toca para arreglarlo.',
+  'perm_active_group': 'Activos ({n})',
+  'perm_all_ok': 'Todo está activo',
+  'splash_tagline': 'Registra tu camino',
   'perm_flow_step_of': 'Paso {n} de {total}',
   'perm_flow_allow': 'Permitir',
   'perm_flow_not_now': 'Ahora no',

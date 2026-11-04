@@ -1,7 +1,10 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/widgets/gig_app_selector.dart - VERSIÓN MEJORADA CON IRS PURPOSE
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'full_bleed.dart';
@@ -320,15 +323,37 @@ class GigAppSelector extends StatelessWidget {
   // ==============================================================
   // MENÚ IRS PARA CUSTOM/TRUCK
   // ==============================================================
+  static const _kRecentKey = 'recent_irs_purposes';
+
+  Future<List<String>> _loadRecentPurposes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getStringList(_kRecentKey) ?? const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _rememberPurpose(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = [id, ...(prefs.getStringList(_kRecentKey) ?? const []).where((e) => e != id)];
+      await prefs.setStringList(_kRecentKey, list.take(2).toList());
+    } catch (_) {}
+  }
+
   void _showIrsCategoryMenu(BuildContext context, AppState appState) async {
+    final recent = await _loadRecentPurposes();
+    if (!context.mounted) return;
     final selectedCategory = await showModalBottomSheet<String?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (modalContext) => _buildIrsCategorySheet(modalContext, appState),
+      builder: (modalContext) => _buildIrsCategorySheet(modalContext, appState, recent),
     );
 
     if (selectedCategory != null) {
+      unawaited(_rememberPurpose(selectedCategory));
       // Opción 1: Usar callback dedicado (recomendado)
       if (onCustomSelected != null) {
         onCustomSelected!('custom', selectedCategory);
@@ -341,40 +366,53 @@ class GigAppSelector extends StatelessWidget {
     }
   }
 
-  Widget _buildIrsCategorySheet(BuildContext context, AppState appState) {
+  // Two groups, text only (2026-11-04): Business and Personal, the way MileIQ
+  // sorts them, with the last two choices on top. "$" marks the purposes that
+  // have a rate of their own. "Work commute" stays under Personal.
+  static const _businessPurposes = ['business', 'delivery', 'errand', 'client', 'travel'];
+  static const _personalPurposes = ['work', 'medical', 'charitable', 'moving', 'education', 'personal'];
+  static const _ratePurposes = {'medical', 'charitable', 'moving'};
+
+  Widget _buildIrsCategorySheet(BuildContext context, AppState appState, List<String> recent) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final muted = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6);
 
-    final categories = [
-      {
-        'id': 'business',
-        'labelKey': 'business_purpose',
-        'icon': Icons.business_center,
-      },
-      {'id': 'work', 'labelKey': 'work_commute', 'icon': Icons.work},
-      {'id': 'medical', 'labelKey': 'medical', 'icon': Icons.local_hospital},
-      {'id': 'moving', 'labelKey': 'moving', 'icon': Icons.home_work},
-      {
-        'id': 'charitable',
-        'labelKey': 'charitable',
-        'icon': Icons.volunteer_activism,
-      },
-      {'id': 'education', 'labelKey': 'education_study', 'icon': Icons.school},
-      {'id': 'personal', 'labelKey': 'personal_other', 'icon': Icons.person},
-    ];
+    Widget groupTitle(String key) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(appState.tr(key), style: TextStyle(fontSize: 12, color: muted)),
+          ),
+        );
+
+    Widget row(String id) {
+      final key = IrsPurposeCatalog.labelKeyFor(id) ?? id;
+      return ListTile(
+        title: Text(
+          appState.tr(key),
+          style: TextStyle(fontWeight: FontWeight.w500, color: theme.textTheme.bodyLarge?.color),
+        ),
+        trailing: _ratePurposes.contains(id)
+            ? Text('\$', style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.primary))
+            : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () => Navigator.pop(context, id),
+      );
+    }
+
+    final known = {..._businessPurposes, ..._personalPurposes};
+    final recents = recent.where(known.contains).toList();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      // BUG FIX (real, found via CGC Core monitoring -- "ListTile
-      // background color or ink splashes may be invisible"): this
-      // Container's own BoxDecoration.color sat between the category
-      // ListTiles below and the nearest Material ancestor, hiding their
-      // tap ripple. Wrapping the content in a transparent Material gives
-      // them a nearer surface to paint on -- no visual change.
+      // A transparent Material gives the tiles a nearer surface to paint their
+      // ripple on (see the original CGC Core finding about invisible splashes).
       child: Material(
         color: Colors.transparent,
         child: Column(
@@ -383,7 +421,7 @@ class GigAppSelector extends StatelessWidget {
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[700] : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -391,70 +429,35 @@ class GigAppSelector extends StatelessWidget {
             ),
             Text(
               appState.tr('select_trip_purpose'),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.textTheme.titleLarge?.color,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textTheme.titleLarge?.color),
             ),
-            const SizedBox(height: 6),
-            Text(
-              appState.tr('irs_deduction_note'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.textTheme.bodyMedium?.color?.withValues(
-                  alpha: 0.7,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 8),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                children: categories
-                    .map(
-                      (cat) => ListTile(
-                        leading: Icon(
-                          cat['icon'] as IconData,
-                          color: theme.iconTheme.color,
-                          size: 24,
-                        ),
-                        title: Text(
-                          appState.tr(cat['labelKey'] as String),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: theme.textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onTap: () =>
-                            Navigator.pop(context, cat['id'] as String),
-                      ),
-                    )
-                    .toList(),
+                children: [
+                  if (recents.isNotEmpty) ...[
+                    groupTitle('purpose_group_recent'),
+                    ...recents.map(row),
+                  ],
+                  groupTitle('purpose_group_business'),
+                  ..._businessPurposes.map(row),
+                  groupTitle('purpose_group_personal'),
+                  ..._personalPurposes.map(row),
+                ],
               ),
             ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
+            Text(
+              '${appState.tr('purpose_rate_hint')}  ·  ${appState.tr('irs_deduction_note')}',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: muted),
+            ),
             SizedBox(
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(
-                  appState.tr('cancel'),
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Text(appState.tr('cancel'), style: TextStyle(color: muted, fontWeight: FontWeight.w600)),
               ),
             ),
           ],

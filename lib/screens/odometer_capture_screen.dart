@@ -37,6 +37,10 @@ import '../errors/app_error.dart';
 
 import '../utils/permission_recovery_service.dart';
 
+import '../utils/permission_status.dart';
+
+import '../views/permissions_flow_screen.dart';
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,9 +270,20 @@ class _OdometerCaptureScreenState extends State<OdometerCaptureScreen>
     }
   }
 
+  // The reason page is shown once per visit to this screen, before the system
+  // dialog; coming back from Settings re-runs _initCamera and must not ask again.
+  bool _askedCameraPermission = false;
+
   Future<void> _initCamera() async {
 
     if (mounted) setState(() => _cameraError = false);
+
+    if (!_askedCameraPermission && !await PermissionStatusService.isOk(PermKind.camera)) {
+      _askedCameraPermission = true;
+      if (!mounted) return;
+      await PermissionsFlowScreen.ask(context, PermKind.camera);
+      if (!mounted) return;
+    }
 
     if (_cameras.isEmpty) await initializeCameras();
 

@@ -30,6 +30,32 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.15+55 — 2026-11-04
+
+- New start-up screen: a steering wheel in the logo blue (#0275F4) that turns without
+  stopping (`lib/widgets/brand_loader.dart`), drawn in code so it needs no image.
+  Under it the line "Track your journey" ("Registra tu camino"); it stays up at least 0.9 s so the turn is seen. It also replaces the stock spinner
+  on the permission steps and the Allow button. It stays still when the phone
+  has animations turned off.
+- Business now also lists Delivery, Errands and supplies, Client visit and
+  Airport and travel (they count as business miles in reports). Needs the
+  `20261104180000_irs_purpose_business_subtypes` migration -- applied.
+- Trip purpose menu simplified, in the way MileIQ groups it: Recent (the last
+  two used), Business, and Personal (work commute, medical, charitable, moving,
+  education, other). Text only, no icons; "$" marks the purposes with their own
+  rate. "Work commute" stays under Personal.
+- Settings simplified: icons only on the three main sections (Language,
+  Automatic trips, Report); every other row is text only. "Background
+  reliability" lists only what is off, with a fix button; everything that is
+  already on folds into one "Active (n)" group.
+- The camera and Usage Access are now asked on their own page, in the moment
+  they are needed: the same "why / what stops working" page as the first launch,
+  with just that one step -- before the first odometer photo, and when
+  gig-app auto-detection is turned on (replaces the plain text dialog).
+- First-time permission steps no longer include Usage Access: it is asked when
+  the driver turns on gig-app auto-detection (Premium), which already asks for
+  it and explains why. Settings still lists it.
+
 ## 1.3.14+54 — 2026-11-04
 
 (Builds 52 and 54-56 were never uploaded to Play; 53 is the last one sent, so

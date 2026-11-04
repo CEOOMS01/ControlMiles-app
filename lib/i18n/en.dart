@@ -242,6 +242,14 @@ const Map<String, String> enTexts = {
    'charitable': 'Charitable',
    'education_study': 'Education',
    'personal_other': 'Personal / Other',
+  'purpose_group_recent': 'Recent',
+  'purpose_group_business': 'Business',
+  'purpose_group_personal': 'Personal',
+  'purpose_rate_hint': '\$ has its own rate',
+  'purpose_delivery': 'Delivery',
+  'purpose_errand': 'Errands and supplies',
+  'purpose_client': 'Client visit',
+  'purpose_travel': 'Airport and travel',
 
   // ============================================================
   // SETTINGS
@@ -423,6 +431,9 @@ const Map<String, String> enTexts = {
   'accept_terms': "I confirm I am at least 18 years old and accept the Terms of Service and Privacy Policy.",
   'perm_status_ok': 'Allowed',
   'perm_status_missing': 'Not fully allowed. Tap to fix it.',
+  'perm_active_group': 'Active ({n})',
+  'perm_all_ok': 'Everything is on',
+  'splash_tagline': 'Track your journey',
   'perm_flow_step_of': 'Step {n} of {total}',
   'perm_flow_allow': 'Allow',
   'perm_flow_not_now': 'Not now',
