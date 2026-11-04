@@ -33,7 +33,17 @@ class PermissionsFlowScreen extends StatefulWidget {
   /// Onboarding must go through the steps; opened later from Settings the
   /// driver may back out at any time.
   final bool dismissible;
-  const PermissionsFlowScreen({super.key, this.dismissible = false});
+
+  /// First-time onboarding leaves the camera out: it is asked at the moment an
+  /// odometer photo is needed, like MileIQ does. Settings lists it.
+  final bool includeCamera;
+
+  /// Onboarding only: runs the first time the driver taps Allow (records the
+  /// 18+ / Terms acceptance). While it has not run, the acceptance sentence is
+  /// shown under the button, so there is no separate screen or checkbox.
+  final Future<void> Function()? onAccept;
+
+  const PermissionsFlowScreen({super.key, this.dismissible = false, this.includeCamera = true, this.onAccept});
 
   @override
   State<PermissionsFlowScreen> createState() => _PermissionsFlowScreenState();
@@ -46,6 +56,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
   bool _busy = false;
   bool _success = false; // showing the check before moving on
   bool _needsSettings = false; // asking again will not show a dialog
+  bool _accepted = false; // onAccept already ran
 
   @override
   void initState() {
@@ -57,7 +68,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
       const _Step(PermKind.notifications, Icons.notifications_active_rounded, 'notifications'),
       const _Step(PermKind.motion, Icons.directions_walk_rounded, 'motion'),
       if (Platform.isAndroid) const _Step(PermKind.battery, Icons.battery_charging_full_rounded, 'battery'),
-      const _Step(PermKind.camera, Icons.camera_alt_rounded, 'camera'),
+      if (widget.includeCamera) const _Step(PermKind.camera, Icons.camera_alt_rounded, 'camera'),
       if (GigAppDetectionService.instance.isSupported)
         const _Step(PermKind.usageAccess, Icons.apps_rounded, 'usage'),
     ];
@@ -126,6 +137,10 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
     if (_busy || _success) return;
     setState(() => _busy = true);
     try {
+      if (!_accepted && widget.onAccept != null) {
+        _accepted = true;
+        await widget.onAccept!();
+      }
       if (_needsSettings) {
         if (_step.kind == PermKind.usageAccess) {
           await GigAppDetectionService.instance.openUsageAccessSettings();
@@ -199,34 +214,31 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                     children: [
-                      Image.asset(
-                        'assets/images/logo_olympus.png',
-                        height: 56,
-                        errorBuilder: (_, _, _) => Icon(Icons.shield_rounded, size: 52, color: primary),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        appState
-                            .tr('perm_flow_step_of')
-                            .replaceAll('{n}', '${_index + 1}')
-                            .replaceAll('{total}', '${_steps.length}'),
-                        style: TextStyle(fontSize: 12, color: subTextColor, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          for (var i = 0; i < _steps.length; i++)
-                            Expanded(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                height: 4,
-                                margin: const EdgeInsets.symmetric(horizontal: 2),
-                                decoration: BoxDecoration(
-                                  color: i <= _index ? primary : borderColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                for (var i = 0; i < _steps.length; i++)
+                                  Expanded(
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      height: 4,
+                                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                                      decoration: BoxDecoration(
+                                        color: i <= _index ? primary : borderColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_index + 1}/${_steps.length}',
+                            style: TextStyle(fontSize: 13, color: textColor, fontWeight: FontWeight.w700),
+                          ),
                         ],
                       ),
                       Expanded(
@@ -246,6 +258,15 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
                           ),
                         ),
                       ),
+                      if (widget.onAccept != null && !_accepted)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            appState.tr('perm_flow_terms_notice'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, height: 1.35, color: subTextColor),
+                          ),
+                        ),
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -299,8 +320,8 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
         // The effect: the icon swaps for a check that pops in, in brand blue.
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
-          width: 112,
-          height: 112,
+          width: 124,
+          height: 124,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: iconColor.withValues(alpha: 0.14),
@@ -315,43 +336,49 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
             child: Icon(
               _success ? Icons.check_circle_rounded : step.icon,
               key: ValueKey(_success),
-              size: 56,
+              size: 62,
               color: iconColor,
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 26),
+        Text(
+          appState.tr(step.required ? 'perm_flow_eyebrow_required' : 'perm_flow_eyebrow_recommended'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, letterSpacing: 1.6, fontWeight: FontWeight.w700, color: textColor),
+        ),
+        const SizedBox(height: 10),
         Text(
           _success ? appState.tr('perm_flow_granted') : appState.tr('perm_flow_${step.key}_title'),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _success ? primary : textColor),
+          style: TextStyle(fontSize: 28, height: 1.15, fontWeight: FontWeight.w800, color: _success ? primary : textColor),
         ),
-        const SizedBox(height: 12),
-        Text(
-          appState.tr(preciseHint ? 'perm_flow_precise_hint' : 'perm_flow_${step.key}_why'),
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, height: 1.4, color: subTextColor),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8A33D).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8A33D).withValues(alpha: 0.45)),
-          ),
-          child: Row(
+        const SizedBox(height: 26),
+        _infoRow(Icons.check_circle_outline_rounded, appState.tr('perm_flow_${step.key}_head'),
+            appState.tr(preciseHint ? 'perm_flow_precise_hint' : 'perm_flow_${step.key}_why'), primary, textColor, subTextColor),
+        const SizedBox(height: 18),
+        _infoRow(Icons.lock_outline_rounded, appState.tr('perm_flow_safe_title'),
+            appState.tr('perm_flow_${step.key}_safe'), primary, textColor, subTextColor),
+        const SizedBox(height: 18),
+        _infoRow(Icons.info_outline_rounded, appState.tr('perm_flow_without_title'),
+            appState.tr('perm_flow_${step.key}_skip'), const Color(0xFFE8A33D), textColor, subTextColor),
+      ],
+    );
+  }
+
+  Widget _infoRow(IconData icon, String heading, String text, Color iconColor, Color textColor, Color subTextColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 28, color: iconColor),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFE8A33D)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  appState.tr('perm_flow_${step.key}_skip'),
-                  style: TextStyle(fontSize: 13, height: 1.35, color: textColor),
-                ),
-              ),
+              Text(heading, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
+              const SizedBox(height: 3),
+              Text(text, style: TextStyle(fontSize: 14, height: 1.35, color: subTextColor)),
             ],
           ),
         ),

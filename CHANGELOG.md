@@ -30,6 +30,15 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.15+55 — 2026-11-04
+
+- First-time onboarding like MileIQ: after signing in the driver lands straight
+  on the permission steps. The welcome screen with its permission list and the
+  checkbox are gone; the 18+ / Terms sentence sits under the first Allow button
+  and the acceptance is recorded when it is tapped.
+- Camera is no longer asked at the start (it is asked when the first odometer
+  photo is needed). The Settings permission status still lists it.
+
 ## 1.3.14+54 — 2026-11-04
 
 - Fix: a returning user was sent through the first-time welcome and permission
