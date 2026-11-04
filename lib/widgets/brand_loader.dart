@@ -78,34 +78,81 @@ class _BrandLoaderState extends State<BrandLoader> with SingleTickerProviderStat
   }
 }
 
-/// Rim, hub and three spokes (left, right, down) -- a steering wheel seen from
-/// the driver's seat.
+/// A three-spoke steering wheel seen from the driver's seat, drawn the way the
+/// real part is built: a thick rim, a wide hub, and spokes that are thin at the
+/// waist and flare where they meet the rim and the hub. The lighter band at
+/// 12 o'clock is the centre mark every sport wheel has; it is also what lets
+/// the eye see the wheel turn, which a plain symmetric ring would not show.
 class _WheelPainter extends CustomPainter {
   final Color color;
   const _WheelPainter(this.color);
 
+  // Unit geometry: the wheel is drawn in a circle of radius 1.
+  static const _rimMid = 0.9; // centre line of the rim
+  static const _rimWidth = 0.2; // outer edge 1.0, inner edge 0.8
+  static const _hubR = 0.3;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
     final r = size.shortestSide / 2;
-    final stroke = r * 0.16;
-    final paint = Paint()
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(r);
+
+    final fill = Paint()
       ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
-    final rimR = r - stroke / 2;
-    canvas.drawCircle(c, rimR, paint);
-
-    final hubR = r * 0.2;
-    final inner = rimR - stroke / 2;
-    for (final angle in const [math.pi, 0.0, math.pi / 2]) {
-      final dir = Offset(math.cos(angle), math.sin(angle));
-      canvas.drawLine(c + dir * hubR, c + dir * inner, paint);
+    // Spokes first, so the rim and hub cover where they join.
+    // Left and right droop a little below horizontal; the third points down.
+    for (final deg in const [12.0, 90.0, 168.0]) {
+      canvas.save();
+      canvas.rotate(deg * math.pi / 180);
+      canvas.drawPath(_spoke(), fill);
+      canvas.restore();
     }
 
-    canvas.drawCircle(c, hubR, Paint()..color = color);
+    canvas.drawCircle(
+      Offset.zero,
+      _rimMid,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _rimWidth
+        ..isAntiAlias = true,
+    );
+
+    canvas.drawCircle(Offset.zero, _hubR, fill);
+
+    final light = Color.lerp(color, Colors.white, 0.78)!;
+
+    // Horn pad: a lighter disc inside the hub.
+    canvas.drawCircle(Offset.zero, _hubR * 0.48, Paint()..color = light);
+
+    // Centre mark on the rim, 12 o'clock.
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: _rimMid),
+      -math.pi / 2 - 0.13,
+      0.26,
+      false,
+      Paint()
+        ..color = light
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _rimWidth
+        ..strokeCap = StrokeCap.butt
+        ..isAntiAlias = true,
+    );
+  }
+
+  /// One spoke along +x: flared at the hub, narrow at the waist, flared again
+  /// where it runs into the rim.
+  Path _spoke() {
+    return Path()
+      ..moveTo(0.16, -0.17)
+      ..quadraticBezierTo(0.5, -0.06, 0.82, -0.15)
+      ..lineTo(0.82, 0.15)
+      ..quadraticBezierTo(0.5, 0.06, 0.16, 0.17)
+      ..close();
   }
 
   @override

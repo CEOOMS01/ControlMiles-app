@@ -258,27 +258,15 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#F8FAFC"
-  # BUG FIX (pedido explícito, 2026-09-19: "el logo del launch... está
-  # demasiado grande"). Two things tried before this, both wrong:
-  #   1. logo_controlmiles.png -- a pre-composed circular badge, full-bleed.
-  #      flutter_native_splash centers it with no shrinking, so it read as
-  #      oversized, especially on Android 12+'s branded-splash API.
-  #   2. logo_controlmiles_launcher_flattened.png -- the full square used
-  #      for the actual app icon. Confirmed live on a real device this
-  #      does NOT get smaller: Android 12+'s splash API applies its own
-  #      icon mask on top of whatever image it's given, and a full-bleed
-  #      square just gets clipped oddly by that mask, not shrunk.
-  # The actual fix: logo_controlmiles_splash_glyph.png is the launcher's
-  # own foreground GLYPH (not the composed square) recolored to the brand
-  # blue instead of white -- same 1024x1024 canvas, glyph at the launcher's
-  # own 52%-of-canvas fill (see flutter_launcher_icons' own comment above
-  # for why that ratio exists), transparent everywhere else. That built-in
-  # padding is what actually controls the on-screen size, on both the
-  # classic and Android 12+ splash paths -- confirmed live.
-  image: "assets/images/logo_controlmiles_splash_glyph.png"
+  # 2026-11-04 (explicit request): no logo on the system launch screen -- the
+  # one it showed was not the official logo. The image is fully transparent, so
+  # the screen is just this color, the same one the start-up screen paints
+  # (CmColors.splashBg), and the steering wheel appears on it with no jump.
+  # Android 12+ would otherwise fill the empty slot with the launcher icon.
+  image: "assets/images/splash_blank.png"
 
   android_12:
-    image: "assets/images/logo_controlmiles_splash_glyph.png"
+    image: "assets/images/splash_blank.png"
     icon_background_color: "#F8FAFC"
 
   web: false

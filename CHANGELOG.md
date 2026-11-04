@@ -32,6 +32,12 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.15+55 — 2026-11-04
 
+- The system launch screen no longer shows a logo (it was not the official one):
+  its image is now fully transparent, on the same background the start-up
+  screen paints, so the steering wheel appears with no jump.
+- The steering wheel was redrawn: thick rim, wide hub with a horn pad, three
+  spokes that flare at the rim and hub, and a lighter centre mark at 12 o'clock
+  so the turn is visible.
 - New start-up screen: a steering wheel in the logo blue (#0275F4) that turns without
   stopping (`lib/widgets/brand_loader.dart`), drawn in code so it needs no image.
   Under it the line "Track your journey" ("Registra tu camino"); it stays up at least 0.9 s so the turn is seen. It also replaces the stock spinner
