@@ -32,6 +32,10 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.15+55 — 2026-11-04
 
+- Your carousel setup (which gig apps are shown and their order) is no longer
+  lost: it is kept per account on the phone, so signing out and back in, or
+  an update that restarts the app, puts it back. Another account on the same
+  phone still starts clean.
 - The system launch screen no longer shows a logo (it was not the official one):
   its image is now fully transparent, on the same background the start-up
   screen paints, so the steering wheel appears with no jump.

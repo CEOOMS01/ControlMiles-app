@@ -458,7 +458,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('controlmiles_selected_gig_app_ids', _selectedGigAppIds);
+    await prefs.setStringList(_kSelectedApps, _selectedGigAppIds);
+    await _saveOwn(prefs, _kSelectedApps, _selectedGigAppIds);
   }
 
   List<String> get gigAppOrder => List.unmodifiable(_gigAppOrder);
@@ -468,7 +469,37 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('controlmiles_gig_app_order', _gigAppOrder);
+    await prefs.setStringList(_kAppOrder, _gigAppOrder);
+    await _saveOwn(prefs, _kAppOrder, _gigAppOrder);
+  }
+
+  // The carousel setup (which apps, in what order) belongs to the ACCOUNT, not
+  // to the session (2026-11-04: "I moved the icons and after the update my setup
+  // was gone"). The two plain keys are the live copy the auto-detect service
+  // reads, and sign-out clears them so another account never inherits them; a
+  // copy under `<key>:<user id>` is kept and put back the next time the same
+  // account signs in on this phone, or when the app starts after an update.
+  static const _kSelectedApps = 'controlmiles_selected_gig_app_ids';
+  static const _kAppOrder = 'controlmiles_gig_app_order';
+
+  Future<void> _saveOwn(SharedPreferences prefs, String key, List<String> value) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid != null) await prefs.setStringList('$key:$uid', value);
+  }
+
+  /// This account's saved list for [key]; a phone that has not saved one yet
+  /// (installed before this change) adopts the live copy as the account's own.
+  List<String> _restoreOwn(SharedPreferences prefs, String key) {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final live = prefs.getStringList(key) ?? const <String>[];
+    if (uid == null) return live;
+    final own = prefs.getStringList('$key:$uid');
+    if (own == null) {
+      if (live.isNotEmpty) prefs.setStringList('$key:$uid', live);
+      return live;
+    }
+    if (own.join(',') != live.join(',')) prefs.setStringList(key, own);
+    return own;
   }
 
   /// The carousel's cards, in the user's drag & drop order. For Premium
@@ -634,8 +665,8 @@ class AppState extends ChangeNotifier {
 
       // Detección automática de viajes (premium, Gig-only)
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
-      _selectedGigAppIds = prefs.getStringList('controlmiles_selected_gig_app_ids') ?? [];
-      _gigAppOrder = prefs.getStringList('controlmiles_gig_app_order') ?? [];
+      _selectedGigAppIds = List.of(_restoreOwn(prefs, _kSelectedApps));
+      _gigAppOrder = List.of(_restoreOwn(prefs, _kAppOrder));
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
