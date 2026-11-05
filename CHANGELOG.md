@@ -32,6 +32,9 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.15+55 — 2026-11-04
 
+- Fix: on the Vehicle page the Model field overflowed its box by 8 px on narrow
+  phones ("Choose a make first" did not fit). The model, make and maintenance
+  vehicle pickers now fill their column and cut long text with an ellipsis.
 - Your carousel setup (which gig apps are shown and their order) is no longer
   lost: it is kept per account on the phone, so signing out and back in, or
   an update that restarts the app, puts it back. Another account on the same

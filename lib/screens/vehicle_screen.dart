@@ -410,7 +410,8 @@ class _VehicleScreenState extends State<VehicleScreen>
       return DropdownButtonFormField<String>(
         initialValue: null,
         decoration: InputDecoration(labelText: appState.tr('vehicle_model')),
-        hint: Text(appState.tr('vehicle_model_pick_make_first')),
+        hint: Text(appState.tr('vehicle_model_pick_make_first'), maxLines: 1, overflow: TextOverflow.ellipsis),
+        isExpanded: true,
         items: const [],
         onChanged: null,
       );
@@ -426,7 +427,7 @@ class _VehicleScreenState extends State<VehicleScreen>
     return DropdownButtonFormField<String>(
       initialValue: _selectedModel,
       decoration: InputDecoration(labelText: appState.tr('vehicle_model')),
-      hint: Text(appState.tr('vehicle_model_hint')),
+      hint: Text(appState.tr('vehicle_model_hint'), maxLines: 1, overflow: TextOverflow.ellipsis),
       isExpanded: true,
       items: [
         ...models.map((m) => DropdownMenuItem(value: m, child: Text(m))),
@@ -842,7 +843,7 @@ class _VehicleScreenState extends State<VehicleScreen>
                 child: DropdownButtonFormField<String>(
                   initialValue: _selectedMake,
                   decoration: InputDecoration(labelText: appState.tr('vehicle_make')),
-                  hint: Text(appState.tr('vehicle_make_hint')),
+                  hint: Text(appState.tr('vehicle_make_hint'), maxLines: 1, overflow: TextOverflow.ellipsis),
                   isExpanded: true,
                   // BUG FIX (hardcoded-string audit): kOtherVehicleMake
                   // ('Otra', kept as the internal sentinel value -- never
@@ -1084,6 +1085,7 @@ class _VehicleScreenState extends State<VehicleScreen>
           labelText: appState.tr('select_vehicle'),
           border: const OutlineInputBorder(),
         ),
+        isExpanded: true,
         items: _vehicles
             .map((v) => DropdownMenuItem(value: v.id, child: Text(v.displayName)))
             .toList(),
