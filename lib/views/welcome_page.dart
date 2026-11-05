@@ -64,10 +64,17 @@ class _WelcomePageState extends State<WelcomePage> {
         return;
       }
 
+      // An account that already accepted the terms (it says so on the server)
+      // and is only back because its permissions are gone gets the short flow
+      // and no acceptance sentence; a new account gets everything.
+      final seenBefore = await _accountSawWelcome(user.id);
+      if (!mounted) return;
       final done = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
-          builder: (_) => PermissionsFlowScreen(includeCamera: false, includeUsageAccess: false, onAccept: _recordAcceptance),
+          builder: (_) => seenBefore
+              ? const PermissionsFlowScreen(includeCamera: false, includeUsageAccess: false, criticalOnly: true)
+              : PermissionsFlowScreen(includeCamera: false, includeUsageAccess: false, onAccept: _recordAcceptance),
         ),
       );
       if (!mounted) return;
@@ -81,8 +88,10 @@ class _WelcomePageState extends State<WelcomePage> {
 
       // Every step was already working, so the sentence was never shown: the
       // account is still recorded as accepted.
-      await _recordAcceptance();
-      await _markWelcomeSeen(user.id);
+      if (!seenBefore) {
+        await _recordAcceptance();
+        await _markWelcomeSeen(user.id);
+      }
       appState.completePermissionsSetup();
       await appState.fetchAccountTypeChosen();
 
@@ -108,6 +117,19 @@ class _WelcomePageState extends State<WelcomePage> {
           ),
         );
       }
+    }
+  }
+
+  Future<bool> _accountSawWelcome(String userId) async {
+    try {
+      final row = await Supabase.instance.client
+          .from('user_onboarding')
+          .select('welcome_seen')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return row?['welcome_seen'] == true;
+    } catch (_) {
+      return false;
     }
   }
 

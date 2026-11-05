@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
+import '../utils/permission_recovery_service.dart';
 import '../routes/app_routes.dart';
 import '../errors/app_error.dart';
 import '../i18n/app_texts.dart';   // ← Importante: Necesario para AppLanguage
@@ -268,7 +269,10 @@ class _LoginScreenState extends State<LoginScreen> {
     // The splash decides from this device's own flag (cleared on sign-out), so
     // a returning user who already did the permission steps must get it set
     // again here, or the next app start sends them through them once more.
-    if (hasSeenWelcome) await appState.completePermissionsSetup();
+    // "Saw the welcome" is not "the phone's permissions are fine": after a
+    // reinstall they are gone, and the short permission steps come first.
+    final permissionsOk = hasSeenWelcome && await PermissionRecoveryService.hasStartPermissions();
+    if (permissionsOk) await appState.completePermissionsSetup();
 
     if (!mounted) return;
 
@@ -279,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // dejó a splash_page.dart sin enterarse de cuentas Fleet).
     final targetRoute = AppRoutes.getInitialRoute(
       isAuthenticated: true,
-      onboardingCompleted: hasSeenWelcome,
+      onboardingCompleted: permissionsOk,
     );
     Navigator.pushReplacementNamed(context, targetRoute);
   }

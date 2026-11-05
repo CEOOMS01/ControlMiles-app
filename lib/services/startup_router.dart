@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
+import '../utils/permission_recovery_service.dart';
 import '../routes/app_routes.dart';
 import 'local_storage_service.dart';
 import 'login_prefs.dart';
@@ -62,7 +63,10 @@ Future<String> resolveStartRoute(AppState appState) async {
             .select('welcome_seen')
             .eq('user_id', authUser.id)
             .maybeSingle();
-        if (row?['welcome_seen'] == true) {
+        // The account saw the welcome, but that is not the phone's permissions:
+        // after a reinstall or an Android reset a trip cannot record, so the
+        // short permission steps still come first.
+        if (row?['welcome_seen'] == true && await PermissionRecoveryService.hasStartPermissions()) {
           onboardingDone = true;
           await appState.completePermissionsSetup();
         }

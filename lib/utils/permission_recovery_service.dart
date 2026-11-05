@@ -38,6 +38,13 @@ class PermissionRecoveryService {
            await PermissionStatusService.isPrecise();
   }
 
+  /// What a trip needs to START (2026-11-04): location while the app is in use,
+  /// and precise. "All the time" is strongly recommended (it keeps recording
+  /// with the app closed) but does not block a trip started from the screen.
+  static Future<bool> hasStartPermissions() async {
+    return await Permission.locationWhenInUse.isGranted && await PermissionStatusService.isPrecise();
+  }
+
   /// Abre la configuración de la app
   static Future<void> openAppSettings() async {
     await ph.openAppSettings();

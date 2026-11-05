@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +18,9 @@ import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../services/trip_address_service.dart';
+import '../utils/permission_recovery_service.dart';
+import '../utils/permission_status.dart';
+import '../views/permissions_flow_screen.dart';
 import '../views/work_type_screen.dart';
 import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
@@ -28,7 +32,6 @@ import '../widgets/gig_app_selector.dart';
 import '../widgets/gps_issue_banner.dart';
 import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
-import '../utils/permission_recovery_service.dart';
 import '../services/permission_report_service.dart';
 import '../onboarding/product_tour.dart';
 
@@ -589,6 +592,26 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       debugPrint("[ControlMiles Permission Check Error] $e");
     }
+  }
+
+  /// A trip cannot record without location, so the Start button asks for it
+  /// first -- the same explanation page as the first launch -- instead of
+  /// starting something that fails. "All the time" is offered but not forced.
+  Future<bool> _ensureStartPermissions(AppState appState) async {
+    if (await PermissionRecoveryService.hasStartPermissions()) return true;
+    if (!mounted) return false;
+    await PermissionsFlowScreen.ask(context, PermKind.location);
+    if (!mounted) return false;
+    if (!await PermissionRecoveryService.hasStartPermissions()) {
+      // Still missing (denied, or only approximate): say what to change.
+      if (!mounted) return false;
+      await PermissionRecoveryService.showRecoveryDialog(context);
+      return false;
+    }
+    if (!await Permission.locationAlways.isGranted && mounted) {
+      await PermissionsFlowScreen.ask(context, PermKind.locationAlways);
+    }
+    return true;
   }
 
   Future<void> _initDashboard() async {
@@ -1448,8 +1471,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // `context`, so a real dialog with a deep link to
                 // AppRoutes.subscription works fine here despite canStart's
                 // signature not passing one through.
-                canStart: appState.isFreeTrialExpired
-                    ? () async {
+                canStart: () async {
+                      if (!appState.isFreeTrialExpired) return _ensureStartPermissions(appState);
+                      {
                         await showDialog(
                           context: context,
                           builder: (ctx) => AlertDialog(
@@ -1472,7 +1496,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         );
                         return false;
                       }
-                    : null,
+                    },
                 // No cannotStartMessage here on purpose -- the dialog above
                 // already tells the full story with a real upgrade CTA;
                 // TrackingActionButton would otherwise ALSO show a plain

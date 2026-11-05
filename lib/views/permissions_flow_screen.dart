@@ -54,7 +54,12 @@ class PermissionsFlowScreen extends StatefulWidget {
   /// shown under the button, so there is no separate screen or checkbox.
   final Future<void> Function()? onAccept;
 
-  const PermissionsFlowScreen({super.key, this.dismissible = false, this.includeCamera = true, this.includeUsageAccess = true, this.onAccept, this.only});
+  /// A driver who already finished onboarding (the account says so) but whose
+  /// permissions are gone -- a reinstall, or Android resetting them -- only gets
+  /// location, all-the-time and notifications again.
+  final bool criticalOnly;
+
+  const PermissionsFlowScreen({super.key, this.dismissible = false, this.includeCamera = true, this.includeUsageAccess = true, this.onAccept, this.only, this.criticalOnly = false});
 
   /// Opens the single-step page for [kind] and returns when it closes; the
   /// caller re-checks the permission itself (the driver may have skipped it).
@@ -93,6 +98,10 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
         const _Step(PermKind.usageAccess, Icons.apps_rounded, 'usage'),
     ];
     if (widget.only != null) _steps.removeWhere((st) => st.kind != widget.only);
+    if (widget.criticalOnly) {
+      _steps.removeWhere((st) =>
+          st.kind != PermKind.location && st.kind != PermKind.locationAlways && st.kind != PermKind.notifications);
+    }
     _advanceFrom(0);
   }
 

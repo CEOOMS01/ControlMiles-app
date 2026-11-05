@@ -32,6 +32,13 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.16+56 — 2026-11-04 (not built yet)
 
+- Fix: "I cannot track" when the phone's permissions are gone (found on a real
+  phone: every permission denied, the Start button did nothing). Start now asks
+  for location first, with the same explanation page as the first launch, and
+  says what to change if it is denied or only approximate. After a reinstall or
+  an Android reset, an account that already saw the welcome no longer skips the
+  permissions: it gets the short steps (location, all the time, notifications)
+  and no terms sentence. The 1.3.14 fix that skipped them is corrected.
 - Where a trip started and ended: street addresses ("219 Allendale St,
   Baltimore, MD"), looked up on the phone once when the trip closes and again
   for recent trips that missed it. Shown in History (tap to correct them, the
