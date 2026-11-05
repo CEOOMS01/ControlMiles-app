@@ -25,6 +25,7 @@ import 'background_gps_service.dart';
 import 'gps_watchdog.dart';
 import 'auto_trip_detection_service.dart';
 import 'route_recorder.dart';
+import 'trip_inactivity.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -193,6 +194,7 @@ class TrackingController {
     _liveHeartbeat?.cancel();
     _liveHeartbeat = null;
     startedViaAutoDetect = false;
+    TripInactivity.clear();
     AntifraudEngine.reset();
     DriverSafetyMonitor.reset();
     LocalStorageService.clearAllCheckpoint();
@@ -507,6 +509,7 @@ class TrackingController {
       await _saveLocalCheckpoint();
 
       currentState = TrackingState.running;
+      unawaited(TripInactivity.reset());
 
       // BUG FIX (toggle de notificaciones inerte): recordatorio de "viaje
       // olvidado" — se cancela en stopTracking(). Respeta el toggle de
@@ -658,6 +661,7 @@ class TrackingController {
       }
 
       currentState = TrackingState.paused;
+      TripInactivity.clear();
       // Se apaga el reloj de manejo activo — la duración ya quedó bancada
       // arriba en activeSection.totalDurationSeconds.
       _runSegmentStartedAt = null;
@@ -795,6 +799,7 @@ class TrackingController {
       );
 
       currentState = TrackingState.running;
+      unawaited(TripInactivity.reset());
 
       // Efectos secundarios best-effort: el resume real ya sucedió arriba.
       try {
@@ -1205,6 +1210,8 @@ class TrackingController {
     if (prevLat != null && prevLng != null) {
       final meters = _calculateHaversine(prevLat, prevLng, latitude, longitude);
       final miles = meters / 1609.34;
+
+      unawaited(TripInactivity.onFix(speedMps: speed, jumpMeters: meters));
 
       if (miles > 0.0012) {
         _totalSectionMiles += miles;

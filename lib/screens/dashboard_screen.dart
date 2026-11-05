@@ -16,6 +16,7 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
+import '../views/work_type_screen.dart';
 import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
 import '../widgets/cm_card_header.dart';
@@ -596,6 +597,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     await _loadTodaySummary(); // ── NUEVO
     await _loadMonthSummary(); // ── NUEVO
     await _loadHeaderMiles();
+    // Started / Basic: how do you work? Asked once, before the tour starts.
+    if (mounted && context.read<AppState>().needsWorkTypeChoice) {
+      await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const WorkTypeScreen()));
+    }
     if (mounted) {
       _syncTrackingUiState();
       setState(() => loading = false);

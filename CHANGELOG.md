@@ -32,6 +32,15 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.16+56 — 2026-11-04 (not built yet)
 
+- New "How do you work?" screen for Started / Basic accounts, asked once: with
+  apps (pick which ones; only those show in the carousel, next to General, and
+  the trip is saved as Business) or with general trips (only General shows).
+  "Show me everything" keeps all buttons. Changeable in Settings > How I work.
+  Premium keeps its shift selector and always sees every button it chose.
+- A personal trip that stops moving: after 5 minutes without movement Started /
+  Basic pauses it; Premium asks "Did you end your trip?" with Keep going / End
+  trip, and closes it for good after 5 more minutes without an answer. Moving
+  again cancels the question. Fleet trips are untouched.
 - Odometer cycle by plan: annual (two photos a year, the default) is for every
   account; monthly and every-15-days are Premium and optional. Vehicles already
   on a monthly cycle keep it until the driver changes it. Needs migration

@@ -39,6 +39,10 @@ class AppState extends ChangeNotifier {
   // Premium). Device-level like the other carousel prefs. Ids missing here
   // (new catalog entries) are appended in catalog order.
   List<String> _gigAppOrder = [];
+  // How a Started / Basic driver works (2026-11-04): 'gig' (only the apps they
+  // picked show in the carousel), 'general' (only General shows), 'all' (they
+  // chose to see everything) or null (never asked yet). Premium ignores it.
+  String? _workMode;
   bool _isInitialized = false;
   String? _currentSessionId;
 
@@ -462,6 +466,21 @@ class AppState extends ChangeNotifier {
     await _saveOwn(prefs, _kSelectedApps, _selectedGigAppIds);
   }
 
+  String? get workMode => _workMode;
+
+  /// A Started / Basic account that has not said yet how it works: the work-type
+  /// screen is shown once. Premium picks its apps with the shift selector.
+  bool get needsWorkTypeChoice =>
+      isAuthenticated && _accountType == 'gig' && !_premiumEntitled && _workMode == null;
+
+  Future<void> setWorkMode(String mode) async {
+    _workMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kWorkMode, [mode]);
+    await _saveOwn(prefs, _kWorkMode, [mode]);
+  }
+
   List<String> get gigAppOrder => List.unmodifiable(_gigAppOrder);
 
   Future<void> setGigAppOrder(List<String> ids) async {
@@ -481,6 +500,7 @@ class AppState extends ChangeNotifier {
   // account signs in on this phone, or when the app starts after an update.
   static const _kSelectedApps = 'controlmiles_selected_gig_app_ids';
   static const _kAppOrder = 'controlmiles_gig_app_order';
+  static const _kWorkMode = 'controlmiles_work_mode';
 
   Future<void> _saveOwn(SharedPreferences prefs, String key, List<String> value) async {
     final uid = Supabase.instance.client.auth.currentUser?.id;
@@ -516,7 +536,15 @@ class AppState extends ChangeNotifier {
     final placed = ordered.map((a) => a.id).toSet();
     ordered.addAll(catalog.where((a) => !placed.contains(a.id)));
 
-    if (!premiumEntitled || _selectedGigAppIds.isEmpty) return ordered;
+    if (!premiumEntitled) {
+      // Started / Basic: what they said in the work-type screen.
+      if (_workMode == 'general') {
+        return ordered.where((a) => a.id == 'custom' || a.id == alwaysShow).toList();
+      }
+      if (_workMode != 'gig' || _selectedGigAppIds.isEmpty) return ordered;
+    } else if (_selectedGigAppIds.isEmpty) {
+      return ordered;
+    }
     final keep = _selectedGigAppIds.toSet();
     return ordered
         .where((a) => a.id == 'custom' || a.id == alwaysShow || keep.contains(a.id))
@@ -667,6 +695,8 @@ class AppState extends ChangeNotifier {
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
       _selectedGigAppIds = List.of(_restoreOwn(prefs, _kSelectedApps));
       _gigAppOrder = List.of(_restoreOwn(prefs, _kAppOrder));
+      final savedMode = _restoreOwn(prefs, _kWorkMode);
+      _workMode = savedMode.isEmpty ? null : savedMode.first;
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
@@ -719,6 +749,7 @@ class AppState extends ChangeNotifier {
     _autoDetectEnabled = false;
     _selectedGigAppIds = [];
     _gigAppOrder = [];
+    _workMode = null;
     await AutoTripDetectionService.instance.setEnabled(false);
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
     // logout (see the field's own doc comment above).
@@ -736,6 +767,7 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_auto_detect_enabled');
     await prefs.remove('controlmiles_selected_gig_app_ids');
     await prefs.remove('controlmiles_gig_app_order');
+    await prefs.remove(_kWorkMode);
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

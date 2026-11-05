@@ -13,6 +13,8 @@
 // Functions ni FCM configurado) — construir eso sería un proyecto aparte de
 // infraestructura, no un bug fix.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -25,6 +27,7 @@ import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
 import '../screens/reports_screen.dart';
 import '../tracking/gps_watchdog.dart';
+import '../tracking/trip_inactivity.dart';
 import 'work_schedule.dart';
 import '../theme/app_colors.dart';
 
@@ -314,6 +317,15 @@ class NotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
+    // "Did you end your trip?" buttons (Premium, see TripInactivity).
+    if (response.payload == 'trip_still') {
+      if (response.actionId == _actTripEnd) {
+        unawaited(TripInactivity.endNow());
+      } else if (response.actionId == _actTripContinue) {
+        unawaited(TripInactivity.continueTrip());
+      }
+      return;
+    }
     if (response.id == _weeklySummaryNotificationId) {
       // BUG FIX (pedido explícito, "no hay ningún resumen de la semana que
       // lo respalde"): antes abría Reports en blanco (su default de 12
@@ -641,6 +653,102 @@ class NotificationService {
           color: kBrandSeed,
         ),
       ),
+    );
+  }
+
+  // ============================================================
+  // A TRIP THAT STOPPED MOVING (ids 1044 and 1045) -- see TripInactivity.
+  // The question has two buttons that open the app and answer it; the other
+  // two are plain notices of what the app just did.
+  // ============================================================
+  static const int _tripStillId = 1044;
+  static const int _tripInfoId = 1045;
+  static const String _actTripContinue = 'trip_still_continue';
+  static const String _actTripEnd = 'trip_still_end';
+
+  /// Same light setup the work-place notices use: this can run from the
+  /// background isolate, where init() has never run and must not open system
+  /// settings screens.
+  Future<bool> _lightInit() async {
+    if (_initialized) return true;
+    try {
+      await _plugin.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@drawable/ic_stat_tracking'),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          ),
+        ),
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+      );
+      await _createAndroidChannel();
+      _initialized = true;
+      return true;
+    } catch (e) {
+      debugPrint('[NotificationService] light init failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> showTripStillPrompt() async {
+    if (!await _lightInit()) return;
+    final title = await _tr('trip_still_title');
+    final body = await _tr('trip_still_body');
+    final keepGoing = await _tr('trip_still_continue');
+    final endTrip = await _tr('trip_still_end');
+    await _plugin.show(
+      _tripStillId,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _pauseReminderChannelId,
+          _pauseReminderChannelName,
+          channelDescription: _pauseReminderChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          color: kBrandSeed,
+          timeoutAfter: 5 * 60 * 1000,
+          actions: [
+            AndroidNotificationAction(_actTripContinue, keepGoing, showsUserInterface: true, cancelNotification: true),
+            AndroidNotificationAction(_actTripEnd, endTrip, showsUserInterface: true, cancelNotification: true),
+          ],
+        ),
+      ),
+      payload: 'trip_still',
+    );
+  }
+
+  Future<void> cancelTripStillPrompt() async {
+    if (!await _lightInit()) return;
+    await _plugin.cancel(_tripStillId);
+  }
+
+  Future<void> showTripAutoPaused() => _showTripInfo('trip_autopaused_title', 'trip_autopaused_body');
+
+  Future<void> showTripAutoClosed() => _showTripInfo('trip_autoclosed_title', 'trip_autoclosed_body');
+
+  Future<void> _showTripInfo(String titleKey, String bodyKey) async {
+    if (!await _lightInit()) return;
+    final title = await _tr(titleKey);
+    final body = await _tr(bodyKey);
+    await _plugin.show(
+      _tripInfoId,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _pauseReminderChannelId,
+          _pauseReminderChannelName,
+          channelDescription: _pauseReminderChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          color: kBrandSeed,
+        ),
+      ),
+      payload: 'trip_info',
     );
   }
 

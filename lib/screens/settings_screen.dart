@@ -15,6 +15,7 @@ import '../services/notification_service.dart';
 import '../models/gig_app.dart';
 import '../utils/permission_status.dart';
 import '../views/permissions_flow_screen.dart';
+import '../views/work_type_screen.dart';
 import '../services/work_schedule.dart';
 import '../services/work_places.dart';
 import '../services/work_place_service.dart';
@@ -1007,6 +1008,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                 : null,
           ),
 
+          if (!appState.premiumEntitled) ...[
+            const SizedBox(height: 10),
+            _buildLegalLinkRow(
+              label: appState.tr('work_type_setting'),
+              subtitle: appState.tr(switch (appState.workMode) {
+                'gig' => 'work_type_value_gig',
+                'general' => 'work_type_value_general',
+                _ => 'work_type_value_all',
+              }),
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WorkTypeScreen(dismissible: true)),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           _buildToggleSetting(
             title: appState.tr('metric_system'), // Llave validada
@@ -1577,6 +1594,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildLegalLinkRow({
     required String label,
+    String? subtitle,
     required bool isDark,
     required VoidCallback onTap,
   }) {
@@ -1592,6 +1610,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           label,
           style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
         ),
+        subtitle: subtitle == null ? null : Text(subtitle, style: TextStyle(fontSize: 12, color: subTextColor)),
         trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
         onTap: onTap,
       ),
