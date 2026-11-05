@@ -30,6 +30,13 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.16+56 — 2026-11-04 (not built yet)
+
+- Odometer cycle by plan: annual (two photos a year, the default) is for every
+  account; monthly and every-15-days are Premium and optional. Vehicles already
+  on a monthly cycle keep it until the driver changes it. Needs migration
+  `20261104200000_odometer_cycle_tiers` (applied).
+
 ## 1.3.15+55 — 2026-11-04
 
 - Fix: on the Vehicle page the Model field overflowed its box by 8 px on narrow

@@ -1072,7 +1072,7 @@ const Map<String, String> esTexts = {
   'odometer_cycle_annual': 'Una vez al año',
   'odometer_cycle_annual_hint': 'Dos fotos del odómetro al año: al inicio y al final del año.',
   'odometer_cycle_monthly': 'Mensual',
-  'odometer_cycle_monthly_hint': 'Una foto del odómetro el día 1 de cada mes.',
+  'odometer_cycle_monthly_hint': 'Una foto del odómetro el día 1 de cada mes (Premium).',
   'odometer_cycle_semimonthly': 'Dos veces al mes',
   'odometer_cycle_semimonthly_hint': 'Fotos del odómetro el día 1 y el día 15 (Premium).',
   'odometer_cycle_updated': 'Ciclo de odómetro actualizado.',

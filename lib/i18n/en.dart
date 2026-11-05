@@ -1102,7 +1102,7 @@ const Map<String, String> enTexts = {
   'odometer_cycle_annual': 'Once a year',
   'odometer_cycle_annual_hint': 'Two odometer photos a year: at the start and at the end of the year.',
   'odometer_cycle_monthly': 'Monthly',
-  'odometer_cycle_monthly_hint': 'One odometer photo on the 1st of each month.',
+  'odometer_cycle_monthly_hint': 'One odometer photo on the 1st of each month (Premium).',
   'odometer_cycle_semimonthly': 'Twice a month',
   'odometer_cycle_semimonthly_hint': 'Odometer photos on the 1st and the 15th (Premium).',
   'odometer_cycle_updated': 'Odometer cycle updated.',
