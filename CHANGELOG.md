@@ -32,6 +32,9 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.16+56 — 2026-11-04 (not built yet)
 
+- "Started" is gone: there are two plans, Basic and Premium. The automatic
+  15-day free trial stays, but it is not a plan any more -- the Subscription
+  screen shows it as one line ("Free trial: N days left") above the two plans.
 - New "How do you work?" screen for Started / Basic accounts, asked once: with
   apps (pick which ones; only those show in the carousel, next to General, and
   the trip is saved as Business) or with general trips (only General shows).

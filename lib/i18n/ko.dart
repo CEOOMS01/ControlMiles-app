@@ -331,8 +331,6 @@ const Map<String, String> koTexts = {
   'premium_plan_description': "자동 감지 및 기타 프리미엄 기능 잠금 해제. 최대 5대 차량. 15일 무료 체험 포함.",
   'base_plan_description': "ControlMiles 핵심 경험. 차량 1대. 15일 무료 체험 포함.",
   'current_plan': '현재 플랜',
-  'started_plan': 'Started (무료 체험)',
-  'started_plan_description': '15일 무료 체험. 차량 1대.',
   'trial_days_left': '{days}일 남음',
 
   // ============================================================

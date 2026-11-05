@@ -3,9 +3,7 @@
 //
 // Personal plans, billed natively through Google Play (user decision
 // 2026-09-29: no Stripe in the app; fleet plans stay on Stripe on
-// controlmiles.com). Three-tier model: Started (the automatic 15-day free
-// trial, no purchase -- AppState.isFreeTrialExpired), Basic and Premium
-// (Play subscriptions controlmiles_basic_monthly / _premium_monthly; any
+// controlmiles.com). Two plans, Basic and Premium (Play subscriptions controlmiles_basic_monthly / _premium_monthly; any
 // Premium free trial is a Play Console offer). Prices shown are Google
 // Play's own, in the buyer's currency. This screen never grants anything:
 // PlayBillingService sends each purchase to verify-play-purchase, which
@@ -238,51 +236,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          if (onFreeTrial) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1C1812) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        appState.tr('started_plan'),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: isDark ? Colors.white : const Color(0xFF2E281F),
-                        ),
-                      ),
-                      Icon(Icons.verified_rounded, color: Colors.green, size: 18),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    appState.tr('started_plan_description'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.white70 : const Color(0xFF6B6250),
-                    ),
-                  ),
-                  if (trialDaysLeft != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      appState.tr('trial_days_left').replaceFirst('{days}', '$trialDaysLeft'),
-                      style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green),
-                    ),
-                  ],
-                ],
+          if (onFreeTrial && trialDaysLeft != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                appState.tr('free_trial_note').replaceFirst('{days}', '$trialDaysLeft'),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
           ],
           _buildTierCard(
             appState,

@@ -330,8 +330,6 @@ const Map<String, String> jaTexts = {
   'premium_plan_description': "自動検出やその他のプレミアム機能をアンロック。最大5台の車両。15日間の無料トライアル付き。",
   'base_plan_description': "ControlMilesのコア体験。車両1台。15日間の無料トライアル付き。",
   'current_plan': '現在のプラン',
-  'started_plan': 'Started（無料トライアル）',
-  'started_plan_description': '15日間の無料トライアル。車両1台。',
   'trial_days_left': '残り{days}日',
 
   // ============================================================

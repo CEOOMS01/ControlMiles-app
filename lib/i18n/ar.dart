@@ -335,8 +335,6 @@ const Map<String, String> arTexts = {
   'premium_plan_description': "افتح الكشف التلقائي وميزات مميزة أخرى. حتى 5 مركبات. يشمل تجربة مجانية لمدة 15 يومًا.",
   'base_plan_description': "تجربة ControlMiles الأساسية. مركبة واحدة. يشمل تجربة مجانية لمدة 15 يومًا.",
   'current_plan': 'الباقة الحالية',
-  'started_plan': 'Started (تجربة مجانية)',
-  'started_plan_description': 'تجربتك المجانية لمدة 15 يومًا. مركبة واحدة.',
   'trial_days_left': 'متبقٍ {days} يومًا',
 
   // ============================================================

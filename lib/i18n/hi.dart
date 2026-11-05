@@ -331,8 +331,6 @@ const Map<String, String> hiTexts = {
   'premium_plan_description': "ऑटोमैटिक डिटेक्शन और अन्य प्रीमियम सुविधाएँ अनलॉक करें। 5 वाहनों तक। 15 दिन का मुफ़्त ट्रायल शामिल।",
   'base_plan_description': "मुख्य ControlMiles अनुभव। 1 वाहन। 15 दिन का मुफ़्त ट्रायल शामिल।",
   'current_plan': 'वर्तमान प्लान',
-  'started_plan': 'Started (मुफ़्त ट्रायल)',
-  'started_plan_description': 'आपका 15-दिन का मुफ़्त ट्रायल। 1 वाहन।',
   'trial_days_left': '{days} दिन शेष',
 
   // ============================================================

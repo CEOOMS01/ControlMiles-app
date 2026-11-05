@@ -39,7 +39,7 @@ class AppState extends ChangeNotifier {
   // Premium). Device-level like the other carousel prefs. Ids missing here
   // (new catalog entries) are appended in catalog order.
   List<String> _gigAppOrder = [];
-  // How a Started / Basic driver works (2026-11-04): 'gig' (only the apps they
+  // How a Basic driver (or one on the free trial) works (2026-11-04): 'gig' (only the apps they
   // picked show in the carousel), 'general' (only General shows), 'all' (they
   // chose to see everything) or null (never asked yet). Premium ignores it.
   String? _workMode;
@@ -151,10 +151,10 @@ class AppState extends ChangeNotifier {
   // fn_enforce_vehicle_count_limit, check_and_log_pdf_export) -- these
   // getters are for instant client-side UX only, never the real floor.
   // ============================================================
-  // Explicit user requirement (2026-09-17): Started's free trial shortened
+  // Explicit user requirement (2026-09-17): The free trial shortened
   // from 30 to 15 days as part of the Gig tier restructuring (Basic
   // $5.99, Premium $9.99, whose own free trial is a Google Play offer --
-  // not this client-side Started clock).
+  // not this client-side trial clock).
   static const int _freeTrialDays = 15;
 
   /// True once a Gig, non-exempt, non-subscribed account's 15-day trial
@@ -167,17 +167,16 @@ class AppState extends ChangeNotifier {
     return DateTime.now().difference(_accountCreatedAt!).inDays > _freeTrialDays;
   }
 
-  /// True while on the "Started" (free trial) tier -- never subscribed,
-  /// trial not yet expired. Explicit user requirement (2026-09-09): show
-  /// this state as its own named tier in the Subscription screen instead
-  /// of leaving it implicit.
+  /// True during the automatic 15-day free trial -- never subscribed, trial not
+  /// yet expired. It is not a plan (2026-11-04): the Subscription screen shows
+  /// it only as a line of text above Basic and Premium.
   bool get isOnFreeTrial {
     if (_tierEnforcementExempt) return false;
     if (_premiumEntitled || _baseEntitled) return false;
     return !isFreeTrialExpired;
   }
 
-  /// Days left in the Started trial, floored at 0. Null when not
+  /// Days left in the free trial, floored at 0. Null when not
   /// applicable (subscribed, exempt, Fleet, or unknown account age).
   int? get freeTrialDaysLeft {
     if (!isOnFreeTrial || _accountCreatedAt == null) return null;
@@ -186,9 +185,9 @@ class AppState extends ChangeNotifier {
     return remaining < 0 ? 0 : remaining;
   }
 
-  /// null = unlimited (exempt or Fleet). 5 for Premium, 1 for Started
-  /// (trial) or Basic -- mirrors fn_enforce_vehicle_count_limit exactly
-  /// (explicit user requirement, 2026-09-09: Started/Basic both cap at 1,
+  /// null = unlimited (exempt or Fleet). 5 for Premium, 1 for the trial
+  /// or Basic -- mirrors fn_enforce_vehicle_count_limit exactly
+  /// (explicit user requirement, 2026-09-09: trial/Basic both cap at 1,
   /// Premium caps at 5 -- Premium used to be unlimited here, a real gap
   /// since the server-side trigger enforced no cap for it either).
   int? get maxVehicles {
@@ -468,7 +467,7 @@ class AppState extends ChangeNotifier {
 
   String? get workMode => _workMode;
 
-  /// A Started / Basic account that has not said yet how it works: the work-type
+  /// A Basic or free-trial account that has not said yet how it works: the work-type
   /// screen is shown once. Premium picks its apps with the shift selector.
   bool get needsWorkTypeChoice =>
       isAuthenticated && _accountType == 'gig' && !_premiumEntitled && _workMode == null;
@@ -537,7 +536,7 @@ class AppState extends ChangeNotifier {
     ordered.addAll(catalog.where((a) => !placed.contains(a.id)));
 
     if (!premiumEntitled) {
-      // Started / Basic: what they said in the work-type screen.
+      // Basic / trial: what they said in the work-type screen.
       if (_workMode == 'general') {
         return ordered.where((a) => a.id == 'custom' || a.id == alwaysShow).toList();
       }
