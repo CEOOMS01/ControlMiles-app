@@ -205,7 +205,39 @@ class TrackingController {
   // ============================================================
   // START TRIP FLOW (Flujo principal desde botón)
   // ============================================================
+  static bool _starting = false;
+
+  /// One start at a time (2026-11-04): a real phone created two trips 0.9 s
+  /// apart, and the second one wiped the first one's state, leaving a trip
+  /// open on the server. Anything that arrives while a start is running is
+  /// ignored.
   static Future<void> startTripFlow({
+    required BuildContext context,
+    required String gigApp,
+    String? irsPurpose,
+    String? organizationId,
+    String? shiftBlockId,
+    String? preSelectedVehicleId,
+    bool useAutoDetectOdometer = false,
+  }) async {
+    if (_starting || currentState != TrackingState.idle) return;
+    _starting = true;
+    try {
+      await _startTripFlowImpl(
+        context: context,
+        gigApp: gigApp,
+        irsPurpose: irsPurpose,
+        organizationId: organizationId,
+        shiftBlockId: shiftBlockId,
+        preSelectedVehicleId: preSelectedVehicleId,
+        useAutoDetectOdometer: useAutoDetectOdometer,
+      );
+    } finally {
+      _starting = false;
+    }
+  }
+
+  static Future<void> _startTripFlowImpl({
     required BuildContext context,
     required String gigApp,
     String? irsPurpose,

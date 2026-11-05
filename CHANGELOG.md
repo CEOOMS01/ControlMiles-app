@@ -39,6 +39,12 @@ The shared Supabase backend stays here (`supabase/`).
   an Android reset, an account that already saw the welcome no longer skips the
   permissions: it gets the short steps (location, all the time, notifications)
   and no terms sentence. The 1.3.14 fix that skipped them is corrected.
+- Fix: a double start. On a real phone two trips were created 0.9 s apart and the
+  second wiped the first one's state, leaving a trip open on the server. Only one
+  start runs at a time now (in the Start button and in the trip controller).
+- Every place that needs location now asks first with the explanation page
+  (Start, turning on automatic detection, adding a work place) through one
+  shared PermissionGate, and points to Settings only if that is not enough.
 - Where a trip started and ended: street addresses ("219 Allendale St,
   Baltimore, MD"), looked up on the phone once when the trip closes and again
   for recent trips that missed it. Shown in History (tap to correct them, the

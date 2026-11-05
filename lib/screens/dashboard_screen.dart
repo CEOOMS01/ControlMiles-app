@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -18,9 +17,8 @@ import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../services/trip_address_service.dart';
+import '../utils/permission_gate.dart';
 import '../utils/permission_recovery_service.dart';
-import '../utils/permission_status.dart';
-import '../views/permissions_flow_screen.dart';
 import '../views/work_type_screen.dart';
 import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
@@ -595,24 +593,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   /// A trip cannot record without location, so the Start button asks for it
-  /// first -- the same explanation page as the first launch -- instead of
-  /// starting something that fails. "All the time" is offered but not forced.
-  Future<bool> _ensureStartPermissions(AppState appState) async {
-    if (await PermissionRecoveryService.hasStartPermissions()) return true;
-    if (!mounted) return false;
-    await PermissionsFlowScreen.ask(context, PermKind.location);
-    if (!mounted) return false;
-    if (!await PermissionRecoveryService.hasStartPermissions()) {
-      // Still missing (denied, or only approximate): say what to change.
-      if (!mounted) return false;
-      await PermissionRecoveryService.showRecoveryDialog(context);
-      return false;
-    }
-    if (!await Permission.locationAlways.isGranted && mounted) {
-      await PermissionsFlowScreen.ask(context, PermKind.locationAlways);
-    }
-    return true;
-  }
+  /// first (see PermissionGate) instead of starting something that fails.
+  Future<bool> _ensureStartPermissions(AppState appState) => PermissionGate.ensure(context);
 
   Future<void> _initDashboard() async {
     setState(() => loading = true);

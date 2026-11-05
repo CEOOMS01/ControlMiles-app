@@ -14,6 +14,7 @@ import '../services/gig_app_detection_service.dart';
 import '../services/notification_service.dart';
 import '../models/gig_app.dart';
 import '../utils/permission_status.dart';
+import '../utils/permission_gate.dart';
 import '../views/permissions_flow_screen.dart';
 import '../views/work_type_screen.dart';
 import '../services/work_schedule.dart';
@@ -236,14 +237,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       return;
     }
     // Arrival reminders from a closed app need "Allow all the time".
-    var always = await Permission.locationAlways.status;
-    if (!always.isGranted) {
-      await Permission.locationWhenInUse.request();
-      always = await Permission.locationAlways.request();
-      if (!always.isGranted) {
-        messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_need_always'))));
-        return;
-      }
+    if (!sheetContext.mounted) return;
+    if (!await PermissionGate.ensure(sheetContext, requireAlways: true)) {
+      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_need_always'))));
+      return;
     }
 
     final controller = TextEditingController();

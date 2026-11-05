@@ -66,7 +66,7 @@ import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
 import '../services/vehicle_service.dart';
 import '../screens/odometer_capture_screen.dart';
-import '../utils/permission_recovery_service.dart';
+import '../utils/permission_gate.dart';
 import '../utils/permission_status.dart';
 import '../views/permissions_flow_screen.dart';
 
@@ -283,11 +283,9 @@ class AutoTripDetectionService {
   /// succeeds. Returns false (nothing enabled) if the user backs out at
   /// any step -- permission denied, or cancelled the camera screen.
   static Future<bool> requestEnable(BuildContext context, AppState appState) async {
-    final hasPermissions = await PermissionRecoveryService.hasCriticalPermissions();
-    if (!hasPermissions) {
-      if (context.mounted) await PermissionRecoveryService.showRecoveryDialog(context);
-      return false;
-    }
+    // Location, precise and all the time: asked here with the explanation page
+    // (and Settings only if it is still not enough), not a dead-end dialog.
+    if (!await PermissionGate.ensure(context, requireAlways: true)) return false;
 
     if (!context.mounted) return false;
 

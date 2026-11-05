@@ -102,7 +102,20 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     super.dispose();
   }
 
+  bool _pressing = false;
+
   Future<void> _handlePress(AppState appState) async {
+    // A second tap while the first is still working is ignored.
+    if (_pressing) return;
+    _pressing = true;
+    try {
+      await _handlePressImpl(appState);
+    } finally {
+      _pressing = false;
+    }
+  }
+
+  Future<void> _handlePressImpl(AppState appState) async {
     if (!mounted) return;
 
     final currentState = TrackingController.currentState;
