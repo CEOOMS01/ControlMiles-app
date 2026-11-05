@@ -335,11 +335,11 @@ class ReportService {
     final urls = <String>[];
     for (final s in shown) {
       final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
-      urls.add(base);
+      urls.add('$base?lite=1');
       final secs = _trackedSections(sectionsBySession[s.id]);
       if (secs.length > 1) {
         for (final sec in secs) {
-          urls.add('$base?section=${sec.id}');
+          urls.add('$base?section=${sec.id}&lite=1');
         }
       }
     }
@@ -359,7 +359,7 @@ class ReportService {
     final cards = <pw.Widget>[];
     for (final s in shown) {
       final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
-      final tripSvg = svgs[base];
+      final tripSvg = svgs['$base?lite=1'];
       if (tripSvg == null) continue;
       final secs = _trackedSections(sectionsBySession[s.id]);
       final apps = secs.map((x) => x.gigApp.toUpperCase()).toSet().join(' / ');
@@ -367,7 +367,7 @@ class ReportService {
       final sectionMaps = <pw.Widget>[];
       if (secs.length > 1) {
         for (final sec in secs) {
-          final svg = svgs['$base?section=${sec.id}'];
+          final svg = svgs['$base?section=${sec.id}&lite=1'];
           if (svg == null) continue;
           sectionMaps.add(pw.SizedBox(
             width: 255,

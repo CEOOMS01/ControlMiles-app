@@ -1157,7 +1157,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             label: Text(appState.tr(open ? 'route_map_hide' : 'route_map_show')),
           ),
           if (open) ...[
-            _routeImage(base, isDark),
+            _routeImage('$base?lite=1', isDark),
             if (tracked.length > 1) ...[
               const SizedBox(height: 8),
               GridView.count(
@@ -1168,7 +1168,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 crossAxisSpacing: 8,
                 childAspectRatio: 16 / 9,
                 children: [
-                  for (final s in tracked) _routeImage('$base?section=${s.id}', isDark),
+                  for (final s in tracked) _routeImage('$base?section=${s.id}&lite=1', isDark),
                 ],
               ),
             ],

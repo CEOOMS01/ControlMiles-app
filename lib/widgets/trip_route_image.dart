@@ -45,7 +45,7 @@ class _TripRouteImageState extends State<TripRouteImage> {
             child: AspectRatio(
               aspectRatio: 640 / 360,
               child: SvgPicture.network(
-                '$_base/${widget.sessionId}/${widget.mapToken}',
+                '$_base/${widget.sessionId}/${widget.mapToken}?lite=1',
                 fit: BoxFit.cover,
                 placeholderBuilder: (_) => const Center(child: BrandLoader(size: 36)),
               ),

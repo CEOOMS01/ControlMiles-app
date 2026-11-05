@@ -42,6 +42,14 @@ The shared Supabase backend stays here (`supabase/`).
   History also gets "Route map" on each trip (the same image the PDF uses,
   loaded only when tapped). The privacy policy says the addresses are saved.
   Needs migration `20261104220000_section_addresses` (applied).
+- The accountant portal's trip log also shows From / To (migration
+  `20261104230000_report_portal_trip_addresses`, applied; website change in the
+  web repo, to be deployed).
+- Lighter route maps: the PDF, the Reports preview and History ask for the map
+  with `?lite=1` (no tiny roads or patches, coarser lines, only the roads that
+  matter at that scale). A long trip goes from about 280 KB to 47 KB, a short one
+  from 33 KB to 18 KB, and the picture stays clear. Needs the website deployed;
+  until then the full image comes back and everything still works.
 - "Started" is gone: there are two plans, Basic and Premium. The automatic
   15-day free trial stays, but it is not a plan any more -- the Subscription
   screen shows it as one line ("Free trial: N days left") above the two plans.
