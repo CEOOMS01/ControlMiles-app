@@ -16,6 +16,7 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
+import '../services/trip_address_service.dart';
 import '../views/work_type_screen.dart';
 import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
@@ -605,6 +606,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       _syncTrackingUiState();
       setState(() => loading = false);
     }
+    // Addresses of recent trips that still have none (offline when they closed).
+    unawaited(TripAddressService.backfillRecent());
   }
 
   // ── NUEVO: total del día para la card Summary ──

@@ -572,6 +572,10 @@ const Map<String, String> esTexts = {
   'current_plan': 'Plan actual',
   'trial_days_left': '{days} días restantes',
   'free_trial_note': 'Prueba gratis: {days} días restantes',
+  'address_from': 'Desde',
+  'address_to': 'Hasta',
+  'address_edit_title': 'Corregir las direcciones',
+  'address_save': 'Guardar',
   'subscriptions_not_configured': 'Las suscripciones aún no están disponibles.',
 
   // ============================================================

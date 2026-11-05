@@ -9,6 +9,7 @@ import '../logic/app_state.dart';
 import '../i18n/app_texts.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
+import '../widgets/trip_route_image.dart';
 import '../models/gig_app.dart';
 import '../errors/app_error.dart';
 import '../utils/duration_format.dart';
@@ -27,6 +28,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   List<TrackingSession> _sessions = [];
   Map<String, List<SessionSection>> _sections = {};
+  // sessions.map_token per trip: the route map image (see TripRouteImage).
+  Map<String, String> _mapTokens = {};
 
   double _totalMiles = 0;
   int _totalDurationSeconds = 0;
@@ -103,6 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       final sessions = <TrackingSession>[];
       final sectionsMap = <String, List<SessionSection>>{};
+      final mapTokens = <String, String>{};
 
       double milesAccumulator = 0;
       int durationAccumulator = 0;
@@ -121,6 +125,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             .toList();
 
         sectionsMap[session.id] = sectionList;
+        final token = row['map_token'] as String?;
+        if (token != null) mapTokens[session.id] = token;
 
         for (var s in sectionList) {
           milesAccumulator += s.totalMiles;
@@ -144,6 +150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _sessions = sessions;
           _adminOrgIds = adminOrgIds;
           _sections = sectionsMap;
+          _mapTokens = mapTokens;
           _totalMiles = milesAccumulator;
           _totalDurationSeconds = durationAccumulator;
           _firstStart = firstStart;
@@ -168,6 +175,74 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // mal, ej. "faltaron 5 millas", el usuario deja constancia en texto
   // libre, nunca tocando total_miles/total_duration_seconds).
   // ════════════════════════════════════════════════════════════
+  Future<void> _editAddresses(SessionSection section) async {
+    final appState = context.read<AppState>();
+    final from = TextEditingController(text: section.startAddress ?? '');
+    final to = TextEditingController(text: section.endAddress ?? '');
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('address_edit_title')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: from, maxLength: 300, decoration: InputDecoration(labelText: appState.tr('address_from'))),
+            TextField(controller: to, maxLength: 300, decoration: InputDecoration(labelText: appState.tr('address_to'))),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(appState.tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(appState.tr('address_save'))),
+        ],
+      ),
+    );
+    if (save != true) return;
+    final start = from.text.trim().isEmpty ? null : from.text.trim();
+    final end = to.text.trim().isEmpty ? null : to.text.trim();
+    try {
+      await Supabase.instance.client
+          .from('session_sections')
+          .update({'start_address': start, 'end_address': end, 'address_edited': true})
+          .eq('id', section.id);
+      if (!mounted) return;
+      final list = _sections[section.sessionId];
+      if (list != null) {
+        final idx = list.indexWhere((s) => s.id == section.id);
+        if (idx >= 0) {
+          setState(() {
+            list[idx] = SessionSection(
+              id: section.id,
+              sessionId: section.sessionId,
+              userId: section.userId,
+              gigApp: section.gigApp,
+              status: section.status,
+              startTime: section.startTime,
+              endTime: section.endTime,
+              totalMiles: section.totalMiles,
+              totalDurationSeconds: section.totalDurationSeconds,
+              startLatitude: section.startLatitude,
+              startLongitude: section.startLongitude,
+              endLatitude: section.endLatitude,
+              endLongitude: section.endLongitude,
+              startOdometerImageUrl: section.startOdometerImageUrl,
+              endOdometerImageUrl: section.endOdometerImageUrl,
+              startOdometerValue: section.startOdometerValue,
+              endOdometerValue: section.endOdometerValue,
+              irsPurpose: section.irsPurpose,
+              sectionHash: section.sectionHash,
+              notes: section.notes,
+              startAddress: start,
+              endAddress: end,
+              addressEdited: true,
+            );
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('History: address update failed: $e');
+    }
+  }
+
   Future<void> _editNote(SessionSection section) async {
     final appState = context.read<AppState>();
     final controller = TextEditingController(text: section.notes ?? '');
@@ -578,6 +653,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         child: Text(appState.tr('sections_label'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: labelCol)),
                                       ),
                                       ...sections.map((section) => _buildSectionRow(section, appState, isDark)),
+                                      if (_mapTokens[session.id] != null)
+                                        TripRouteImage(sessionId: session.id, mapToken: _mapTokens[session.id]!),
                                     ],
                                   ),
                                 ),
@@ -680,6 +757,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
               _buildSectionStat(_formatDuration(secDur), Icons.timer_outlined, appColor),
             ],
           ),
+          // ── Where it started and ended (2026-11-04): street addresses looked
+          // up on the phone; tap to correct a street name. Never changes the
+          // recorded miles or coordinates.
+          if (section.startAddress != null || section.endAddress != null) ...[
+            const SizedBox(height: 6),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _editAddresses(section),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (section.startAddress != null)
+                      Text('${appState.tr('address_from')}: ${section.startAddress}',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : const Color(0xFF574F40))),
+                    if (section.endAddress != null)
+                      Text('${appState.tr('address_to')}: ${section.endAddress}',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : const Color(0xFF574F40))),
+                  ],
+                ),
+              ),
+            ),
+          ],
           // ── Nota (pedido explícito): jamás edita millas, solo texto
           // libre de contexto — ver _editNote() y migración
           // session_sections_add_notes.

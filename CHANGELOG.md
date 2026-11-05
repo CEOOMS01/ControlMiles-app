@@ -32,6 +32,16 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.16+56 — 2026-11-04 (not built yet)
 
+- Where a trip started and ended: street addresses ("219 Allendale St,
+  Baltimore, MD"), looked up on the phone once when the trip closes and again
+  for recent trips that missed it. Shown in History (tap to correct them, the
+  recorded coordinates and miles never change) and in the PDF trip log as a new
+  "From / To" column. The start and end points themselves are now always
+  saved: the first valid fix of a section sets the start, and the end falls back
+  to the last valid fix any isolate saved (about 1 trip in 5 had none).
+  History also gets "Route map" on each trip (the same image the PDF uses,
+  loaded only when tapped). The privacy policy says the addresses are saved.
+  Needs migration `20261104220000_section_addresses` (applied).
 - "Started" is gone: there are two plans, Basic and Premium. The automatic
   15-day free trial stays, but it is not a plan any more -- the Subscription
   screen shows it as one line ("Free trial: N days left") above the two plans.

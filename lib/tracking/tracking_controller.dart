@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,6 +22,7 @@ import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
 import 'driver_safety_monitor.dart';
 import '../services/speed_limit_service.dart';
+import '../services/trip_address_service.dart';
 import 'background_gps_service.dart';
 import 'gps_watchdog.dart';
 import 'auto_trip_detection_service.dart';
@@ -1177,6 +1179,7 @@ class TrackingController {
     // Real-time self-map (DriverOperationsScreen) -- only fed with ticks
     // that already passed the antifraud check above, same trust boundary
     // as everything else this file writes.
+    unawaited(_rememberFix(latitude, longitude));
     livePosition.value = (lat: latitude, lng: longitude);
     liveRoute.value = [...liveRoute.value, (lat: latitude, lng: longitude)];
     // Route drawing of this segment (uploaded once when it closes).
@@ -1189,9 +1192,11 @@ class TrackingController {
     // punto del código vivo (quedaban null en el 100% de las secciones
     // reales). prevLat/prevLng nulos identifican el primer punto GPS válido
     // de esta sección — se usa como coordenada de inicio.
-    if (prevLat == null &&
-        prevLng == null &&
-        activeSection!.startLatitude == null) {
+    // 2026-11-04: no longer needs prevLat == null. That engine state lives in
+    // one isolate only, so a section picked up by another isolate (or after a
+    // restart) never got its start point -- about 1 in 5 trips. The update
+    // only writes when the column is still empty, so the first point wins.
+    if (activeSection!.startLatitude == null) {
       activeSection = activeSection!.copyWith(
         startLatitude: latitude,
         startLongitude: longitude,
@@ -1201,7 +1206,8 @@ class TrackingController {
         await Supabase.instance.client
             .from('session_sections')
             .update({'start_latitude': latitude, 'start_longitude': longitude})
-            .eq('id', activeSection!.id);
+            .eq('id', activeSection!.id)
+            .isFilter('start_latitude', null);
       } catch (e) {
         _logError('START_COORDS_SAVE_ERROR', e.toString());
       }
@@ -1665,8 +1671,15 @@ class TrackingController {
       // real (SectionTrackingService.finalizeSection sí lo hacía, pero es
       // código muerto que nada invoca). Usamos la última posición válida
       // que tiene el motor antifraude como coordenada de cierre.
-      final endLat = AntifraudEngine.lastLat;
-      final endLng = AntifraudEngine.lastLng;
+      var endLat = AntifraudEngine.lastLat;
+      var endLng = AntifraudEngine.lastLng;
+      if (endLat == null || endLng == null) {
+        // The engine's memory is per isolate: fall back to the last valid fix
+        // any isolate saved, then to the phone's last known position.
+        final last = await _lastKnownFix();
+        endLat = last?.lat;
+        endLng = last?.lng;
+      }
 
       // REAL BUG (found in prod data 2026-09-29): after a gig-app switch
       // the last section was saved with the WHOLE trip's miles (e.g.
@@ -1709,7 +1722,10 @@ class TrackingController {
           })
           .eq("id", activeSection!.id);
 
+      final closedSectionId = activeSection!.id;
       activeSection = null;
+      // Street addresses of the start and end, looked up on the phone once.
+      unawaited(TripAddressService.fillSection(closedSectionId));
 
       try {
         await LocalStorageService.clearAllCheckpoint();
@@ -1977,6 +1993,36 @@ class TrackingController {
     } catch (e) {
       _logError('LIVE_LOCATION_HEARTBEAT_ERROR', e.toString());
     }
+  }
+
+  static DateTime _lastFixWrite = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Saves the last valid fix (at most every 10 s) so the end point of a trip
+  /// exists even when the isolate that closes it never saw a fix.
+  static Future<void> _rememberFix(double lat, double lng) async {
+    final now = DateTime.now();
+    if (now.difference(_lastFixWrite) < const Duration(seconds: 10)) return;
+    _lastFixWrite = now;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('trip_last_fix_lat', lat);
+      await prefs.setDouble('trip_last_fix_lng', lng);
+    } catch (_) {}
+  }
+
+  static Future<({double lat, double lng})?> _lastKnownFix() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final lat = prefs.getDouble('trip_last_fix_lat');
+      final lng = prefs.getDouble('trip_last_fix_lng');
+      if (lat != null && lng != null) return (lat: lat, lng: lng);
+    } catch (_) {}
+    try {
+      final pos = await geo.Geolocator.getLastKnownPosition();
+      if (pos != null) return (lat: pos.latitude, lng: pos.longitude);
+    } catch (_) {}
+    return null;
   }
 
   static double _calculateHaversine(

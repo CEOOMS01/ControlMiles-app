@@ -582,6 +582,10 @@ const Map<String, String> enTexts = {
   'current_plan': 'Current plan',
   'trial_days_left': '{days} days left',
   'free_trial_note': 'Free trial: {days} days left',
+  'address_from': 'From',
+  'address_to': 'To',
+  'address_edit_title': 'Fix the addresses',
+  'address_save': 'Save',
   'subscriptions_not_configured': 'Subscriptions are not available yet.',
 
   // ============================================================

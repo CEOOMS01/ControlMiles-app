@@ -41,6 +41,12 @@ class SessionSection {
   // en vez de tocar totalMiles. Ver migración session_sections_add_notes.
   final String? notes;
 
+  // Street addresses of where the section started and ended (2026-11-04).
+  // Looked up on the phone when the trip closes; the driver may correct them.
+  final String? startAddress;
+  final String? endAddress;
+  final bool addressEdited;
+
   SessionSection({
     required this.id,
     required this.sessionId,
@@ -62,6 +68,9 @@ class SessionSection {
     this.irsPurpose,
     this.sectionHash,
     this.notes,
+    this.startAddress,
+    this.endAddress,
+    this.addressEdited = false,
   });
 
   static double _toDouble(dynamic v) {
@@ -116,6 +125,9 @@ class SessionSection {
       irsPurpose: map['irs_purpose'],
       sectionHash: map['section_hash'],
       notes: map['notes'],
+      startAddress: map['start_address'] as String?,
+      endAddress: map['end_address'] as String?,
+      addressEdited: map['address_edited'] == true,
     );
   }
 
@@ -158,6 +170,9 @@ class SessionSection {
     String? gigApp,
     String? notes,
     bool clearNotes = false,
+    String? startAddress,
+    String? endAddress,
+    bool? addressEdited,
   }) {
     return SessionSection(
       id: id,
@@ -181,6 +196,9 @@ class SessionSection {
       irsPurpose: irsPurpose ?? this.irsPurpose,
       sectionHash: sectionHash ?? this.sectionHash,
       notes: clearNotes ? null : (notes ?? this.notes),
+      startAddress: startAddress ?? this.startAddress,
+      endAddress: endAddress ?? this.endAddress,
+      addressEdited: addressEdited ?? this.addressEdited,
     );
   }
 

@@ -734,7 +734,16 @@ class ReportService {
       // per-trip in the actual table an auditor would read row by row.
       final startOdoStr = session.startOdometerValue?.toStringAsFixed(0) ?? '--';
       final endOdoStr = session.endOdometerValue?.toStringAsFixed(0) ?? '--';
-      return [dateStr, apps.isEmpty ? '--' : apps, milesStr, durStr, startOdoStr, endOdoStr, 'VERIFIED'];
+      // Where the trip started and ended (2026-11-04): the first segment's
+      // start address and the last segment's end address, as the phone looked
+      // them up when the trip closed (or as the driver corrected them).
+      final ordered = [...secs]..sort((a, b) => a.startTime.compareTo(b.startTime));
+      String shortAddr(String? a) =>
+          (a == null || a.trim().isEmpty) ? '--' : (a.length > 60 ? '${a.substring(0, 57)}...' : a);
+      final route = ordered.isEmpty
+          ? '--'
+          : '${shortAddr(ordered.first.startAddress)}\n-> ${shortAddr(ordered.last.endAddress)}';
+      return [dateStr, apps.isEmpty ? '--' : apps, route, milesStr, durStr, startOdoStr, endOdoStr, 'VERIFIED'];
     }).toList();
 
     if (rows.isEmpty) {
@@ -743,7 +752,7 @@ class ReportService {
     }
 
     return pw.TableHelper.fromTextArray(
-      headers: ['DATE', 'GIG APP(S)', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
+      headers: ['DATE', 'GIG APP(S)', 'FROM / TO', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
       data:    rows,
       headerStyle: pw.TextStyle(
         fontWeight: pw.FontWeight.bold,
@@ -755,13 +764,14 @@ class ReportService {
       cellStyle:     const pw.TextStyle(fontSize: 9),
       cellAlignment: pw.Alignment.centerLeft,
       columnWidths: {
-        0: const pw.FlexColumnWidth(1.0),
-        1: const pw.FlexColumnWidth(1.4),
-        2: const pw.FlexColumnWidth(0.9),
-        3: const pw.FlexColumnWidth(0.9),
-        4: const pw.FlexColumnWidth(0.9),
-        5: const pw.FlexColumnWidth(0.9),
-        6: const pw.FlexColumnWidth(1.0),
+        0: const pw.FlexColumnWidth(0.95),
+        1: const pw.FlexColumnWidth(1.2),
+        2: const pw.FlexColumnWidth(2.4),
+        3: const pw.FlexColumnWidth(0.85),
+        4: const pw.FlexColumnWidth(0.85),
+        5: const pw.FlexColumnWidth(0.8),
+        6: const pw.FlexColumnWidth(0.8),
+        7: const pw.FlexColumnWidth(0.95),
       },
       oddRowDecoration:
           const pw.BoxDecoration(color: PdfColors.grey50),

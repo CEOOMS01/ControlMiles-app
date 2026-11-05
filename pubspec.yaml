@@ -141,6 +141,7 @@ dependencies:
   in_app_purchase_android: ^0.5.3
   flutter_svg: ^2.3.0
   showcaseview: ^5.1.0
+  geocoding: ^5.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
