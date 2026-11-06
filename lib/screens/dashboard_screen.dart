@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart';
 
 import '../tracking/tracking_controller.dart';
 import '../tracking/auto_trip_detection_service.dart';
@@ -90,9 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   final VehicleService _vehicleService = VehicleService();
 
   // ── NUEVO: historial reciente ──
-  List<Map<String, dynamic>> _recentSessions = [];
-  Map<String, List<Map<String, dynamic>>> _recentSections = {};
-  bool _historyLoading = true;
 
   // ── NUEVO: card Summary (total del día) ──
   // BUG FIX (pedido explícito, batch de 4 bugs): NO reusa _recentSessions
@@ -221,7 +217,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${app.toUpperCase()}: ${appState.tr('trip_discarded_no_miles')}')),
     );
-    _loadRecentSessions();
   }
 
   void _onAutoFlashEvent() {
@@ -623,7 +618,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     // another, and each is a separate server request.
     await Future.wait<void>([
       TrackingController.initializeOrRecover(),
-      _loadRecentSessions(),
       _loadTodaySummary(),
       _loadMonthSummary(),
       _loadHeaderMiles(),
@@ -801,270 +795,25 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) setState(() => _vehicleLoading = false);
     }
   }
-
-  // ── NUEVO: carga las últimas 5 sesiones cerradas con sus secciones ──
-  // BUG FIX (pedido explícito, corregido): RECENT TRIPS muestra los viajes
-  // de las últimas 24h, reiniciando en la medianoche (12am) local — no
-  // desde las 12pm. El corte anterior (mediodía) excluía por diseño
-  // cualquier viaje hecho en la mañana (12am-11:59am), que es exactamente
-  // lo que se reportó como "el historial no se actualiza". Se recalcula en
-  // cada carga/pull-to-refresh con la hora local del dispositivo — no hace
-  // falta timer/motor.
-  Future<void> _loadRecentSessions() async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
-
-      final nowLocal = DateTime.now();
-      final todayMidnightLocal =
-          DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0, 0);
-      final windowStartUtc = todayMidnightLocal.toUtc();
-
-      final sessionsData = await _supabase
-          .from('sessions')
-          .select()
-          .eq('user_id', user.id)
-          // Personal trips only: fleet trips live in ControlMiles Fleet.
-          .isFilter('organization_id', null)
-          .eq('is_closed', true)
-          .gte('start_time', windowStartUtc.toIso8601String())
-          .order('start_time', ascending: false)
-          .limit(5);
-
-      final sessions = List<Map<String, dynamic>>.from(sessionsData);
-      final sectionsMap = <String, List<Map<String, dynamic>>>{};
-
-      for (final session in sessions) {
-        final sectionsData = await _supabase
-            .from('session_sections')
-            .select()
-            .eq('session_id', session['id'])
-            .order('start_time', ascending: true);
-
-        sectionsMap[session['id']] =
-            List<Map<String, dynamic>>.from(sectionsData);
-      }
-
-      if (mounted) {
-        setState(() {
-          _recentSessions = sessions;
-          _recentSections = sectionsMap;
-          _historyLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("[ControlMiles History Load Error] $e");
-      if (mounted) setState(() => _historyLoading = false);
-    }
-  }
-
   // BUG FIX (pedido explícito): _addVehicle/_showAddVehicleSheet/
   // _buildVehicleField eliminados — el alta/edición/borrado de vehículo
   // vive únicamente en ProfileScreen (VehicleService como única fuente de
   // verdad). Dashboard solo muestra el vehículo activo y navega a Profile
   // para cualquier cambio (ver _buildVehicleCard).
 
-  // BUG FIX (consolidación pedida explícitamente): este catálogo vivía
-  // duplicado a mano en 4 archivos — ver lib/models/gig_app.dart, ahora
-  // fuente única de verdad.
-  GigApp _getAppMeta(String appId) => GigAppCatalog.byId(appId);
 
   // ── NUEVO: widget de historial reciente ──
-  Widget _buildRecentSessionsHistory(AppState appState, bool isDark) {
+  Widget _buildSummarySection(AppState appState, bool isDark) {
     final cardBg     = isDark ? const Color(0xFF1C1812) : Colors.white;
     final borderColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
     final labelColor  = isDark ? Colors.white38 : const Color(0xFFA39A86);
     final textColor   = isDark ? Colors.white : const Color(0xFF2E281F);
-    final dateFormat  = DateFormat('MM/dd · hh:mm a');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── NUEVO: card Summary (total del día, pedido explícito) ──
         _buildSummaryCard(appState, cardBg, borderColor, labelColor, textColor),
-        const SizedBox(height: 14),
-
-        if (_historyLoading)
-          const Center(child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ))
-        else if (_recentSessions.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(kPageGutter),
-            decoration: fullBleedCard(color: cardBg, border: borderColor),
-            child: Column(
-              children: [
-                Icon(Icons.history_rounded, size: 32, color: labelColor),
-                const SizedBox(height: 8),
-                Text(
-                  appState.tr('no_trips_yet'),
-                  style: TextStyle(fontSize: 13, color: labelColor, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          )
-        else
-          ...(_recentSessions.map((session) {
-            final sessionId   = session['id'] as String;
-            final sections    = _recentSections[sessionId] ?? [];
-            final startTime   = session['start_time'] != null
-                ? DateTime.parse(session['start_time']).toLocal()
-                : null;
-            final endTime     = session['end_time'] != null
-                ? DateTime.parse(session['end_time']).toLocal()
-                : null;
-            final totalMiles  = (session['total_miles'] ?? 0.0) as num;
-            // BUG FIX: total_duration_seconds is now persisted correctly
-            // (pause-excluded) by TrackingController.stopTracking(), but
-            // sessions closed before that fix are stuck at 0 despite having
-            // a real trip length. Treat 0 as "not set" and fall back to the
-            // raw start→end difference for those legacy rows.
-            final storedDurationSec = (session['total_duration_seconds'] as int?) ?? 0;
-            final durationSec = storedDurationSec > 0
-                ? storedDurationSec
-                : (endTime != null && startTime != null
-                    ? endTime.difference(startTime).inSeconds
-                    : 0);
-
-            final displayMiles = appState.useMetricSystem
-                ? (totalMiles * 1.60934).toStringAsFixed(2)
-                : totalMiles.toStringAsFixed(2);
-            final unitLabel = appState.useMetricSystem
-                ? appState.tr('kilometer_short')
-                : appState.tr('mile_short');
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: fullBleedCard(color: cardBg, border: borderColor),
-              child: Column(
-                children: [
-
-                  // ── Fila superior: fecha / duración / millas ──
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(kPageGutter, 14, kPageGutter, 10),
-                    child: Row(
-                      children: [
-
-                        // Fecha y hora de inicio
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                startTime != null
-                                    ? dateFormat.format(startTime)
-                                    : '---',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                              if (endTime != null)
-                                Text(
-                                  'End: ${DateFormat('hh:mm a').format(endTime)}',
-                                  style: TextStyle(fontSize: 11, color: labelColor),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        // Duración
-                        _buildSessionInfoChip(
-                          icon: Icons.timer_outlined,
-                          value: _formatDurationFromSeconds(durationSec),
-                          isDark: isDark,
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        // Millas
-                        _buildSessionInfoChip(
-                          icon: Icons.speed_rounded,
-                          value: '$displayMiles $unitLabel',
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ── Divisor ──
-                  if (sections.isNotEmpty)
-                    Divider(height: 1, color: borderColor),
-
-                  // ── Secciones (chips de gig apps) ──
-                  if (sections.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(kPageGutter, 10, kPageGutter, 12),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: sections.map((section) {
-                          final gigApp  = section['gig_app'] as String? ?? 'custom';
-                          final meta    = _getAppMeta(gigApp);
-                          final appColor = meta.color;
-                          final secMiles = (section['total_miles'] ?? 0.0) as num;
-                          final secStart = section['start_time'] != null
-                              ? DateTime.parse(section['start_time']).toLocal()
-                              : null;
-                          final secEnd = section['end_time'] != null
-                              ? DateTime.parse(section['end_time']).toLocal()
-                              : null;
-                          final secDur = secEnd != null && secStart != null
-                              ? secEnd.difference(secStart).inMinutes
-                              : 0;
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: appColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                  color: appColor.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(meta.icon,
-                                    size: 13, color: appColor),
-                                const SizedBox(width: 5),
-                                Text(
-                                  meta.name,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: appColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '${secMiles.toStringAsFixed(1)} mi · ${secDur}m',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: appColor.withValues(alpha: 0.75),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          }).toList()),
-        if (_recentSessions.isNotEmpty)
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/history'),
-              child: Text('${appState.tr('see_all_label')} →'),
-            ),
-          ),
       ],
     );
   }
@@ -1103,12 +852,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // RECENT TRIPS lives on the left of this card's header now
-          // (owner's request, 2026-10-09), with SUMMARY on the right; "See
-          // all" moved under the trip list.
+          // The day-by-day trip list is gone from here (2026-11-06): it lives in My Trips.
           CmCardHeader(
-            title: appState.tr('recent_trips_title'),
-            trailing: Text(appState.tr('summary').toUpperCase(), style: cmHeaderLinkStyle),
+            title: appState.tr('summary'),
           ),
           IntrinsicHeight(
             child: Row(
@@ -1472,7 +1218,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // pull-to-refresh manual. También recarga el total del día
                 // (card Summary) -- terminar un viaje lo cambia.
                 onTripEnded: () {
-                  _loadRecentSessions();
                   _loadTodaySummary();
                   _loadMonthSummary();
                   _maybeFirstTripTip();
@@ -1621,7 +1366,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 46),
 
               // ── NUEVO: historial reciente debajo del botón ──
-              _buildRecentSessionsHistory(appState, isDark),
+              _buildSummarySection(appState, isDark),
 
               const SizedBox(height: 30),
             ],
@@ -1664,7 +1409,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Divider de borde a borde + contenido.
     // BUG FIX (build error, olvido al escribir el header): 'labelColor' no
     // es un campo de la clase -- cada método que lo usa lo calcula local a
-    // partir de isDark (mismo criterio que _buildRecentSessionsHistory).
+    // partir de isDark (mismo criterio que _buildSummarySection).
     final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
     final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
 

@@ -193,6 +193,7 @@ const Map<String, String> enTexts = {
   'not_trips_yet': 'No trips yet',
   'generate_pdf': 'Generate PDF',
   'generate_global_pdf': 'Generate Global PDF',
+  'generate_report_btn': "Generate report",
   'trip_note': 'Trip note',
   'trip_note_hint': 'e.g. "missed 5 miles — GPS signal lost"',
   'add_note': 'Add note',

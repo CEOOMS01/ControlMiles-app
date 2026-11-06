@@ -16,9 +16,11 @@ class AppUpdateService {
   static const _app = 'gig';
   static const _offeredKey = 'app_update_offered_build';
   static bool _shownThisRun = false;
+  static bool _checkedThisRun = false;
 
   static Future<void> checkAndPrompt(BuildContext context) async {
-    if (_shownThisRun) return;
+    if (_shownThisRun || _checkedThisRun) return;
+    _checkedThisRun = true;
     try {
       final info = await PackageInfo.fromPlatform();
       final installed = int.tryParse(info.buildNumber) ?? 0;

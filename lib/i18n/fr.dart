@@ -793,6 +793,7 @@ const Map<String, String> frTexts = {
   'enter_reset_code': 'Entrez le code reçu par email',
   'forgot_password_body': 'Entrez l\'email de votre compte et nous vous enverrons un code pour réinitialiser votre mot de passe.',
   'generate_global_pdf': 'Générer le PDF global',
+  'generate_report_btn': "Générer le rapport",
   'greeting_afternoon': 'Bon après-midi',
   'greeting_evening': 'Bonsoir',
   'greeting_morning': 'Bonjour',

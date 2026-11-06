@@ -644,6 +644,7 @@ const Map<String, String> hiTexts = {
   'last_30_days': 'पिछले 30 दिन',
   'last_12_months': 'पिछले 12 महीने',
   'generate_global_pdf': 'संपूर्ण PDF बनाएं',
+  'generate_report_btn': "रिपोर्ट बनाएं",
   'trip_note': 'यात्रा टिप्पणी',
   'trip_note_hint': 'उदा. "5 मील छूट गए — GPS सिग्नल खो गया"',
   'add_note': 'टिप्पणी जोड़ें',

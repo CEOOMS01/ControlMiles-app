@@ -795,6 +795,7 @@ const Map<String, String> zhTexts = {
   'enter_reset_code': '输入您邮箱收到的验证码',
   'forgot_password_body': '输入您账户的邮箱地址，我们会发送验证码以重置密码。',
   'generate_global_pdf': '生成全局 PDF',
+  'generate_report_btn': "生成报告",
   'greeting_afternoon': '下午好',
   'greeting_evening': '晚上好',
   'greeting_morning': '早上好',

@@ -229,7 +229,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      final sessionsRaw = await Supabase.instance.client
+      // Pages of 500 so a long history ("Total trips") is never cut at the server's row cap.
+      final sessionsRaw = <dynamic>[];
+      for (var from = 0;; from += 500) {
+        final page = await Supabase.instance.client
           .from('sessions')
           // Sections embedded in the same request. REAL BUG (found live
           // 2026-09-29, ~25 s on a Galaxy S24+): this used to fetch each
@@ -243,9 +246,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
           .gte('start_time', _dateRange.start.toIso8601String())
           .lte('start_time',
               _dateRange.end.add(const Duration(days: 1)).toIso8601String())
-          .order('start_time', ascending: false);
+          .order('start_time', ascending: false)
+          .range(from, from + 499);
+        sessionsRaw.addAll(page as List);
+        if (page.length < 500) break;
+      }
 
-      final sessionRows = (sessionsRaw as List).cast<Map<String, dynamic>>();
+      final sessionRows = sessionsRaw.cast<Map<String, dynamic>>();
       final sessions = sessionRows.map(TrackingSession.fromMap).toList();
 
       final sectionsMap = <String, List<SessionSection>>{};
@@ -885,24 +892,116 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ── Global PDF button (reemplaza el botón por-sesión) ──────
+  // ── Range shortcuts + report button (2026-11-06) ───────────
+  // Three buttons share the row the big red PDF button used to fill: This
+  // month and Total trips pick the date range, Generate report makes the PDF
+  // of whatever range is showing.
+  DateTime? _allTripsStart;
+
+  DateTime get _monthStart {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, 1);
+  }
+
+  bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool get _isThisMonth => _sameDay(_dateRange.start, _monthStart);
+  bool get _isAllTrips => _allTripsStart != null && _sameDay(_dateRange.start, _allTripsStart!);
+
+  void _useRange(DateTime start) {
+    setState(() {
+      _dateRange = DateTimeRange(start: start, end: DateTime.now());
+      _isThisWeekView = false;
+    });
+    _loadSessions();
+  }
+
+  Future<void> _useAllTrips() async {
+    var start = _allTripsStart;
+    if (start == null) {
+      try {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user != null) {
+          final first = await Supabase.instance.client
+              .from('sessions')
+              .select('start_time')
+              .eq('user_id', user.id)
+              .isFilter('organization_id', null)
+              .eq('is_closed', true)
+              .order('start_time', ascending: true)
+              .limit(1)
+              .maybeSingle();
+          final t = first?['start_time'] as String?;
+          if (t != null) {
+            final d = DateTime.parse(t).toLocal();
+            start = DateTime(d.year, d.month, d.day);
+          }
+        }
+      } catch (_) {}
+      start ??= DateTime(DateTime.now().year, 1, 1);
+      _allTripsStart = start;
+    }
+    if (mounted) _useRange(start);
+  }
+
   Widget _buildGlobalPdfButton(AppState appState) {
+    Widget shortcut(IconData icon, String label, bool on, VoidCallback onTap) {
+      final blue = const Color(0xFF2C6C99);
+      return Expanded(
+        child: OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            foregroundColor: blue,
+            backgroundColor: blue.withValues(alpha: on ? 0.20 : 0.08),
+            side: BorderSide(color: on ? blue : blue.withValues(alpha: 0.35)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(height: 4),
+              Text(label, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: _sessions.isEmpty ? null : () => _exportGlobalPdf(appState),
-          icon:  const Icon(Icons.picture_as_pdf_rounded, size: 18),
-          label: Text(appState.tr('generate_global_pdf').toUpperCase()),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.shade700,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
-          ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            shortcut(Icons.calendar_month_rounded, appState.tr('this_month'), _isThisMonth, () => _useRange(_monthStart)),
+            const SizedBox(width: 8),
+            shortcut(Icons.route_rounded, appState.tr('total_trips'), _isAllTrips, _useAllTrips),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _sessions.isEmpty ? null : () => _exportGlobalPdf(appState),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    const SizedBox(height: 4),
+                    Text(appState.tr('generate_report_btn'), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

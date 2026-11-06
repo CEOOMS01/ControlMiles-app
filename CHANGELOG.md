@@ -30,8 +30,23 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## 1.3.22+62 — 2026-11-06 (code ready, not built)
+## 1.3.22+62 — 2026-11-06 (built, for Play)
 
+- PDF report redone in landscape (A4), in the style of the reports drivers already know: header with
+  date range and business rate on every page, summary tiles (estimated deduction, business and
+  non-business miles, business use, distance, drives), a per-vehicle table (miles by category and
+  estimated deduction), and the trip log with category, app, full start and end addresses, rate,
+  value and odometer start/end per trip, page numbers and report totals. No maps and no photos in
+  the PDF any more (they stay in the app and on controlmiles.com), so it is made much faster.
+- PDF report: the deduction estimate now follows each trip's category (Personal/Work/Education add
+  nothing, Medical and Moving use 20.5c/23.5c, Charitable 14c, business-group trips the business
+  rate), the same way My Trips prices it. Before, every mile was priced at the business rate.
+- Reports: the big red PDF button is now a row of three: This month, Total trips (whole history, from
+  the first trip) and Generate report. The first two set the date range; the report uses the range
+  shown. Trips are read in pages of 500 so long histories are not cut off.
+- Dashboard: the day-by-day "Recent trips" list is gone; only the Summary card stays (one less query on
+  every open). My Trips now loads the whole history (not just a year) and the month picker is an
+  agenda icon that expands into a year + months grid; months without trips are dimmed.
 - Languages cut from 11 to 5: English, Spanish, French, Chinese and Hindi. Portuguese,
   Arabic, Japanese, Korean, German and Amharic are out of the app (files kept in
   reference/i18n_removed_2026-11-06/); a driver whose saved language was one of them

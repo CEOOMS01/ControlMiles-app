@@ -17,7 +17,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:controlmiles/logic/app_state.dart';
 import 'package:controlmiles/screens/trips_screen.dart';
 import 'package:controlmiles/widgets/trip_card.dart';
-import 'package:controlmiles/widgets/trip_card.dart';
 import 'package:controlmiles/theme/screen_fit.dart';
 
 Future<void> _loadRealFonts() async {
@@ -130,6 +129,13 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 600));
         expect(tester.takeException(), isNull);
+        // The agenda opens from its icon and fits.
+        await tester.tap(find.byIcon(Icons.calendar_month_rounded));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull);
+        expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.calendar_month_rounded));
+        await tester.pump(const Duration(milliseconds: 400));
 
         final dir = Platform.environment['TRIPS_SHOT_DIR'];
         if (dir != null && scale == 1.0 && size.width == 412) {

@@ -37,6 +37,8 @@ class _TripsScreenState extends State<TripsScreen> {
   List<TripData> _trips = [];
   _Filter _filter = _Filter.all;
   String? _month; // 'yyyy-MM'
+  bool _calendarOpen = false;
+  int _calYear = DateTime.now().year;
   final Set<String> _open = {};
   Set<String> _adminOrgIds = {};
 
@@ -59,23 +61,37 @@ class _TripsScreenState extends State<TripsScreen> {
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
-      final since = DateTime.now().toUtc().subtract(const Duration(days: 365));
-      final data = await Supabase.instance.client
-          .from('sessions')
-          .select('*, session_sections(*)')
-          .eq('user_id', userId)
-          // Personal trips only: fleet trips live in ControlMiles Fleet.
-          .isFilter('organization_id', null)
-          .gte('start_time', since.toIso8601String())
-          .order('start_time', ascending: false);
+      // The whole history (2026-11-06), not just the last year: read in pages of
+      // 500 until the server runs out, newest first.
+      Future<List<Map<String, dynamic>>> allTrips() async {
+        final all = <Map<String, dynamic>>[];
+        for (var from = 0;; from += 500) {
+          final page = await Supabase.instance.client
+              .from('sessions')
+              .select('*, session_sections(*)')
+              .eq('user_id', userId)
+              // Personal trips only: fleet trips live in ControlMiles Fleet.
+              .isFilter('organization_id', null)
+              .order('start_time', ascending: false)
+              .range(from, from + 499);
+          all.addAll((page as List).cast<Map<String, dynamic>>());
+          if (page.length < 500) return all;
+        }
+      }
 
-      final adminRows = await Supabase.instance.client
+      // Both requests at once; neither depends on the other.
+      final dataF = allTrips();
+
+      final adminF = Supabase.instance.client
           .from('organization_members')
           .select('organization_id')
           .eq('user_id', userId)
           .eq('is_active', true)
           .inFilter('member_role', ['owner', 'admin']);
 
+      final results = await Future.wait<dynamic>([dataF, adminF]);
+      final data = results[0];
+      final adminRows = results[1];
       _apply((data as List).cast<Map<String, dynamic>>(), adminRows as List);
     } catch (e) {
       debugPrint('[TripsScreen] load error: $e');
@@ -259,6 +275,79 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
+  /// The agenda: one year at a time with arrows, twelve months to pick from.
+  /// Months with trips are tappable; the rest are dimmed.
+  Widget _calendar(String lang, bool dark) {
+    final years = _months.map((m) => int.parse(m.substring(0, 4)));
+    final minYear = years.isEmpty ? _calYear : years.reduce((a, b) => a < b ? a : b);
+    final maxYear = years.isEmpty ? _calYear : years.reduce((a, b) => a > b ? a : b);
+    final have = _months.toSet();
+    final ink = dark ? Colors.white : CmColors.ink;
+    final dim = dark ? Colors.white38 : CmColors.inkMuted;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 10),
+      decoration: BoxDecoration(
+        color: dark ? CmColors.nightCard : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dark ? CmColors.ink : CmColors.sand),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded),
+                color: ink,
+                onPressed: _calYear > minYear ? () => setState(() => _calYear--) : null,
+              ),
+              Text('$_calYear', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: ink)),
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded),
+                color: ink,
+                onPressed: _calYear < maxYear ? () => setState(() => _calYear++) : null,
+              ),
+            ],
+          ),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.2,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            children: [
+              for (var m = 1; m <= 12; m++)
+                Builder(builder: (_) {
+                  final key = '$_calYear-${m.toString().padLeft(2, '0')}';
+                  final enabled = have.contains(key);
+                  final selected = key == _month;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: enabled ? () => setState(() { _month = key; _calendarOpen = false; }) : null,
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? CmColors.blue : null,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: selected ? CmColors.blue : (dark ? CmColors.ink : CmColors.sand)),
+                      ),
+                      child: Text(
+                        DateFormat('MMM', lang).format(DateTime(_calYear, m)),
+                        style: TextStyle(fontWeight: FontWeight.w700, color: selected ? Colors.white : (enabled ? ink : dim)),
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _monthHeader(AppState s, bool dark, List<TripData> month) {
     final miles = month.fold<double>(0, (a, t) => a + t.miles);
     final money = month.fold<double>(0, (a, t) => a + t.deduction);
@@ -300,19 +389,25 @@ class _TripsScreenState extends State<TripsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PopupMenuButton<String>(
-          onSelected: (v) => setState(() => _month = v),
-          itemBuilder: (_) => [
-            for (final m in _months) PopupMenuItem(value: m, child: Text(DateFormat('MMMM yyyy', lang).format(DateTime.parse('$m-01')))),
-          ],
+        InkWell(
+          onTap: () => setState(() {
+            _calendarOpen = !_calendarOpen;
+            if (_calendarOpen && _month != null) _calYear = int.parse(_month!.substring(0, 4));
+          }),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(label, style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: dark ? Colors.white : CmColors.ink)),
-              const SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down_rounded, color: dark ? Colors.white70 : CmColors.inkDim),
+              const SizedBox(width: 8),
+              Icon(Icons.calendar_month_rounded, color: _calendarOpen ? CmColors.blue : (dark ? Colors.white70 : CmColors.inkDim)),
             ],
           ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _calendarOpen ? _calendar(lang, dark) : const SizedBox(width: double.infinity),
         ),
         const SizedBox(height: 10),
         Row(

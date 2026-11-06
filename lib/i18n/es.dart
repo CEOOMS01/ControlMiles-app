@@ -193,6 +193,7 @@ const Map<String, String> esTexts = {
   'not_trips_yet': 'Aún no hay viajes',
   'generate_pdf': 'Generar PDF',
   'generate_global_pdf': 'Generar PDF Global',
+  'generate_report_btn': "Generar reporte",
   'trip_note': 'Nota del viaje',
   'trip_note_hint': 'ej. "faltaron 5 millas — se perdió señal GPS"',
   'add_note': 'Agregar nota',

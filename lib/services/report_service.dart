@@ -1,22 +1,22 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/report_service.dart
-// Generates the certified PDF matching the design reference.
-// Uses only fields that exist in TrackingSession + SessionSection models.
+// The mileage report PDF.
 //
-// BUG FIX (pedido explícito): se eliminó la generación de PDF por sesión
-// individual (generateCertifiedReport) — ahora solo existe el reporte
-// global, que cubre el rango de fechas filtrado en Reports. Los widgets
-// compartidos (header, regla, columna de perfil, evidencia de odómetro,
-// resumen total) se reutilizan tal cual estaban, solo se generalizaron los
-// que dependían de UNA sesión (ahora reciben totales ya calculados).
+// 2026-11-06: rebuilt in the style of the report drivers already know from
+// other mileage apps -- A4 landscape, a header with the date range and rate on
+// every page, a row of totals, a per-vehicle table (miles by category and the
+// estimated deduction) and the trip log, one row per trip with full addresses.
+// No maps and no photos: those live in the app and on controlmiles.com, so the
+// PDF is quick to make and light to send. The odometer readings and the
+// validation note stay, because they are what backs the report in an audit.
 //
-// El QR de "validación digital" del reporte por sesión apuntaba a
-// verify/{sessionId} — un solo hash-chain de UNA sesión, concepto que no
-// aplica a un documento con N sesiones. El plan real de verificación
-// (QR -> portal web, usuario + PIN de 4 dígitos que el propio usuario
-// gestiona) todavía no existe (ni la página, ni el PIN, ni el endpoint) —
-// se deja pendiente a propósito en vez de mostrar un QR que hoy no lleva a
-// ningún lado.
+// The deduction follows each trip's category (see ratePerMileCentsForPurpose):
+// business-group trips use the business rate, medical/moving and charity their
+// own rates, personal ones nothing.
+//
+// Only the global report exists (one PDF for the date range chosen in Reports).
+
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter/services.dart' show rootBundle;
@@ -24,7 +24,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 
 import '../data/irs_rates.dart';
 import '../models/tracking_session.dart';
@@ -32,16 +31,30 @@ import '../models/session_section.dart';
 import '../models/gig_app.dart';
 import '../models/vehicle.dart';
 
+/// Miles and money of one slice of a trip (a gig-app segment, or the miles no
+/// segment accounts for).
+class _Slice {
+  _Slice(this.purpose, this.miles, this.cents);
+  final String purpose; // effective purpose: 'business', 'medical', ...
+  final double miles;
+  final double cents; // value in cents
+  double get dollars => cents / 100.0;
+}
+
 class ReportService {
   ReportService._();
 
+  static const _businessGroup = {'business', 'delivery', 'errand', 'client', 'travel'};
+  static const _personalGroup = {'personal', 'work', 'education'};
+
+  static const _ink = PdfColor.fromInt(0xFF1C1812);
+  static const _dim = PdfColor.fromInt(0xFF6B6455);
+  static const _line = PdfColor.fromInt(0xFFC9DCEB);
+  static const _headFill = PdfColor.fromInt(0xFFE6F1FB);
+  static const _blue = PdfColor.fromInt(0xFF2C6C99);
+
   // ════════════════════════════════════════════════════════════
-  // PUBLIC API — reporte global (único que existe)
-  // TrackingSession fields available: id, userId, startTime, endTime,
-  //   totalMiles, sessionHash, isClosed, dateKey, effectiveDurationSeconds
-  // SessionSection fields available: id, sessionId, gigApp, status,
-  //   startTime, endTime, totalMiles, totalDurationSeconds (int?),
-  //   startOdometerValue, endOdometerValue, durationSeconds (getter)
+  // PUBLIC API
   // ════════════════════════════════════════════════════════════
   static Future<void> generateGlobalReport({
     required List<TrackingSession> sessions,
@@ -49,134 +62,117 @@ class ReportService {
     required DateTimeRange dateRange,
     required String userName,
     required String userDisplayId,
-    // IRS Fase 3 (2026-08-28): 'standard' or 'actual' -- doesn't change
-    // any calculation (ControlMiles only ever computes standard-mileage
-    // figures), just what the report's own disclaimer honestly states.
+    // 'standard' or 'actual'. Doesn't change the miles; under 'actual' no dollar
+    // estimate is shown, because miles alone can't price actual expenses.
     String mileageMethod = 'standard',
-    // BUG FIX (pedido explícito, 2026-08-28): el reporte nunca mostró qué
-    // vehículo(s) se usaron ni con qué odómetro inicial arrancaron en
-    // ControlMiles -- dato pedido explícitamente. Los vehículos vienen
-    // resueltos por ReportsScreen a partir de los sessions.vehicle_id
-    // realmente referenciados en el rango (ReportService no debe saber de
-    // Supabase, mismo criterio que userName/userDisplayId más abajo).
     List<Vehicle> vehiclesUsed = const [],
-    // Weekly odometer checkpoint (2026-09-03): odometer evidence is now
-    // captured once per Mon-Sun calendar week, not per session -- a
-    // session's own end_odometer_value is no longer written at all going
-    // forward (see TrackingActionButton._handleEndTrip), so relying on
-    // firstOdoSession/lastOdoSession below alone would silently show "--"
-    // for END on every post-migration report. ReportsScreen resolves the
-    // real earliest-start/latest-end reading from
-    // vehicle_odometer_checkpoints for the report's date range and passes
-    // them here; null (no checkpoint overlaps the range yet, or historical
-    // data predating this feature) falls back to the old per-session logic.
+    // Weekly odometer checkpoint readings for the range (null = none).
     double? periodCheckpointStart,
     double? periodCheckpointEnd,
-    // First odometer reading ever captured per vehicle (vehicle id ->
-    // value/date). The vehicles' own `odometer` is their CURRENT reading.
+    // First odometer reading ever captured per vehicle (id -> value/date).
     Map<String, ({double value, DateTime? at})> firstOdometerByVehicle = const {},
-    // sessions.map_token per trip (2026-10-04): route images for the
-    // "Trip routes" pages. Empty = no route pages.
+    // Kept so callers don't change; route maps are no longer in the PDF.
     Map<String, String> mapTokens = const {},
   }) async {
-    final pdf = pw.Document();
+    final bytes = await buildGlobalReport(
+      sessions: sessions,
+      sectionsBySession: sectionsBySession,
+      dateRange: dateRange,
+      userName: userName,
+      userDisplayId: userDisplayId,
+      mileageMethod: mileageMethod,
+      vehiclesUsed: vehiclesUsed,
+      periodCheckpointStart: periodCheckpointStart,
+      periodCheckpointEnd: periodCheckpointEnd,
+      firstOdometerByVehicle: firstOdometerByVehicle,
+    );
+    await Printing.layoutPdf(
+      onLayout: (_) async => bytes,
+      format: PdfPageFormat.a4.landscape,
+      name: 'ControlMiles_Report_'
+          '${DateFormat('yyyyMMdd').format(dateRange.start)}_'
+          '${DateFormat('yyyyMMdd').format(dateRange.end)}.pdf',
+    );
+  }
 
-    // Orden cronológico (más antiguo primero) para que START/END del
-    // odómetro tengan sentido narrativo (arranca en el primer viaje del
-    // período, termina en el último).
-    final sortedSessions = [...sessions]..sort((a, b) {
-        final at = a.startTime ?? DateTime(0);
-        final bt = b.startTime ?? DateTime(0);
-        return at.compareTo(bt);
-      });
+  /// The PDF as bytes (separate from printing so it can be tested).
+  static Future<Uint8List> buildGlobalReport({
+    required List<TrackingSession> sessions,
+    required Map<String, List<SessionSection>> sectionsBySession,
+    required DateTimeRange dateRange,
+    required String userName,
+    required String userDisplayId,
+    String mileageMethod = 'standard',
+    List<Vehicle> vehiclesUsed = const [],
+    double? periodCheckpointStart,
+    double? periodCheckpointEnd,
+    Map<String, ({double value, DateTime? at})> firstOdometerByVehicle = const {},
+  }) async {
+    final isActual = mileageMethod == 'actual';
 
-    double totalMiles = 0;
-    double totalDeduction = 0;
-    // REAL BUG FOUND AND FIXED (2026-08-28, while adding IRS Fase 3):
-    // this used to track SessionSection.startOdometerValue/
-    // endOdometerValue -- fields that read from
-    // map['start_odometer_value']/map['end_odometer_value'], columns
-    // that DO NOT EXIST on session_sections (confirmed live against the
-    // schema -- that table only has *_odometer_image_url). Every report
-    // ever generated has shown "0.0" for both START and END in the
-    // ODOMETER EVIDENCE block, always, silently -- the real numeric
-    // values live on `sessions` (one capture per trip, not per gig-app
-    // switch), which TrackingSession now maps correctly (see that
-    // model's own comment). Tracks the first/last SESSION with a real
-    // odometer value instead.
+    // Oldest first, so the odometer starts at the first trip and ends at the last.
+    final sorted = [...sessions]..sort((a, b) => (a.startTime ?? DateTime(0)).compareTo(b.startTime ?? DateTime(0)));
+
+    // ── per trip: slices by category ─────────────────────────
+    final slicesBySession = <String, List<_Slice>>{};
     TrackingSession? firstOdoSession;
     TrackingSession? lastOdoSession;
+    var totalMiles = 0.0;
+    var totalCents = 0.0;
+    // Same split the report has always used for the business-use share.
+    var businessUseMiles = 0.0;
+    var nonBusinessUseMiles = 0.0;
+    const nonBusinessUse = {'personal', 'work', 'medical', 'moving', 'charitable', 'education'};
 
-    // IRS Fase 3 (2026-08-28): real business-use classification, not
-    // assumed. irs_purpose is a real category enum (IrsPurposeCatalog,
-    // gig_app.dart) -- 'business' (now auto-tagged for every named gig
-    // app, see tracking_controller.dart) or null (legacy sections from
-    // before that fix -- always a named-gig-app trip historically, since
-    // 'custom' mode has always required an explicit category choice, so
-    // treated as business too) count as business miles; any of the other
-    // real categories (personal/work/medical/moving/charitable/education)
-    // are the non-deductible categories the IRS text itself lists.
-    double businessMiles = 0;
-    double nonBusinessMiles = 0;
-    const nonBusinessPurposes = {
-      'personal', 'work', 'medical', 'moving', 'charitable', 'education',
-    };
-
-    for (final session in sortedSessions) {
-      final tripMiles = _tripMiles(session, sectionsBySession);
-      totalMiles += tripMiles;
-      // BUG FIX (2026-08-28): the IRS mileage rate changed mid-year (see
-      // irs_rates.dart) -- pricing the whole period's miles at one flat
-      // rate silently understated any report spanning Jul 1, 2026.
-      // Falls back to the report's own end date only if a session
-      // somehow has no startTime.
-      totalDeduction += calculateIrsDeductionEstimate(
-        tripMiles,
-        session.startTime ?? dateRange.end,
-      );
-      if (session.startOdometerValue != null) {
-        firstOdoSession ??= session;
-      }
-      if (session.endOdometerValue != null) {
-        lastOdoSession = session;
-      }
-      // REAL BUG FOUND AND FIXED (2026-08-28, while verifying the report
-      // on-device): a session with NO session_sections rows at all --
-      // shown as "--" in the trip table, real and not rare, e.g. legacy
-      // sessions from before per-section IRS-purpose tagging existed --
-      // contributed nothing to businessMiles/nonBusinessMiles, so
-      // ANNUAL BUSINESS-USE SUMMARY's own "TOTAL MILES" silently didn't
-      // match the report's real Total Miles above it. Tracks how much of
-      // this session's miles the sections actually accounted for, and
-      // folds any leftover into business miles -- same "no purpose
-      // recorded -> treated as business" precedent this file's header
-      // comment already documents for legacy sections.
-      final secs = sectionsBySession[session.id] ?? [];
-      var sectionedMiles = 0.0;
+    for (final s in sorted) {
+      final tripMiles = _tripMiles(s, sectionsBySession);
+      final secs = sectionsBySession[s.id] ?? const <SessionSection>[];
+      final slices = <_Slice>[];
+      var sectioned = 0.0;
       for (final sec in secs) {
-        sectionedMiles += sec.totalMiles;
-        if (nonBusinessPurposes.contains(sec.irsPurpose)) {
-          nonBusinessMiles += sec.totalMiles;
+        sectioned += sec.totalMiles;
+        // Gig-app trips are business; a General trip uses the category picked.
+        // A General trip not categorized yet is priced as business (as in My Trips).
+        final purpose = (sec.gigApp == 'custom' ? sec.irsPurpose : 'business') ?? 'business';
+        final rate = ratePerMileCentsForPurpose(purpose, sec.startTime);
+        slices.add(_Slice(purpose, sec.totalMiles, sec.totalMiles * rate));
+        if (nonBusinessUse.contains(sec.irsPurpose)) {
+          nonBusinessUseMiles += sec.totalMiles;
         } else {
-          businessMiles += sec.totalMiles;
+          businessUseMiles += sec.totalMiles;
         }
       }
-      final unaccountedMiles = tripMiles - sectionedMiles;
-      if (unaccountedMiles > 0) {
-        businessMiles += unaccountedMiles;
+      final left = tripMiles - sectioned;
+      if (left > 0) {
+        final at = s.startTime ?? dateRange.end;
+        slices.add(_Slice('business', left, left * ratePerMileCentsForPurpose('business', at)));
+        businessUseMiles += left;
       }
+      slicesBySession[s.id] = slices;
+      totalMiles += tripMiles;
+      totalCents += slices.fold<double>(0, (a, x) => a + x.cents);
+      if (s.startOdometerValue != null) firstOdoSession ??= s;
+      if (s.endOdometerValue != null) lastOdoSession = s;
+    }
+    final totalDollars = totalCents / 100.0;
+    final businessUsePercent =
+        totalMiles > 0 ? ((businessUseMiles / totalMiles) * 100).clamp(0.0, 100.0).toDouble() : 0.0;
+
+    // ── per vehicle ──────────────────────────────────────────
+    final byVehicle = <String?, List<TrackingSession>>{};
+    final known = {for (final v in vehiclesUsed) v.id};
+    for (final s in sorted) {
+      final id = (s.vehicleId != null && known.contains(s.vehicleId)) ? s.vehicleId : null;
+      (byVehicle[id] ??= []).add(s);
     }
 
-    // Same miles on both sides (_tripMiles), so this can't pass 100%; the
-    // clamp only guards against rounding.
-    final businessUsePercent =
-        totalMiles > 0 ? ((businessMiles / totalMiles) * 100).clamp(0.0, 100.0) : 0.0;
+    final dateFmt = DateFormat('MMM d, yyyy');
+    final rangeLabel = dateRange.start.year == dateRange.end.year &&
+            dateRange.start.month == dateRange.end.month &&
+            dateRange.start.day == dateRange.end.day
+        ? dateFmt.format(dateRange.start)
+        : '${dateFmt.format(dateRange.start)} - ${dateFmt.format(dateRange.end)}';
 
-    final dateFmt = DateFormat('MM/dd/yyyy');
-    final periodLabel =
-        '${dateFmt.format(dateRange.start)} - ${dateFmt.format(dateRange.end)}';
-
-    // ControlMiles logo for the header (owner's request, 2026-10-11).
     pw.MemoryImage? logo;
     try {
       final data = await rootBundle.load('assets/images/logo_controlmiles.png');
@@ -185,775 +181,453 @@ class ReportService {
       logo = null;
     }
 
+    final businessRateLabel = _businessRateLabel(dateRange);
+    final pdf = pw.Document(title: 'ControlMiles mileage report', author: 'ControlMiles');
+
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin:     const pw.EdgeInsets.all(36),
-        // REAL BUG FOUND AND FIXED (2026-08-28): TooManyPagesException was
-        // never about report size -- reproduced and confirmed directly
-        // against the installed pdf 3.12.0 package (see the standalone
-        // repro used to diagnose this): pw.Flex (the base of pw.Column)
-        // and pw.Table both hardcode `hasMoreWidgets => true` instead of
-        // reporting real completion state. When a pw.Column wraps a title
-        // + a pw.Table together as ONE top-level MultiPage child, and that
-        // Column needs more than a single page to render (trivially true
-        // once a trip log has more rows than fit on one page -- confirmed
-        // with as few as 53 real trips from a blank page, not just a
-        // near-boundary edge case), MultiPage's page-break loop can never
-        // detect that the Column finished spanning and creates pages
-        // forever. This only threw a catchable exception here because
-        // Flutter debug builds run with asserts enabled (the pdf package's
-        // own safety counter is assert-guarded) -- a release build would
-        // have hung / grown memory unbounded instead, with no error at
-        // all. Fix: the trip log's title and its pw.Table are now two
-        // SEPARATE top-level list items below (see _buildTripLogTitle /
-        // _buildGlobalTripsTableOnly) instead of one pw.Column wrapping
-        // both -- confirmed via the same repro that this exact
-        // "flat, unwrapped" shape renders correctly at any row count.
-        // maxPages is deliberately left at its default (20): with the
-        // structural fix, this report never needs anywhere near that many
-        // pages, and a low ceiling is a better trip-wire for a future
-        // regression than a raised one that only delays the same failure.
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.fromLTRB(28, 24, 28, 24),
+        // The trip log's table is a flat top-level child (not wrapped in a
+        // Column) so MultiPage can break it across pages: pw.Table/pw.Flex always
+        // report "more to come" and would loop forever inside a wrapper.
+        header: (ctx) => _pageHeader(logo, rangeLabel, businessRateLabel, isActual),
+        footer: (ctx) => _pageFooter(ctx),
         build: (ctx) => [
-          _buildHeader(logo),
-          pw.SizedBox(height: 18),
-          _buildHRule(),
-          pw.SizedBox(height: 16),
-          _buildGlobalProfileSection(
-              userName, userDisplayId, periodLabel, sortedSessions.length),
-          pw.SizedBox(height: 24),
-          _buildVehicleInfo(vehiclesUsed, firstOdometerByVehicle),
-          pw.SizedBox(height: 24),
-          _buildOdometerEvidence(
-            totalMiles,
-            firstOdoSession,
-            lastOdoSession,
-            periodCheckpointStart: periodCheckpointStart,
-            periodCheckpointEnd: periodCheckpointEnd,
-          ),
-          pw.SizedBox(height: 28),
-          _buildTripLogTitle(),
           pw.SizedBox(height: 10),
-          _buildGlobalTripsTableOnly(sortedSessions, sectionsBySession),
-          pw.SizedBox(height: 36),
-          _buildTotalSummary(totalMiles, totalDeduction, mileageMethod),
-          pw.SizedBox(height: 20),
-          _buildBusinessUseSummary(businessMiles, nonBusinessMiles, businessUsePercent),
-          pw.SizedBox(height: 24),
-          _buildHRule(),
-          pw.SizedBox(height: 16),
-          _buildGlobalValidationNote(),
+          _profileRow(userName, userDisplayId, sorted.length, isActual),
+          pw.SizedBox(height: 12),
+          _sectionTitle('Report summary'),
+          pw.SizedBox(height: 6),
+          _summaryTiles(
+            isActual: isActual,
+            deduction: totalDollars,
+            businessMiles: businessUseMiles,
+            nonBusinessMiles: nonBusinessUseMiles,
+            percent: businessUsePercent,
+            totalMiles: totalMiles,
+            drives: sorted.length,
+          ),
+          pw.SizedBox(height: 14),
+          _sectionTitle('Vehicle summary'),
+          pw.SizedBox(height: 6),
+          _vehicleTable(
+            byVehicle: byVehicle,
+            vehicles: vehiclesUsed,
+            slices: slicesBySession,
+            sectionsBySession: sectionsBySession,
+            firstOdometer: firstOdometerByVehicle,
+            isActual: isActual,
+          ),
+          pw.SizedBox(height: 8),
+          _odometerLine(totalMiles, firstOdoSession, lastOdoSession, periodCheckpointStart, periodCheckpointEnd),
+          pw.SizedBox(height: 14),
+          _sectionTitle('Trip log'),
+          pw.SizedBox(height: 6),
+          _tripTable(sorted, sectionsBySession, slicesBySession, isActual),
+          pw.SizedBox(height: 6),
+          _reportTotals(totalMiles, totalDollars, isActual),
+          pw.SizedBox(height: 14),
+          _notes(isActual),
         ],
       ),
     );
 
-    // Trip routes (2026-10-04): one map per trip and, when a trip had more
-    // than one gig app, one map per gig-app segment -- only in reports
-    // (user rule), never in History. Own MultiPage so its page count
-    // doesn't eat into the main report's.
-    final routeCards = await _buildRouteCards(sortedSessions, sectionsBySession, mapTokens);
-    if (routeCards.isNotEmpty) {
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(36),
-          maxPages: 60,
-          build: (ctx) => [
-            pw.Text('TRIP ROUTES',
-                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, letterSpacing: 1.2)),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'Each trip, and each gig app tracked within it. Map data (c) OpenStreetMap contributors.',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-            ),
-            pw.SizedBox(height: 12),
-            ...routeCards,
-          ],
-        ),
-      );
-    }
-
-    await Printing.layoutPdf(
-      onLayout: (_) async => pdf.save(),
-      name: 'ControlMiles_Report_'
-          '${DateFormat('yyyyMMdd').format(dateRange.start)}_'
-          '${DateFormat('yyyyMMdd').format(dateRange.end)}.pdf',
-    );
+    return pdf.save();
   }
 
+  // ════════════════════════════════════════════════════════════
+  // helpers
+  // ════════════════════════════════════════════════════════════
 
-  /// A trip's miles = the sum of its gig-app segments (what the app
-  /// measured); the trip's own total only when it has no segments. Fixes the
-  /// report showing Business-use 102.8% (2026-10-04): some legacy trips
-  /// stored only their last segment's miles, or 0. The DB now enforces the
-  /// same rule when a trip closes (trg_session_miles_from_sections).
-  static double _tripMiles(
-    TrackingSession session,
-    Map<String, List<SessionSection>> sectionsBySession,
-  ) {
+  /// A trip's miles = the sum of its gig-app segments; the trip's own total only
+  /// when it has no segments (some legacy trips stored only the last segment).
+  static double _tripMiles(TrackingSession session, Map<String, List<SessionSection>> sectionsBySession) {
     final secs = sectionsBySession[session.id] ?? const <SessionSection>[];
     final sum = secs.fold<double>(0, (acc, x) => acc + x.totalMiles);
     return sum > 0 ? sum : session.totalMiles;
   }
 
-  // ════════════════════════════════════════════════════════════
-  // TRIP ROUTES (2026-10-04)
-  // ════════════════════════════════════════════════════════════
-  static const String _tripMapBase = 'https://controlmiles.com/api/trip-map';
+  /// "$0.760/mi", or both rates when the range crosses the mid-year change.
+  static String _businessRateLabel(DateTimeRange r) {
+    final a = ratePerMileCentsForPurpose('business', r.start) / 100;
+    final b = ratePerMileCentsForPurpose('business', r.end) / 100;
+    String f(double v) => '\$${v.toStringAsFixed(3)}/mi';
+    return (a - b).abs() < 1e-9 ? f(a) : '${f(a)} then ${f(b)}';
+  }
 
-  /// Cap on images per report (a year of trips would otherwise mean
-  /// hundreds of downloads and a huge PDF). The newest trips win; the rest
-  /// are counted in a note.
-  static const int _maxRouteImages = 60;
+  static String _money(double v) => NumberFormat.currency(symbol: '\$').format(v);
+  static String _mi(double v) => '${v.toStringAsFixed(2)} mi';
 
-  /// Segments with miles (the app's rule: no miles, no segment). Legacy
-  /// trips can still hold empty ones -- they get no map.
-  static List<SessionSection> _trackedSections(List<SessionSection>? secs) =>
-      (secs ?? const <SessionSection>[]).where((x) => x.totalMiles >= 0.05).toList();
+  static pw.Widget _pageHeader(pw.MemoryImage? logo, String range, String rate, bool isActual) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: _pageHeaderBox(logo, range, rate, isActual),
+    );
+  }
 
-  static Future<List<pw.Widget>> _buildRouteCards(
-    List<TrackingSession> sessions,
-    Map<String, List<SessionSection>> sectionsBySession,
-    Map<String, String> mapTokens,
-  ) async {
-    final withMap = sessions.where((s) => mapTokens[s.id] != null).toList();
-    if (withMap.isEmpty) return const [];
-
-    // Newest first while budgeting, shown oldest first like the trip log.
-    final picked = <TrackingSession>[];
-    var budget = _maxRouteImages;
-    for (final s in withMap.reversed) {
-      final secs = _trackedSections(sectionsBySession[s.id]);
-      final cost = 1 + (secs.length > 1 ? secs.length : 0);
-      if (cost > budget) break;
-      budget -= cost;
-      picked.add(s);
-    }
-    final shown = picked.reversed.toList();
-
-    // url -> svg, fetched 6 at a time; a failed image is just left out.
-    final urls = <String>[];
-    for (final s in shown) {
-      final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
-      urls.add('$base?lite=1');
-      final secs = _trackedSections(sectionsBySession[s.id]);
-      if (secs.length > 1) {
-        for (final sec in secs) {
-          urls.add('$base?section=${sec.id}&lite=1');
-        }
-      }
-    }
-    final svgs = <String, String>{};
-    for (var i = 0; i < urls.length; i += 6) {
-      await Future.wait(urls.skip(i).take(6).map((url) async {
-        try {
-          final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 20));
-          if (res.statusCode == 200) svgs[url] = res.body;
-        } catch (_) {
-          // No image for this one; the trip log above still has the trip.
-        }
-      }));
-    }
-
-    final dateFmt = DateFormat('MM/dd/yyyy hh:mm a');
-    final cards = <pw.Widget>[];
-    for (final s in shown) {
-      final base = '$_tripMapBase/${s.id}/${mapTokens[s.id]}';
-      final tripSvg = svgs['$base?lite=1'];
-      if (tripSvg == null) continue;
-      final secs = _trackedSections(sectionsBySession[s.id]);
-      final apps = secs.map((x) => x.gigApp.toUpperCase()).toSet().join(' / ');
-
-      final sectionMaps = <pw.Widget>[];
-      if (secs.length > 1) {
-        for (final sec in secs) {
-          final svg = svgs['$base?section=${sec.id}&lite=1'];
-          if (svg == null) continue;
-          sectionMaps.add(pw.SizedBox(
-            width: 255,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.SizedBox(width: 255, height: 143, child: pw.SvgImage(svg: svg, fit: pw.BoxFit.cover)),
-                pw.SizedBox(height: 3),
-                pw.Text(
-                  '${sec.gigApp.toUpperCase()}  ${sec.totalMiles.toStringAsFixed(2)} mi',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
-                ),
-              ],
-            ),
-          ));
-        }
-      }
-
-      // Trip map, then the segment maps two per row as SEPARATE top-level
-      // widgets: MultiPage can only break between top-level children, and
-      // a trip with many gig apps would not fit on one page as one block.
-      // A Stack can't be split across pages (a Column can): the trip's
-      // title always stays on the same page as its map.
-      cards.add(pw.Padding(
-        padding: pw.EdgeInsets.only(bottom: sectionMaps.isEmpty ? 14 : 6),
-        child: pw.Stack(
-          children: [
-            pw.Text(
-              '${s.startTime != null ? dateFmt.format(s.startTime!.toLocal()) : '--'}   '
-              '${_tripMiles(s, sectionsBySession).toStringAsFixed(2)} mi   $apps',
-              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 17),
-              child: pw.SizedBox(width: 523, height: 294, child: pw.SvgImage(svg: tripSvg, fit: pw.BoxFit.cover)),
-            ),
-          ],
-        ),
-      ));
-      for (var i = 0; i < sectionMaps.length; i += 2) {
-        cards.add(pw.Padding(
-          padding: pw.EdgeInsets.only(bottom: i + 2 >= sectionMaps.length ? 16 : 6),
-          child: pw.Row(
+  static pw.Widget _pageHeaderBox(pw.MemoryImage? logo, String range, String rate, bool isActual) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _line, width: 0.8),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              sectionMaps[i],
-              if (i + 1 < sectionMaps.length) ...[pw.SizedBox(width: 13), sectionMaps[i + 1]],
+              pw.Text('Mileage Report', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _ink)),
+              pw.SizedBox(height: 5),
+              pw.Row(children: [
+                _labelValue('Report date range', range),
+                pw.SizedBox(width: 28),
+                _labelValue('Business rate', isActual ? 'n/a (actual expenses)' : rate),
+              ]),
             ],
           ),
-        ));
-      }
-    }
-
-    final skipped = withMap.length - shown.length;
-    if (skipped > 0) {
-      cards.add(pw.Text(
-        'Routes of $skipped older trip${skipped == 1 ? '' : 's'} are not included in this PDF. '
-        'Shorten the date range to see them.',
-        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-      ));
-    }
-    return cards;
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // HEADER
-  // ════════════════════════════════════════════════════════════
-  // "ControlMiles Reports" + the app's slogan, with the ControlMiles logo
-  // (owner's request, 2026-10-11: no "CERTIFIED", no company name here --
-  // the legal entity stays in the report footer / legal documents).
-  static pw.Widget _buildHeader(pw.MemoryImage? logo) {
-    return pw.Row(
-      mainAxisAlignment:  pw.MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
-      children: [
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'ControlMiles Reports',
-              style: pw.TextStyle(
-                fontSize:   22,
-                fontWeight: pw.FontWeight.bold,
-                color:      PdfColors.blue800,
-              ),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'Every mile, on the record.',
-              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-            ),
-          ],
-        ),
-        if (logo != null)
-          pw.Image(logo, width: 54, height: 54)
-        else
-          pw.Container(
-            width:  54,
-            height: 54,
-            decoration: const pw.BoxDecoration(
-              color: PdfColors.blue800,
-              shape: pw.BoxShape.circle,
-            ),
-            child: pw.Center(
-              child: pw.Text(
-                'CM',
-                style: pw.TextStyle(
-                  color:      PdfColors.white,
-                  fontSize:   20,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
+          pw.Row(
+            children: [
+              pw.Text('ControlMiles', style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: _blue)),
+              pw.SizedBox(width: 8),
+              if (logo != null) pw.Image(logo, width: 30, height: 30),
+            ],
           ),
-      ],
+        ],
+      ),
     );
   }
 
+  static pw.Widget _labelValue(String label, String value) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(label, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _dim)),
+          pw.SizedBox(height: 1),
+          pw.Text(value, style: const pw.TextStyle(fontSize: 10, color: _ink)),
+        ],
+      );
 
-  static pw.Widget _buildHRule() =>
-      pw.Container(height: 0.5, color: PdfColors.grey400);
-
-  // ════════════════════════════════════════════════════════════
-  // PROFILE ROW (global — periodo + cantidad de viajes en vez de un
-  // sessionId único)
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildGlobalProfileSection(
-      String userName, String userDisplayId, String periodLabel, int tripCount) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        _profileCol('PROFILE',  userName.isEmpty ? '---' : userName),
-        _profileCol('USER ID',  userDisplayId.toUpperCase()),
-        _profileCol('PERIOD',   periodLabel),
-        _profileCol('TRIPS',    '$tripCount'),
-      ],
-    );
-  }
-
-  static pw.Widget _profileCol(String label, String value) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(label,
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-        pw.SizedBox(height: 3),
-        pw.Text(value,
-            style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // VEHICLE(S) USED — pedido explícito: qué vehículo(s) se usaron en el
-  // período y con qué odómetro arrancaron en ControlMiles (Vehicle.odometer
-  // -- la lectura capturada al dar de alta el vehículo, no la de un viaje
-  // puntual, que ya se muestra en ODOMETER EVIDENCE más abajo). Normalmente
-  // es un solo vehículo; si el usuario cambió de vehículo activo dentro del
-  // rango del reporte, se listan todos con su propio odómetro inicial.
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildVehicleInfo(
-    List<Vehicle> vehicles,
-    Map<String, ({double value, DateTime? at})> firstOdometerByVehicle,
-  ) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'VEHICLE(S) USED',
-          style: pw.TextStyle(
-              fontSize: 12, fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue800),
-        ),
-        pw.SizedBox(height: 10),
-        if (vehicles.isEmpty)
-          pw.Text('No vehicle associated with these trips.',
-              style: const pw.TextStyle(
-                  fontSize: 10, color: PdfColors.grey600))
-        else
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-            ),
-            child: pw.Column(
-              children: [
-                for (var i = 0; i < vehicles.length; i++) ...[
-                  if (i > 0) pw.Container(height: 0.5, color: PdfColors.grey300),
-                  _vehicleRow(vehicles[i], firstOdometerByVehicle[vehicles[i].id]),
-                ],
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  // BUG FIX (2026-10-05): this showed vehicles.odometer as "Starting
-  // odometer", but that column is updated with every reading -- it's the
-  // vehicle's CURRENT odometer (209,354 while ODOMETER EVIDENCE correctly
-  // started at 206,637). Now: the first reading ever captured in
-  // ControlMiles (with its date) and the current one, each labeled.
-  static pw.Widget _vehicleRow(Vehicle vehicle, ({double value, DateTime? at})? first) {
-    final year = vehicle.year != null ? '${vehicle.year} ' : '';
-    final name = vehicle.displayName.isEmpty ? '--' : vehicle.displayName;
-    final odoFmt = NumberFormat('#,##0.0');
-    final parts = <String>[
-      if (first != null)
-        'First odometer in ControlMiles: ${odoFmt.format(first.value)} mi'
-        '${first.at != null ? ' (${DateFormat('MM/dd/yyyy').format(first.at!.toLocal())})' : ''}',
-      if (vehicle.odometer != null) 'Current: ${odoFmt.format(vehicle.odometer!)} mi',
-    ];
-
+  static pw.Widget _pageFooter(pw.Context ctx) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: const pw.EdgeInsets.only(top: 6),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('$year$name',
-              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-          pw.Text(parts.isEmpty ? 'Odometer: --' : parts.join('   ·   '),
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+          pw.Text(
+            'This report is generated by ControlMiles - every mile, on the record. '
+            'Maps and photos for each trip are in the app and at controlmiles.com.',
+            style: const pw.TextStyle(fontSize: 7, color: _dim),
+          ),
+          pw.Text('page ${ctx.pageNumber} of ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 7, color: _dim)),
         ],
       ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ODOMETER EVIDENCE — toma el total ya sumado del período y la primera/
-  // última SESIÓN del rango con un valor real de odómetro (no
-  // SessionSection -- ver comentario en generateGlobalReport sobre el
-  // bug real que esto corrige).
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildOdometerEvidence(
-    double            totalMiles,
-    TrackingSession?  firstOdoSession,
-    TrackingSession?  lastOdoSession, {
-    double? periodCheckpointStart,
-    double? periodCheckpointEnd,
-  }) {
-    // BUG FIX (2026-10-05): TOTAL showed the TRACKED trip miles ("units")
-    // between two odometer readings, which read as if the odometer moved
-    // 1,679 mi while START/END said 2,717. The odometer box now holds only
-    // odometer numbers (END - START, in mi); tracked miles stay in the
-    // Total Miles / business-use summaries below.
-    final startVal = periodCheckpointStart ?? firstOdoSession?.startOdometerValue;
-    final endVal = periodCheckpointEnd ?? lastOdoSession?.endOdometerValue;
-    final odoFmt = NumberFormat('#,##0.0');
-    final start = startVal != null ? odoFmt.format(startVal) : '--';
-    final end = endVal != null ? odoFmt.format(endVal) : '--';
-    final total = (startVal != null && endVal != null && endVal >= startVal)
-        ? odoFmt.format(endVal - startVal)
-        : '--';
+  static pw.Widget _sectionTitle(String t) =>
+      pw.Text(t, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _ink));
 
+  static pw.Widget _profileRow(String name, String id, int trips, bool isActual) => pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          _labelValue('Profile', name.isEmpty ? '---' : name),
+          _labelValue('User ID', id.toUpperCase()),
+          _labelValue('Trips', '$trips'),
+          _labelValue('Method', isActual ? 'Actual expenses' : 'Standard mileage rate'),
+        ],
+      );
+
+  static pw.Widget _summaryTiles({
+    required bool isActual,
+    required double deduction,
+    required double businessMiles,
+    required double nonBusinessMiles,
+    required double percent,
+    required double totalMiles,
+    required int drives,
+  }) {
+    final tiles = <(String, String)>[
+      ('Estimated deduction', isActual ? 'n/a' : _money(deduction)),
+      ('Business miles', _mi(businessMiles)),
+      ('Non-business miles', _mi(nonBusinessMiles)),
+      ('Business use', '${percent.toStringAsFixed(1)}%'),
+      ('Total distance', _mi(totalMiles)),
+      ('Total drives', '$drives'),
+    ];
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _line, width: 0.8),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+      ),
+      child: pw.Row(
+        children: [
+          for (var i = 0; i < tiles.length; i++)
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.fromLTRB(12, 9, 8, 9),
+                decoration: pw.BoxDecoration(
+                  border: i == 0 ? null : const pw.Border(left: pw.BorderSide(color: _line, width: 0.8)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(tiles[i].$1, style: const pw.TextStyle(fontSize: 8, color: _dim)),
+                    pw.SizedBox(height: 3),
+                    pw.Text(tiles[i].$2,
+                        style: pw.TextStyle(
+                            fontSize: 13, fontWeight: pw.FontWeight.bold, color: i == 0 && !isActual ? _blue : _ink)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Miles per category group for a set of trips.
+  static Map<String, double> _groupMiles(List<TrackingSession> trips, Map<String, List<_Slice>> slices) {
+    final m = <String, double>{'business': 0, 'personal': 0, 'medical': 0, 'moving': 0, 'charity': 0};
+    for (final s in trips) {
+      for (final x in slices[s.id] ?? const <_Slice>[]) {
+        final key = _businessGroup.contains(x.purpose)
+            ? 'business'
+            : _personalGroup.contains(x.purpose)
+                ? 'personal'
+                : x.purpose == 'charitable'
+                    ? 'charity'
+                    : x.purpose; // medical, moving
+        m[key] = (m[key] ?? 0) + x.miles;
+      }
+    }
+    return m;
+  }
+
+  static pw.Widget _vehicleTable({
+    required Map<String?, List<TrackingSession>> byVehicle,
+    required List<Vehicle> vehicles,
+    required Map<String, List<_Slice>> slices,
+    required Map<String, List<SessionSection>> sectionsBySession,
+    required Map<String, ({double value, DateTime? at})> firstOdometer,
+    required bool isActual,
+  }) {
+    final odo = NumberFormat('#,##0');
+    final headers = [
+      'Vehicle', 'First odometer', 'Current odometer', 'Business', 'Personal', 'Medical', 'Moving', 'Charity',
+      'Total distance', 'Est. deduction',
+    ];
+    final rows = <List<String>>[];
+    var tBusiness = 0.0, tPersonal = 0.0, tMedical = 0.0, tMoving = 0.0, tCharity = 0.0, tTotal = 0.0, tMoney = 0.0;
+
+    void addRow(String name, String first, String current, List<TrackingSession> trips) {
+      final g = _groupMiles(trips, slices);
+      final total = trips.fold<double>(0, (a, s) => a + _tripMiles(s, sectionsBySession));
+      final money = trips.fold<double>(
+          0, (a, s) => a + (slices[s.id] ?? const <_Slice>[]).fold<double>(0, (b, x) => b + x.dollars));
+      tBusiness += g['business']!;
+      tPersonal += g['personal']!;
+      tMedical += g['medical']!;
+      tMoving += g['moving']!;
+      tCharity += g['charity']!;
+      tTotal += total;
+      tMoney += money;
+      rows.add([
+        name, first, current, _mi(g['business']!), _mi(g['personal']!), _mi(g['medical']!), _mi(g['moving']!),
+        _mi(g['charity']!), _mi(total), isActual ? 'n/a' : _money(money),
+      ]);
+    }
+
+    for (final v in vehicles) {
+      final trips = byVehicle[v.id];
+      if (trips == null) continue;
+      final f = firstOdometer[v.id];
+      final year = v.year != null ? '${v.year} ' : '';
+      addRow(
+        '$year${v.displayName.isEmpty ? '--' : v.displayName}',
+        f != null ? odo.format(f.value) : '-',
+        v.odometer != null ? odo.format(v.odometer!) : '-',
+        trips,
+      );
+    }
+    final none = byVehicle[null];
+    if (none != null) addRow('No vehicle', '-', '-', none);
+
+    rows.add([
+      'Totals', '', '', _mi(tBusiness), _mi(tPersonal), _mi(tMedical), _mi(tMoving), _mi(tCharity), _mi(tTotal),
+      isActual ? 'n/a' : _money(tMoney),
+    ]);
+
+    return pw.TableHelper.fromTextArray(
+      headers: headers,
+      data: rows,
+      border: pw.TableBorder.all(color: _line, width: 0.6),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _ink),
+      headerDecoration: const pw.BoxDecoration(color: _headFill),
+      cellStyle: const pw.TextStyle(fontSize: 8.5, color: _ink),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      cellAlignments: {
+        for (var i = 1; i < headers.length; i++) i: pw.Alignment.centerRight,
+      },
+      headerAlignments: {
+        for (var i = 1; i < headers.length; i++) i: pw.Alignment.centerRight,
+      },
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2.4),
+        for (var i = 1; i < headers.length; i++) i: const pw.FlexColumnWidth(1.25),
+      },
+    );
+  }
+
+  /// One compact line of odometer evidence (start / end / difference).
+  static pw.Widget _odometerLine(
+    double totalMiles,
+    TrackingSession? firstOdoSession,
+    TrackingSession? lastOdoSession,
+    double? checkpointStart,
+    double? checkpointEnd,
+  ) {
+    final startVal = checkpointStart ?? firstOdoSession?.startOdometerValue;
+    final endVal = checkpointEnd ?? lastOdoSession?.endOdometerValue;
+    final f = NumberFormat('#,##0.0');
+    final diff = (startVal != null && endVal != null && endVal >= startVal) ? f.format(endVal - startVal) : '--';
+    return pw.Text(
+      'Odometer evidence:  start ${startVal != null ? f.format(startVal) : '--'} mi   ·   '
+      'end ${endVal != null ? f.format(endVal) : '--'} mi   ·   odometer miles $diff',
+      style: const pw.TextStyle(fontSize: 8.5, color: _dim),
+    );
+  }
+
+  /// "Business", "Medical", ... for a trip; "Mixed" when its segments differ.
+  static String _tripCategory(List<SessionSection> secs) {
+    final labels = <String>{};
+    for (final sec in secs) {
+      final purpose = sec.gigApp == 'custom' ? sec.irsPurpose : 'business';
+      final l = IrsPurposeCatalog.plainLabelFor(purpose);
+      labels.add(l.isEmpty ? 'Not categorized' : l);
+    }
+    if (labels.isEmpty) return 'Business';
+    return labels.length == 1 ? labels.first : 'Mixed';
+  }
+
+  static String _tripApps(List<SessionSection> secs) {
+    final apps = <String>{for (final s in secs) s.gigApp == 'custom' ? 'General' : GigAppCatalog.byId(s.gigApp).name};
+    return apps.isEmpty ? '--' : apps.join(' / ');
+  }
+
+  static pw.Widget _tripTable(
+    List<TrackingSession> sorted,
+    Map<String, List<SessionSection>> sectionsBySession,
+    Map<String, List<_Slice>> slices,
+    bool isActual,
+  ) {
+    if (sorted.isEmpty) {
+      return pw.Text('No trips in this period.', style: const pw.TextStyle(fontSize: 9, color: _dim));
+    }
+    final when = DateFormat('EEE, MMM d\nh:mm a');
+    final odo = NumberFormat('#,##0');
+    String addr(String? a) => (a == null || a.trim().isEmpty) ? '--' : a.trim();
+
+    final rows = <List<String>>[];
+    for (final s in sorted) {
+      final secs = [...(sectionsBySession[s.id] ?? const <SessionSection>[])]
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      final miles = _tripMiles(s, sectionsBySession);
+      final money = (slices[s.id] ?? const <_Slice>[]).fold<double>(0, (a, x) => a + x.dollars);
+      final rate = miles > 0 ? money / miles : 0.0;
+      rows.add([
+        s.startTime != null ? when.format(s.startTime!.toLocal()) : '--',
+        _tripCategory(secs),
+        _tripApps(secs),
+        secs.isEmpty ? '--' : addr(secs.first.startAddress),
+        secs.isEmpty ? '--' : addr(secs.last.endAddress),
+        isActual ? 'n/a' : '\$${rate.toStringAsFixed(3)}',
+        _mi(miles),
+        isActual ? 'n/a' : _money(money),
+        s.startOdometerValue != null ? odo.format(s.startOdometerValue!) : '--',
+        s.endOdometerValue != null ? odo.format(s.endOdometerValue!) : '--',
+      ]);
+    }
+
+    const headers = ['When', 'Why', 'App', 'Start', 'End', 'Rate', 'Distance', 'Value', 'Odo start', 'Odo end'];
+    const right = {5, 6, 7, 8, 9};
+    return pw.TableHelper.fromTextArray(
+      headers: headers,
+      data: rows,
+      border: pw.TableBorder.symmetric(
+        inside: const pw.BorderSide(color: _line, width: 0.5),
+        outside: const pw.BorderSide(color: _line, width: 0.8),
+      ),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _ink),
+      headerDecoration: const pw.BoxDecoration(color: _headFill),
+      cellStyle: const pw.TextStyle(fontSize: 8, color: _ink),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+      cellAlignment: pw.Alignment.topLeft,
+      cellAlignments: {for (final i in right) i: pw.Alignment.topRight},
+      headerAlignments: {for (final i in right) i: pw.Alignment.centerRight},
+      columnWidths: {
+        0: const pw.FlexColumnWidth(1.25),
+        1: const pw.FlexColumnWidth(1.0),
+        2: const pw.FlexColumnWidth(1.0),
+        3: const pw.FlexColumnWidth(3.0),
+        4: const pw.FlexColumnWidth(3.0),
+        5: const pw.FlexColumnWidth(0.9),
+        6: const pw.FlexColumnWidth(1.0),
+        7: const pw.FlexColumnWidth(1.0),
+        8: const pw.FlexColumnWidth(0.95),
+        9: const pw.FlexColumnWidth(0.95),
+      },
+    );
+  }
+
+  static pw.Widget _reportTotals(double miles, double dollars, bool isActual) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: const pw.BoxDecoration(color: _headFill, borderRadius: pw.BorderRadius.all(pw.Radius.circular(6))),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.end,
+        children: [
+          pw.Text('Report totals', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _ink)),
+          pw.SizedBox(width: 24),
+          pw.Text(_mi(miles), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _ink)),
+          pw.SizedBox(width: 24),
+          pw.Text(isActual ? 'n/a' : _money(dollars),
+              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: isActual ? _ink : _blue)),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _notes(bool isActual) {
+    final text = isActual
+        ? 'Method: Actual Expenses. Under the actual-expense method the deduction is your vehicle costs '
+            '(gas, repairs, insurance, depreciation...) times the business-use share of your miles; the business '
+            'miles above are the evidence for that share. No dollar estimate is shown for this method. '
+        : 'Method: Standard Mileage Rate. Values are estimated with the IRS 2026 standard mileage rates '
+            '(\$${(kIrsMileageRateCentsPerMile2026H1 / 100).toStringAsFixed(3)}/mile Jan 1-Jun 30, '
+            '\$${(kIrsMileageRateCentsPerMile2026H2 / 100).toStringAsFixed(2)}/mile Jul 1-Dec 31; medical and moving '
+            '20.5/23.5 cents, charity 14 cents; personal, work and education trips add nothing), each trip priced at '
+            'the rate in effect on its own date. ';
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
+        pw.Container(height: 0.5, color: _line),
+        pw.SizedBox(height: 6),
         pw.Text(
-          'ODOMETER EVIDENCE',
-          style: pw.TextStyle(
-              fontSize: 12, fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue800),
+          '$text'
+          'ControlMiles is not affiliated with or endorsed by the IRS or any official agency. This is an '
+          'informational estimate only, not a guaranteed deduction - consult a tax professional.',
+          style: pw.TextStyle(fontSize: 7, color: _dim, fontStyle: pw.FontStyle.italic),
         ),
-        pw.SizedBox(height: 10),
-        pw.Container(
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-          ),
-          child: pw.Row(
-            children: [
-              _odoCell('START', start, isFirst: true),
-              _odoCell('END',   end),
-              _odoCell('ODOMETER MILES', total),
-            ],
-          ),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Each trip listed above is individually timestamped and GPS-logged within the ControlMiles system.',
+          style: const pw.TextStyle(fontSize: 7, color: _dim),
         ),
       ],
-    );
-  }
-
-  static pw.Widget _odoCell(String header, String value,
-      {bool isFirst = false}) {
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: pw.BoxDecoration(
-          border: isFirst
-              ? null
-              : const pw.Border(
-                  left: pw.BorderSide(
-                      color: PdfColors.grey300, width: 0.5)),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.center,
-          children: [
-            pw.Text(header,
-                style: const pw.TextStyle(
-                    fontSize: 9, color: PdfColors.grey500)),
-            pw.SizedBox(height: 4),
-            pw.Text(value,
-                style: pw.TextStyle(
-                    fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 2),
-            pw.Text('mi',
-                style: const pw.TextStyle(
-                    fontSize: 8, color: PdfColors.grey500)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // TRIP LOG — una fila condensada por sesión (no por sección) para no
-  // producir un PDF de decenas de páginas en un rango de 3 meses. El
-  // detalle de secciones por gig-app se resume como lista de apps usadas.
-  //
-  // BUG FIX (2026-08-28, TooManyPagesException): el título y la tabla
-  // vivían juntos dentro de un solo pw.Column -- ver el comentario en
-  // generateGlobalReport sobre por qué eso rompe MultiPage en cuanto el
-  // log de viajes necesita más de una página. Separados en dos widgets de
-  // nivel superior (título + tabla sola) para que MultiPage pagine la
-  // tabla directamente, sin un Column intermedio.
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildTripLogTitle() {
-    return pw.Text(
-      'TRIP LOG',
-      style: pw.TextStyle(
-          fontSize: 12, fontWeight: pw.FontWeight.bold,
-          color: PdfColors.blue800),
-    );
-  }
-
-  static pw.Widget _buildGlobalTripsTableOnly(
-    List<TrackingSession> sessions,
-    Map<String, List<SessionSection>> sectionsBySession,
-  ) {
-    final dateFmt = DateFormat('MM/dd/yyyy');
-
-    final rows = sessions.map((session) {
-      final secs = sectionsBySession[session.id] ?? [];
-      // BUG FIX (pedido explícito): irs_purpose se guardaba correctamente
-      // pero nunca aparecía en el PDF -- un tramo "Custom" mostraba solo
-      // "CUSTOM" sin decir para qué (negocio/mudanza/personal/etc.), justo
-      // el dato que una autoridad necesitaría para validar la deducción.
-      // Dos tramos "custom" del mismo viaje con propósitos distintos
-      // (ej. un switch de negocio a personal) se listan por separado, no
-      // se colapsan en un solo "CUSTOM".
-      final apps = secs.map((s) {
-        final purposeLabel = IrsPurposeCatalog.plainLabelFor(s.irsPurpose);
-        return purposeLabel.isEmpty
-            ? s.gigApp.toUpperCase()
-            : '${s.gigApp.toUpperCase()} ($purposeLabel)';
-      }).toSet().join(' / ');
-      final dateStr = session.startTime != null
-          ? dateFmt.format(session.startTime!.toLocal())
-          : '--';
-      final milesStr = '${_tripMiles(session, sectionsBySession).toStringAsFixed(2)} mi';
-      final durSec = session.effectiveDurationSeconds ?? 0;
-      final durStr = '${durSec ~/ 3600}h ${(durSec % 3600) ~/ 60}m';
-      // IRS Fase 3 (2026-08-28): the odometer readings existed in the DB
-      // and were already shown in the top-level evidence block, but never
-      // per-trip in the actual table an auditor would read row by row.
-      final startOdoStr = session.startOdometerValue?.toStringAsFixed(0) ?? '--';
-      final endOdoStr = session.endOdometerValue?.toStringAsFixed(0) ?? '--';
-      // Where the trip started and ended (2026-11-04): the first segment's
-      // start address and the last segment's end address, as the phone looked
-      // them up when the trip closed (or as the driver corrected them).
-      final ordered = [...secs]..sort((a, b) => a.startTime.compareTo(b.startTime));
-      String shortAddr(String? a) =>
-          (a == null || a.trim().isEmpty) ? '--' : (a.length > 60 ? '${a.substring(0, 57)}...' : a);
-      final route = ordered.isEmpty
-          ? '--'
-          : '${shortAddr(ordered.first.startAddress)}\n-> ${shortAddr(ordered.last.endAddress)}';
-      return [dateStr, apps.isEmpty ? '--' : apps, route, milesStr, durStr, startOdoStr, endOdoStr, 'VERIFIED'];
-    }).toList();
-
-    if (rows.isEmpty) {
-      return pw.Text('No trips in this period.',
-          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600));
-    }
-
-    return pw.TableHelper.fromTextArray(
-      headers: ['DATE', 'GIG APP(S)', 'FROM / TO', 'DISTANCE', 'DURATION', 'ODO START', 'ODO END', 'STATUS'],
-      data:    rows,
-      headerStyle: pw.TextStyle(
-        fontWeight: pw.FontWeight.bold,
-        color:      PdfColors.white,
-        fontSize:   9,
-      ),
-      headerDecoration:
-          const pw.BoxDecoration(color: PdfColors.blue800),
-      cellStyle:     const pw.TextStyle(fontSize: 9),
-      cellAlignment: pw.Alignment.centerLeft,
-      columnWidths: {
-        0: const pw.FlexColumnWidth(0.95),
-        1: const pw.FlexColumnWidth(1.2),
-        2: const pw.FlexColumnWidth(2.4),
-        3: const pw.FlexColumnWidth(0.85),
-        4: const pw.FlexColumnWidth(0.85),
-        5: const pw.FlexColumnWidth(0.8),
-        6: const pw.FlexColumnWidth(0.8),
-        7: const pw.FlexColumnWidth(0.95),
-      },
-      oddRowDecoration:
-          const pw.BoxDecoration(color: PdfColors.grey50),
-      border: const pw.TableBorder(
-        horizontalInside: pw.BorderSide(
-            color: PdfColors.grey200, width: 0.5),
-        verticalInside: pw.BorderSide(
-            color: PdfColors.grey200, width: 0.5),
-      ),
-      cellPadding: const pw.EdgeInsets.symmetric(
-          horizontal: 6, vertical: 6),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // TOTAL SUMMARY — recibe el total de millas ya sumado del período (antes
-  // tomaba una sola TrackingSession).
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildTotalSummary(double totalMiles, double totalDeduction, String mileageMethod) {
-    final totalStr   = totalMiles.toStringAsFixed(2);
-    final deductStr  = '\$${totalDeduction.toStringAsFixed(2)}';
-    final isActual   = mileageMethod == 'actual';
-    final methodStr  = isActual ? 'Actual Expenses' : 'Standard Mileage Rate';
-
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey100,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.end,
-            children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Row(
-                    mainAxisSize: pw.MainAxisSize.min,
-                    children: [
-                      pw.Text('Total Miles:',
-                          style: const pw.TextStyle(fontSize: 12)),
-                      pw.SizedBox(width: 24),
-                      pw.Text(totalStr,
-                          style: pw.TextStyle(
-                              fontSize: 13, fontWeight: pw.FontWeight.bold)),
-                    ],
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Container(height: 0.5, width: 160, color: PdfColors.grey400),
-                  pw.SizedBox(height: 8),
-                  // Found live 2026-09-29: with "Actual expenses" selected the
-                  // PDF still printed a dollar figure priced at the standard
-                  // mileage rate, under a note saying "Method: Actual
-                  // Expenses" -- contradictory on a tax document. Under the
-                  // actual-expense method the deduction comes from real car
-                  // costs times business use, which miles alone can't price,
-                  // so no dollar figure is shown for it.
-                  if (!isActual) pw.Row(
-                    mainAxisSize: pw.MainAxisSize.min,
-                    children: [
-                      pw.Text('ESTIMATED DEDUCTION:',
-                          style: pw.TextStyle(
-                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                      pw.SizedBox(width: 16),
-                      pw.Text(deductStr,
-                          style: pw.TextStyle(
-                              fontSize:   14,
-                              fontWeight: pw.FontWeight.bold,
-                              color:      PdfColors.green800)),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // BUG FIX (pedido explícito): esta cifra se mostraba como
-          // "DEDUCTION:" en verde, sin ninguna aclaración — un documento
-          // "certified report" que el usuario puede entregarle directo a su
-          // contador o usar para declarar. Se renombró a "ESTIMATED
-          // DEDUCTION:" y se agrega esta nota: la cifra usa la tarifa
-          // pública del IRS, pero ControlMiles no es el IRS ni garantiza
-          // que sea la deducción real que el usuario reciba.
-          pw.SizedBox(height: 10),
-          pw.SizedBox(
-            width: 260,
-            child: pw.Text(
-              isActual
-                  ? 'Method: $methodStr. Under the actual-expense method the deduction is '
-                    'your vehicle costs (gas, repairs, insurance, depreciation...) times '
-                    'the business-use share of your miles; the business miles above are '
-                    'the evidence for that share. No dollar estimate is shown for this '
-                    'method. ControlMiles is not affiliated with or endorsed by the IRS '
-                    'or any official agency — consult a tax professional.'
-                  : 'Method: $methodStr. Estimated using the IRS 2026 standard mileage rates '
-              '(\$${(kIrsMileageRateCentsPerMile2026H1 / 100).toStringAsFixed(3)}/mile '
-              'Jan 1-Jun 30, \$${(kIrsMileageRateCentsPerMile2026H2 / 100).toStringAsFixed(2)}/mile '
-              'Jul 1-Dec 31 — each trip priced at the rate in effect on its own '
-              'date). ControlMiles is not affiliated with or endorsed by the IRS or '
-              'any official agency. This is an informational estimate only, '
-              'not a guaranteed deduction — consult a tax professional.',
-              textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(
-                fontSize: 7,
-                color: PdfColors.grey600,
-                fontStyle: pw.FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // BUSINESS-USE SUMMARY (IRS Fase 3, 2026-08-28) — the annual-summary
-  // fields the IRS recommends beyond the raw trip log: total miles split
-  // by real classification (irs_purpose), and the business-use
-  // percentage that split makes possible. See generateGlobalReport's own
-  // comment for exactly how business vs. non-business is derived.
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildBusinessUseSummary(
-    double businessMiles,
-    double nonBusinessMiles,
-    double businessUsePercent,
-  ) {
-    final totalMiles = businessMiles + nonBusinessMiles;
-    if (totalMiles <= 0) return pw.SizedBox.shrink();
-
-    pw.Widget stat(String label, String value) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(label,
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-            pw.SizedBox(height: 2),
-            pw.Text(value,
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-          ],
-        );
-
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey100,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text('ANNUAL BUSINESS-USE SUMMARY',
-              style: pw.TextStyle(
-                  fontSize: 10, fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue800)),
-          pw.SizedBox(height: 10),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              stat('TOTAL MILES', '${totalMiles.toStringAsFixed(2)} mi'),
-              stat('BUSINESS MILES', '${businessMiles.toStringAsFixed(2)} mi'),
-              stat('NON-BUSINESS MILES', '${nonBusinessMiles.toStringAsFixed(2)} mi'),
-              stat('BUSINESS-USE %', '${businessUsePercent.toStringAsFixed(1)}%'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // NOTA DE CIERRE — reemplaza el QR de "validación digital" por sesión
-  // (ver comentario de cabecera: ese concepto no aplica a un documento con
-  // N sesiones, y el flujo real de verificación con QR + PIN de 4 dígitos
-  // todavía no existe).
-  // ════════════════════════════════════════════════════════════
-  static pw.Widget _buildGlobalValidationNote() {
-    return pw.Text(
-      'Each trip listed above is individually timestamped and GPS-logged '
-      'within the ControlMiles system.',
-      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
     );
   }
 }
