@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
 import '../theme/cm_colors.dart';
+import '../widgets/app_suggestion_dialog.dart';
 
 class WorkTypeScreen extends StatefulWidget {
   /// Opened from Settings: can be closed without answering.
@@ -125,6 +126,7 @@ class _WorkTypeScreenState extends State<WorkTypeScreen> {
                                 controlAffinity: ListTileControlAffinity.trailing,
                                 contentPadding: EdgeInsets.zero,
                               ),
+                            AppSuggestionDialog.tile(context, color: primary),
                           ],
                         ),
                       ),

@@ -8,6 +8,7 @@ import '../logic/app_state.dart';
 import '../tracking/tracking_controller.dart';
 import '../tracking/gps_watchdog.dart';
 import '../errors/app_error.dart';
+import 'purpose_prompt.dart';
 
 class TrackingActionButton extends StatefulWidget {
   final String? selectedGigApp;
@@ -260,7 +261,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     // update final a `sessions` fallaba, la sesión se quedaba abierta en
     // DB para siempre mientras la UI ya decía "viaje terminado". Ahora
     // solo se resetea/recarga si stopTracking() confirmó el cierre real.
-    final stoppedOk = await TrackingController.stopTracking();
+    final stoppedOk = await TrackingController.stopTracking(askPurposeInApp: true);
 
     if (!stoppedOk) {
       if (mounted) {
@@ -283,18 +284,18 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
       );
     }
 
-    // Explicit user request (2026-09-08, with a concrete example): the
-    // Auto Detection toggle used to stay armed indefinitely after a trip
-    // ended (by design, to keep listening for the next one) -- but the
-    // user wants pressing Stop Tracking to disarm it too, the same as
-    // manually flipping the toggle off, not just the visual flash added
-    // earlier today. Runs after stopTracking() is already confirmed OK,
-    // so this never interferes with actually closing the trip.
-    if (appState.autoDetectEnabled) {
-      await appState.setAutoDetectEnabled(false);
-    }
+    // 2026-11-05 (explicit decision, reverses the 2026-09-08 rule): ending a trip
+    // never turns automatic detection off. It stays on, asleep, and wakes when the
+    // phone moves again; only the switch in Settings turns it off.
 
     if (mounted) setState(() {});
+
+    // General mode: ask what the trip was for right away (with Edit address and
+    // Categorize later). A trip left uncategorized is finished from History.
+    final generalSectionId = TrackingController.lastClosedGeneralSectionId;
+    if (generalSectionId != null && mounted) {
+      await PurposePrompt.askNow(context, generalSectionId);
+    }
 
     // 2026-10-29 (pedido explícito): ya no se fuerza foto de cierre al terminar un
     // viaje. Las fotos son por calendario (el 1 de cada mes, o el 1 y el 15 en
@@ -446,17 +447,21 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     final color = state == TrackingState.running ? liveBlue : _getButtonColor(state);
     final app = TrackingController.currentGigApp;
 
+    // A General trip is stored as 'custom'; the driver knows it as "General".
+    final appLabel = app == null ? '' : (app == 'custom' ? appState.tr('work_mode_general') : app).toUpperCase();
     final String title;
     final String subtitle;
     if (isIdle) {
       title = appState.tr('ready_to_track');
-      subtitle = appState.tr('ready_to_track_body');
+      // Premium tracks by itself, so there is nothing to pick or press: this line
+      // says so (Basic keeps "pick your activity and start your trip").
+      subtitle = appState.tr(appState.premiumEntitled ? 'ready_to_track_auto' : 'ready_to_track_body');
     } else if (state == TrackingState.paused) {
       title = appState.tr('tracking_paused_label');
-      subtitle = app == null ? '' : app.toUpperCase();
+      subtitle = appLabel;
     } else {
       title = appState.tr('tracking_active');
-      subtitle = app == null ? '' : app.toUpperCase();
+      subtitle = appLabel;
     }
 
     Widget pill({required VoidCallback onTap, required IconData icon, required String label,

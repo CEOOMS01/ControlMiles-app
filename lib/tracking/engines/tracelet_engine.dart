@@ -41,17 +41,21 @@
 // tracking_controller.dart), so the worst case if the OS kills the app
 // between one tick and the next is losing that one tick's worth of
 // distance/time (seconds, a few meters) -- not the trip.
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracelet/tracelet.dart' as tl;
 
 import '../../i18n/app_texts.dart';
 import '../../models/gig_app.dart';
+import '../../services/supabase_bootstrap.dart';
 import '../../services/work_place_service.dart';
 import '../tracking_controller.dart';
 import '../live_update_bridge.dart';
 import '../location_profile.dart';
 import '../tracking_notification.dart';
+import '../../services/diag_log.dart';
 import '../auto_trip_detection_service.dart';
 
 class TraceletEngine {
@@ -62,6 +66,11 @@ class TraceletEngine {
   bool isTracking = false;
   static bool _isInitialized = false;
 
+  // True in the headless isolate Android starts while the app is closed. There the
+  // native engine is already configured and running; configuring it again from
+  // this isolate (Tracelet.ready) is not attempted.
+  static bool _inHeadless = false;
+
   static bool get isRunning => _instance.isTracking;
 
   // =========================================================
@@ -71,8 +80,10 @@ class TraceletEngine {
   // callback handle via dart:ui's PluginUtilities, same constraint
   // flutter_background_geolocation's registerHeadlessTask already has
   // (see bg_geolocation_engine.dart, unchanged there).
+  @pragma('vm:entry-point')
   static void _headlessTask(tl.HeadlessEvent event) async {
     debugPrint('[TraceletEngine] Headless: ${event.name}');
+    DiagLog.tag = 'headless';
 
     // Work places (Gig Premium): arrival / exit reminders, also when the app
     // is closed. See WorkPlaceService.
@@ -83,10 +94,28 @@ class TraceletEngine {
 
     if (event.name != 'location') return;
 
+    _inHeadless = !_isInitialized;
     final location = tl.Location.fromMap(event.event);
     final coords = location.coords;
     final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
     final isMock = location.mockHeuristics?.platformFlagMock == true;
+    DiagLog.add('fix', {
+      'lat': DiagLog.coarse(coords.latitude),
+      'lng': DiagLog.coarse(coords.longitude),
+      'v': safeSpeed.toStringAsFixed(1),
+      'acc': coords.accuracy.toStringAsFixed(0),
+      'mock': isMock,
+      'state': TrackingController.currentState.name,
+    });
+
+    // This isolate never ran main(): the backend client must exist before the
+    // tick looks for an open trip.
+    try {
+      await SupabaseBootstrap.ensure();
+    } catch (e) {
+      debugPrint('[TraceletEngine] Headless: backend not ready: $e');
+      return;
+    }
 
     await TrackingController.processGpsTick(
       latitude: coords.latitude,
@@ -96,12 +125,35 @@ class TraceletEngine {
       timestamp: DateTime.parse(location.timestamp),
       isMock: isMock,
     );
+
+    // No trip running: with the app closed, driving can start one (General:
+    // any app; Apps: the gig app the driver opened first).
+    if (!isMock && TrackingController.currentState == TrackingState.idle) {
+      await AutoTripDetectionService.instance.handleIdleFix(speedMps: safeSpeed, accuracy: coords.accuracy);
+    }
   }
 
   // =========================================================
   // INITIALIZE
   // =========================================================
+  // One run at a time: the app now starts the engine in the background after the
+  // first frame, and a screen can ask for it at the same moment.
+  static Future<void>? _initRun;
+
   static Future<void> initialize() async {
+    if (_isInitialized) return;
+    final running = _initRun;
+    if (running != null) return running;
+    final run = _initializeOnce();
+    _initRun = run;
+    try {
+      await run;
+    } finally {
+      _initRun = null;
+    }
+  }
+
+  static Future<void> _initializeOnce() async {
     if (_isInitialized) return;
 
     try {
@@ -122,7 +174,12 @@ class TraceletEngine {
           android: tl.AndroidConfig(
             foregroundService: tl.ForegroundServiceConfig(
               enabled: true,
-              channelId: 'controlmiles_tracking',
+              // New quiet channel (2026-11-05): the old one had default importance,
+              // so the card made a sound / popped up every time the app opened.
+              // Android keeps a channel's importance once created, hence a new id.
+              channelId: 'controlmiles_tracking_quiet',
+              channelName: 'ControlMiles tracking',
+              notificationPriority: tl.NotificationPriority.low,
               notificationTitle: 'ControlMiles Tracking',
               notificationText: 'Recording miles securely',
               // Azul de marca real (kBrandSeed, #3E93CA en app_colors.dart).
@@ -168,6 +225,19 @@ class TraceletEngine {
         final coords = location.coords;
         final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
         final isMock = location.mockHeuristics?.platformFlagMock == true;
+        DiagLog.add('fix', {
+          'lat': DiagLog.coarse(coords.latitude),
+          'lng': DiagLog.coarse(coords.longitude),
+          'v': safeSpeed.toStringAsFixed(1),
+          'acc': coords.accuracy.toStringAsFixed(0),
+          'mock': isMock,
+          'state': TrackingController.currentState.name,
+        });
+
+        // No trip running: in General mode, driving speed starts one.
+        if (!isMock && TrackingController.currentState == TrackingState.idle) {
+          unawaited(AutoTripDetectionService.instance.handleIdleFix(speedMps: safeSpeed, accuracy: coords.accuracy));
+        }
 
         await TrackingController.processGpsTick(
           latitude: coords.latitude,
@@ -201,7 +271,7 @@ class TraceletEngine {
   // START TRACKING
   // =========================================================
   static Future<bool> startTracking() async {
-    if (!_isInitialized) {
+    if (!_isInitialized && !_inHeadless) {
       await initialize();
       if (!_isInitialized) return false;
     }
@@ -246,6 +316,7 @@ class TraceletEngine {
       if (!state.enabled || state.trackingMode != tl.TrackingMode.location) {
         state = await tl.Tracelet.start();
       }
+      DiagLog.add('engine start', {'enabled': state.enabled, 'trip': hasTrip});
       _instance.isTracking = state.enabled;
       if (state.enabled) {
         // Android 16+: presentar la notificacion como Live Update (chip de la
@@ -279,6 +350,7 @@ class TraceletEngine {
         title: kDefaultNotificationTitle,
         text: kDefaultNotificationText,
       );
+      DiagLog.add('engine stop');
       await tl.Tracelet.stop();
       _instance.isTracking = false;
       debugPrint('[TraceletEngine] GPS Tracking Stopped');
@@ -425,6 +497,27 @@ class TraceletEngine {
     final metric = prefs.getBool('controlmiles_unit_system') ?? false;
     final lang = prefs.getString('controlmiles_lang') ?? 'en';
     final gigId = TrackingController.currentGigApp;
+    // General mode watches every drive, not a list of apps, so the idle card
+    // must not say it is "listening for a gig app".
+    final general = (prefs.getStringList('controlmiles_work_mode') ?? const []).contains('general');
+    if (general) {
+      // Only a drive the phone detected says it is recording; while it waits the
+      // card just says it is ready.
+      final labels = trackingNotificationLabels(
+        hasActiveTrip: TrackingController.activeSection != null,
+        miles: TrackingController.activeDistance,
+        metric: metric,
+        gigAppName: null,
+        idleTitle: AppTexts.get('auto_detect_general_title', lang),
+        idleBody: AppTexts.get('auto_detect_general_subtitle', lang),
+      );
+      if (!labels.showTimer) return labels;
+      return TrackingNotificationLabels(
+        title: labels.title,
+        body: AppTexts.get('auto_detect_general_trip_body', lang),
+        showTimer: true,
+      );
+    }
     return trackingNotificationLabels(
       hasActiveTrip: TrackingController.activeSection != null,
       miles: TrackingController.activeDistance,

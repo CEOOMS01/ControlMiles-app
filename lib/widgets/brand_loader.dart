@@ -15,6 +15,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/cm_colors.dart';
+import '../theme/screen_fit.dart';
 
 class BrandLoader extends StatefulWidget {
   /// Side of the square it is drawn in.
@@ -169,29 +170,26 @@ class BrandSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // One start-up screen (2026-11-05): the Android launch screen already shows the
+    // ControlMiles logo, 192 dp, centered on this same background. This draws the
+    // same logo at the same size and place -- so nothing seems to change -- and the
+    // small wheel appears under it. The app is drawn scaled on narrow phones
+    // (screen_fit.dart), so the size is divided by that scale to stay 192 dp.
+    final scale = WidgetsBinding.instance is ScreenFitBinding ? uiScaleFor(View.of(context)) : 1.0;
+    final logo = 192 / scale;
     return Scaffold(
       backgroundColor: CmColors.splashBg,
-      body: Center(
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 250),
-          builder: (_, v, child) => Opacity(opacity: v, child: child),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const BrandLoader(size: 76, color: CmColors.logoBlue),
-              const SizedBox(height: 22),
-              Text(
-                tagline,
-                style: const TextStyle(
-                  fontSize: 15,
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w500,
-                  color: CmColors.inkDim,
-                ),
-              ),
-            ],
-          ),
+      body: LayoutBuilder(
+        builder: (context, box) => Stack(
+          children: [
+            Center(child: Image.asset('assets/images/logo_controlmiles.png', width: logo, height: logo)),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: box.maxHeight / 2 + logo / 2 + 28 / scale,
+              child: Center(child: BrandLoader(size: 26 / scale, color: CmColors.logoBlue)),
+            ),
+          ],
         ),
       ),
     );

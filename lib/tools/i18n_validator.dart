@@ -8,13 +8,7 @@ import '../i18n/en.dart';
 import '../i18n/es.dart';
 import '../i18n/fr.dart';
 import '../i18n/hi.dart';
-import '../i18n/ar.dart';
 import '../i18n/zh.dart';
-import '../i18n/pt.dart';
-import '../i18n/ja.dart';
-import '../i18n/am.dart';
-import '../i18n/de.dart';
-import '../i18n/ko.dart';
 
 void main() {
   // Usamos el archivo de inglés como la fuente de verdad (base)
@@ -44,17 +38,11 @@ void main() {
     }
   }
 
-  // Validar los 10 idiomas adicionales contra el inglés
+  // Validar los 4 idiomas adicionales contra el inglés
   check("Spanish", esTexts);
   check("French", frTexts);
   check("Hindi", hiTexts);
-  check("Arabic", arTexts);
   check("Chinese", zhTexts);
-  check("Portuguese", ptTexts);
-  check("Japanese", jaTexts);
-  check("Amharic", amTexts);
-  check("German", deTexts);
-  check("Korean", koTexts);
 
   print('----------------------------');
   print('Validation Process Finished');

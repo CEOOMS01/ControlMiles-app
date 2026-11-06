@@ -30,7 +30,177 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## 1.3.16+56 — 2026-11-04 (not built yet)
+## 1.3.22+62 — 2026-11-06 (code ready, not built)
+
+- Languages cut from 11 to 5: English, Spanish, French, Chinese and Hindi. Portuguese,
+  Arabic, Japanese, Korean, German and Amharic are out of the app (files kept in
+  reference/i18n_removed_2026-11-06/); a driver whose saved language was one of them
+  opens in English. The 258 texts that French, Chinese and Hindi were missing are now
+  translated, so all five languages are complete.
+- History is now "My Trips" ('Mis viajes'): the old list is replaced by the new trips list
+  (month summary, tabs No category / All / Summary, one card per trip), where a closed
+  trip can be categorized or re-categorized, its addresses fixed and a note added.
+  Reports and the PDF do not change (the PDF already shows each trip's start and end
+  address). The old history tour tip is not on the new list yet.
+- Trip pop-up: when a trip ends (End trip, or the phone closed it) the pop-up over the
+  Dashboard is now the trip card -- map, start and end addresses, what it is worth and
+  the category as tap targets (Business, Personal, Medical, Charity, More) with Address
+  and Note buttons. Picking a category saves it and the pop-up goes away; closing it
+  ("Categorize later") changes nothing and the trip stays editable (category, addresses,
+  note) later, also after it was categorized. Same card for a new trips list
+  (lib/screens/trips_screen.dart: month summary, tabs No category / All / Summary), which
+  is written but not wired to a screen yet; History is unchanged.
+- Found in the 11:00-11:46 test (Samsung, 1.3.21): trips recorded about 25% of the
+  miles MileIQ did, one automatic start created two trips at once (one left open
+  for good), and a General trip was split by Roadie being open.
+- General mode no longer switches section by app during a trip (that belongs to
+  Apps mode).
+- Every automatic start now checks, just before it begins, that no trip is already
+  open (another isolate may have started it a second ago).
+- Diagnostic log: every isolate (app, wake engine, background engine) appends short
+  lines (wake source, each GPS fix with rounded coordinates, ticks rejected, miles
+  added, trip start and stop). Settings has "Send diagnostic log" to upload it
+  (`diagnostic_logs`, backend migration 20261106120000). Meant to find why miles are
+  lost with the app closed.
+
+## 1.3.21+61 — 2026-11-06 (built, not uploaded)
+
+- Smarter drive detection, not tied to one Android signal. Besides Android's "entered
+  a vehicle", the app now keeps a small fence (150 m) around where the phone was last
+  parked and wakes when the phone leaves it (also with the app closed, no GPS or
+  notification while it waits). A fence exit is only a hint, so it is checked with a
+  light GPS burst of up to 2.5 minutes before it counts as a trip; if it was a walk,
+  a bus or a taxi, the GPS goes back to sleep and the fence moves. The fence moves to
+  the parking spot after every trip (and when Android says the driver left the
+  vehicle) and is put back after a reboot or update.
+- The parking spot is also the real start of the trip: the start point is saved
+  there and the straight-line miles from it to the first GPS point (30 m to 2.5 km)
+  are counted, so the first stretch before detection is no longer lost.
+- A simulated (mock) position can never become the parking spot: the fence ignores
+  positions Android flags as mock. Mock fixes were already rejected for recording and
+  for starting a trip.
+- Apps mode with no apps picked starts nothing; an abandoned open session older than
+  24 h no longer blocks automatic trips.
+- Not done: iOS (it keeps the previous engine).
+
+## 1.3.20+60 — 2026-11-06 (uploaded)
+
+- Permissions page: new step "Alarms and reminders" (Android 12+, skippable) so exact
+  alarms are asked there, with an explanation; the notification service no longer
+  opens Android's notification and alarm dialogs by itself at start-up (they came up
+  over the start-up screen). The "Physical activity" step now explains that it is
+  what lets trips start by themselves and the app sleep between drives. The camera
+  stays out of the first-time steps: it is asked when the first odometer photo of a
+  cycle is needed.
+- "Ready to track" card (Premium): the line under it says "You don't need to do
+  anything. ControlMiles tracks automatically." instead of "Pick your activity and
+  start your trip" (Basic keeps the old line); the "ControlMiles is ready" status card
+  keeps "Recording starts when you drive."
+- One start-up screen: the Android launch screen shows the ControlMiles circle logo at
+  192 dp, centered, and the app's own screen draws the very same logo in the very same
+  place and adds the small steering wheel spinning under it, then goes straight to
+  the Dashboard without a slide. The tagline text under the wheel is gone.
+- Faster cold start: the app now draws its first screen right away. The GPS engine,
+  notifications, detection re-arm and work places start just after the first frame
+  (they used to run before it), the plan and account data are read from the phone
+  instead of waiting for two server calls, the date names load in parallel, the
+  start-up screen stays 0.4 s instead of 0.9 s, and the Dashboard's first loads run
+  together instead of one after the other. Measured on a Motorola (profile build):
+  Dashboard ready in about 1.4 s after launch (the same step took 5-7 s in a debug
+  build before the change).
+- Sleeping detection (Android): while nothing is happening the app holds no GPS
+  and no notification. It subscribes to Android Activity Recognition (IN_VEHICLE
+  enter/exit, from the phone's own sensors); entering a vehicle wakes the app, also
+  when it is closed, through a short-lived service that starts the trip. Only then
+  the tracking service and its notification appear. New local plugin
+  `packages/cm_drive_wake` (receiver, wake service, boot/update re-registration) and
+  `lib/tracking/drive_wake.dart`. Also fixes the listening gap after the first trip
+  (the old engine stopped with the trip and never listened again). iOS keeps the
+  previous behavior.
+  The 30-second health check and the "stationary" restart no longer bring the idle
+  tracking service (and its notification) back on Android.
+- Automatic detection has no button any more. Premium accounts keep it on, asleep,
+  and it wakes when the phone moves (General: any drive; Apps: after opening one
+  of the driver's apps). Ending a trip never turns it off; only the switch in
+  Settings does (`controlmiles_auto_detect_off_by_user`). The Dashboard arms it by
+  itself when location, the app-detection permission (Apps mode only) and this
+  cycle's odometer photo are in place. General mode no longer asks for the
+  app-detection permission. The carousel stays visible while detection is on.
+- Dashboard (Premium only; Basic is unchanged): a General / Gig apps switch above
+  the carousel (and "Edit apps" in Gig apps mode) lets the driver change how
+  they work and which apps count without opening Settings; detection follows the
+  choice. The "Automatic tracking hours" row in Settings is Premium only too.
+- General mode notification: while waiting it says "ControlMiles is ready"; only
+  a drive the phone detected says "Your drives are recorded automatically" (with
+  the distance). (Android needs some notification while the background service
+  runs, so the idle one stays, just neutral.)
+- The category question is asked on the Dashboard first, for any trip the phone or
+  the driver closes (End trip, or the phone closing it after no answer), in every
+  work mode; the notification only covers a trip closed while the app is shut.
+- Parked GPS jitter no longer adds miles: with speed near zero, a step inside the
+  accuracy radius (up to 10 m) is ignored (a stationary test showed 0.02 mi in
+  12 minutes).
+- Tracking card shows GENERAL instead of CUSTOM; the waiting-status card is hidden
+  during a trip.
+- Premium, General mode, waiting: the status card "ControlMiles is ready" says "You don't need to do anything. ControlMiles tracks automatically."; the "Ready to track" card keeps its title with an empty line below.
+- Background-service card moved to a new quiet channel (low importance): no sound or
+  pop-up each time the app opens (the old channel had default importance).
+- Fixes the 58 report "it did not track by itself": Finalizar viaje had turned
+  detection off.
+
+## 1.3.18+58 — 2026-11-05 (uploaded)
+
+- General mode, End trip: the app asks the trip's category right away, with
+  "Edit address" and "Categorize later". History shows a banner "N trips need a
+  category" that walks through all of them.
+- Settings → "Automatic tracking hours" (General mode): the driver can pick the
+  days and hours when the phone may start trips by itself. Nothing chosen =
+  tracks whenever there is movement. A running trip is never cut off; gig-app
+  mode ignores it. Stored per account (`controlmiles_auto_schedule`).
+- "Don't see your app? Suggest it" at the end of both gig-app pickers; names go
+  to `gig_app_suggestions` (backend, applied 2026-11-05).
+
+## 1.3.17+57 — 2026-11-05 (uploaded)
+
+- **Update notice**: the app asks the server (`app_versions`, row `gig`) for the
+  newest and the minimum build. Older than newest → "New version available"
+  once per build; older than minimum → required update. Only versions that
+  already contain this code can show it (56 and older cannot).
+- Unused `logo_olympus.png` removed.
+- General mode: the always-on notification and the Dashboard card say
+  "ControlMiles is tracking" instead of "listening for a gig app". Gig mode keeps
+  its text.
+
+- **"How do you work?" for everyone**: Premium accounts now answer it too (and
+  can change it in Settings). "Apps" shows only the apps they pick plus
+  General; "General" shows only General.
+- **General trips start by themselves**: in General mode, two GPS fixes at
+  driving speed (about 10 mph) start a trip, whatever app is open; a trip that
+  just ended waits 5 minutes before another can start. In Apps mode only the
+  apps the driver marked start a trip, as before.
+- **"What was this trip for?"**: asked only for General trips, after they end
+  (notification + sheet on the dashboard; "Later" skips it). Gig-app trips stay
+  Business.
+- **Apps mode starts only when the driver moves**: opening a gig app is no
+  longer enough; the trip starts when the driver then drives (one fix at ~15
+  mph or two at ~10 mph) and the last app opened is one they marked.
+- **Works with the app closed**: the GPS callback that Android runs while the
+  app is closed (headless isolate) now starts these trips too. For that, the
+  Usage Access detection moved from `MainActivity` to the local plugin
+  `packages/cm_usage_access` (registered in every engine), and Supabase is
+  initialised there through `SupabaseBootstrap` (also used by `main()`).
+  A trip can start without a screen; it needs one only to ask for an
+  odometer photo, and then it does not start. NOT yet verified on a phone.
+- **The purpose of a closed trip can be changed** (History: tap the purpose of a
+  General trip). Migrations `20261105120000` (editable purpose after close).
+- Inactivity rules (5 min ask, 5 more min close) already applied to both modes
+  for Premium; unchanged.
+- **Rates screen** (Settings → Rates): the IRS rate per mile by purpose
+  (Business, Medical, Charitable, Moving, Personal) for today's date.
+  `ratePerMileCentsForPurpose` in `lib/data/irs_rates.dart`; the dollar
+  estimates in reports still use the business rate.
+
+## 1.3.16+56 — 2026-11-04 (uploaded)
 
 - Fix: "I cannot track" when the phone's permissions are gone (found on a real
   phone: every permission denied, the Start button did nothing). Start now asks

@@ -249,6 +249,20 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  cm_drive_wake:
+    dependency: "direct main"
+    description:
+      path: "packages/cm_drive_wake"
+      relative: true
+    source: path
+    version: "1.0.0"
+  cm_usage_access:
+    dependency: "direct main"
+    description:
+      path: "packages/cm_usage_access"
+      relative: true
+    source: path
+    version: "1.0.0"
   code_assets:
     dependency: transitive
     description:

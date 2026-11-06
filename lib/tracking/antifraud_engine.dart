@@ -112,7 +112,13 @@ class AntifraudEngine {
       }
 
       // Jitter estático (movimiento muy pequeño + velocidad baja)
-      if (distance < minRealMovementMeters && speed < 0.3) {
+      // 2026-11-05: parked, the fixes wander a few meters (as far as the GPS
+      // accuracy radius) and used to add up to fake miles (0.02 mi in 12 minutes
+      // without moving). With the speed reading near zero, a step inside the
+      // accuracy radius is noise, not driving.
+      final jitterRadius = accuracy.clamp(minRealMovementMeters, 10.0);
+      if ((distance < minRealMovementMeters && speed < 0.3) ||
+          (distance < jitterRadius && speed < 0.5)) {
         _updateLastPosition(latitude, longitude, timestamp);
         return AntifraudResult.reject("Static jitter", 0.25);
       }

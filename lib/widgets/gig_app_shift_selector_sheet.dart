@@ -17,6 +17,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
+import 'app_suggestion_dialog.dart';
 
 Future<void> showGigAppShiftSelectorSheet(BuildContext context) {
   return showModalBottomSheet(
@@ -130,8 +131,14 @@ class _GigAppShiftSelectorSheetState
               child: ListView.builder(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: _selectableApps.length,
+                itemCount: _selectableApps.length + 1,
                 itemBuilder: (ctx, i) {
+                  if (i == _selectableApps.length) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: AppSuggestionDialog.tile(ctx, color: Theme.of(ctx).colorScheme.primary),
+                    );
+                  }
                   final app = _selectableApps[i];
                   final checked = _selected.contains(app.id);
                   return CheckboxListTile(

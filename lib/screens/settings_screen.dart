@@ -16,6 +16,9 @@ import '../models/gig_app.dart';
 import '../utils/permission_status.dart';
 import '../utils/permission_gate.dart';
 import '../views/permissions_flow_screen.dart';
+import '../views/rates_screen.dart';
+import '../views/auto_schedule_screen.dart';
+import '../services/diag_log.dart';
 import '../views/work_type_screen.dart';
 import '../services/work_schedule.dart';
 import '../services/work_places.dart';
@@ -476,6 +479,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     setState(() => _isTogglingAutoDetect = true);
 
     try {
+      // This switch is the only way to turn automatic detection off; ending a
+      // trip never does. Remember the choice so the Dashboard does not turn it
+      // back on by itself.
+      await appState.setAutoDetectOffByUser(!value);
+      if (!mounted) return;
       if (value) {
         // requestEnable owns the whole activation flow now (permission
         // check + shift-start odometer capture + actually arming) --
@@ -1005,7 +1013,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 : null,
           ),
 
-          if (!appState.premiumEntitled) ...[
+          if (appState.accountType == 'gig') ...[
             const SizedBox(height: 10),
             _buildLegalLinkRow(
               label: appState.tr('work_type_setting'),
@@ -1020,6 +1028,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                 MaterialPageRoute(builder: (_) => const WorkTypeScreen(dismissible: true)),
               ),
             ),
+            // General mode: the days and hours the phone may start trips by itself.
+            // Premium only: Basic does not track by itself.
+            if (appState.premiumEntitled && appState.workMode == 'general') ...[
+              const SizedBox(height: 10),
+              _buildLegalLinkRow(
+                label: appState.tr('auto_schedule_title'),
+                subtitle: autoScheduleSummary(appState, context),
+                isDark: isDark,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AutoScheduleScreen()),
+                ),
+              ),
+            ],
           ],
           const SizedBox(height: 10),
           _buildToggleSetting(
@@ -1436,6 +1458,23 @@ class _SettingsScreenState extends State<SettingsScreen>
           // Personal plans and the IRS mileage method.
           ...[
             _buildMileageMethodRow(appState, isDark),
+            const SizedBox(height: 10),
+            _buildLegalLinkRow(
+              label: appState.tr('rates_title'),
+              isDark: isDark,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RatesScreen())),
+            ),
+            const SizedBox(height: 10),
+            _buildLegalLinkRow(
+              label: appState.tr('diag_send_title'),
+              subtitle: appState.tr('diag_send_hint'),
+              isDark: isDark,
+              onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await DiagLog.upload();
+                messenger.showSnackBar(SnackBar(content: Text(appState.tr(ok ? 'diag_send_ok' : 'diag_send_failed'))));
+              },
+            ),
             const SizedBox(height: 10),
             _buildLegalLinkRow(
               label: appState.tr('subscription'),

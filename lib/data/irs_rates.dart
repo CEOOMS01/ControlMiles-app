@@ -40,6 +40,33 @@ double ratePerMileCentsForDate(DateTime driveDate) {
   return kIrsMileageRateCentsPerMile2026H2;
 }
 
+/// Medical and (military) moving: 20.5c Jan 1 - Jun 30, 23.5c from Jul 1, 2026.
+const double kIrsMedicalMovingCentsPerMile2026H1 = 20.5;
+const double kIrsMedicalMovingCentsPerMile2026H2 = 23.5;
+
+/// Charitable: 14c all year (set by law, not by the IRS).
+const double kIrsCharitableCentsPerMile = 14.0;
+
+/// Rate in cents per mile by trip purpose on [driveDate] (2026-11-05, the
+/// "Rates" screen). Business-group purposes (and gig trips, saved as
+/// business) use the business rate; personal ones are not deductible.
+double ratePerMileCentsForPurpose(String? purpose, DateTime driveDate) {
+  final h1 = driveDate.toUtc().isBefore(_rateChange2026);
+  switch (purpose) {
+    case 'medical':
+    case 'moving':
+      return h1 ? kIrsMedicalMovingCentsPerMile2026H1 : kIrsMedicalMovingCentsPerMile2026H2;
+    case 'charitable':
+      return kIrsCharitableCentsPerMile;
+    case 'work':
+    case 'education':
+    case 'personal':
+      return 0.0;
+    default:
+      return ratePerMileCentsForDate(driveDate);
+  }
+}
+
 /// Estimated deduction for a single trip/session, using the rate that
 /// actually applied on [driveDate] -- never a flat year-round rate.
 double calculateIrsDeductionEstimate(double miles, DateTime driveDate) =>

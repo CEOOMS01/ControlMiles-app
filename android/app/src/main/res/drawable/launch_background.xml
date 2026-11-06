@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Launch screen before Android 12: same logo, size and background as the Android
+     12+ one (splash_logo_layer.xml) and as the Flutter start-up screen. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <bitmap android:gravity="fill" android:src="@drawable/background"/>
+        <shape android:shape="rectangle">
+            <solid android:color="#F8FAFC"/>
+        </shape>
     </item>
-    <item>
-        <bitmap android:gravity="center" android:src="@drawable/splash"/>
+    <item android:width="192dp" android:height="192dp" android:gravity="center">
+        <bitmap android:gravity="fill" android:src="@drawable/splash_logo"/>
     </item>
 </layer-list>

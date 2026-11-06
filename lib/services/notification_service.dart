@@ -14,6 +14,7 @@
 // infraestructura, no un bug fix.
 
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -243,31 +244,17 @@ class NotificationService {
 
   Future<void> _requestPermissions() async {
     try {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
-
-      // BUG FIX (pedido explícito, 2026-09-18): el recordatorio de pausa
-      // necesita alarma exacta para no diferirse bajo Doze (ver el
-      // comentario de SCHEDULE_EXACT_ALARM en AndroidManifest.xml). Este
-      // permiso "especial" no tiene diálogo runtime -- la llamada del
-      // plugin abre directamente la pantalla de Ajustes de Android donde
-      // el usuario lo activa (mismo patrón que
-      // PermissionRecoveryService.openAppSettings para otros permisos
-      // especiales). Best-effort a propósito: si el usuario la cierra sin
-      // activar nada, schedulePauseReminder() más abajo cae de vuelta a
-      // scheduling inexacto -- nunca bloquea el resto de la
-      // inicialización ni falla en seco.
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestExactAlarmsPermission();
-
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
+      // Android (2026-11-05): the notification and exact-alarm permissions are asked
+      // on the step-by-step permissions page, with an explanation -- not here, where
+      // they used to open Android's settings over the start-up screen. Only iOS
+      // still asks here.
+      if (!Platform.isAndroid) {
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
+      }
+      return;
     } catch (e) {
       debugPrint('[NotificationService] Permission request failed: $e');
     }
@@ -729,6 +716,9 @@ class NotificationService {
   Future<void> showTripAutoPaused() => _showTripInfo('trip_autopaused_title', 'trip_autopaused_body');
 
   Future<void> showTripAutoClosed() => _showTripInfo('trip_autoclosed_title', 'trip_autoclosed_body');
+
+  /// General trip finished: tap to say what it was for (the dashboard asks).
+  Future<void> showTripPurposePrompt() => _showTripInfo('trip_purpose_title', 'trip_purpose_body');
 
   Future<void> _showTripInfo(String titleKey, String bodyKey) async {
     if (!await _lightInit()) return;

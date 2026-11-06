@@ -26,6 +26,8 @@ import '../services/trip_address_service.dart';
 import 'background_gps_service.dart';
 import 'gps_watchdog.dart';
 import 'auto_trip_detection_service.dart';
+import 'drive_wake.dart';
+import '../services/diag_log.dart';
 import 'route_recorder.dart';
 import 'trip_inactivity.dart';
 
@@ -96,6 +98,19 @@ class TrackingController {
   /// True when the last successful stopTracking() closed a trip with no
   /// tracked miles, which the DB then discarded.
   static bool lastStopDiscarded = false;
+
+  /// When the last trip closed (null before the first one this run). Automatic
+  /// start waits a few minutes after it so a trip the driver just ended does
+  /// not restart while the car is still rolling.
+  static DateTime? lastStopAt;
+
+  /// Id of the General trip section that closed without a purpose; the
+  /// "What was this trip for?" question is about it.
+  static double _lastLoggedStopMiles = 0;
+  static String? purposePendingSectionId;
+  /// The General trip the last successful stop closed (null when it was
+  /// discarded or was a gig-app trip).
+  static String? lastClosedGeneralSectionId;
 
   // Same rule per segment (explicit user request, 2026-10-01): a segment
   // that ends with < minTrackedMiles -- at a switch (manual or Automatic
@@ -212,7 +227,7 @@ class TrackingController {
   /// open on the server. Anything that arrives while a start is running is
   /// ignored.
   static Future<void> startTripFlow({
-    required BuildContext context,
+    required BuildContext? context,
     required String gigApp,
     String? irsPurpose,
     String? organizationId,
@@ -238,7 +253,7 @@ class TrackingController {
   }
 
   static Future<void> _startTripFlowImpl({
-    required BuildContext context,
+    required BuildContext? context,
     required String gigApp,
     String? irsPurpose,
     // Fleet Phase 3: null for a Gig trip. When the caller is a fleet_driver,
@@ -317,6 +332,7 @@ class TrackingController {
 
       activeSessionId = sessionId;
       _startLiveHeartbeat();
+      DiagLog.add('trip started', {'session': sessionId.substring(0, 8), 'app': gigApp, 'auto': useAutoDetectOdometer});
 
       // BUG FIX: context llega como parámetro desde el caller (un widget
       // State) y ya pasó por dos await reales (getActiveOrAssignedVehicle +
@@ -325,7 +341,7 @@ class TrackingController {
       // (extension disponible en cualquier BuildContext desde Flutter 3.7,
       // no solo en State) es el guard correcto acá, ya que este método
       // estático no tiene su propio `mounted`.
-      if (!context.mounted) {
+      if (context != null && !context.mounted) {
         await Supabase.instance.client
             .from("sessions")
             .delete()
@@ -394,7 +410,7 @@ class TrackingController {
             // silencio, y pedir una foto fresca ahora mismo en vez de
             // arrancar el viaje con un dato que el servidor rechazó.
             await AutoTripDetectionService.instance.clearShiftStartOdometer();
-            if (!context.mounted) {
+            if (context == null || !context.mounted) {
               await Supabase.instance.client
                   .from("sessions")
                   .delete()
@@ -433,7 +449,7 @@ class TrackingController {
           // re-checked here (same guard already used above at the sessions
           // insert) -- needsCheckpointStartThisWeek's own await is a new
           // real gap this restructuring introduced.
-          if (!context.mounted) {
+          if (context == null || !context.mounted) {
             await Supabase.instance.client
                 .from("sessions")
                 .delete()
@@ -1001,7 +1017,9 @@ class TrackingController {
   // todavía abierta adentro (inconsistencia que nunca se hubiera notado
   // en la UI). Ahora aborta ahí si falla, y solo devuelve true cuando la
   // sesión de verdad quedó cerrada en DB.
-  static Future<bool> stopTracking() async {
+  /// [askPurposeInApp]: the End trip button asks the purpose on screen right
+  /// after, so no "tell us what it was for" notification is posted.
+  static Future<bool> stopTracking({bool askPurposeInApp = false}) async {
     if (currentState == TrackingState.idle || activeSessionId == null) {
       // BUG FIX: this guard used to return false completely silently --
       // if this were ever hit for a trip the user could still see on
@@ -1084,6 +1102,7 @@ class TrackingController {
       // delete this trip. Nothing left to seal.
       final discarded = _totalSessionMiles < minTrackedMiles &&
           sectionsMiles < minTrackedMiles;
+      _lastLoggedStopMiles = _totalSessionMiles;
 
       // Trip kept, but its LAST segment tracked nothing: the DB removes
       // that segment on close (fn_fold_empty_trip_sections) -- when the
@@ -1138,6 +1157,19 @@ class TrackingController {
       }
 
       lastStopDiscarded = discarded;
+      lastStopAt = DateTime.now();
+      DiagLog.add('trip stopped', {'discarded': discarded, 'miles': _lastLoggedStopMiles.toStringAsFixed(3)});
+      // The car is parked here: the next exit fence goes here (Android also reports it).
+      unawaited(DriveWake.refreshFence());
+      // A General trip has no purpose yet: ask once it is over. Closed from the
+      // End trip button the app asks right away (lastClosedGeneralSectionId);
+      // closed by the phone itself (no screen), a notification asks later.
+      final isGeneralTrip = !discarded && closedSectionId != null && lastSegmentApp == 'custom';
+      lastClosedGeneralSectionId = isGeneralTrip ? closedSectionId : null;
+      if (isGeneralTrip && wasAutoDetect && !askPurposeInApp) {
+        purposePendingSectionId = closedSectionId;
+        unawaited(NotificationService.instance.showTripPurposePrompt());
+      }
       if (lastSegmentDropped) segmentDiscarded.value = lastSegmentApp;
       _logDebug(
         'TRACKING_STOP_OK',
@@ -1201,6 +1233,7 @@ class TrackingController {
       // debug). Esto solo ayuda a diagnosticar en desarrollo — no escribe
       // en la DB ni en el audit log, para no llenarlo de ruido.
       _rejectedGpsTicks++;
+      DiagLog.add('tick rejected', {'why': result.reason});
       _logDebug(
         'GPS_TICK_REJECTED',
         '${result.reason} (score: ${result.drivingSignatureScore})',
@@ -1229,15 +1262,38 @@ class TrackingController {
     // restart) never got its start point -- about 1 in 5 trips. The update
     // only writes when the column is still empty, so the first point wins.
     if (activeSection!.startLatitude == null) {
+      // A trip the phone started by itself begins a little late (Android takes a
+      // moment to be sure it is a drive). The place it was parked is where the trip
+      // really started, so that is the start point and the miles from there to this
+      // first GPS point count too (a straight line: never more than the road).
+      var startLat = latitude;
+      var startLng = longitude;
+      try {
+        final anchor = await _takeTripAnchor(activeSection!.startTime);
+        if (anchor != null) {
+          final meters = anchorBackfillMeters(anchor.$1, anchor.$2, latitude, longitude);
+          if (meters != null) {
+            startLat = anchor.$1;
+            startLng = anchor.$2;
+            final miles = meters / 1609.34;
+            _totalSectionMiles += miles;
+            _totalSessionMiles += miles;
+            activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
+            await LocalStorageService.updateTotalMiles(_totalSectionMiles, _totalSessionMiles);
+          }
+        }
+      } catch (e) {
+        _logError('TRIP_ANCHOR_ERROR', e.toString());
+      }
       activeSection = activeSection!.copyWith(
-        startLatitude: latitude,
-        startLongitude: longitude,
+        startLatitude: startLat,
+        startLongitude: startLng,
       );
 
       try {
         await Supabase.instance.client
             .from('session_sections')
-            .update({'start_latitude': latitude, 'start_longitude': longitude})
+            .update({'start_latitude': startLat, 'start_longitude': startLng})
             .eq('id', activeSection!.id)
             .isFilter('start_latitude', null);
       } catch (e) {
@@ -1254,6 +1310,7 @@ class TrackingController {
       if (miles > 0.0012) {
         _totalSectionMiles += miles;
         _totalSessionMiles += miles;
+        DiagLog.add('miles', {'add': miles.toStringAsFixed(3), 'section': _totalSectionMiles.toStringAsFixed(3)});
 
         activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
 
@@ -1284,6 +1341,34 @@ class TrackingController {
         );
       }
     }
+  }
+
+  /// Straight-line meters from the parking spot to the first GPS point when they are
+  /// far enough apart to be real movement (30 m) and close enough to be the same
+  /// drive (2.5 km, about two minutes at highway speed); otherwise null.
+  static double? anchorBackfillMeters(double anchorLat, double anchorLng, double lat, double lng) {
+    final meters = _calculateHaversine(anchorLat, anchorLng, lat, lng);
+    return meters >= 30 && meters <= 2500 ? meters : null;
+  }
+
+  /// The parking spot saved when the phone woke up for this trip (see
+  /// AutoTripDetectionService.onWake), once, and only for a trip that just began.
+  static Future<(double, double)?> _takeTripAnchor(DateTime sectionStart) async {
+    if (DateTime.now().difference(sectionStart) > const Duration(minutes: 4)) return null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    final raw = prefs.getString('controlmiles_trip_anchor');
+    if (raw == null) return null;
+    await prefs.remove('controlmiles_trip_anchor');
+    final p = raw.split(',');
+    if (p.length < 3) return null;
+    final lat = double.tryParse(p[0]);
+    final lng = double.tryParse(p[1]);
+    final savedAt = int.tryParse(p[2]);
+    if (lat == null || lng == null || savedAt == null) return null;
+    // Saved for THIS wake-up, a few minutes before the trip got going.
+    if (DateTime.now().millisecondsSinceEpoch - savedAt > const Duration(minutes: 6).inMilliseconds) return null;
+    return (lat, lng);
   }
 
   // ============================================================

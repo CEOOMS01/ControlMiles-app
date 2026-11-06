@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
+import '../services/notification_service.dart';
 import '../theme/cm_colors.dart';
 import '../widgets/brand_loader.dart';
 import '../utils/permission_status.dart';
@@ -92,6 +93,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
       const _Step(PermKind.locationAlways, Icons.my_location_rounded, 'always'),
       const _Step(PermKind.notifications, Icons.notifications_active_rounded, 'notifications'),
       const _Step(PermKind.motion, Icons.directions_walk_rounded, 'motion'),
+      if (Platform.isAndroid) const _Step(PermKind.exactAlarm, Icons.alarm_rounded, 'exact'),
       if (Platform.isAndroid) const _Step(PermKind.battery, Icons.battery_charging_full_rounded, 'battery'),
       if (widget.includeCamera || widget.only != null) const _Step(PermKind.camera, Icons.camera_alt_rounded, 'camera'),
       if ((widget.includeUsageAccess || widget.only != null) && GigAppDetectionService.instance.isSupported)
@@ -174,6 +176,8 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
       if (_needsSettings) {
         if (_step.kind == PermKind.usageAccess) {
           await GigAppDetectionService.instance.openUsageAccessSettings();
+        } else if (_step.kind == PermKind.exactAlarm) {
+          await NotificationService.instance.requestExactAlarmPermission();
         } else {
           await openAppSettings();
         }
@@ -190,6 +194,9 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen> with Widg
           status = await Permission.notification.request();
         case PermKind.motion:
           status = await Permission.activityRecognition.request();
+        case PermKind.exactAlarm:
+          // No system dialog: the plugin opens the "Alarms & reminders" settings page.
+          await NotificationService.instance.requestExactAlarmPermission();
         case PermKind.battery:
           status = await Permission.ignoreBatteryOptimizations.request();
         case PermKind.camera:

@@ -1,0 +1,19 @@
+name: cm_usage_access
+description: Which app is in front (Android Usage Access), available to every Flutter engine, including the headless one that runs while ControlMiles is closed.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.olimsys.cm_usage_access
+        pluginClass: CmUsageAccessPlugin

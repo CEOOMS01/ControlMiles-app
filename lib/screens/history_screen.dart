@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../logic/app_state.dart';
+import '../widgets/purpose_prompt.dart';
 import '../i18n/app_texts.dart';
 import '../models/tracking_session.dart';
 import '../models/session_section.dart';
@@ -240,6 +241,56 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     } catch (e) {
       debugPrint('History: address update failed: $e');
+    }
+  }
+
+  /// General trips in the loaded list that still have no category.
+  int _uncategorizedCount() => _sections.values
+      .expand((list) => list)
+      .where((s) => s.gigApp == 'custom' && s.irsPurpose == null)
+      .length;
+
+  /// General trips: the driver can change the purpose after the trip closed
+  /// (the miles, times and coordinates stay frozen on the server).
+  Future<void> _editPurpose(SessionSection section) async {
+    final picked = await PurposePrompt.choose(context);
+    if (picked == null || picked == section.irsPurpose) return;
+    try {
+      await Supabase.instance.client.from('session_sections').update({'irs_purpose': picked}).eq('id', section.id);
+      if (!mounted) return;
+      final list = _sections[section.sessionId];
+      final idx = list?.indexWhere((s) => s.id == section.id) ?? -1;
+      if (list != null && idx >= 0) {
+        setState(() {
+          list[idx] = SessionSection(
+            id: section.id,
+            sessionId: section.sessionId,
+            userId: section.userId,
+            gigApp: section.gigApp,
+            status: section.status,
+            startTime: section.startTime,
+            endTime: section.endTime,
+            totalMiles: section.totalMiles,
+            totalDurationSeconds: section.totalDurationSeconds,
+            startLatitude: section.startLatitude,
+            startLongitude: section.startLongitude,
+            endLatitude: section.endLatitude,
+            endLongitude: section.endLongitude,
+            startOdometerImageUrl: section.startOdometerImageUrl,
+            endOdometerImageUrl: section.endOdometerImageUrl,
+            startOdometerValue: section.startOdometerValue,
+            endOdometerValue: section.endOdometerValue,
+            irsPurpose: picked,
+            sectionHash: section.sectionHash,
+            notes: section.notes,
+            startAddress: section.startAddress,
+            endAddress: section.endAddress,
+            addressEdited: section.addressEdited,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('History: purpose update failed: $e');
     }
   }
 
@@ -493,6 +544,36 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ],
                       ),
                     ),
+                    // General trips still without a category: finish them all here.
+                    if (_uncategorizedCount() > 0)
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                        padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.label_outline_rounded, size: 18, color: Colors.orange.shade800),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                appState.tr('purpose_uncategorized_banner').replaceAll('{n}', '${_uncategorizedCount()}'),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await PurposePrompt.categorizeAll(context);
+                                if (mounted) _loadHistory();
+                              },
+                              child: Text(appState.tr('purpose_categorize_now')),
+                            ),
+                          ],
+                        ),
+                      ),
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -742,11 +823,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     // sin su propósito visible no sirve para validar la
                     // deducción ante una autoridad, que es justo para lo que
                     // existe este campo.
-                    Text(
-                      IrsPurposeCatalog.labelKeyFor(section.irsPurpose) != null
-                          ? '${app.name} · ${appState.tr(IrsPurposeCatalog.labelKeyFor(section.irsPurpose)!)}'
-                          : app.name,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: appColor),
+                    InkWell(
+                      onTap: section.gigApp == 'custom' ? () => _editPurpose(section) : null,
+                      child: Text(
+                        IrsPurposeCatalog.labelKeyFor(section.irsPurpose) != null
+                            ? '${app.name} · ${appState.tr(IrsPurposeCatalog.labelKeyFor(section.irsPurpose)!)}'
+                            : section.gigApp == 'custom'
+                                ? '${app.name} · ${appState.tr('purpose_prompt_title')}'
+                                : app.name,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: appColor),
+                      ),
                     ),
                     Text(DateFormat('hh:mm a').format(section.startTime), style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : const Color(0xFF6B6250))),
                   ],

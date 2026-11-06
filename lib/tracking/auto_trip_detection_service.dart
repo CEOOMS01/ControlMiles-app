@@ -59,14 +59,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'background_gps_service.dart';
+import 'drive_wake.dart';
 import 'tracking_controller.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
+import '../services/diag_log.dart';
 import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
+import '../services/supabase_bootstrap.dart';
 import '../services/vehicle_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import '../utils/permission_gate.dart';
+import '../utils/permission_recovery_service.dart';
 import '../utils/permission_status.dart';
 import '../views/permissions_flow_screen.dart';
 
@@ -193,7 +197,17 @@ class AutoTripDetectionService {
     }
 
     if (enabled) {
-      final gpsOk = await BackgroundGpsService.startTracking();
+      // Android: the phone sleeps until Android says it entered a vehicle (no GPS,
+      // no notification while idle; see drive_wake.dart). Elsewhere the engine
+      // keeps listening the old way.
+      if (DriveWake.isSupported && TrackingController.currentState == TrackingState.idle) {
+        // A listening service left over from an older version: no trip is running,
+        // so let it go (its notification goes with it).
+        await BackgroundGpsService.stopTracking();
+      }
+      final gpsOk = DriveWake.isSupported
+          ? await DriveWake.register()
+          : await BackgroundGpsService.startTracking();
       if (GigAppDetectionService.instance.isSupported) {
         // Pre-warm the package catalog NOW, while this call is guaranteed
         // to be running from a real foreground user action (the Settings/
@@ -209,8 +223,11 @@ class AutoTripDetectionService {
         );
       }
       return gpsOk;
-    } else if (TrackingController.currentState == TrackingState.idle) {
-      await BackgroundGpsService.stopTracking();
+    } else {
+      await DriveWake.unregister();
+      if (TrackingController.currentState == TrackingState.idle) {
+        await BackgroundGpsService.stopTracking();
+      }
     }
     return true;
   }
@@ -273,6 +290,58 @@ class AutoTripDetectionService {
     await prefs.remove(_shiftOdoImageKey);
   }
 
+  static bool _armTriedThisRun = false;
+
+  /// Premium accounts keep automatic detection on without any button
+  /// (2026-11-05): it sleeps and wakes when the phone moves. Called when the
+  /// Dashboard opens or resumes. Nothing is shown when everything needed is
+  /// already there (location all the time, the app-detection permission in Apps
+  /// mode, this cycle's odometer photo); the camera is asked once per app start
+  /// only when the cycle still has no reading. Does nothing for Basic accounts,
+  /// for a driver who turned it off in Settings, or before they chose a work mode.
+  static Future<void> ensureArmed(BuildContext context, AppState appState, {bool force = false}) async {
+    // [force]: the driver just changed how they work from the Dashboard, so it is
+    // fine to show what is missing (permission pages, the camera) right now.
+    if (force) {
+      if (!appState.premiumEntitled || appState.autoDetectOffByUser) return;
+      if (appState.autoDetectEnabled) {
+        if (appState.workMode == 'gig' &&
+            GigAppDetectionService.instance.isSupported &&
+            !await GigAppDetectionService.instance.hasUsageAccess() &&
+            context.mounted) {
+          await PermissionsFlowScreen.ask(context, PermKind.usageAccess);
+        }
+        return;
+      }
+      await requestEnable(context, appState);
+      return;
+    }
+    if (!appState.premiumEntitled || appState.autoDetectEnabled || appState.autoDetectOffByUser) return;
+    final mode = appState.workMode;
+    if (mode != 'general' && mode != 'gig') return;
+    if (TrackingController.currentState != TrackingState.idle) return;
+    if (!await PermissionRecoveryService.hasCriticalPermissions()) return;
+    if (mode == 'gig' &&
+        GigAppDetectionService.instance.isSupported &&
+        !await GigAppDetectionService.instance.hasUsageAccess()) {
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final vehicle = await VehicleService().getActiveOrAssignedVehicle(user.id, organizationId: null);
+      final existing = vehicle == null ? null : await OdometerCaptureService().currentWeekStartReading(vehicle.id);
+      if (existing != null) {
+        await instance.setShiftStartOdometer(value: existing.value, imageUrl: existing.imageUrl);
+        await appState.setAutoDetectEnabled(true);
+        return;
+      }
+    }
+    if (_armTriedThisRun || !context.mounted) return;
+    _armTriedThisRun = true;
+    await requestEnable(context, appState);
+  }
+
   /// Full "turn auto-detect on" flow -- called from Settings/the drawer
   /// toggle INSTEAD of calling appState.setAutoDetectEnabled(true)
   /// directly, since activation now also has to capture the shift-start
@@ -309,7 +378,9 @@ class AutoTripDetectionService {
     // de la función que el usuario acaba de encender. Se comprueba ANTES de
     // la captura de odómetro para no hacerle fotografiar el odómetro y
     // decirle después que falta un permiso.
-    if (GigAppDetectionService.instance.isSupported &&
+    // General mode watches every drive, so it does not need to see which app is open.
+    if (appState.workMode != 'general' &&
+        GigAppDetectionService.instance.isSupported &&
         !await GigAppDetectionService.instance.hasUsageAccess()) {
       if (!context.mounted) return false;
       // The same one-step page as the first launch: why it is needed and what
@@ -419,7 +490,9 @@ class AutoTripDetectionService {
       return;
     }
 
-    if (!BackgroundGpsService.isRunning) {
+    // Android sleeps without GPS on purpose (see drive_wake.dart): an idle engine is
+    // not a fault there, and starting it here would bring its notification back.
+    if (!DriveWake.isSupported && !BackgroundGpsService.isRunning) {
       final restarted = await BackgroundGpsService.startTracking();
       if (!restarted) {
         final now = DateTime.now();
@@ -434,6 +507,11 @@ class AutoTripDetectionService {
     }
 
     if (_promptActive) return;
+    // General: no app decides anything, driving does (see handleIdleFix).
+    if (await _isGeneralMode()) {
+      lastDetectedGigAppId = null;
+      return;
+    }
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
 
     // Explicit user requirement (2026-08-28): "custom" must never be
@@ -455,10 +533,10 @@ class AutoTripDetectionService {
       return;
     }
 
+    // 2026-11-05: opening the app is no longer enough. The trip starts when the
+    // driver also MOVES (see handleIdleFix), so a gig app left open at home
+    // never records a trip.
     lastDetectedGigAppId = gigAppId;
-    if (gigAppId != null) {
-      await _autoStartTrip(gigAppId);
-    }
   }
 
   /// REVISED 2026-08-28, explicit user request: "la detección automática
@@ -473,6 +551,8 @@ class AutoTripDetectionService {
   /// confirmation, matching _autoStartTrip's own silent-by-default
   /// design one section down.
   Future<void> _pollForMidTripSwitch() async {
+    // General is one section from start to end; switching by app belongs to Apps mode.
+    if (await _isGeneralMode()) return;
     final currentGigApp = TrackingController.currentGigApp;
     final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
 
@@ -506,6 +586,7 @@ class AutoTripDetectionService {
   /// not a trip trigger.
   Future<void> handleMotionChange(bool isMoving) async {
     if (!_armed) return;
+    if (DriveWake.isSupported) return; // Android sleeps between drives on purpose
     if (TrackingController.currentState != TrackingState.idle) return;
     if (isMoving) return;
 
@@ -513,6 +594,207 @@ class AutoTripDetectionService {
     // stopTimeout behavior) -- restart so we stay armed for the NEXT
     // trip instead of silently going deaf after the first one.
     await BackgroundGpsService.startTracking();
+  }
+
+  // "General" work mode (2026-11-05, explicit decision): the phone starts a trip
+  // by itself when the driver is really driving, whatever app is open, and
+  // asks what it was for once it is over. "Gig" mode keeps the app trigger above.
+  static const String _workModePrefKey = 'controlmiles_work_mode';
+  static const double _drivingSpeedMps = 4.5; // ~10 mph, faster than walking or cycling
+  static const double _fastDrivingSpeedMps = 7.0; // ~15 mph: one fix is enough
+  static const Duration _restartCooldown = Duration(minutes: 5);
+  static const Duration _appLookupEvery = Duration(seconds: 20);
+  int _drivingFixes = 0;
+  DateTime? _lastAppLookupAt;
+
+  Future<bool> _isGeneralMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList(_workModePrefKey) ?? const []).contains('general');
+  }
+
+  /// The driver's "track by itself only on these days and hours" choice
+  /// (Settings). [days, startMinute, endMinute]; not set = always. An end time at
+  /// or before the start means the window runs past midnight.
+  Future<bool> _isWithinAutoSchedule(DateTime now) async {
+    final prefs = await SharedPreferences.getInstance();
+    final s = prefs.getStringList('controlmiles_auto_schedule');
+    if (s == null || s.length != 3) return true;
+    final days = s[0].split(',').map(int.tryParse).whereType<int>().toSet();
+    final start = int.tryParse(s[1]) ?? 0;
+    final end = int.tryParse(s[2]) ?? 1440;
+    final minute = now.hour * 60 + now.minute;
+    final today = now.weekday;
+    final yesterday = today == 1 ? 7 : today - 1;
+    if (start < end) return days.contains(today) && minute >= start && minute < end;
+    // Past midnight: the evening belongs to today, the early hours to yesterday.
+    return (days.contains(today) && minute >= start) || (days.contains(yesterday) && minute < end);
+  }
+
+  /// Armed in this isolate, or armed according to the saved setting. The second
+  /// is what the headless isolate Android starts while the app is closed sees:
+  /// it never ran setEnabled, so its own flag is false.
+  Future<bool> _isArmedNow() async {
+    final prefs = await SharedPreferences.getInstance();
+    // The headless isolate's cache can be older than what the app saved since.
+    await prefs.reload();
+    if (!_armed && !(prefs.getBool(_enabledPrefKey) ?? false)) return false;
+    if (!hasShiftStartOdometer) {
+      shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
+      shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
+    }
+    return true;
+  }
+
+  /// Every GPS fix that arrives while no trip is running -- from the app or from
+  /// the headless isolate (app closed). The phone starts the trip when the
+  /// driver really is driving (2026-11-05, explicit decision):
+  ///  * General: whatever app is open.
+  ///  * Apps (Premium "gig"): only when one of the apps the driver marked was
+  ///    the last one opened, i.e. they opened it and then moved.
+  Future<void> handleIdleFix({required double speedMps, required double accuracy}) async {
+    if (_promptActive) return;
+    if (accuracy > 100 || speedMps < _drivingSpeedMps) {
+      _drivingFixes = 0;
+      return;
+    }
+    if (!await _isArmedNow()) return;
+    final stoppedAt = TrackingController.lastStopAt;
+    if (stoppedAt != null && DateTime.now().difference(stoppedAt) < _restartCooldown) return;
+    if (speedMps < _fastDrivingSpeedMps && ++_drivingFixes < 2) return;
+    _drivingFixes = 0;
+
+    if (await _isGeneralMode()) {
+      // Only inside the days/hours the driver chose; nothing chosen = always.
+      if (!await _isWithinAutoSchedule(DateTime.now())) return;
+      await _autoStartTrip('custom');
+      return;
+    }
+    final now = DateTime.now();
+    final last = _lastAppLookupAt;
+    if (last != null && now.difference(last) < _appLookupEvery) return;
+    _lastAppLookupAt = now;
+    final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
+    // 'custom' never starts by app (see _pollForGigApp), and the driver's shift
+    // selection narrows the apps that count.
+    if (gigAppId == null || gigAppId == 'custom') return;
+    if (await _isFilteredOutByShiftSelection(gigAppId)) return;
+    lastDetectedGigAppId = gigAppId;
+    await _autoStartTrip(gigAppId);
+  }
+
+  /// A wake-up from [DriveWake]. "vehicle": Android is sure the phone is in a vehicle,
+  /// so the trip starts. "fence": the phone left the place it was parked -- it could
+  /// be a walk, a bus or a taxi, so it is checked with a short burst of GPS first
+  /// (see [_verifyDriving]). Either way the parking spot is kept as the real start.
+  static const String _anchorPrefKey = 'controlmiles_trip_anchor';
+  static const Duration _verifyWindow = Duration(seconds: 150);
+
+  Future<void> onWake(WakeInfo info) async {
+    DiagLog.add('wake', {'source': info.source, 'anchor': info.hasAnchor ? '${DiagLog.coarse(info.lat!)},${DiagLog.coarse(info.lng!)}' : 'none'});
+    if (!await _isArmedNow()) {
+      DiagLog.add('wake ignored: detection is not armed');
+      return;
+    }
+    if (await _hasOpenTrip()) {
+      DiagLog.add('wake ignored: a trip is already open');
+      return;
+    }
+    if (info.hasAnchor) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_anchorPrefKey, '${info.lat},${info.lng},${DateTime.now().millisecondsSinceEpoch}');
+    }
+    if (info.source == 'fence') {
+      await _verifyDriving();
+    } else {
+      await onVehicleDetected();
+    }
+  }
+
+  /// The phone left its parking fence: listen with the light GPS profile for a couple
+  /// of minutes. [handleIdleFix] starts the trip as soon as the speed is really that
+  /// of a vehicle (and, in Apps mode, one of the driver's apps is in front). If it
+  /// never is, it was not a drive: the GPS goes back to sleep and the fence moves here.
+  Future<void> _verifyDriving() async {
+    if (await _isGeneralMode()) {
+      if (!await _isWithinAutoSchedule(DateTime.now())) {
+        await DriveWake.refreshFence();
+        return;
+      }
+    } else {
+      final picked = (await SharedPreferences.getInstance()).getStringList(_selectedGigAppIdsPrefKey) ?? const [];
+      if (!picked.any((id) => id != 'custom')) {
+        await DriveWake.refreshFence();
+        return;
+      }
+    }
+
+    final started = await BackgroundGpsService.startTracking();
+    if (!started) {
+      await DriveWake.refreshFence();
+      return;
+    }
+    final deadline = DateTime.now().add(_verifyWindow);
+    while (DateTime.now().isBefore(deadline) && TrackingController.currentState == TrackingState.idle) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+    }
+    if (TrackingController.currentState == TrackingState.idle) {
+      // No trip came of it: forget this wake-up's parking spot, so a trip the driver
+      // starts by hand a minute later never borrows it.
+      (await SharedPreferences.getInstance()).remove(_anchorPrefKey);
+      await BackgroundGpsService.stopTracking();
+      await DriveWake.refreshFence();
+    }
+  }
+
+  /// Android said the phone entered a vehicle (see drive_wake.dart); runs in the
+  /// short-lived wake engine, with the app possibly closed. General: starts the
+  /// trip. Apps: waits a few minutes for one of the driver's apps to be in front
+  /// (the driver opens it, then drives), then starts it.
+  Future<void> onVehicleDetected() async {
+    if (!await _isArmedNow()) return;
+    if (await _hasOpenTrip()) return;
+
+    if (await _isGeneralMode()) {
+      // Only inside the days/hours the driver chose; nothing chosen = always.
+      if (!await _isWithinAutoSchedule(DateTime.now())) return;
+      await _autoStartTrip('custom');
+      return;
+    }
+
+    // Apps mode only records the apps the driver picked: none picked, nothing starts.
+    final picked = (await SharedPreferences.getInstance()).getStringList(_selectedGigAppIdsPrefKey) ?? const [];
+    if (!picked.any((id) => id != 'custom')) return;
+
+    final deadline = DateTime.now().add(const Duration(minutes: 3));
+    while (DateTime.now().isBefore(deadline)) {
+      final gigAppId = await GigAppDetectionService.instance.detectActiveGigAppId();
+      if (gigAppId != null && gigAppId != 'custom' && !await _isFilteredOutByShiftSelection(gigAppId)) {
+        lastDetectedGigAppId = gigAppId;
+        await _autoStartTrip(gigAppId);
+        return;
+      }
+      await Future<void>.delayed(const Duration(seconds: 8));
+    }
+  }
+
+  /// A trip is already recording (this isolate does not know about the one the open
+  /// app, or another wake-up, may have started).
+  Future<bool> _hasOpenTrip() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return true; // nobody signed in: nothing to record
+    try {
+      final rows = await Supabase.instance.client
+          .from('sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_closed', false)
+          // A session abandoned long ago must not block every future automatic trip.
+          .gte('start_time', DateTime.now().toUtc().subtract(const Duration(hours: 24)).toIso8601String())
+          .limit(1);
+      return (rows as List).isNotEmpty;
+    } catch (_) {
+      return true; // cannot tell: do not risk a second trip
+    }
   }
 
   /// Explicit user request (2026-08-27): once a specific gig app is
@@ -540,15 +822,31 @@ class AutoTripDetectionService {
     // premise this polling mechanism already depends on. A null navigator
     // here means the widget tree itself isn't up yet (very early startup
     // race) -- just let the next poll retry rather than crash.
+    // No navigator (the app is closed and this runs in the headless isolate):
+    // the trip starts without a screen. It only needs one to ask for an
+    // odometer photo, and then it does not start (the shift-start reading
+    // taken when auto-detect was armed is what a closed-app start carries).
     final nav = NotificationService.instance.navigatorKey?.currentState;
-    if (nav == null) {
+
+    // Headless isolate: Supabase and the saved account are not loaded yet.
+    await SupabaseBootstrap.ensure();
+    // Another isolate (the wake engine, the headless engine) may have started this very
+    // trip a moment ago: the server knows, this isolate does not.
+    if (await _hasOpenTrip()) {
+      DiagLog.add('auto-start skipped: a trip is already open', {'app': gigAppId});
+      _promptStuckTimer?.cancel();
+      _promptActive = false;
+      return;
+    }
+    DiagLog.add('auto-start', {'app': gigAppId});
+    if (TrackingController.currentState != TrackingState.idle) {
       _promptStuckTimer?.cancel();
       _promptActive = false;
       return;
     }
 
     await TrackingController.startTripFlow(
-      context: nav.context,
+      context: (nav != null && nav.mounted) ? nav.context : null,
       gigApp: gigAppId,
       useAutoDetectOdometer: true,
     );
@@ -557,6 +855,7 @@ class AutoTripDetectionService {
     _promptActive = false;
 
     if (TrackingController.currentState == TrackingState.running) {
+      await NotificationService.instance.init();
       await NotificationService.instance.showAutoTripStartedNotification(gigAppId: gigAppId);
       TrackingController.autoFlashEvent.value = 'start';
     }

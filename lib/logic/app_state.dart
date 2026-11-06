@@ -8,9 +8,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../i18n/app_texts.dart';
 import '../models/gig_app.dart';
 import '../services/notification_service.dart';
+import '../services/supabase_bootstrap.dart';
 import '../services/auth_service.dart';
 import '../services/work_place_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
+import '../tracking/background_gps_service.dart';
 
 class AppState extends ChangeNotifier {
 
@@ -195,8 +197,12 @@ class AppState extends ChangeNotifier {
     return _premiumEntitled ? 5 : 1;
   }
 
-  bool get isAuthenticated => Supabase.instance.client.auth.currentUser != null;
-  String? get currentUserId => Supabase.instance.client.auth.currentUser?.id;
+  // The Supabase client starts alongside the first frame (SupabaseBootstrap), so
+  // before it is ready nobody is signed in as far as this getter can tell.
+  bool get isAuthenticated =>
+      SupabaseBootstrap.isReady && Supabase.instance.client.auth.currentUser != null;
+  String? get currentUserId =>
+      SupabaseBootstrap.isReady ? Supabase.instance.client.auth.currentUser?.id : null;
 
   // ============================================================
   // CONSTRUCTOR
@@ -206,15 +212,26 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    await loadFromPrefs();
+    // Saved settings and the Supabase client (Keystore + saved session) open in
+    // parallel instead of one after the other.
+    await Future.wait([
+      loadFromPrefs(),
+      SupabaseBootstrap.ensure().catchError((Object e) {
+        debugPrint('[AppState] Supabase init failed, continuing signed out: $e');
+      }),
+    ]);
+
+    // Open on what the phone already knows (plan, account type and the other flags
+    // are saved from the last run); the fresh values arrive from the server a
+    // moment later and update the screen. The app used to wait for two network
+    // calls here before showing anything.
+    _isInitialized = true;
+    notifyListeners();
 
     if (isAuthenticated) {
       await fetchUserProfile();
       await fetchAccountTypeChosen();
     }
-
-    _isInitialized = true;
-    notifyListeners();
   }
 
   // ============================================================
@@ -444,6 +461,19 @@ class AppState extends ChangeNotifier {
     return await AutoTripDetectionService.instance.setEnabled(value);
   }
 
+  // Premium accounts listen by themselves ("asleep", waking when the phone moves
+  // the agreed miles); the only way to turn it off is the switch in Settings,
+  // which records the choice here. Ending a trip never touches it.
+  bool _autoDetectOffByUser = false;
+  bool get autoDetectOffByUser => _autoDetectOffByUser;
+
+  Future<void> setAutoDetectOffByUser(bool value) async {
+    _autoDetectOffByUser = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('controlmiles_auto_detect_off_by_user', value);
+  }
+
   // Explicit user requirement (2026-09-18): "select app gig for working
   // shift" -- Premium-exclusive narrowing of which gig apps auto-detect
   // actually reacts to. Caller is responsible for checking
@@ -469,8 +499,31 @@ class AppState extends ChangeNotifier {
 
   /// A Basic or free-trial account that has not said yet how it works: the work-type
   /// screen is shown once. Premium picks its apps with the shift selector.
-  bool get needsWorkTypeChoice =>
-      isAuthenticated && _accountType == 'gig' && !_premiumEntitled && _workMode == null;
+  bool get needsWorkTypeChoice => isAuthenticated && _accountType == 'gig' && _workMode == null;
+
+  // When the phone may start General trips by itself. Empty = never set =
+  // always (any movement). Otherwise [days (ISO 1=Mon..7=Sun, comma list),
+  // start minute of day, end minute of day]. Kept per account like the work
+  // mode; the headless isolate reads the plain key.
+  static const _kAutoSchedule = 'controlmiles_auto_schedule';
+  List<String> _autoSchedule = [];
+
+  bool get hasAutoSchedule => _autoSchedule.length == 3;
+  Set<int> get autoScheduleDays =>
+      hasAutoSchedule ? _autoSchedule[0].split(',').map(int.tryParse).whereType<int>().toSet() : <int>{};
+  int get autoScheduleStartMinute => hasAutoSchedule ? int.tryParse(_autoSchedule[1]) ?? 480 : 480;
+  int get autoScheduleEndMinute => hasAutoSchedule ? int.tryParse(_autoSchedule[2]) ?? 1080 : 1080;
+
+  /// Null [days] clears the schedule (back to "always").
+  Future<void> setAutoSchedule({Set<int>? days, int startMinute = 480, int endMinute = 1080}) async {
+    _autoSchedule = days == null || days.isEmpty
+        ? []
+        : [(days.toList()..sort()).join(','), '$startMinute', '$endMinute'];
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kAutoSchedule, _autoSchedule);
+    await _saveOwn(prefs, _kAutoSchedule, _autoSchedule);
+  }
 
   Future<void> setWorkMode(String mode) async {
     _workMode = mode;
@@ -478,6 +531,8 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_kWorkMode, [mode]);
     await _saveOwn(prefs, _kWorkMode, [mode]);
+    // The always-on card words itself by mode (General vs gig apps).
+    await BackgroundGpsService.resyncNotification();
   }
 
   List<String> get gigAppOrder => List.unmodifiable(_gigAppOrder);
@@ -535,15 +590,12 @@ class AppState extends ChangeNotifier {
     final placed = ordered.map((a) => a.id).toSet();
     ordered.addAll(catalog.where((a) => !placed.contains(a.id)));
 
-    if (!premiumEntitled) {
-      // Basic / trial: what they said in the work-type screen.
-      if (_workMode == 'general') {
-        return ordered.where((a) => a.id == 'custom' || a.id == alwaysShow).toList();
-      }
-      if (_workMode != 'gig' || _selectedGigAppIds.isEmpty) return ordered;
-    } else if (_selectedGigAppIds.isEmpty) {
-      return ordered;
+    // What they said in the work-type screen (everyone, Premium included).
+    if (_workMode == 'general') {
+      return ordered.where((a) => a.id == 'custom' || a.id == alwaysShow).toList();
     }
+    if (!premiumEntitled && _workMode != 'gig') return ordered;
+    if (_selectedGigAppIds.isEmpty) return ordered;
     final keep = _selectedGigAppIds.toSet();
     return ordered
         .where((a) => a.id == 'custom' || a.id == alwaysShow || keep.contains(a.id))
@@ -692,10 +744,12 @@ class AppState extends ChangeNotifier {
 
       // Detección automática de viajes (premium, Gig-only)
       _autoDetectEnabled = prefs.getBool('controlmiles_auto_detect_enabled') ?? false;
+      _autoDetectOffByUser = prefs.getBool('controlmiles_auto_detect_off_by_user') ?? false;
       _selectedGigAppIds = List.of(_restoreOwn(prefs, _kSelectedApps));
       _gigAppOrder = List.of(_restoreOwn(prefs, _kAppOrder));
       final savedMode = _restoreOwn(prefs, _kWorkMode);
       _workMode = savedMode.isEmpty ? null : savedMode.first;
+      _autoSchedule = List.of(_restoreOwn(prefs, _kAutoSchedule));
 
       // Onboarding
       _permissionsCompleted = prefs.getBool('controlmiles_permissions_completed') ?? false;
@@ -746,9 +800,11 @@ class AppState extends ChangeNotifier {
     // service must stop -- it has no idle account to attribute a
     // detected trip to once signed out.
     _autoDetectEnabled = false;
+    _autoDetectOffByUser = false;
     _selectedGigAppIds = [];
     _gigAppOrder = [];
     _workMode = null;
+    _autoSchedule = [];
     await AutoTripDetectionService.instance.setEnabled(false);
     // NOT cleared: _hasSeenRoleChooser -- device-level, must survive
     // logout (see the field's own doc comment above).
@@ -764,9 +820,11 @@ class AppState extends ChangeNotifier {
     await prefs.remove('controlmiles_tier_enforcement_exempt');
     await prefs.remove('controlmiles_account_created_at');
     await prefs.remove('controlmiles_auto_detect_enabled');
+    await prefs.remove('controlmiles_auto_detect_off_by_user');
     await prefs.remove('controlmiles_selected_gig_app_ids');
     await prefs.remove('controlmiles_gig_app_order');
     await prefs.remove(_kWorkMode);
+    await prefs.remove(_kAutoSchedule);
     await prefs.remove('controlmiles_default_org_id');
     await prefs.remove('controlmiles_account_type_chosen');
     await prefs.remove('controlmiles_pending_intended_role');

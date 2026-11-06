@@ -16,6 +16,10 @@ import '../routes/app_routes.dart';
 import '../services/vehicle_service.dart';
 import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
+import '../widgets/purpose_prompt.dart';
+import '../widgets/work_mode_bar.dart';
+import '../main.dart' show startupMark;
+import '../services/app_update_service.dart';
 import '../services/trip_address_service.dart';
 import '../utils/permission_gate.dart';
 import '../utils/permission_recovery_service.dart';
@@ -28,7 +32,6 @@ import '../widgets/main_drawer.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
 import '../widgets/gps_issue_banner.dart';
-import '../widgets/auto_detect_apps_button.dart';
 import '../logic/app_state.dart';
 import '../services/permission_report_service.dart';
 import '../onboarding/product_tour.dart';
@@ -225,6 +228,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     final event = TrackingController.autoFlashEvent.value;
     if (event == null || !mounted) return;
     TrackingController.autoFlashEvent.value = null;
+
+    // A trip the phone closed by itself (stopped moving, no answer): the question
+    // "what was this trip for?" is asked here, on the Dashboard, right away.
+    if (event == 'end') {
+      Future.delayed(const Duration(milliseconds: 900), _askPurposeIfNeeded);
+    }
 
     _autoFlashTimer?.cancel();
     setState(() {
@@ -454,14 +463,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Text(
                   detectedApp != null
                       ? '${appState.tr('auto_detect_status_found_label')} ${detectedApp.name}'
-                      : appState.tr('auto_detect_status_listening'),
+                      : appState.tr(appState.workMode == 'general'
+                          ? 'auto_detect_general_title'
+                          : 'auto_detect_status_listening'),
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: textColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   detectedApp != null
                       ? appState.tr('auto_detect_status_found_subtitle')
-                      : appState.tr('auto_detect_status_listening_subtitle'),
+                      : appState.tr(appState.workMode == 'general'
+                          ? 'auto_detect_general_subtitle'
+                          : 'auto_detect_status_listening_subtitle'),
                   style: TextStyle(fontSize: 12, color: subTextColor),
                 ),
               ],
@@ -587,9 +600,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       unawaited(PermissionReportService.reportIfNeeded());
       await _loadActiveVehicle();
       _syncTrackingUiState();
+      _askPurposeIfNeeded();
+      _armDetection();
     } catch (e) {
       debugPrint("[ControlMiles Permission Check Error] $e");
     }
+  }
+
+  /// General mode: a trip the phone started and closed still needs its purpose.
+  void _askPurposeIfNeeded() {
+    if (!mounted || TrackingController.currentState != TrackingState.idle) return;
+    unawaited(PurposePrompt.askIfPending(context));
   }
 
   /// A trip cannot record without location, so the Start button asks for it
@@ -598,11 +619,15 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _initDashboard() async {
     setState(() => loading = true);
-    await TrackingController.initializeOrRecover();
-    await _loadRecentSessions(); // ── NUEVO
-    await _loadTodaySummary(); // ── NUEVO
-    await _loadMonthSummary(); // ── NUEVO
-    await _loadHeaderMiles();
+    // At the same time (they used to run one after the other): none depends on
+    // another, and each is a separate server request.
+    await Future.wait<void>([
+      TrackingController.initializeOrRecover(),
+      _loadRecentSessions(),
+      _loadTodaySummary(),
+      _loadMonthSummary(),
+      _loadHeaderMiles(),
+    ]);
     // Started / Basic: how do you work? Asked once, before the tour starts.
     if (mounted && context.read<AppState>().needsWorkTypeChoice) {
       await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const WorkTypeScreen()));
@@ -611,8 +636,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       _syncTrackingUiState();
       setState(() => loading = false);
     }
+    startupMark('dashboard ready');
     // Addresses of recent trips that still have none (offline when they closed).
     unawaited(TripAddressService.backfillRecent());
+    _askPurposeIfNeeded();
+    _armDetection();
+    if (mounted) unawaited(AppUpdateService.checkAndPrompt(context));
+  }
+
+  /// Premium: automatic detection stays on by itself (no button).
+  void _armDetection() {
+    if (!mounted) return;
+    unawaited(AutoTripDetectionService.ensureArmed(context, context.read<AppState>()));
   }
 
   // ── NUEVO: total del día para la card Summary ──
@@ -1529,12 +1564,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               // not just what happens after tapping it. Basic/Free always
               // fall through to the plain GigAppSelector carousel below,
               // same as if auto-detect were simply off.
-              if (
-                  appState.premiumEntitled &&
-                  TrackingController.currentState == TrackingState.idle) ...[
-                const Gutter(child: AutoDetectAppsButton()),
-                const SizedBox(height: 20),
-              ],
+              // 2026-11-05: the activation slider is gone. Premium accounts
+              // keep automatic detection on by themselves (see
+              // AutoTripDetectionService.ensureArmed); Settings has the switch.
 
               // Explicit user request: the carousel must NEVER reappear
               // while auto-detect is armed, in ANY trip state -- it was
@@ -1552,19 +1584,34 @@ class _DashboardScreenState extends State<DashboardScreen>
                 scope: _tour,
                 step: 2,
                 total: 6,
-                titleKey: appState.autoDetectEnabled ? 'ptour_auto_title' : 'ptour_apps_title',
-                bodyKey: appState.autoDetectEnabled ? 'ptour_auto_body' : 'ptour_apps_body',
+                titleKey: 'ptour_apps_title',
+                bodyKey: 'ptour_apps_body',
                 radius: BorderRadius.zero,
-                child: appState.autoDetectEnabled
-                          ? _buildAutoDetectStatusCard(appState, isDark)
-                          : GigAppSelector(
-                              selectedGigApp: _selectedGigApp,
-                              activeGigApp: TrackingController.currentGigApp,
-                              isPaused: TrackingController.isPaused,
-                              onAppSelected: (appId) => _handleAppSelection(appId),
-                              onCustomSelected: (appId, irsPurpose) =>
-                                  _handleAppSelection(appId, irsPurpose: irsPurpose),
-                            ),
+                // The carousel stays even while detection is on, so a trip can
+                // still be started by hand; the status card says it is awake.
+                child: Column(
+                  children: [
+                    // Premium only; Basic keeps the screen exactly as it was.
+                    if (appState.premiumEntitled && TrackingController.currentState == TrackingState.idle) ...[
+                      const WorkModeBar(),
+                      const SizedBox(height: 10),
+                    ],
+                    // Only while waiting: during a trip the tracking card above already
+                    // says what is recording, so this one would just repeat it.
+                    if (appState.autoDetectEnabled && TrackingController.currentState == TrackingState.idle) ...[
+                      _buildAutoDetectStatusCard(appState, isDark),
+                      const SizedBox(height: 12),
+                    ],
+                    GigAppSelector(
+                      selectedGigApp: _selectedGigApp,
+                      activeGigApp: TrackingController.currentGigApp,
+                      isPaused: TrackingController.isPaused,
+                      onAppSelected: (appId) => _handleAppSelection(appId),
+                      onCustomSelected: (appId, irsPurpose) =>
+                          _handleAppSelection(appId, irsPurpose: irsPurpose),
+                    ),
+                  ],
+                ),
               ),
 
               // (The "TRACKING ACTIVE: APP" chip lived here -- the tracking

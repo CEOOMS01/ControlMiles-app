@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ launch icon: the ControlMiles circle logo. The system draws this
+     into its 288 dp icon canvas and shows only the central 2/3 (192 dp) through its
+     mask, so the logo is inset by 1/6 on every side: it then fills the mask exactly.
+     The Flutter start-up screen draws the same logo at the same size and place (and
+     adds the small wheel under it), so opening the app looks like one screen. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_logo"
+    android:insetLeft="16.667%"
+    android:insetTop="16.667%"
+    android:insetRight="16.667%"
+    android:insetBottom="16.667%"/>

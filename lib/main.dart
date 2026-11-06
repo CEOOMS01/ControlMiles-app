@@ -7,13 +7,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
-import 'services/secure_supabase_storage.dart';
+import 'services/supabase_bootstrap.dart';
 import 'services/cgc_monitor_service.dart';
 
 // Rutas, Estado e Internacionalización
@@ -39,7 +39,7 @@ import 'screens/forgot_password_screen.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/odometer_capture_screen.dart';
-import 'screens/history_screen.dart';
+import 'screens/trips_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
@@ -52,7 +52,12 @@ import 'screens/vehicle_screen.dart';
 // o con la app cerrada).
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// Cold-start timing (debug log only): how long each step of opening the app takes.
+final Stopwatch startupWatch = Stopwatch();
+void startupMark(String label) => debugPrint('[StartupTiming] $label ${startupWatch.elapsedMilliseconds} ms');
+
 Future<void> main() async {
+  startupWatch.start();
   // Draws the app scaled to stock-size phones (lib/theme/screen_fit.dart).
   ScreenFitBinding.ensureInitialized();
 
@@ -68,9 +73,12 @@ Future<void> main() async {
   // once at startup (synchronous, bundled in the intl package, no network
   // or asset I/O) so DateFormat(pattern, appState.currentLanguage.code)
   // works correctly everywhere it's used.
-  for (final lang in AppLanguage.values) {
-    await initializeDateFormatting(lang.code);
-  }
+  // (2026-11-05, cold-start speed) loaded in the background while the first frame
+  // is drawn; the start-up screen waits for it before opening any real screen.
+  // (2026-11-05, second pass) only the saved language blocks the start-up
+  // screen; the other ten load after the first screen is up (see
+  // _startBackgroundServices), long before anyone can change the language.
+  dateFormatsReady = _loadActiveLanguageDates();
 
   // CGC Core crash monitoring (see cgc_monitor_service.dart): both hooks
   // wired as early as possible, before Supabase/anything else that could
@@ -100,20 +108,62 @@ Future<void> main() async {
   // con android:allowBackup=false (AndroidManifest.xml), un `adb backup`
   // sobre un teléfono robado/desbloqueado ya no puede extraer un token de
   // sesión utilizable.
-  const supabaseUrl = 'https://zuujwmcftycmdaxesdya.supabase.co';
-  final persistSessionKey =
-      'sb-${Uri.parse(supabaseUrl).host.split(".").first}-auth-token';
+  // (shared with the headless isolate: see services/supabase_bootstrap.dart)
+  // Not awaited (2026-11-05, cold-start speed): opening the Android Keystore for
+  // the saved session took a good part of the 4 s before the first frame. It now
+  // runs while the first frame is drawn and in parallel with the saved settings;
+  // AppState waits for it before it says it is initialized, so no screen touches
+  // the client early.
+  unawaited(SupabaseBootstrap.ensure().then(
+    (_) => startupMark('supabase ready'),
+    onError: (Object e) => debugPrint('[Main] Supabase init failed: $e'),
+  ));
 
-  await Supabase.initialize(
-    url: supabaseUrl,
-    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dWp3bWNmdHljbWRheGVzZHlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTA1MjUsImV4cCI6MjA5MTE4NjUyNX0.hdkU3aFdjJzoKPFjLoBSlSA0aq2zrpF2O6wwmz1dfVA',
-    authOptions: FlutterAuthClientOptions(
-      localStorage: SecureSupabaseLocalStorage(
-        persistSessionKey: persistSessionKey,
-      ),
-      pkceAsyncStorage: SecureGotrueAsyncStorage(),
+  startupMark('before runApp');
+  // Inyectar el Estado Global
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: const ControlMilesApp(),
     ),
   );
+
+  // Everything below used to run BEFORE the first frame (7-8 s to open the app).
+  // None of it is needed to draw the start-up screen, so it now runs right after.
+  WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_startBackgroundServices()));
+}
+
+/// Completes when every language's date names are loaded; the start-up screen
+/// waits for it so no screen formats a date before its data exists.
+late Future<void> dateFormatsReady;
+
+Future<void> _loadActiveLanguageDates() async {
+  var code = AppLanguage.en.code;
+  try {
+    final saved = (await SharedPreferences.getInstance()).getString('controlmiles_lang');
+    if (saved != null) code = AppLanguageExtension.fromCode(saved).code;
+  } catch (_) {}
+  await initializeDateFormatting(code);
+  startupMark('dates ready');
+}
+
+Future<void> _startBackgroundServices() async {
+  // Let the first real screen (dashboard / login) draw and settle before the
+  // heavy native set-up (GPS engine, notification channels, time zones) starts
+  // competing with it for the main thread.
+  await Future<void>.delayed(const Duration(milliseconds: 1200));
+  try {
+    await SupabaseBootstrap.ensure();
+  } catch (_) {}
+
+  // The other languages' date names (the saved one is already loaded).
+  try {
+    await Future.wait([
+      for (final lang in AppLanguage.values) initializeDateFormatting(lang.code),
+    ]);
+  } catch (e) {
+    debugPrint('[Main] Warning: date formats failed: $e');
+  }
 
   // Inicializar Background GPS Service
   try {
@@ -148,14 +198,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('[Main] Warning: WorkPlaceService sync failed: $e');
   }
-
-  // Inyectar el Estado Global
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(),
-      child: const ControlMilesApp(),
-    ),
-  );
+  startupMark('background services ready');
 }
 
 class ControlMilesApp extends StatefulWidget {
@@ -175,9 +218,14 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
     // Listen from app start so a Google Play purchase finished while the
     // app was closed is still verified and completed.
-    PlayBillingService.instance.start(
-      onVerified: () => context.read<AppState>().fetchUserProfile(),
-    );
+    // (waits for the Supabase client, which now starts alongside the first frame)
+    final appState = context.read<AppState>();
+    SupabaseBootstrap.ensure().then<void>((_) {
+      if (!mounted) return;
+      PlayBillingService.instance.start(onVerified: () => appState.fetchUserProfile());
+    }, onError: (Object e) {
+      debugPrint('[Main] Play billing not started: $e');
+    });
   }
 
   @override
@@ -238,34 +286,7 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
 
       // RUTAS
       home: const _StartupGate(),
-      routes: {
-        AppRoutes.login: (context) {
-          // 'signup' starting mode.
-          final args = ModalRoute.of(context)!.settings.arguments as String?;
-          return LoginScreen(startInSignupMode: args == 'signup');
-        },
-        AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
-        AppRoutes.resetPassword: (context) {
-          final email = ModalRoute.of(context)!.settings.arguments as String? ?? '';
-          return ResetPasswordScreen(email: email);
-        },
-        AppRoutes.welcome: (_) => const WelcomePage(),
-        // Gig: the product tour lives inside the dashboard (product_tour.dart).
-        AppRoutes.dashboard: (_) => const DashboardScreen(),
-        AppRoutes.profile: (_) => const ProfileScreen(),
-        AppRoutes.reports: (_) => const ReportsScreen(),
-        AppRoutes.history: (_) => const HistoryScreen(),
-        AppRoutes.settings: (_) => const SettingsScreen(),
-        AppRoutes.subscription: (_) => const SubscriptionScreen(),
-        AppRoutes.vehicle: (_) => const VehicleScreen(),
-        AppRoutes.odometerCapture: (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          return OdometerCaptureScreen(
-            isStart: args?['isStart'] ?? true,
-            sessionId: args?['sessionId'] ?? '',
-          );
-        },
-      },
+      routes: _appRoutes,
 
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (context) {
@@ -371,24 +392,73 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   void initState() {
     super.initState();
+    startupMark('splash shown');
     _go();
   }
 
   // The wheel and its line are the start-up screen: they stay up for at least
   // a beat, so the turn is seen even when the app is ready at once.
-  static const _minShown = Duration(milliseconds: 900);
+  static const _minShown = Duration(milliseconds: 400);
 
   Future<void> _go() async {
     final appState = context.read<AppState>();
     final results = await Future.wait<Object?>([
       resolveStartRoute(appState),
       Future<void>.delayed(_minShown),
+      dateFormatsReady,
     ]);
+    startupMark('route resolved');
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, results.first! as String);
+    // No slide: the start-up screen and the screen that follows share the same logo,
+    // so a slide would show two logos moving past each other.
+    final route = results.first! as String;
+    final builder = _appRoutes[route];
+    if (builder == null) {
+      Navigator.pushReplacementNamed(context, route);
+      return;
+    }
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(name: route),
+        pageBuilder: (ctx, _, _) => builder(ctx),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) =>
       BrandSplash(tagline: context.watch<AppState>().tr('splash_tagline'));
 }
+
+/// Every named route of the app (also used by the start-up screen, which opens its
+/// route without an animation).
+final Map<String, WidgetBuilder> _appRoutes = {
+  AppRoutes.login: (context) {
+    // 'signup' starting mode.
+    final args = ModalRoute.of(context)!.settings.arguments as String?;
+    return LoginScreen(startInSignupMode: args == 'signup');
+  },
+  AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
+  AppRoutes.resetPassword: (context) {
+    final email = ModalRoute.of(context)!.settings.arguments as String? ?? '';
+    return ResetPasswordScreen(email: email);
+  },
+  AppRoutes.welcome: (_) => const WelcomePage(),
+  // Gig: the product tour lives inside the dashboard (product_tour.dart).
+  AppRoutes.dashboard: (_) => const DashboardScreen(),
+  AppRoutes.profile: (_) => const ProfileScreen(),
+  AppRoutes.reports: (_) => const ReportsScreen(),
+  AppRoutes.history: (_) => const TripsScreen(),
+  AppRoutes.settings: (_) => const SettingsScreen(),
+  AppRoutes.subscription: (_) => const SubscriptionScreen(),
+  AppRoutes.vehicle: (_) => const VehicleScreen(),
+  AppRoutes.odometerCapture: (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    return OdometerCaptureScreen(
+      isStart: args?['isStart'] ?? true,
+      sessionId: args?['sessionId'] ?? '',
+    );
+  },
+};

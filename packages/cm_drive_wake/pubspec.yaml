@@ -1,0 +1,19 @@
+name: cm_drive_wake
+description: Wakes ControlMiles when Android says the phone entered a vehicle (Activity Recognition transitions), with no foreground service and no notification while nothing is happening.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.olimsys.cm_drive_wake
+        pluginClass: CmDriveWakePlugin
