@@ -723,15 +723,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: TourTarget(
-              showcaseKey: _tPdf,
-              scope: _tour,
-              step: 3,
-              total: 3,
-              titleKey: 'ptour_pdf_title',
-              bodyKey: 'ptour_pdf_body',
-              child: _buildGlobalPdfButton(appState),
+          // Pinned (2026-11-06): the three buttons stay on screen while the trips scroll.
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedBar(
+              extent: 96 * (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 1.5),
+              color: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
+              child: TourTarget(
+                showcaseKey: _tPdf,
+                scope: _tour,
+                step: 3,
+                total: 3,
+                titleKey: 'ptour_pdf_title',
+                bodyKey: 'ptour_pdf_body',
+                child: _buildGlobalPdfButton(appState),
+              ),
             ),
           ),
           if (_sessions.isEmpty)
@@ -971,7 +977,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1378,4 +1384,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // duplicado a mano en 4 archivos — ver lib/models/gig_app.dart, ahora
   // fuente única de verdad.
   GigApp _appMeta(String appId) => GigAppCatalog.byId(appId);
+}
+
+/// A bar that stays at the top of a scroll view, with a fixed height.
+class _PinnedBar extends SliverPersistentHeaderDelegate {
+  _PinnedBar({required this.extent, required this.color, required this.child});
+
+  final double extent;
+  final Color color;
+  final Widget child;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      Container(color: color, alignment: Alignment.topCenter, child: child);
+
+  @override
+  bool shouldRebuild(covariant _PinnedBar old) => old.extent != extent || old.color != color || old.child != child;
 }

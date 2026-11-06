@@ -24,7 +24,7 @@ class AppVersionText extends StatelessWidget {
       future: PackageInfo.fromPlatform(),
       builder: (context, snapshot) {
         final version = snapshot.data?.version;
-        return Text(version != null ? 'v$version' : '', style: style);
+        return Text(version ?? '', style: style);
       },
     );
   }

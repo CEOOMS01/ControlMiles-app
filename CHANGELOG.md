@@ -32,6 +32,8 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.22+62 — 2026-11-06 (built, for Play)
 
+- The version number no longer shows a leading "v" (Settings and the menu).
+- Reports: the three buttons (This month, Total trips, Generate report) stay pinned at the top while the trips scroll.
 - PDF report redone in landscape (A4), in the style of the reports drivers already know: header with
   date range and business rate on every page, summary tiles (estimated deduction, business and
   non-business miles, business use, distance, drives), a per-vehicle table (miles by category and
