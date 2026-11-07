@@ -760,13 +760,23 @@ class AutoTripDetectionService {
     try {
       final rows = await Supabase.instance.client
           .from('sessions')
-          .select('id')
+          .select('start_time, organization_id, session_sections(section_status)')
           .eq('user_id', user.id)
           .eq('is_closed', false)
           // A session abandoned long ago must not block every future automatic trip.
           .gte('start_time', DateTime.now().toUtc().subtract(const Duration(hours: 24)).toIso8601String())
           .limit(1);
-      return (rows as List).isNotEmpty;
+      if ((rows as List).isEmpty) return false;
+      final row = rows.first;
+      // An interrupted personal trip is not a real one: the start that follows closes it.
+      return row['organization_id'] != null ||
+          !TrackingController.isInterruptedTrip(
+            sectionStatuses: [
+              for (final s in (row['session_sections'] as List?) ?? const []) s['section_status'] as String,
+            ],
+            startTime: DateTime.parse(row['start_time'] as String),
+            now: DateTime.now(),
+          );
     } catch (_) {
       return true; // cannot tell: do not risk a second trip
     }

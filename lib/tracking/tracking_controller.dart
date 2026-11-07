@@ -287,14 +287,16 @@ class TrackingController {
     // button) never pass this -- they always keep the existing per-trip
     // capture, even if auto-detect happens to be armed at the same time.
     bool useAutoDetectOdometer = false,
+    bool retried = false,
   }) async {
     if (currentState != TrackingState.idle) return;
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
+    final sessionId = const Uuid().v4();
+    var sessionCreated = false;
     try {
-      final sessionId = const Uuid().v4();
       currentGigApp = gigApp;
       startedViaAutoDetect = useAutoDetectOdometer;
 
@@ -346,9 +348,23 @@ class TrackingController {
         activeOrganizationId = null;
         await Future<void>.delayed(const Duration(seconds: 2));
         await _recoverActiveState(startGps: false);
+        // Nothing to join: it was an interrupted trip, which that recovery just closed.
+        if (!retried && currentState == TrackingState.idle) {
+          await _startTripFlowImpl(
+            context: context != null && context.mounted ? context : null,
+            gigApp: gigApp,
+            irsPurpose: irsPurpose,
+            organizationId: organizationId,
+            shiftBlockId: shiftBlockId,
+            preSelectedVehicleId: preSelectedVehicleId,
+            useAutoDetectOdometer: useAutoDetectOdometer,
+            retried: true,
+          );
+        }
         return;
       }
 
+      sessionCreated = true;
       activeSessionId = sessionId;
       _startLiveHeartbeat();
       DiagLog.add('trip started', {'session': sessionId.substring(0, 8), 'app': gigApp, 'auto': useAutoDetectOdometer});
@@ -594,8 +610,47 @@ class TrackingController {
       // incondicionalmente, es seguro pase lo que pase adentro del try: si
       // nunca llegó a arrancar, stopTracking() no hace nada.
       await BackgroundGpsService.stopTracking();
+      // Nothing was recorded: an open trip left behind would block the next start.
+      if (sessionCreated) {
+        try {
+          await Supabase.instance.client.from('sessions').delete().eq('id', sessionId).eq('is_closed', false);
+        } catch (e) {
+          _logError('TRIP_FLOW_CLEANUP_ERROR', e.toString());
+        }
+      }
       _resetState();
     }
+  }
+
+  // Long enough for the odometer photo a start may ask for, before the first section.
+  static const Duration _interruptedStartAfter = Duration(minutes: 15);
+
+  /// An open personal trip nobody is running: every section already ended (it died
+  /// between closing the last section and closing the trip), or it never got one.
+  /// Only one personal trip can be open, so left alone it would block every new start
+  /// until the hourly clean-up reaches it, 12 hours later.
+  static bool isInterruptedTrip({
+    required List<String> sectionStatuses,
+    required DateTime startTime,
+    required DateTime now,
+  }) {
+    if (sectionStatuses.any((s) => s == 'active' || s == 'paused')) return false;
+    return sectionStatuses.isNotEmpty || now.difference(startTime) > _interruptedStartAfter;
+  }
+
+  /// Closes such a trip. The database keeps its miles when it has at least a mile and
+  /// discards it otherwise, the same as any other trip that ends.
+  static Future<void> _closeInterruptedTrip(String sessionId) async {
+    await Supabase.instance.client
+        .from('sessions')
+        .update({
+          'session_status': 'closed',
+          'is_closed': true,
+          'end_time': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', sessionId)
+        .eq('is_closed', false);
+    DiagLog.add('interrupted trip closed', {'session': sessionId.substring(0, 8)});
   }
 
   // ============================================================
@@ -1596,6 +1651,14 @@ class TrackingController {
         // Sesión abierta pero sin ninguna sección activa/pausada — estado
         // inconsistente, mejor resetear que quedar a medias (activeSessionId
         // seteado sin activeSection nunca debe pasar).
+        final interrupted = isInterruptedTrip(
+          sectionStatuses: [
+            for (final s in (session['session_sections'] as List?) ?? const []) s['section_status'] as String,
+          ],
+          startTime: DateTime.parse(session['start_time'] as String),
+          now: DateTime.now(),
+        );
+        if (interrupted) await _closeInterruptedTrip(session['id'] as String);
         _resetState();
       }
     } catch (e) {

@@ -30,7 +30,7 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## Next (not built yet)
+## 1.3.25+65 — 2026-11-07 (built, for Play)
 
 - Automatic start in General mode now checks that the car is really moving before it starts a trip. Android's "in a
   vehicle" signal also fires while you sit in a parked car, which started empty trips (five in ten minutes on
@@ -41,6 +41,7 @@ The shared Supabase backend stays here (`supabase/`).
 - Gig apps: a trip still starts when the selected app is behind Maps or a call, for up to 15 minutes after leaving it.
 - A wake-up that found no trip of its own no longer turns off the GPS of a trip another engine started, and an engine
   that loses the race to start a trip joins the real one instead of stopping it.
+- A trip left open with no running segment is closed at the next start, so it can no longer block new trips.
 - Automatic trips check the account's plan in the database, so a lapsed Premium turns detection off even if the app
   stayed closed. Opening the app also re-checks an owned subscription, in case Google's renewal notice was lost.
 - A trip under 1 mile is not saved, in General and Apps mode. Needs the database rule applied first.
