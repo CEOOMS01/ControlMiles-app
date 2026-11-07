@@ -46,7 +46,13 @@ class CmUsageAccessPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 ctx.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 result.success(null)
             }
-            "getForegroundPackage" -> result.success(getForegroundPackage(ctx))
+            "getActivePackage" -> result.success(
+                getActivePackage(
+                    ctx,
+                    call.argument<List<String>>("packages").orEmpty().toSet(),
+                    call.argument<Number>("leftWithinMs")?.toLong() ?: 0L
+                )
+            )
             else -> result.notImplemented()
         }
     }
@@ -65,19 +71,29 @@ class CmUsageAccessPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     // brought to the front. A long window (2 h) on purpose: the event fires once,
     // when the app opens, and a driver who opens Uber and then just drives
     // produces no further events (see the 2026-09-16 fix this was moved from).
-    private fun getForegroundPackage(ctx: Context): String? {
+    // Which of [packages] the driver is on: the one in front, or else the last one
+    // that lost the front no longer than [leftWithinMs] ago.
+    private fun getActivePackage(ctx: Context, packages: Set<String>, leftWithinMs: Long): String? {
         val usageManager = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val end = System.currentTimeMillis()
         val start = end - 2 * 60 * 60 * 1000L
         val events = usageManager.queryEvents(start, end)
         val event = UsageEvents.Event()
         var currentPackage: String? = null
+        var leftPackage: String? = null
+        var leftAt = 0L
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
             if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
+                val previous = currentPackage
+                if (previous != event.packageName && previous in packages) {
+                    leftPackage = previous
+                    leftAt = event.timeStamp
+                }
                 currentPackage = event.packageName
             }
         }
-        return currentPackage
+        if (currentPackage in packages) return currentPackage
+        return if (end - leftAt <= leftWithinMs) leftPackage else null
     }
 }

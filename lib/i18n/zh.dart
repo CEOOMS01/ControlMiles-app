@@ -776,7 +776,7 @@ const Map<String, String> zhTexts = {
   'shift_end_day_confirm_body': "今天将无法再开始课程。",
   'shift_day_closed': "你已结束今天的工作。",
   'odometer_below_registered_error': "此读数低于该车辆已记录的 {value} 英里。请确认选择了正确的车辆。",
-  'trip_discarded_no_miles': "未记录任何里程，因此未保存此行程。",
+  'trip_discarded_no_miles': "不足 1 英里的行程不会保存。",
   'enter_reset_code': '输入您邮箱收到的验证码',
   'forgot_password_body': '输入您账户的邮箱地址，我们会发送验证码以重置密码。',
   'generate_global_pdf': '生成全局 PDF',

@@ -77,9 +77,9 @@ class PlayBillingService {
         if (!productIds.contains(purchase.productID)) continue;
         if (purchase.status != PurchaseStatus.purchased && purchase.status != PurchaseStatus.restored) continue;
         owned = purchase;
-        if (!purchase.billingClientPurchase.isAcknowledged) {
-          await _verifyAndComplete(purchase);
-        }
+        // Every time, not only for an unconfirmed purchase: a renewal whose Google
+        // notification never arrived would otherwise read as a lapsed plan.
+        await _verifyAndComplete(purchase, quiet: purchase.billingClientPurchase.isAcknowledged);
       }
       _ownedSubscription = owned;
     } catch (e) {
@@ -166,7 +166,8 @@ class PlayBillingService {
     }
   }
 
-  Future<void> _verifyAndComplete(PurchaseDetails purchase) async {
+  /// [quiet]: a background check of a purchase already on record, nothing to announce.
+  Future<void> _verifyAndComplete(PurchaseDetails purchase, {bool quiet = false}) async {
     if (!productIds.contains(purchase.productID)) return;
     try {
       final response = await Supabase.instance.client.functions.invoke(
@@ -187,10 +188,10 @@ class PlayBillingService {
       // acknowledges too); Google refunds unacknowledged purchases.
       if (purchase.pendingCompletePurchase) await _iap.completePurchase(purchase);
       await _onVerified?.call();
-      events.value = PlayBillingEvent.verified;
+      if (!quiet) events.value = PlayBillingEvent.verified;
     } catch (e) {
       debugPrint('[PlayBilling] verification failed: $e');
-      events.value = PlayBillingEvent.failed;
+      if (!quiet) events.value = PlayBillingEvent.failed;
     }
   }
 }

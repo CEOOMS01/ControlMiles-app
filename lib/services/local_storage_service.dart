@@ -129,6 +129,9 @@ class LocalStorageService {
   // =============================================
   static Future<Map<String, dynamic>?> getRecoverableState() async {
     final prefs = await SharedPreferences.getInstance();
+    // Another engine (wake, headless) may have started or switched the trip: this
+    // isolate's cached copy would still show the old section, or none.
+    await prefs.reload();
 
     if (!prefs.containsKey(_keyActiveSessionId)) return null;
 

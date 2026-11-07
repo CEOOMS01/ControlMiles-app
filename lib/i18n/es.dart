@@ -148,7 +148,7 @@ const Map<String, String> esTexts = {
   'shift_end_day_confirm_body': "No podrás iniciar más clases hoy.",
   'shift_day_closed': "Terminaste tu día.",
   'odometer_below_registered_error': "Esta lectura es menor que las {value} mi ya registradas para este vehículo. Revisa que tengas seleccionado el vehículo correcto.",
-  'trip_discarded_no_miles': "No se registraron millas, así que este viaje no se guardó.",
+  'trip_discarded_no_miles': "Los viajes de menos de 1 milla no se guardan.",
 
   // ============================================================
   // ODOMETER (ODÓMETRO)

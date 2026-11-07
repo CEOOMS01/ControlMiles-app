@@ -636,7 +636,7 @@ const Map<String, String> hiTexts = {
   'shift_end_day_confirm_body': "आज आप और क्लासें शुरू नहीं कर पाएंगे।",
   'shift_day_closed': "आपने अपना दिन समाप्त कर दिया।",
   'odometer_below_registered_error': "यह रीडिंग इस वाहन के पहले से दर्ज {value} mi से कम है। जाँचें कि सही वाहन चुना गया है।",
-  'trip_discarded_no_miles': "कोई मील ट्रैक नहीं हुआ, इसलिए यह यात्रा सेव नहीं हुई।",
+  'trip_discarded_no_miles': "1 मील से कम की यात्राएँ सहेजी नहीं जातीं।",
   'last_30_days': 'पिछले 30 दिन',
   'last_12_months': 'पिछले 12 महीने',
   'generate_global_pdf': 'संपूर्ण PDF बनाएं',

@@ -94,6 +94,11 @@ class TrackingController {
   // flow can tell the driver why the trip is not in their history.
   static const double minTrackedMiles = 0.05;
 
+  // A whole trip under one mile is not saved either, in any mode (2026-11-07, explicit
+  // decision; the DB deletes it the same way). minTrackedMiles stays the rule for one
+  // segment of a longer trip, so a short leg between two gig apps keeps its own miles.
+  static const double minTripMiles = 1.0;
+
   /// True when the last successful stopTracking() closed a trip with no
   /// tracked miles, which the DB then discarded.
   static bool lastStopDiscarded = false;
@@ -316,18 +321,33 @@ class TrackingController {
       activeOrganizationId = organizationId;
 
       // Crear sesión principal
-      await Supabase.instance.client.from('sessions').insert({
-        "id": sessionId,
-        "user_id": user.id,
-        "vehicle_id": activeVehicle?.id,
-        "organization_id": organizationId,
-        "shift_block_id": ?shiftBlockId,
-        "start_time": DateTime.now().toUtc().toIso8601String(),
-        "session_status": "active",
-        "is_closed": false,
-        "total_miles": 0.0,
-        "date_key": DateTime.now().toIso8601String().split('T')[0],
-      });
+      try {
+        await Supabase.instance.client.from('sessions').insert({
+          "id": sessionId,
+          "user_id": user.id,
+          "vehicle_id": activeVehicle?.id,
+          "organization_id": organizationId,
+          "shift_block_id": ?shiftBlockId,
+          "start_time": DateTime.now().toUtc().toIso8601String(),
+          "session_status": "active",
+          "is_closed": false,
+          "total_miles": 0.0,
+          "date_key": DateTime.now().toIso8601String().split('T')[0],
+        });
+      } on PostgrestException catch (e) {
+        if (e.code != '23505') rethrow;
+        // Another engine got there first (uq_sessions_one_open_personal_trip): that
+        // trip is the real one, so its GPS and saved checkpoint stay untouched. Give
+        // it a moment to save its section, then join it.
+        DiagLog.add('start lost to another engine', {'app': gigApp});
+        currentGigApp = null;
+        startedViaAutoDetect = false;
+        activeVehicleId = null;
+        activeOrganizationId = null;
+        await Future<void>.delayed(const Duration(seconds: 2));
+        await _recoverActiveState(startGps: false);
+        return;
+      }
 
       activeSessionId = sessionId;
       _startLiveHeartbeat();
@@ -1070,8 +1090,8 @@ class TrackingController {
 
       // Same test as the DB trigger: the update above just made the DB
       // delete this trip. Nothing left to seal.
-      final discarded = _totalSessionMiles < minTrackedMiles &&
-          sectionsMiles < minTrackedMiles;
+      final discarded = _totalSessionMiles < minTripMiles &&
+          sectionsMiles < minTripMiles;
       _lastLoggedStopMiles = _totalSessionMiles;
 
       // Trip kept, but its LAST segment tracked nothing: the DB removes

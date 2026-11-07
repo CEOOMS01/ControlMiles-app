@@ -148,7 +148,7 @@ const Map<String, String> enTexts = {
   'shift_end_day_confirm_body': "You won't be able to start more classes today.",
   'shift_day_closed': "You ended your day.",
   'odometer_below_registered_error': "This reading is lower than the {value} mi already on record for this vehicle. Check that the right vehicle is selected.",
-  'trip_discarded_no_miles': "No miles were tracked, so this trip wasn't saved.",
+  'trip_discarded_no_miles': "Trips under 1 mile aren't saved.",
 
   // ============================================================
   // ODOMETER

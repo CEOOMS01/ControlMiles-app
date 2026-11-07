@@ -117,10 +117,19 @@ class TraceletEngine {
       isMock: isMock,
     );
 
-    // No trip running: with the app closed, driving can start one (General:
-    // any app; Apps: the gig app the driver opened first).
-    if (!isMock && TrackingController.currentState == TrackingState.idle) {
-      await AutoTripDetectionService.instance.handleIdleFix(speedMps: safeSpeed, accuracy: coords.accuracy);
+    await _afterFix(safeSpeed, coords.accuracy, isMock);
+  }
+
+  /// After a fix was counted, in whichever engine received it. It runs second so a
+  /// trip another engine started is picked up before anything tries to start one.
+  /// No trip: driving can start one (General: any drive; Apps: a selected gig app).
+  /// A trip: Apps mode follows the driver to another selected gig app.
+  static Future<void> _afterFix(double speedMps, double accuracy, bool isMock) async {
+    if (isMock) return;
+    if (TrackingController.currentState == TrackingState.idle) {
+      await AutoTripDetectionService.instance.handleIdleFix(speedMps: speedMps, accuracy: accuracy);
+    } else {
+      await AutoTripDetectionService.instance.handleRunningFix();
     }
   }
 
@@ -225,11 +234,6 @@ class TraceletEngine {
           'state': TrackingController.currentState.name,
         });
 
-        // No trip running: in General mode, driving speed starts one.
-        if (!isMock && TrackingController.currentState == TrackingState.idle) {
-          unawaited(AutoTripDetectionService.instance.handleIdleFix(speedMps: safeSpeed, accuracy: coords.accuracy));
-        }
-
         await TrackingController.processGpsTick(
           latitude: coords.latitude,
           longitude: coords.longitude,
@@ -238,6 +242,7 @@ class TraceletEngine {
           timestamp: DateTime.parse(location.timestamp),
           isMock: isMock,
         );
+        await _afterFix(safeSpeed, coords.accuracy, isMock);
       });
 
       // Mismo rol que en BgGeolocationEngine: solo re-arma el servicio al

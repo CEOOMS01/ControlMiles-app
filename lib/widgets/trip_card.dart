@@ -27,7 +27,9 @@ class TripData {
   final List<SessionSection> sections;
   final String? mapToken;
   final bool segment;
-  TripData(this.session, this.sections, this.mapToken, {this.segment = false});
+  /// False for a segment card that is not the trip's last leg.
+  final bool endsTrip;
+  TripData(this.session, this.sections, this.mapToken, {this.segment = false, this.endsTrip = true});
 
   /// Unique per card: a session plus, for a segment, its section.
   String get key => segment ? '${session.id}/${sections.first.id}' : session.id;
@@ -38,7 +40,8 @@ class TripData {
     final whole = TripData.fromRow(row);
     if (whole.sections.length <= 1) return [whole];
     return [
-      for (final sec in whole.sections) TripData(whole.session, [sec], whole.mapToken, segment: true),
+      for (final sec in whole.sections)
+        TripData(whole.session, [sec], whole.mapToken, segment: true, endsTrip: sec == whole.sections.last),
     ];
   }
 
@@ -54,6 +57,14 @@ class TripData {
   }
 
   bool get isGeneral => sections.any((s) => s.gigApp == 'custom');
+
+  /// General history can be changed (2026-11-07, explicit decision). A gig-app segment
+  /// is a record of the work: only [canEditEndAddress] applies to it, and it can still
+  /// be deleted at the driver's own responsibility. Miles are never edited, in any mode.
+  bool get editable => sections.isNotEmpty && sections.every((s) => s.gigApp == 'custom');
+
+  /// The address where the trip ended is only approximate, so it can be corrected.
+  bool get canEditEndAddress => editable || (sections.isNotEmpty && endsTrip);
 
   /// The category the driver gave a General trip (null while it has none).
   String? get purpose {
@@ -245,8 +256,10 @@ class TripCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           child: Row(
             children: [
-              _action(Icons.edit_location_alt_outlined, s.tr('trips_edit_address'), onEditAddress, dim),
-              _action(trip.hasNote ? Icons.sticky_note_2_rounded : Icons.note_add_outlined, s.tr('trips_note'), onNote, dim),
+              if (trip.canEditEndAddress)
+                _action(Icons.edit_location_alt_outlined, s.tr('trips_edit_address'), onEditAddress, dim),
+              if (trip.editable)
+                _action(trip.hasNote ? Icons.sticky_note_2_rounded : Icons.note_add_outlined, s.tr('trips_note'), onNote, dim),
               if (onToggleDetails != null)
                 _action(detailsOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, s.tr('trips_details'), onToggleDetails!, dim),
               if (onDelete != null) _action(Icons.delete_outline_rounded, s.tr('trips_delete'), onDelete!, Colors.red.shade400),

@@ -774,7 +774,7 @@ const Map<String, String> frTexts = {
   'shift_end_day_confirm_body': "Vous ne pourrez plus démarrer de cours aujourd'hui.",
   'shift_day_closed': "Vous avez terminé votre journée.",
   'odometer_below_registered_error': "Ce relevé est inférieur aux {value} mi déjà enregistrés pour ce véhicule. Vérifiez que le bon véhicule est sélectionné.",
-  'trip_discarded_no_miles': "Aucun mile enregistré : ce trajet n'a pas été sauvegardé.",
+  'trip_discarded_no_miles': "Les trajets de moins de 1 mile ne sont pas enregistrés.",
   'enter_reset_code': 'Entrez le code reçu par email',
   'forgot_password_body': 'Entrez l\'email de votre compte et nous vous enverrons un code pour réinitialiser votre mot de passe.',
   'generate_global_pdf': 'Générer le PDF global',

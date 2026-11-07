@@ -5,7 +5,7 @@
 // request, 2026-09-18): lets a Premium Gig driver narrow auto-detect down
 // to a subset of GigAppCatalog.all instead of watching every platform in
 // the carousel. The actual filtering lives in
-// AutoTripDetectionService._isFilteredOutByShiftSelection -- this sheet is
+// AutoTripDetectionService._selectedApps -- this sheet is
 // only the UI for choosing/persisting that subset via
 // AppState.setSelectedGigAppIds. 'custom' is deliberately left out of the
 // list: auto-detect can never resolve to it anyway (see

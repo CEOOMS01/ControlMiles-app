@@ -30,6 +30,24 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## Next (not built yet)
+
+- Automatic start in General mode now checks that the car is really moving before it starts a trip. Android's "in a
+  vehicle" signal also fires while you sit in a parked car, which started empty trips (five in ten minutes on
+  2026-11-07, and "you can't change vehicle while a trip is in progress" with no trip). The vehicle and the
+  parking-fence wake-ups both wait for real driving speed; only one check runs at a time.
+- Gig apps: the automatic switch now also works with the app closed (it follows the GPS, not a timer in the open app),
+  and only ever reacts to the apps the driver selected from the integrated list; with none selected nothing starts.
+- Gig apps: a trip still starts when the selected app is behind Maps or a call, for up to 15 minutes after leaving it.
+- A wake-up that found no trip of its own no longer turns off the GPS of a trip another engine started, and an engine
+  that loses the race to start a trip joins the real one instead of stopping it.
+- Automatic trips check the account's plan in the database, so a lapsed Premium turns detection off even if the app
+  stayed closed. Opening the app also re-checks an owned subscription, in case Google's renewal notice was lost.
+- A trip under 1 mile is not saved, in General and Apps mode. Needs the database rule applied first.
+- On a gig trip only the address where the trip ended can be corrected; miles are never edited and trips can still be
+  deleted. Dead `history_screen.dart` and
+  `trip_address_editor.dart` removed (My Trips replaced them).
+
 ## 1.3.24+64 — 2026-11-06 (built, for Play)
 
 - My Trips: the three filter buttons (No category, All trips, Summary) are centered and stay pinned at the top while the

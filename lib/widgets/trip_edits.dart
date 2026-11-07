@@ -1,9 +1,10 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/widgets/trip_edits.dart
 //
-// What the driver can change on a finished trip, shared by the pop-up over the
-// Dashboard and the trips list: the category, the two street addresses and the
-// note. Miles, times and coordinates are never touched (the server freezes them).
+// What the driver can change on a finished General trip, shared by the pop-up over
+// the Dashboard and the trips list: the category, the two street addresses and the
+// note. On a gig-app trip only the address where it ended can be corrected. Miles,
+// times and coordinates are never touched (the server freezes them).
 // Each call changes the [TripData] in place and returns true when something was saved.
 
 import 'package:flutter/material.dart';
@@ -43,9 +44,10 @@ class TripEdits {
     }
   }
 
-  /// Fixes where the trip started (first section) and ended (last section).
+  /// Fixes where the trip started (first section, General only) and ended (last section).
   static Future<bool> editAddresses(BuildContext context, TripData trip) async {
-    if (trip.sections.isEmpty) return false;
+    if (!trip.canEditEndAddress) return false;
+    final startToo = trip.editable;
     final appState = context.read<AppState>();
     final from = TextEditingController(text: trip.fromAddress ?? '');
     final to = TextEditingController(text: trip.toAddress ?? '');
@@ -56,7 +58,8 @@ class TripEdits {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: from, maxLength: 300, decoration: InputDecoration(labelText: appState.tr('address_from'))),
+            if (startToo)
+              TextField(controller: from, maxLength: 300, decoration: InputDecoration(labelText: appState.tr('address_from'))),
             TextField(controller: to, maxLength: 300, decoration: InputDecoration(labelText: appState.tr('address_to'))),
           ],
         ),
@@ -71,13 +74,15 @@ class TripEdits {
     final end = to.text.trim().isEmpty ? null : to.text.trim();
     try {
       final client = Supabase.instance.client;
-      await client
-          .from('session_sections')
-          .update({'start_address': start, 'address_edited': true}).eq('id', trip.sections.first.id);
+      if (startToo) {
+        await client
+            .from('session_sections')
+            .update({'start_address': start, 'address_edited': true}).eq('id', trip.sections.first.id);
+      }
       await client
           .from('session_sections')
           .update({'end_address': end, 'address_edited': true}).eq('id', trip.sections.last.id);
-      trip.sections[0] = trip.sections.first.copyWith(startAddress: start, addressEdited: true);
+      if (startToo) trip.sections[0] = trip.sections.first.copyWith(startAddress: start, addressEdited: true);
       final last = trip.sections.length - 1;
       trip.sections[last] = trip.sections.last.copyWith(endAddress: end, addressEdited: true);
       return true;
@@ -89,7 +94,7 @@ class TripEdits {
 
   /// A short free-text note (never changes miles).
   static Future<bool> editNote(BuildContext context, TripData trip) async {
-    if (trip.sections.isEmpty) return false;
+    if (!trip.editable) return false;
     final appState = context.read<AppState>();
     final section = trip.sections.first;
     final controller = TextEditingController(text: section.notes ?? '');

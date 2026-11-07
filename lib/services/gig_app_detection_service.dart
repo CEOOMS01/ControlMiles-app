@@ -96,27 +96,35 @@ class GigAppDetectionService {
     }
   }
 
-  /// Returns the ControlMiles gig_app_id (e.g. 'uber', 'doordash') whose
-  /// verified package is currently in the foreground, or null if
-  /// unsupported, access not granted, or the foreground app isn't a
-  /// known gig platform.
-  Future<String?> detectActiveGigAppId() async {
+  /// Returns the ControlMiles gig_app_id (e.g. 'uber', 'doordash') of the app in
+  /// [selectedIds] the driver is on: in the foreground, or left no longer than
+  /// [leftWithin] ago (it sent them to a map, a call came in). Null if unsupported,
+  /// access not granted, or none of them. Only verified packages of the selected
+  /// apps are ever looked at, so nothing else on the phone can match.
+  Future<String?> detectActiveGigAppId(
+    Set<String> selectedIds, {
+    Duration leftWithin = Duration.zero,
+  }) async {
     if (!isSupported) return null;
     if (!await hasUsageAccess()) return null;
 
     await _ensureCatalogLoaded();
     final catalog = _packageToGigAppId;
-    if (catalog == null || catalog.isEmpty) return null;
+    if (catalog == null) return null;
+    final packages = [
+      for (final e in catalog.entries)
+        if (selectedIds.contains(e.value)) e.key,
+    ];
+    if (packages.isEmpty) return null;
 
-    String? foregroundPackage;
     try {
-      foregroundPackage =
-          await _channel.invokeMethod<String>('getForegroundPackage');
+      final package = await _channel.invokeMethod<String>('getActivePackage', {
+        'packages': packages,
+        'leftWithinMs': leftWithin.inMilliseconds,
+      });
+      return catalog[package];
     } catch (e) {
       return null;
     }
-    if (foregroundPackage == null) return null;
-
-    return catalog[foregroundPackage];
   }
 }
