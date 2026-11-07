@@ -45,6 +45,23 @@ void main() {
           startAddress: '219 Allendale St, Baltimore, MD 21229, United States',
           endAddress: '2420 W Lexington St, Baltimore, MD 21223, United States',
         ),
+        // Every fifth trip switched gig app twice: three segments, each with its own addresses.
+        if (i % 5 == 1)
+          for (final (k, app, from, to) in [
+            (1, 'roadie', '2420 W Lexington St, Baltimore, MD 21223', '1200 Light St, Baltimore, MD 21230'),
+            (2, 'doordash', '1200 Light St, Baltimore, MD 21230', '4607 Coleherne Rd, Baltimore, MD 21229'),
+          ])
+            SessionSection(
+              id: 'c${i}_$k',
+              sessionId: id,
+              userId: 'u',
+              gigApp: app,
+              startTime: start.add(Duration(minutes: 40 * k)),
+              endTime: start.add(Duration(minutes: 40 * k + 30)),
+              totalMiles: 3.0 + k,
+              startAddress: from,
+              endAddress: to,
+            ),
       ];
     }
     final range = DateTimeRange(start: DateTime(2026, 9, 1), end: DateTime(2026, 11, 6));

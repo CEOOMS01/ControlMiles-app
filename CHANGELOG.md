@@ -30,7 +30,18 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## 1.3.22+62 — 2026-11-06 (built, for Play)
+## 1.3.24+64 — 2026-11-06 (built, for Play)
+
+- My Trips: the three filter buttons (No category, All trips, Summary) are centered and stay pinned at the top while the
+  trips scroll, like the buttons in Reports (shared PinnedBar widget).
+- PDF report: one row per segment (a trip that switched gig app shows each segment with its own addresses, miles, category and value). The odometer reading appears only on the first row (start) and the last row (end), not on every trip. The closing notes no longer spill onto a page of their own.
+- My Trips: a trip that switched gig app now shows one card per segment, each with its own times, addresses, miles,
+  category, value and route map. Deleting a segment card removes only that segment (new database function
+  delete_trip_section keeps the trip totals in line; the whole trip goes when its last segment goes).
+
+## 1.3.23+63 — 2026-11-06 (built, for Play)
+
+(1.3.22+62 was already published on Play when this was built; the list below covers the 1.3.22 work plus what came after it.)
 
 - Notifications cut to four: the trip-recording notice, "Checking your drive...", "Did you finish your trip?" and
   "Trip finished". Removed: forgotten-trip and pause reminders, the paused notice, the weekly summary, work-hours

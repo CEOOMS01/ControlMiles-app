@@ -14,10 +14,12 @@ import '../data/irs_rates.dart';
 import '../i18n/app_texts.dart';
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
+import '../models/tracking_session.dart';
 import '../theme/cm_colors.dart';
 import '../widgets/brand_loader.dart';
 import '../widgets/purpose_prompt.dart';
 import '../widgets/trip_card.dart';
+import '../widgets/pinned_bar.dart';
 import '../widgets/trip_edits.dart';
 
 enum _Filter { unclassified, all, summary }
@@ -103,7 +105,7 @@ class _TripsScreenState extends State<TripsScreen> {
     // The trip being recorded is not a finished trip.
     final trips = [
       for (final row in data)
-        if (TripData.fromRow(row).session.isClosed) TripData.fromRow(row),
+        if (TrackingSession.fromMap(row).isClosed) ...TripData.splitFromRow(row),
     ];
     if (!mounted) return;
     setState(() {
@@ -159,13 +161,20 @@ class _TripsScreenState extends State<TripsScreen> {
     );
     if (ok != true) return;
     try {
-      final rows = await Supabase.instance.client.from('sessions').delete().eq('id', trip.session.id).select('id');
-      // RLS refuses by deleting nothing, not by erroring.
-      if ((rows as List).isEmpty) {
-        throw const PostgrestException(message: 'Not allowed to delete this trip', code: '42501');
+      if (trip.segment) {
+        // Only this leg goes; the other gig apps of the same session keep their data.
+        // The function also removes the whole session when this was its last leg and
+        // keeps the session's totals in line with what is left.
+        await Supabase.instance.client.rpc('delete_trip_section', params: {'p_section_id': trip.sections.first.id});
+      } else {
+        final rows = await Supabase.instance.client.from('sessions').delete().eq('id', trip.session.id).select('id');
+        // RLS refuses by deleting nothing, not by erroring.
+        if ((rows as List).isEmpty) {
+          throw const PostgrestException(message: 'Not allowed to delete this trip', code: '42501');
+        }
       }
       if (!mounted) return;
-      setState(() => _trips.remove(trip));
+      setState(() => _trips.removeWhere((t) => t.key == trip.key));
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(appState.tr('delete_trip_success'))));
     } catch (e) {
       if (mounted) TripEdits.showError(context, e);
@@ -227,13 +236,10 @@ class _TripsScreenState extends State<TripsScreen> {
       _Filter.summary => <TripData>[],
     };
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-      children: [
-        _monthHeader(s, dark, month),
-        const SizedBox(height: 12),
-        _filters(s),
-        const SizedBox(height: 12),
+    // The month header scrolls away; the three filter buttons stay pinned (centered)
+    // while the trips scroll under them, like the buttons in Reports.
+    final list = <Widget>[
+        const SizedBox(height: 4),
         if (_filter == _Filter.summary)
           _summary(s, dark, month)
         else if (visible.isEmpty)
@@ -267,10 +273,31 @@ class _TripsScreenState extends State<TripsScreen> {
                 if (await TripEdits.editNote(context, t) && mounted) setState(() {});
               },
               onDelete: _canDelete(t) ? () => _delete(t) : null,
-              detailsOpen: _open.contains(t.session.id),
-              onToggleDetails: () => setState(() => _open.contains(t.session.id) ? _open.remove(t.session.id) : _open.add(t.session.id)),
+              detailsOpen: _open.contains(t.key),
+              onToggleDetails: () => setState(() => _open.contains(t.key) ? _open.remove(t.key) : _open.add(t.key)),
             ),
         ],
+    ];
+
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          sliver: SliverToBoxAdapter(child: _monthHeader(s, dark, month)),
+        ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: PinnedBar(
+            extent: 60 * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 1.5),
+            color: dark ? CmColors.night : CmColors.cream,
+            child: _filters(s),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+          sliver: SliverList(delegate: SliverChildListDelegate(list)),
+        ),
       ],
     );
   }
@@ -435,7 +462,7 @@ class _TripsScreenState extends State<TripsScreen> {
     Widget chip(_Filter f, String text) {
       final on = _filter == f;
       return Padding(
-        padding: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: ChoiceChip(
           label: Text(text),
           selected: on,
@@ -447,14 +474,21 @@ class _TripsScreenState extends State<TripsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
+    // Centered; on a very narrow screen the row scrolls sideways instead of overflowing.
+    return LayoutBuilder(
+      builder: (context, c) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: c.maxWidth),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
           chip(_Filter.unclassified, '${s.tr('trips_filter_unclassified')}${pending > 0 ? ' · $pending' : ''}'),
           chip(_Filter.all, s.tr('trips_filter_all')),
           chip(_Filter.summary, s.tr('trips_filter_summary')),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

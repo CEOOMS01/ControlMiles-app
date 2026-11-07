@@ -17,6 +17,7 @@ import '../models/vehicle.dart';
 import '../routes/app_routes.dart';
 import '../services/report_service.dart';
 import '../widgets/cm_card_header.dart';
+import '../widgets/pinned_bar.dart';
 import '../widgets/full_bleed.dart';
 import '../utils/duration_format.dart';
 import '../onboarding/product_tour.dart';
@@ -726,7 +727,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           // Pinned (2026-11-06): the three buttons stay on screen while the trips scroll.
           SliverPersistentHeader(
             pinned: true,
-            delegate: _PinnedBar(
+            delegate: PinnedBar(
               extent: 96 * (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 1.5),
               color: isDark ? const Color(0xFF12100C) : const Color(0xFFFAF6EE),
               child: TourTarget(
@@ -1386,24 +1387,3 @@ class _ReportsScreenState extends State<ReportsScreen> {
   GigApp _appMeta(String appId) => GigAppCatalog.byId(appId);
 }
 
-/// A bar that stays at the top of a scroll view, with a fixed height.
-class _PinnedBar extends SliverPersistentHeaderDelegate {
-  _PinnedBar({required this.extent, required this.color, required this.child});
-
-  final double extent;
-  final Color color;
-  final Widget child;
-
-  @override
-  double get minExtent => extent;
-
-  @override
-  double get maxExtent => extent;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      Container(color: color, alignment: Alignment.topCenter, child: child);
-
-  @override
-  bool shouldRebuild(covariant _PinnedBar old) => old.extent != extent || old.color != color || old.child != child;
-}

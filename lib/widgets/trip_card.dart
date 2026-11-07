@@ -20,12 +20,27 @@ import '../models/tracking_session.dart';
 import '../theme/cm_colors.dart';
 import 'brand_loader.dart';
 
-/// One trip (a session) with its sections.
+/// One trip (a session) with its sections -- or, in the My Trips list, ONE section of a
+/// session that switched gig app ([segment]), so each leg is its own card.
 class TripData {
   final TrackingSession session;
   final List<SessionSection> sections;
   final String? mapToken;
-  TripData(this.session, this.sections, this.mapToken);
+  final bool segment;
+  TripData(this.session, this.sections, this.mapToken, {this.segment = false});
+
+  /// Unique per card: a session plus, for a segment, its section.
+  String get key => segment ? '${session.id}/${sections.first.id}' : session.id;
+
+  /// The list's cards: a trip with several segments becomes one card per segment, each
+  /// with its own addresses, miles, time, category and route map (2026-11-06).
+  static List<TripData> splitFromRow(Map<String, dynamic> row) {
+    final whole = TripData.fromRow(row);
+    if (whole.sections.length <= 1) return [whole];
+    return [
+      for (final sec in whole.sections) TripData(whole.session, [sec], whole.mapToken, segment: true),
+    ];
+  }
 
   /// From a `sessions` row that has its `session_sections` inside.
   factory TripData.fromRow(Map<String, dynamic> row) {
@@ -55,10 +70,12 @@ class TripData {
     return fromSections > 0 ? fromSections : session.totalMiles;
   }
 
-  int get seconds => session.effectiveDurationSeconds ?? sections.fold<int>(0, (a, s) => a + s.effectiveDurationSeconds);
+  int get seconds => segment
+      ? sections.first.effectiveDurationSeconds
+      : (session.effectiveDurationSeconds ?? sections.fold<int>(0, (a, s) => a + s.effectiveDurationSeconds));
 
-  DateTime? get start => session.startTime ?? (sections.isEmpty ? null : sections.first.startTime);
-  DateTime? get end => session.endTime ?? (sections.isEmpty ? null : sections.last.endTime);
+  DateTime? get start => segment ? sections.first.startTime : (session.startTime ?? (sections.isEmpty ? null : sections.first.startTime));
+  DateTime? get end => segment ? sections.first.endTime : (session.endTime ?? (sections.isEmpty ? null : sections.last.endTime));
 
   String? get fromAddress => sections.isEmpty ? null : sections.first.startAddress;
   String? get toAddress => sections.isEmpty ? null : sections.last.endAddress;
@@ -204,7 +221,7 @@ class TripCard extends StatelessWidget {
             height: 130,
             width: double.infinity,
             child: SvgPicture.network(
-              '$_mapBase/${trip.session.id}/${trip.mapToken}?lite=1',
+              '$_mapBase/${trip.session.id}/${trip.mapToken}?${trip.segment ? 'section=${trip.sections.first.id}&' : ''}lite=1',
               fit: BoxFit.cover,
               placeholderBuilder: (_) => const Center(child: BrandLoader(size: 28)),
             ),
