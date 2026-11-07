@@ -32,6 +32,10 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.25+65 — 2026-11-07 (built, for Play)
 
+- Odometer: two photos a year is the rule on every plan. Premium can choose weekly or monthly in the vehicle's odometer
+  cycle; twice a month is gone. Losing Premium returns the vehicle to two photos a year.
+- A General trip the phone closes asks its category on the Dashboard right away, also when the trip was picked up after
+  the app restarted.
 - Automatic start in General mode now checks that the car is really moving before it starts a trip. Android's "in a
   vehicle" signal also fires while you sit in a parked car, which started empty trips (five in ten minutes on
   2026-11-07, and "you can't change vehicle while a trip is in progress" with no trip). The vehicle and the

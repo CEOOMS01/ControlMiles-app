@@ -16,7 +16,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logic/app_state.dart';
 import '../models/gig_app.dart';
-import '../tracking/tracking_controller.dart';
 import 'trip_review_sheet.dart';
 
 class PurposePrompt {
@@ -49,7 +48,6 @@ class PurposePrompt {
           .order('end_time', ascending: false)
           .limit(5);
       final pending = (rows as List).map((r) => r['id'] as String).where((id) => !skipped.contains(id)).toList();
-      TrackingController.purposePendingSectionId = null;
       if (pending.isEmpty || !context.mounted) return;
 
       final sectionId = pending.first;

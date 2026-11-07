@@ -108,10 +108,7 @@ class TrackingController {
   /// not restart while the car is still rolling.
   static DateTime? lastStopAt;
 
-  /// Id of the General trip section that closed without a purpose; the
-  /// "What was this trip for?" question is about it.
   static double _lastLoggedStopMiles = 0;
-  static String? purposePendingSectionId;
   /// The General trip the last successful stop closed (null when it was
   /// discarded or was a gig-app trip).
   static String? lastClosedGeneralSectionId;
@@ -1201,11 +1198,13 @@ class TrackingController {
       unawaited(DriveWake.refreshFence());
       // A General trip has no purpose yet: ask once it is over. Closed from the
       // End trip button the app asks right away (lastClosedGeneralSectionId);
-      // closed by the phone itself (no screen), the dashboard asks the next time it opens.
+      // closed by the phone itself, the dashboard asks at once if it is open, or when it
+      // next opens. A trip picked up by this isolate after a restart lost its automatic
+      // flag, so that flash is sent here.
       final isGeneralTrip = !discarded && closedSectionId != null && lastSegmentApp == 'custom';
       lastClosedGeneralSectionId = isGeneralTrip ? closedSectionId : null;
-      if (isGeneralTrip && wasAutoDetect && !askPurposeInApp) {
-        purposePendingSectionId = closedSectionId;
+      if (isGeneralTrip && !wasAutoDetect && !askPurposeInApp) {
+        autoFlashEvent.value = 'end';
       }
       if (lastSegmentDropped) segmentDiscarded.value = lastSegmentApp;
       _logDebug(

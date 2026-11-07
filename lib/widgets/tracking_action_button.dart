@@ -298,7 +298,7 @@ class _TrackingActionButtonState extends State<TrackingActionButton>
     }
 
     // 2026-10-29 (pedido explícito): ya no se fuerza foto de cierre al terminar un
-    // viaje. Las fotos son por calendario (el 1 de cada mes, o el 1 y el 15 en
+    // viaje. Las fotos son por calendario (dos al año, o semanal/mensual en
     // Premium): la primera foto de un periodo nuevo cierra el anterior (roll-forward
     // del servidor), y iniciar un viaje sigue bloqueado hasta que exista la foto del
     // periodo en curso (needsCheckpointStartThisWeek en tracking_controller).
