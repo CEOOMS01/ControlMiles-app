@@ -9,16 +9,14 @@
 //  * "Allow only while using the app" is granted for location, but not
 //    enough to keep a trip recording once the app is in the background.
 
-import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/gig_app_detection_service.dart';
-import '../services/notification_service.dart';
 
-enum PermKind { location, locationAlways, notifications, motion, exactAlarm, battery, camera, usageAccess }
+enum PermKind { location, locationAlways, notifications, motion, battery, camera, usageAccess }
 
 class PermissionStatusService {
   PermissionStatusService._();
@@ -44,10 +42,6 @@ class PermissionStatusService {
         return Permission.notification.isGranted;
       case PermKind.motion:
         return Permission.activityRecognition.isGranted;
-      case PermKind.exactAlarm:
-        // Only Android 12+ asks; elsewhere reminders are exact by default.
-        if (!Platform.isAndroid) return true;
-        return NotificationService.instance.hasExactAlarmPermission();
       case PermKind.battery:
         return Permission.ignoreBatteryOptimizations.isGranted;
       case PermKind.camera:

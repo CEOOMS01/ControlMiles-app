@@ -10,7 +10,6 @@ import '../models/gig_app.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_bootstrap.dart';
 import '../services/auth_service.dart';
-import '../services/work_place_service.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../tracking/background_gps_service.dart';
 
@@ -287,13 +286,6 @@ class AppState extends ChangeNotifier {
         await AutoTripDetectionService.instance.setEnabled(false);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('controlmiles_auto_detect_enabled', false);
-      }
-
-      // Work places are Premium: arm them for Premium, remove them otherwise.
-      try {
-        await WorkPlaceService.setPremium(newPremiumEntitled);
-      } catch (e) {
-        debugPrint('[AppState] WorkPlaceService.setPremium failed: $e');
       }
 
       if (changed) {

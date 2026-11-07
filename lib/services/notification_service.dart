@@ -1,137 +1,70 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/notification_service.dart
 //
-// BUG FIX (toggle de notificaciones inerte): antes SettingsScreen escribía
-// la clave `notifications_enabled` en SharedPreferences y ningún código la
-// leía — no existía ningún sistema de notificaciones en la app, ni local
-// ni push. Este servicio es la implementación real: dos recordatorios
-// locales (viaje olvidado activo + resumen semanal de millas), ambos
-// respetando el toggle de Settings a través de AppState.
+// 2026-11-06: ControlMiles keeps four notifications, no more:
+//   1. the trip-recording notice (the tracking engine's foreground service, in
+//      tracelet_engine.dart -- Android requires it while a trip records);
+//   2. "Checking your drive..." while the phone wakes up for a detected drive
+//      (packages/cm_drive_wake, a short-lived foreground service);
+//   3. "Did you finish your trip?" after 5 minutes without moving (this file);
+//   4. "Trip finished" when the app closed a trip that sat still (this file).
+// Everything else that used to live here (forgotten-trip and pause reminders,
+// the weekly summary, work-hours and work-place reminders, GPS alerts, app-switch
+// and auto-start notices...) was removed. Alarms scheduled by older versions are
+// cancelled in [_cancelOldNotifications] so they never fire after an update.
 //
-// Alcance deliberado: solo notificaciones LOCALES, disparadas por el propio
-// proceso de la app. No hay backend de push (este proyecto no tiene Edge
-// Functions ni FCM configurado) — construir eso sería un proyecto aparte de
-// infraestructura, no un bug fix.
+// Only LOCAL notifications, raised by the app's own process. No push backend.
 
 import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest_all.dart' as tz_data;
-import 'package:timezone/timezone.dart' as tz;
 
-import '../routes/app_routes.dart';
-import '../models/gig_app.dart';
 import '../i18n/app_texts.dart';
-import '../screens/reports_screen.dart';
-import '../tracking/gps_watchdog.dart';
-import '../tracking/trip_inactivity.dart';
-import 'work_schedule.dart';
 import '../theme/app_colors.dart';
+import '../tracking/trip_inactivity.dart';
 
 class NotificationService {
   NotificationService._internal();
   static final NotificationService instance = NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
 
-  // IDs fijos por tipo de notificación — reusar el mismo ID al programar de
-  // nuevo simplemente reemplaza la notificación pendiente anterior, así que
-  // nunca hay duplicados sin necesidad de llevar un registro aparte.
-  static const int _forgottenTripNotificationId = 1001;
-  static const int _weeklySummaryNotificationId = 1002;
-  static const int _midTripSwitchNotificationId = 1004;
-  static const int _autoTripStartedNotificationId = 1005;
-  static const int _autoDetectFailedNotificationId = 1006;
+  // Ids of the two notifications that remain.
+  static const int _tripStillId = 1044;
+  static const int _tripInfoId = 1045;
+  static const String _actTripContinue = 'trip_still_continue';
+  static const String _actTripEnd = 'trip_still_end';
 
-  // OJO: el recordatorio de pausa NO usa un id suelto sino el RANGO
-  // 1007..1012 (base + índice de _pauseReminderLadder, 6 avisos escalonados).
-  // No reutilizar ningún id entre 1007 y 1012 para nada más: colisionaría con
-  // un peldaño de la escalera y lo sobrescribiría silenciosamente.
-  static const int _pauseReminderNotificationId = 1007;
+  static const String _channelId = 'controlmiles_trip_alerts';
+  static const String _channelName = 'Trip alerts';
+  static const String _channelDescription = 'Asks if your trip is over, and tells you when a still trip was closed';
 
-  // BUG FIX (pedido explícito, 2026-09-18: "la notificación ControlMiles
-  // Tracking debe persistir... le dice al driver que la app está activa").
-  // El próximo id libre es 1013 (usado acá).
-  static const int _pausedStatusNotificationId = 1013;
-  // GPS off / no signal alerts (GpsWatchdog). 1014 is the next free id.
-  static const int _gpsAlertNotificationId = 1014;
-  // Work-hours reminder (Gig): one weekly alarm per selected day, for the
-  // start (1020..1026) and the end (1030..1036), base + weekday - 1. Do not
-  // reuse ids 1020..1036 for anything else.
-  static const int _workStartBaseId = 1020;
-  static const int _workEndBaseId = 1030;
-  static const String _workChannelId = 'controlmiles_work_schedule';
-  static const String _workChannelName = 'Recordatorio de horario';
-  static const String _workChannelDescription =
-      'Aviso a la hora de inicio y de fin de tu horario de trabajo para iniciar o parar el tracking';
-  static const String _gpsAlertChannelId = 'controlmiles_gps_alert';
-  static const String _gpsAlertChannelName = 'Alertas de GPS';
-  static const String _gpsAlertChannelDescription =
-      'Avisos cuando el GPS del teléfono se apaga o no hay señal durante un viaje';
+  // Ids and channels of the notifications that no longer exist: cancelled and
+  // removed once on startup so an update leaves nothing behind (scheduled alarms
+  // included).
+  static const List<int> _oldIds = [
+    1001, 1002, 1004, 1005, 1006, // forgotten trip, weekly summary, app switch, auto start, auto failed
+    1007, 1008, 1009, 1010, 1011, 1012, // pause reminder ladder
+    1013, 1014, // paused status, GPS alert
+    1020, 1021, 1022, 1023, 1024, 1025, 1026, // work-hours start
+    1030, 1031, 1032, 1033, 1034, 1035, 1036, // work-hours end
+    1040, 1041, 1042, 1043, // work places
+  ];
+  static const List<String> _oldChannels = [
+    'controlmiles_reminders',
+    'controlmiles_switch_confirm',
+    'controlmiles_pause_reminder',
+    'controlmiles_paused_status',
+    'controlmiles_work_schedule',
+    'controlmiles_gps_alert',
+  ];
 
-  static const String _channelId = 'controlmiles_reminders';
-  static const String _channelName = 'Recordatorios';
-  static const String _channelDescription =
-      'Recordatorios de viaje activo y resumen semanal de millas';
-
-  // Real gap found live (2026-08-27, explicit user request: "el banner
-  // sí se ve dentro de la app, quiero que se vea fuera de ella"): the
-  // mid-trip auto-switch CONFIRMATION was on the low-key _channelId
-  // (Importance.defaultImportance), which on Android sits quietly in
-  // the notification tray -- exactly wrong for this, since the driver
-  // is by definition using a DIFFERENT app (the one just auto-detected)
-  // when it fires, not looking at ControlMiles. Needs its own channel:
-  // Importance.high is the real minimum Android requires for a
-  // heads-up (peeking) notification that pops over whatever app is in
-  // front -- deliberately NOT importance.max/fullScreenIntent like the
-  // urgent trip-start channel, since this is purely informational (the
-  // switch already happened), not "stop and confirm something now."
-  static const String _switchConfirmChannelId = 'controlmiles_switch_confirm';
-  static const String _switchConfirmChannelName = 'Cambio de app confirmado';
-  static const String _switchConfirmChannelDescription =
-      'Aviso visible cuando la detección automática cambia de app gig durante un viaje';
-
-  // Mismo criterio de Importance.high que _switchConfirmChannelId de
-  // arriba: el driver no está mirando la app mientras el viaje está en
-  // pausa (probablemente ni siquiera el teléfono), así que el recordatorio
-  // necesita empujarse por encima de lo que sea que esté en pantalla, no
-  // quedarse callado en la bandeja.
-  static const String _pauseReminderChannelId = 'controlmiles_pause_reminder';
-  static const String _pauseReminderChannelName = 'Recordatorio de pausa';
-  static const String _pauseReminderChannelDescription =
-      'Aviso cuando el tracking lleva varios minutos en pausa, por si se olvidó reanudar o finalizar el viaje';
-
-  // BUG FIX (root cause found live, 2026-09-18): la notificación
-  // persistente "ControlMiles Tracking" (foreground-service de
-  // TraceletEngine, no de este archivo) desaparece por completo cuando el
-  // viaje se pausa -- pauseTracking() en tracking_controller.dart llama
-  // BackgroundGpsService.stopTracking(), que apaga el servicio en
-  // primer plano de verdad (correcto: el GPS no debe seguir sondeando
-  // mientras está en pausa, ahorra batería real). El problema no es que
-  // el usuario la deslice -- es que al pausar, CUALQUIER rastro de que
-  // ControlMiles sigue activo desaparece de la bandeja hasta que se
-  // vuelve a abrir la app. Esta es la notificación de reemplazo, propia
-  // de este archivo (no de TraceletEngine), que cubre exactamente esa
-  // ventana: aparece al pausar, se cancela al reanudar/finalizar el
-  // viaje -- Importance.low a propósito (visible en la bandeja, sin
-  // heads-up ni sonido, ya el recordatorio de pausa de arriba ya cubre
-  // "avisar de verdad" en la escalera de 5m/15m/30m/etc.).
-  static const String _pausedStatusChannelId = 'controlmiles_paused_status';
-  static const String _pausedStatusChannelName = 'Estado de viaje en pausa';
-  static const String _pausedStatusChannelDescription =
-      'Indicador persistente mientras un viaje está en pausa, para que la bandeja nunca quede sin ningún rastro de que ControlMiles sigue activo';
-
-  // Referencia opcional al GlobalKey<NavigatorState> de MaterialApp, seteada
-  // desde main.dart — permite que tocar la notificación de resumen semanal
-  // abra Reports directamente en vez de solo abrir la app en la pantalla
-  // que ya estuviera visible.
+  // The app's navigator, set from main.dart (work places use it to open the app).
   GlobalKey<NavigatorState>? navigatorKey;
 
   // ============================================================
@@ -140,525 +73,17 @@ class NotificationService {
   Future<void> init({GlobalKey<NavigatorState>? navigatorKey}) async {
     if (_initialized) return;
     this.navigatorKey = navigatorKey;
-
-    try {
-      tz_data.initializeTimeZones();
-      // flutter_timezone 5.x devuelve un TimezoneInfo (no un String plano
-      // como versiones viejas) — el identificador IANA está en .identifier.
-      final localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz.identifier));
-    } catch (e) {
-      // Si falla la detección de timezone (dispositivo raro, permiso, lo
-      // que sea), seguimos con UTC en vez de tumbar la inicialización
-      // entera — los recordatorios simplemente dispararán en hora UTC.
-      debugPrint('[NotificationService] Timezone detection failed, falling back to UTC: $e');
-      tz_data.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('UTC'));
-    }
-
-    // BUG FIX (2026-09-15): esto apuntaba a '@mipmap/launcher_icon' — el icono
-    // de launcher a todo color. Android 5.0+ ignora los colores del small icon
-    // y usa SOLO su canal alfa, y el launcher icon es un cuadrado 100% opaco:
-    // el resultado era un CUADRO BLANCO SÓLIDO en la barra de estado en cada
-    // notificación que emite la app. El icono correcto es la silueta blanca
-    // sobre transparente que ya existía (ic_stat_tracking, el mismo que el
-    // motor de tracking ya usaba en tracelet_engine.dart) — ahora ambos caminos
-    // usan el mismo asset.
-    const androidInit = AndroidInitializationSettings('@drawable/ic_stat_tracking');
-    const darwinInit = DarwinInitializationSettings(
-      requestAlertPermission: false, // se pide explícito más abajo
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-
-    await _plugin.initialize(
-      const InitializationSettings(android: androidInit, iOS: darwinInit, macOS: darwinInit),
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-
-    await _createAndroidChannel();
+    await _lightInit();
     await _requestPermissions();
-
-    _initialized = true;
-
-    // Si el usuario ya tiene notificaciones habilitadas, asegurar que el
-    // resumen semanal quede programado desde ya (idempotente — programar
-    // de nuevo con el mismo ID solo actualiza el horario, no duplica).
-    final enabled = await _isEnabledInPrefs();
-    if (enabled) {
-      await scheduleWeeklySummaryReminder();
-      // Also re-registers the work-hours alarms, so the texts follow the
-      // current language and a changed time zone is picked up.
-      await rescheduleWorkSchedule();
-    }
   }
 
-  Future<void> _createAndroidChannel() async {
-    const channel = AndroidNotificationChannel(
-      _channelId,
-      _channelName,
-      description: _channelDescription,
-      importance: Importance.defaultImportance,
-    );
-
-    const switchConfirmChannel = AndroidNotificationChannel(
-      _switchConfirmChannelId,
-      _switchConfirmChannelName,
-      description: _switchConfirmChannelDescription,
-      importance: Importance.high,
-    );
-
-    const pauseReminderChannel = AndroidNotificationChannel(
-      _pauseReminderChannelId,
-      _pauseReminderChannelName,
-      description: _pauseReminderChannelDescription,
-      importance: Importance.high,
-    );
-
-    const pausedStatusChannel = AndroidNotificationChannel(
-      _pausedStatusChannelId,
-      _pausedStatusChannelName,
-      description: _pausedStatusChannelDescription,
-      importance: Importance.low,
-    );
-
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(channel);
-    await androidPlugin?.createNotificationChannel(switchConfirmChannel);
-    await androidPlugin?.createNotificationChannel(pauseReminderChannel);
-    await androidPlugin?.createNotificationChannel(pausedStatusChannel);
-    await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
-      _workChannelId,
-      _workChannelName,
-      description: _workChannelDescription,
-      importance: Importance.high,
-    ));
-    await androidPlugin?.createNotificationChannel(const AndroidNotificationChannel(
-      _gpsAlertChannelId,
-      _gpsAlertChannelName,
-      description: _gpsAlertChannelDescription,
-      importance: Importance.high,
-    ));
-  }
-
-  Future<void> _requestPermissions() async {
-    try {
-      // Android (2026-11-05): the notification and exact-alarm permissions are asked
-      // on the step-by-step permissions page, with an explanation -- not here, where
-      // they used to open Android's settings over the start-up screen. Only iOS
-      // still asks here.
-      if (!Platform.isAndroid) {
-        await _plugin
-            .resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>()
-            ?.requestPermissions(alert: true, badge: true, sound: true);
-      }
-      return;
-    } catch (e) {
-      debugPrint('[NotificationService] Permission request failed: $e');
-    }
-  }
-
-  /// True cuando el SO permite programar alarmas exactas para esta app
-  /// (Android 12-12L: automático; 13+: el usuario lo activó en Ajustes vía
-  /// requestExactAlarmsPermission de arriba). null/false en cualquier otro
-  /// caso (iOS, permiso no otorgado, API no disponible) -- tratado como
-  /// "no disponible", nunca como error.
-  /// Public read of exact-alarm status, for SettingsScreen's background-
-  /// reliability row (explicit user report, 2026-09-19: notifications
-  /// "solo aparecen al abrir la app" persisted even after the
-  /// exactAllowWhileIdle fix, because requestExactAlarmsPermission's
-  /// Settings redirect is silent -- nothing in the app ever confirmed the
-  /// user actually flipped it on). Settings shows this status live so the
-  /// user has a way to actually finish granting it post-install, without
-  /// reinstalling or re-running onboarding.
-  Future<bool> hasExactAlarmPermission() => _canScheduleExactAlarms();
-
-  /// Re-opens the same "Alarms & reminders" system settings screen
-  /// _requestPermissions already triggers once at init() -- exposed here
-  /// so SettingsScreen's CTA button can re-trigger it on demand for a
-  /// user who missed or dismissed it the first time.
-  Future<void> requestExactAlarmPermission() async {
-    try {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestExactAlarmsPermission();
-    } catch (e) {
-      debugPrint('[NotificationService] requestExactAlarmPermission failed: $e');
-    }
-  }
-
-  Future<bool> _canScheduleExactAlarms() async {
-    try {
-      final result = await _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.canScheduleExactNotifications();
-      return result ?? false;
-    } catch (e) {
-      debugPrint('[NotificationService] canScheduleExactNotifications check failed: $e');
-      return false;
-    }
-  }
-
-  void _onNotificationTapped(NotificationResponse response) {
-    // "Did you end your trip?" buttons (Premium, see TripInactivity).
-    if (response.payload == 'trip_still') {
-      if (response.actionId == _actTripEnd) {
-        unawaited(TripInactivity.endNow());
-      } else if (response.actionId == _actTripContinue) {
-        unawaited(TripInactivity.continueTrip());
-      }
-      return;
-    }
-    if (response.id == _weeklySummaryNotificationId) {
-      // BUG FIX (pedido explícito, "no hay ningún resumen de la semana que
-      // lo respalde"): antes abría Reports en blanco (su default de 12
-      // meses), sin ninguna relación con "esta semana" que el aviso
-      // prometía. Ahora pasa el argumento que ReportsScreen usa para
-      // arrancar acotado a lunes-hoy de la semana en curso -- ver su
-      // propio comentario en ReportsScreen.argThisWeek.
-      final nav = navigatorKey?.currentState;
-      nav?.pushNamed(AppRoutes.reports, arguments: ReportsScreen.argThisWeek);
-    }
-    // La de "viaje olvidado" no navega a ningún lado en particular — el
-    // usuario ya ve el estado de tracking apenas abre la app en Dashboard.
-  }
-
-  Future<bool> _isEnabledInPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('notifications_enabled') ?? true;
-  }
-
-  // ============================================================
-  // PREFERENCIA POR TIPO DE AVISO
-  // ============================================================
-  /// Pedido explícito (2026-09-16): "cada aviso de notificación del
-  /// tracking o de la foto del odómetro tenga un check donde el cliente
-  /// toca no volver a mostrar este aviso." Hasta ahora solo existía el
-  /// interruptor MAESTRO (`notifications_enabled`): o todo o nada, así que
-  /// alguien a quien solo le molestaba el resumen semanal tenía que apagar
-  /// también los recordatorios que de verdad protegen su registro.
-  ///
-  /// Cada tipo informativo se puede silenciar por separado desde Ajustes.
-  /// Deliberadamente NO hay clave para `showAutoDetectFailedNotification`:
-  /// ese no es un aviso informativo sino un ERROR -- es exactamente el que
-  /// habría delatado que la detección llevaba una semana muerta tras el
-  /// renombrado del paquete. Silenciable = fallo silencioso otra vez.
-  ///
-  /// Las capturas semanales de odómetro tampoco aparecen aquí: son
-  /// acciones obligatorias, no avisos (ver tracking_action_button.dart).
-  static const String prefPauseReminder = 'notif_type_pause_reminder';
-  static const String prefForgottenTrip = 'notif_type_forgotten_trip';
-  static const String prefWeeklySummary = 'notif_type_weekly_summary';
-  static const String prefGigAppSwitch = 'notif_type_gig_app_switch';
-  static const String prefAutoTripStarted = 'notif_type_auto_trip_started';
-  static const String prefWorkSchedule = 'notif_type_work_schedule';
-  static const String prefWorkPlaces = 'notif_type_work_places';
-
-  /// Todos activados por defecto -- silenciar es siempre una decisión
-  /// explícita del usuario, nunca el estado inicial.
-  Future<bool> isTypeEnabled(String prefKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(prefKey) ?? true;
-  }
-
-  Future<void> setTypeEnabled(String prefKey, bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(prefKey, enabled);
-
-    // Los programados hay que cancelarlos de verdad: apagar el toggle no
-    // debe dejar una alarma ya puesta en AlarmManager esperando disparar.
-    if (!enabled) {
-      if (prefKey == prefPauseReminder) await cancelPauseReminder();
-      if (prefKey == prefForgottenTrip) await cancelForgottenTripReminder();
-      if (prefKey == prefWeeklySummary) {
-        await _plugin.cancel(_weeklySummaryNotificationId);
-      }
-      if (prefKey == prefWorkSchedule) await cancelWorkSchedule();
-    } else if (prefKey == prefWeeklySummary) {
-      await scheduleWeeklySummaryReminder();
-    } else if (prefKey == prefWorkSchedule) {
-      await rescheduleWorkSchedule();
-    }
-  }
-
-  // BUG FIX (pedido explícito, encontrado en vivo -- notificaciones
-  // aparecían en español con la app en inglés): las 3 notificaciones de
-  // este servicio tenían su texto hardcodeado en español directamente en
-  // .zonedSchedule()/.show(). Este servicio no tiene BuildContext/AppState
-  // (corre en background/headless), así que lee el idioma guardado
-  // directo de SharedPreferences -- misma clave que AppState.loadFromPrefs()
-  // usa ('controlmiles_lang') -- y resuelve el texto vía AppTexts.get(),
-  // el mismo lookup estático que odometer_capture_service.dart ya usa por
-  // la misma razón (sin BuildContext disponible ahí tampoco).
-  Future<String> _tr(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    final langCode = prefs.getString('controlmiles_lang') ?? 'en';
-    return AppTexts.get(key, langCode);
-  }
-
-  // ============================================================
-  // ENABLE / DISABLE (llamado desde AppState.setNotificationsEnabled)
-  // ============================================================
-  Future<void> setEnabled(bool enabled) async {
-    if (enabled) {
-      await scheduleWeeklySummaryReminder();
-      await rescheduleWorkSchedule();
-      // El recordatorio de viaje olvidado se programa solo cuando arranca
-      // un viaje real (ver TrackingController.startTripFlow) — no hay
-      // nada que reprogramar acá si no hay tracking activo ahora mismo.
-    } else {
-      await cancelAll();
-    }
-  }
-
-  // ============================================================
-  // VIAJE OLVIDADO ACTIVO
-  // ============================================================
-  /// Programa un recordatorio único, threshold horas después de AHORA. Se
-  /// llama al iniciar un viaje (startTripFlow) y, best-effort, cada vez que
-  /// se recupera un viaje activo tras un reinicio de la app
-  /// (_recoverActiveState) — en ese segundo caso el conteo de `threshold`
-  /// horas se reinicia desde el momento de la recuperación, no desde el
-  /// inicio real del viaje (no se guarda el start_time original en el
-  /// checkpoint local). Para un recordatorio informativo no crítico es un
-  /// costo aceptable; documentado acá para que no sorprenda.
-  Future<void> scheduleForgottenTripReminder({
-    Duration threshold = const Duration(hours: 8),
-  }) async {
-    if (!_initialized) return;
-    if (!await _isEnabledInPrefs()) return;
-    if (!await isTypeEnabled(prefForgottenTrip)) return;
-
-    final scheduledDate = tz.TZDateTime.now(tz.local).add(threshold);
-    final title = await _tr('forgotten_trip_notification_title');
-    final body = await _tr('forgotten_trip_notification_body');
-
-    await _plugin.zonedSchedule(
-      _forgottenTripNotificationId,
-      title,
-      body,
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
-  }
-
-  Future<void> cancelForgottenTripReminder() async {
-    await _plugin.cancel(_forgottenTripNotificationId);
-  }
-
-  // ============================================================
-  // TRACKING EN PAUSA
-  // ============================================================
-  /// Programa un recordatorio único, threshold minutos después de AHORA --
-  /// mismo mecanismo que scheduleForgottenTripReminder (AlarmManager vía
-  /// zonedSchedule, sobrevive backgrounding/kill del proceso). Se llama
-  /// desde TrackingController.pauseTracking() al pausar, y desde los 3
-  /// puntos de recuperación en frío (_recoverActiveState) si el estado
-  /// recuperado ya estaba en pausa -- mismo criterio que
-  /// _rescheduleForgottenTripReminderIfRunning ya usa para 'running'.
-  /// Cadencia del recordatorio de pausa (pedido explícito, 2026-09-16: "me
-  /// gustaría que se repitiera"). Antes era UN solo aviso a los 5 minutos y
-  /// nada más -- si el conductor no lo veía en ese momento, el viaje se podía
-  /// quedar pausado horas sin que nada se lo recordara.
-  ///
-  /// Se programa una ESCALERA de avisos, cada uno como su propia alarma
-  /// one-shot con su propio id. Se eligió esto en vez de periodicallyShow()
-  /// porque RepeatInterval solo ofrece everyMinute/hourly/daily: por minuto es
-  /// spam y por hora llega tarde para el primer aviso. Los intervalos se van
-  /// ABRIENDO (5m, 15m, 30m, 1h, 2h, 4h) en vez de repetir cada 5 minutos:
-  /// insiste fuerte al principio, cuando lo más probable es un olvido real, y
-  /// va bajando el ritmo si el conductor deliberadamente dejó el viaje en
-  /// pausa. Tope a las ~8h acumuladas; más allá de eso el recordatorio de
-  /// "viaje olvidado" ya cubre el caso.
-  ///
-  /// Los tiempos son ACUMULADOS desde el momento de pausar, no incrementales.
-  static const List<Duration> _pauseReminderLadder = [
-    Duration(minutes: 5),
-    Duration(minutes: 15),
-    Duration(minutes: 30),
-    Duration(hours: 1),
-    Duration(hours: 2),
-    Duration(hours: 4),
-  ];
-
-  /// Ancla de la escalera: timestamp (ms epoch) del momento en que se pausó.
-  static const String _pauseAnchorKey = 'controlmiles_pause_reminder_anchor_ms';
-
-  /// BUG FIX (2026-09-16, encontrado en vivo con dumpsys alarm): la primera
-  /// versión de esto programaba los peldaños como `now + offset` y cancelaba
-  /// la escalera anterior en cada llamada. Pero `_reschedulePauseReminderIfPaused`
-  /// corre desde `initializeOrRecover()`, que `AppLifecycleObserver` invoca
-  /// CADA VEZ que la app vuelve a primer plano. Efecto: cada vez que el
-  /// conductor abría la app, la escalera se reiniciaba desde cero y el
-  /// peldaño de 5 minutos se cancelaba y se reposponía antes de poder
-  /// dispararse. Se observó en vivo: las alarmas saltaron de 00:48:36 a
-  /// 00:54:25 sin que ninguna llegara a sonar.
-  ///
-  /// Ahora la escalera se ancla al INSTANTE REAL DE LA PAUSA, persistido en
-  /// disco, y los peldaños son horas absolutas (`anchor + offset`).
-  /// Reprogramar pasa a ser idempotente: recalcula exactamente las mismas
-  /// horas, así que abrir la app veinte veces no mueve nada. Los peldaños ya
-  /// vencidos simplemente no se re-programan.
-  ///
-  /// [restart] en true SOLO al pausar de verdad (arranca un ancla nueva);
-  /// en false desde los caminos de recuperación, que deben respetar el ancla
-  /// ya existente.
-  Future<void> schedulePauseReminder({bool restart = false}) async {
-    if (!_initialized) return;
-    if (!await _isEnabledInPrefs()) return;
-    if (!await isTypeEnabled(prefPauseReminder)) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-
-    final int anchorMs;
-    if (restart || !prefs.containsKey(_pauseAnchorKey)) {
-      anchorMs = nowMs;
-      await prefs.setInt(_pauseAnchorKey, anchorMs);
-    } else {
-      anchorMs = prefs.getInt(_pauseAnchorKey)!;
-    }
-
-    // Solo cancela las ALARMAS (no el ancla): se re-arman abajo con las
-    // mismas horas absolutas, de modo que no hay deriva entre llamadas.
-    await _cancelPauseReminderAlarms();
-
-    final anchor = tz.TZDateTime.fromMillisecondsSinceEpoch(tz.local, anchorMs);
-    final now = tz.TZDateTime.now(tz.local);
-    final title = await _tr('pause_reminder_notification_title');
-    final body = await _tr('pause_reminder_notification_body');
-
-    // BUG FIX (pedido explícito, 2026-09-18: "esa notificación solo se
-    // visualiza... cuando entras a controlmiles, y no debería ser así").
-    // inexactAllowWhileIdle deja que Android difiera la alarma bajo Doze
-    // hasta la próxima ventana de mantenimiento del SO -- en la práctica,
-    // eso suele coincidir con el momento en que el usuario vuelve a abrir
-    // la app, no con el peldaño real de la escalera. Justo el escenario
-    // que este recordatorio existe para cubrir (el driver dejó el
-    // teléfono) es el que más Doze sufre. exactAllowWhileIdle dispara a
-    // la hora exacta incluso en Doze -- usado solo cuando el SO lo
-    // permite (ver _canScheduleExactAlarms); si no, cae de vuelta al modo
-    // inexacto de siempre en vez de fallar.
-    final exactMode = await _canScheduleExactAlarms();
-    final scheduleMode = exactMode
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
-    for (var i = 0; i < _pauseReminderLadder.length; i++) {
-      final when = anchor.add(_pauseReminderLadder[i]);
-      // Peldaño ya vencido (la app se abrió cuando la pausa llevaba rato):
-      // no tiene sentido re-programarlo en el pasado.
-      if (!when.isAfter(now)) continue;
-
-      await _plugin.zonedSchedule(
-        _pauseReminderNotificationId + i,
-        title,
-        body,
-        when,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _pauseReminderChannelId,
-            _pauseReminderChannelName,
-            channelDescription: _pauseReminderChannelDescription,
-            importance: Importance.high,
-            priority: Priority.high,
-            color: kBrandSeed,
-          ),
-          iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-          macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        ),
-        androidScheduleMode: scheduleMode,
-      );
-    }
-  }
-
-  Future<void> _cancelPauseReminderAlarms() async {
-    for (var i = 0; i < _pauseReminderLadder.length; i++) {
-      await _plugin.cancel(_pauseReminderNotificationId + i);
-    }
-  }
-
-  /// Cancela la escalera COMPLETA y borra el ancla: al reanudar o cerrar el
-  /// viaje no debe quedar ni un aviso pendiente, y la próxima pausa tiene que
-  /// arrancar su propio conteo desde cero.
-  Future<void> cancelPauseReminder() async {
-    await _cancelPauseReminderAlarms();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_pauseAnchorKey);
-  }
-
-  // ============================================================
-  // INDICADOR PERSISTENTE DE "VIAJE EN PAUSA"
-  // ============================================================
-  // BUG FIX (pedido explícito, 2026-09-18, ver el comentario del canal
-  // más arriba para el diagnóstico completo): pauseTracking() apaga el
-  // foreground-service real de TraceletEngine (correcto, el GPS no debe
-  // seguir sondeando en pausa), lo que se lleva consigo la ÚNICA
-  // notificación que existía diciendo "ControlMiles sigue activo". Esta
-  // reemplaza esa señal durante la ventana de pausa exclusivamente --
-  // `ongoing: true` + `autoCancel: false` la hacen no deslizable, igual
-  // que el foreground-service que reemplaza mientras dura la pausa.
-  // Deliberadamente NO respeta el toggle de tipo-de-aviso del usuario
-  // (a diferencia de schedulePauseReminder) -- no es un recordatorio
-  // opcional, es el mismo tipo de indicador obligatorio que el propio
-  // foreground-service de Android ya es mientras el viaje corre.
-  Future<void> showPausedTrackingNotification() async {
-    if (!_initialized) return;
-    final title = await _tr('paused_status_notification_title');
-    final body = await _tr('paused_status_notification_body');
-
-    await _plugin.show(
-      _pausedStatusNotificationId,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _pausedStatusChannelId,
-          _pausedStatusChannelName,
-          channelDescription: _pausedStatusChannelDescription,
-          importance: Importance.low,
-          priority: Priority.low,
-          ongoing: true,
-          autoCancel: false,
-          onlyAlertOnce: true,
-          color: kBrandSeed,
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // A TRIP THAT STOPPED MOVING (ids 1044 and 1045) -- see TripInactivity.
-  // The question has two buttons that open the app and answer it; the other
-  // two are plain notices of what the app just did.
-  // ============================================================
-  static const int _tripStillId = 1044;
-  static const int _tripInfoId = 1045;
-  static const String _actTripContinue = 'trip_still_continue';
-  static const String _actTripEnd = 'trip_still_end';
-
-  /// Same light setup the work-place notices use: this can run from the
-  /// background isolate, where init() has never run and must not open system
-  /// settings screens.
+  /// Setup that is safe from the background isolate too (it never opens system
+  /// settings screens).
   Future<bool> _lightInit() async {
     if (_initialized) return true;
     try {
+      // The white silhouette icon: Android keeps only the alpha channel of a small
+      // icon, so the full-colour launcher icon would show as a solid white square.
       await _plugin.initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@drawable/ic_stat_tracking'),
@@ -670,15 +95,82 @@ class NotificationService {
         ),
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
-      await _createAndroidChannel();
+      final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await android?.createNotificationChannel(const AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.high,
+      ));
+      await _cancelOldNotifications(android);
       _initialized = true;
       return true;
     } catch (e) {
-      debugPrint('[NotificationService] light init failed: $e');
+      debugPrint('[NotificationService] init failed: $e');
       return false;
     }
   }
 
+  Future<void> _cancelOldNotifications(AndroidFlutterLocalNotificationsPlugin? android) async {
+    try {
+      for (final id in _oldIds) {
+        await _plugin.cancel(id);
+      }
+      for (final c in _oldChannels) {
+        await android?.deleteNotificationChannel(c);
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] cleaning old notifications failed: $e');
+    }
+  }
+
+  Future<void> _requestPermissions() async {
+    try {
+      // Android asks for the notification permission on the step-by-step
+      // permissions page, with an explanation. Only iOS asks here.
+      if (!Platform.isAndroid) {
+        await _plugin
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] Permission request failed: $e');
+    }
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    // "Did you finish your trip?" buttons (see TripInactivity).
+    if (response.payload == 'trip_still') {
+      if (response.actionId == _actTripEnd) {
+        unawaited(TripInactivity.endNow());
+      } else if (response.actionId == _actTripContinue) {
+        unawaited(TripInactivity.continueTrip());
+      }
+    }
+  }
+
+  // The language comes straight from SharedPreferences (same key as AppState),
+  // because this can run in the background with no BuildContext.
+  Future<String> _tr(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('controlmiles_lang') ?? 'en';
+    return AppTexts.get(key, langCode);
+  }
+
+  /// The Settings switch: turning notifications off clears what is showing.
+  Future<void> setEnabled(bool enabled) async {
+    if (!enabled) await cancelAll();
+  }
+
+  Future<void> cancelAll() async {
+    await _plugin.cancelAll();
+  }
+
+  // ============================================================
+  // A TRIP THAT STOPPED MOVING (see TripInactivity)
+  // The question has two buttons that open the app and answer it; the other is
+  // a plain notice of what the app just did.
+  // ============================================================
   Future<void> showTripStillPrompt() async {
     if (!await _lightInit()) return;
     final title = await _tr('trip_still_title');
@@ -691,9 +183,9 @@ class NotificationService {
       body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _pauseReminderChannelId,
-          _pauseReminderChannelName,
-          channelDescription: _pauseReminderChannelDescription,
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
           importance: Importance.high,
           priority: Priority.high,
           color: kBrandSeed,
@@ -713,406 +205,26 @@ class NotificationService {
     await _plugin.cancel(_tripStillId);
   }
 
-  Future<void> showTripAutoPaused() => _showTripInfo('trip_autopaused_title', 'trip_autopaused_body');
-
-  Future<void> showTripAutoClosed() => _showTripInfo('trip_autoclosed_title', 'trip_autoclosed_body');
-
-  /// General trip finished: tap to say what it was for (the dashboard asks).
-  Future<void> showTripPurposePrompt() => _showTripInfo('trip_purpose_title', 'trip_purpose_body');
-
-  Future<void> _showTripInfo(String titleKey, String bodyKey) async {
+  /// The app closed a trip that sat still for too long.
+  Future<void> showTripAutoClosed() async {
     if (!await _lightInit()) return;
-    final title = await _tr(titleKey);
-    final body = await _tr(bodyKey);
+    final title = await _tr('trip_autoclosed_title');
+    final body = await _tr('trip_autoclosed_body');
     await _plugin.show(
       _tripInfoId,
       title,
       body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          _pauseReminderChannelId,
-          _pauseReminderChannelName,
-          channelDescription: _pauseReminderChannelDescription,
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
           importance: Importance.high,
           priority: Priority.high,
           color: kBrandSeed,
         ),
       ),
       payload: 'trip_info',
-    );
-  }
-
-  Future<void> cancelPausedTrackingNotification() async {
-    await _plugin.cancel(_pausedStatusNotificationId);
-  }
-
-  /// GPS alert for a running or GPS-paused trip. Like the paused indicator, it is not an
-  /// optional reminder, so it ignores the per-type notification toggles. Stays until the
-  /// watchdog clears it (GPS fixed, trip resumed or ended).
-  Future<void> showGpsAlert(GpsIssue issue) async {
-    if (!_initialized) return;
-    final (titleKey, bodyKey) = switch (issue) {
-      GpsIssue.gpsOff => ('gps_off_title', 'gps_off_body'),
-      GpsIssue.permissionOff => ('gps_perm_title', 'gps_perm_body'),
-      GpsIssue.gpsBackOn => ('gps_back_title', 'gps_back_body'),
-      GpsIssue.noSignal => ('gps_nosig_title', 'gps_nosig_body'),
-      GpsIssue.none => ('', ''),
-    };
-    if (titleKey.isEmpty) return;
-    final title = await _tr(titleKey);
-    final body = await _tr(bodyKey);
-
-    await _plugin.show(
-      _gpsAlertNotificationId,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _gpsAlertChannelId,
-          _gpsAlertChannelName,
-          channelDescription: _gpsAlertChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          autoCancel: false,
-          onlyAlertOnce: true,
-          styleInformation: BigTextStyleInformation(body),
-          color: kBrandSeed,
-        ),
-      ),
-    );
-  }
-
-  Future<void> cancelGpsAlert() async {
-    await _plugin.cancel(_gpsAlertNotificationId);
-  }
-
-  // ============================================================
-  // RESUMEN SEMANAL
-  // ============================================================
-  /// Recordatorio recurrente, todos los domingos ~8pm hora local. El texto
-  /// es genérico a propósito — un local notification programado con
-  /// anticipación no puede llevar cifras en vivo (millas reales de la
-  /// semana) sin un mecanismo de fondo aparte; acá solo se avisa que el
-  /// resumen está listo y, al tocarlo, se abre Reports para verlo con datos
-  /// reales de la DB.
-  Future<void> scheduleWeeklySummaryReminder() async {
-    if (!_initialized) return;
-    if (!await _isEnabledInPrefs()) return;
-    if (!await isTypeEnabled(prefWeeklySummary)) return;
-
-    final scheduledDate = _nextInstanceOfSundayEightPm();
-    final title = await _tr('weekly_summary_notification_title');
-    final body = await _tr('weekly_summary_notification_body');
-
-    await _plugin.zonedSchedule(
-      _weeklySummaryNotificationId,
-      title,
-      body,
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-    );
-  }
-
-  tz.TZDateTime _nextInstanceOfSundayEightPm() {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20);
-
-    while (scheduled.weekday != DateTime.sunday || !scheduled.isAfter(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
-    return scheduled;
-  }
-
-  Future<void> cancelWeeklySummaryReminder() async {
-    await _plugin.cancel(_weeklySummaryNotificationId);
-  }
-
-  // ============================================================
-  // WORK-HOURS REMINDER (Gig)
-  // ============================================================
-  /// Cancels every work-hours alarm (all 7 weekdays, start and end).
-  Future<void> cancelWorkSchedule() async {
-    for (var weekday = 1; weekday <= 7; weekday++) {
-      await _plugin.cancel(_workStartBaseId + weekday - 1);
-      await _plugin.cancel(_workEndBaseId + weekday - 1);
-    }
-  }
-
-  /// Re-registers the work-hours alarms from the saved [WorkSchedule]: always
-  /// cancels the old ones first, then (if the schedule is on, notifications
-  /// are on and this type isn't muted) sets one weekly alarm per selected
-  /// day for the start and for the end. The alarms are weekly one-shots: an
-  /// ignored notification is never repeated. Called from the Settings sheet
-  /// after every change, and from init()/setEnabled() so it survives a
-  /// language change, an app update or a time-zone change.
-  Future<void> rescheduleWorkSchedule() async {
-    if (!_initialized) return;
-    await cancelWorkSchedule();
-
-    final schedule = await WorkSchedule.load();
-    if (!schedule.enabled || schedule.days.isEmpty) return;
-    if (!await _isEnabledInPrefs()) return;
-    if (!await isTypeEnabled(prefWorkSchedule)) return;
-
-    final startTitle = await _tr('work_reminder_start_title');
-    final startBody = await _tr('work_reminder_start_body');
-    final endTitle = await _tr('work_reminder_end_title');
-    final endBody = await _tr('work_reminder_end_body');
-    final mode = await _canScheduleExactAlarms()
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
-    // A shift that ends at or before its start time (night work) ends the
-    // next calendar day.
-    final overnight = schedule.endMinutes <= schedule.startMinutes;
-
-    for (final weekday in schedule.days) {
-      final endWeekday = overnight ? (weekday % 7) + 1 : weekday;
-      try {
-        await _scheduleWorkAlarm(_workStartBaseId + weekday - 1, startTitle,
-            startBody, 'work_start', weekday, schedule.startMinutes, mode);
-        await _scheduleWorkAlarm(_workEndBaseId + weekday - 1, endTitle,
-            endBody, 'work_end', endWeekday, schedule.endMinutes, mode);
-      } catch (e) {
-        debugPrint('[NotificationService] work schedule alarm failed: $e');
-      }
-    }
-  }
-
-  // Work places (Premium): arrival / exit reminders from WorkPlaceService.
-  // Ids 1040 and 1041. Shown with `show`, so they fire the moment the
-  // geofence event arrives, even from a killed app.
-  static const int _workPlaceArrivalId = 1040;
-  static const int _workPlaceExitId = 1041;
-
-  Future<void> showWorkPlaceArrival(String placeName) =>
-      _showWorkPlace(_workPlaceArrivalId, 'work_place_arrival_title', 'work_place_arrival_body', placeName);
-
-  Future<void> showWorkPlaceExit(String placeName) =>
-      _showWorkPlace(_workPlaceExitId, 'work_place_exit_title', 'work_place_exit_body', placeName);
-
-  // Opt-in automatic start / stop at a place (ids 1042 and 1043): the app
-  // tells the driver what it just did.
-  static const int _workPlaceAutoStartedId = 1042;
-  static const int _workPlaceAutoStoppedId = 1043;
-
-  Future<void> showWorkPlaceAutoStarted(String placeName) => _showWorkPlace(
-      _workPlaceAutoStartedId, 'work_place_autostart_title', 'work_place_autostart_body', placeName);
-
-  Future<void> showWorkPlaceAutoStopped(String placeName) => _showWorkPlace(
-      _workPlaceAutoStoppedId, 'work_place_autostop_title', 'work_place_autostop_body', placeName);
-
-  Future<void> _showWorkPlace(int id, String titleKey, String bodyKey, String placeName) async {
-    // May run in a headless isolate (app closed), where init() has never run.
-    // Light setup only: no permission requests -- init() would open system
-    // settings screens, which must never happen from the background.
-    if (!_initialized) {
-      try {
-        await _plugin.initialize(
-          const InitializationSettings(
-            android: AndroidInitializationSettings('@drawable/ic_stat_tracking'),
-            iOS: DarwinInitializationSettings(
-              requestAlertPermission: false,
-              requestBadgePermission: false,
-              requestSoundPermission: false,
-            ),
-          ),
-          onDidReceiveNotificationResponse: _onNotificationTapped,
-        );
-        await _createAndroidChannel();
-        _initialized = true;
-      } catch (e) {
-        debugPrint('[NotificationService] work place light init failed: $e');
-        return;
-      }
-    }
-    if (!await _isEnabledInPrefs()) return;
-    final title = (await _tr(titleKey)).replaceAll('{place}', placeName);
-    final body = await _tr(bodyKey);
-    await _plugin.show(
-      id,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _workChannelId,
-          _workChannelName,
-          channelDescription: _workChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-      ),
-      payload: switch (id) {
-        _workPlaceArrivalId => 'work_place_arrival',
-        _workPlaceAutoStartedId => 'work_place_autostarted',
-        _workPlaceAutoStoppedId => 'work_place_autostopped',
-        _ => 'work_place_exit',
-      },
-    );
-  }
-
-  Future<void> _scheduleWorkAlarm(
-    int id,
-    String title,
-    String body,
-    String payload,
-    int weekday,
-    int minutesAfterMidnight,
-    AndroidScheduleMode mode,
-  ) {
-    final now = tz.TZDateTime.now(tz.local);
-    var when = tz.TZDateTime(tz.local, now.year, now.month, now.day,
-        minutesAfterMidnight ~/ 60, minutesAfterMidnight % 60);
-    while (when.weekday != weekday || !when.isAfter(now)) {
-      when = when.add(const Duration(days: 1));
-    }
-    return _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      when,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _workChannelId,
-          _workChannelName,
-          channelDescription: _workChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: mode,
-      payload: payload,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-    );
-  }
-
-  Future<void> cancelAll() async {
-    await _plugin.cancelAll();
-  }
-
-  // ============================================================
-  // DETECCIÓN AUTOMÁTICA DE VIAJES (premium)
-  // ============================================================
-  /// A specific gig app was identified with real confidence and the
-  /// trip already started silently -- purely informational, matching
-  /// showMidTripAutoSwitchedNotification's pattern exactly (same
-  /// heads-up-capable channel, so it's actually visible while the
-  /// driver is in the gig app, not ControlMiles).
-  Future<void> showAutoTripStartedNotification({required String gigAppId}) async {
-    if (!_initialized) return;
-    if (!await isTypeEnabled(prefAutoTripStarted)) return;
-
-    final title = await _tr('auto_trip_started_title');
-    final appName = GigAppCatalog.byId(gigAppId).name;
-    final bodyPrefix = await _tr('auto_trip_started_body');
-    final body = '$bodyPrefix $appName.';
-
-    await _plugin.show(
-      _autoTripStartedNotificationId,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _switchConfirmChannelId,
-          _switchConfirmChannelName,
-          channelDescription: _switchConfirmChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-      ),
-    );
-  }
-
-  /// REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"): the
-  /// whole point of this notification is that arming used to be able to
-  /// silently no-op -- the GPS engine failing to start (permission
-  /// revoked, plugin error) previously left the UI showing "Auto-
-  /// Detection ON" forever with zero indication anything was wrong. This
-  /// fires from BOTH the interactive activation path (requestEnable,
-  /// which ALSO shows a dialog since it has a live BuildContext) and the
-  /// silent cold-boot restore path (restoreFromPrefs, which has no UI to
-  /// show anything else -- this notification is the only signal that
-  /// path can give). Same heads-up-capable channel as the other
-  /// auto-detect notifications, since this needs to actually be seen.
-  Future<void> showAutoDetectFailedNotification() async {
-    if (!_initialized) return;
-
-    final title = await _tr('auto_detect_failed_title');
-    final body = await _tr('auto_detect_failed_body');
-
-    await _plugin.show(
-      _autoDetectFailedNotificationId,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _switchConfirmChannelId,
-          _switchConfirmChannelName,
-          channelDescription: _switchConfirmChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-      ),
-    );
-  }
-
-  // ============================================================
-  // CAMBIO DE APP GIG A MITAD DE VIAJE (premium)
-  // ============================================================
-  /// REVISED 2026-08-28, explicit user request: mid-trip switching is
-  /// now always silent (see AutoTripDetectionService._pollForMidTripSwitch),
-  /// same as trip-start -- no more "ask" mode. The switch already
-  /// happened by the time this fires, purely informational.
-  Future<void> showMidTripAutoSwitchedNotification({required String gigAppId}) async {
-    if (!_initialized) return;
-    if (!await isTypeEnabled(prefGigAppSwitch)) return;
-
-    final title = await _tr('mid_trip_auto_switched_title');
-    final appName = GigAppCatalog.byId(gigAppId).name;
-    final bodyPrefix = await _tr('mid_trip_auto_switched_body');
-    final body = '$bodyPrefix $appName.';
-
-    await _plugin.show(
-      _midTripSwitchNotificationId,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _switchConfirmChannelId,
-          _switchConfirmChannelName,
-          channelDescription: _switchConfirmChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-        ),
-        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-        macOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
-      ),
     );
   }
 }

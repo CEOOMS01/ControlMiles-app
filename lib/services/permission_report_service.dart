@@ -23,7 +23,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/permission_status.dart';
-import 'notification_service.dart';
 
 class PermissionReportService {
   PermissionReportService._();
@@ -51,8 +50,7 @@ class PermissionReportService {
         'p_battery_unrestricted':
             Platform.isAndroid ? await Permission.ignoreBatteryOptimizations.isGranted : null,
         'p_usage_access': await PermissionStatusService.isOk(PermKind.usageAccess),
-        'p_exact_alarm':
-            Platform.isAndroid ? await NotificationService.instance.hasExactAlarmPermission() : null,
+        'p_exact_alarm': null, // no longer used (the app schedules no alarms)
       };
 
       // Skip when nothing changed since the last report and it is recent.

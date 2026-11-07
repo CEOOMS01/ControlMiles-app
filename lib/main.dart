@@ -27,7 +27,6 @@ import 'theme/screen_fit.dart';
 // Servicios de Hardware y Fondo
 import 'tracking/background_gps_service.dart';
 import 'tracking/auto_trip_detection_service.dart';
-import 'services/work_place_service.dart';
 import 'services/notification_service.dart';
 
 // Screens & Views
@@ -192,11 +191,11 @@ Future<void> _startBackgroundServices() async {
     debugPrint('[Main] Warning: AutoTripDetectionService restore failed: $e');
   }
 
-  // Work places (Gig Premium): re-arm the geofence reminders on cold start.
+  // The work-place reminders are gone: drop any geofences an older version left behind.
   try {
-    await WorkPlaceService.sync();
+    await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
   } catch (e) {
-    debugPrint('[Main] Warning: WorkPlaceService sync failed: $e');
+    debugPrint('[Main] Warning: removing old work places failed: $e');
   }
   startupMark('background services ready');
 }

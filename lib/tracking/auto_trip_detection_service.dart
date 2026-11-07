@@ -259,10 +259,7 @@ class AutoTripDetectionService {
     shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
 
     final gpsOk = await setEnabled(true);
-    if (!gpsOk) {
-      await NotificationService.instance.init();
-      await NotificationService.instance.showAutoDetectFailedNotification();
-    }
+    if (!gpsOk) DiagLog.add('auto-detect could not start');
   }
 
   /// Called once the standalone OdometerCaptureScreen capture succeeds
@@ -470,8 +467,6 @@ class AutoTripDetectionService {
   // One attempted restart per idle poll tick; a real notification only
   // fires with a cooldown (not every 30s) so a genuinely stuck state
   // doesn't spam the driver.
-  static const Duration _healthCheckNotifyCooldown = Duration(minutes: 30);
-  DateTime? _lastHealthCheckNotifiedAt;
 
   Future<void> _pollForGigApp() async {
     if (!_armed) return;
@@ -495,13 +490,7 @@ class AutoTripDetectionService {
     if (!DriveWake.isSupported && !BackgroundGpsService.isRunning) {
       final restarted = await BackgroundGpsService.startTracking();
       if (!restarted) {
-        final now = DateTime.now();
-        final last = _lastHealthCheckNotifiedAt;
-        if (last == null || now.difference(last) >= _healthCheckNotifyCooldown) {
-          _lastHealthCheckNotifiedAt = now;
-          await NotificationService.instance.init();
-          await NotificationService.instance.showAutoDetectFailedNotification();
-        }
+        DiagLog.add('health check: GPS engine did not restart');
         return;
       }
     }
@@ -566,10 +555,7 @@ class AutoTripDetectionService {
       return;
     }
 
-    final switched = await TrackingController.switchSection(gigAppId);
-    if (switched) {
-      await NotificationService.instance.showMidTripAutoSwitchedNotification(gigAppId: gigAppId);
-    }
+    await TrackingController.switchSection(gigAppId);
   }
 
   /// Registered once from BackgroundGpsService.initialize()'s
@@ -855,8 +841,6 @@ class AutoTripDetectionService {
     _promptActive = false;
 
     if (TrackingController.currentState == TrackingState.running) {
-      await NotificationService.instance.init();
-      await NotificationService.instance.showAutoTripStartedNotification(gigAppId: gigAppId);
       TrackingController.autoFlashEvent.value = 'start';
     }
   }

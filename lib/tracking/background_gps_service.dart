@@ -30,5 +30,7 @@ class BackgroundGpsService {
 
   static Future<void> resyncNotification() => TraceletEngine.resyncNotification();
 
+  static Future<void> removeLegacyWorkPlaceGeofences() => TraceletEngine.removeLegacyWorkPlaceGeofences();
+
   static bool get isRunning => TraceletEngine.isRunning;
 }

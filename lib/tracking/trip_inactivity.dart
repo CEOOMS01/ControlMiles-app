@@ -158,10 +158,7 @@ class TripInactivity {
   }
 
   static Future<void> _pauseForInactivity(SharedPreferences prefs) async {
-    final paused = await TrackingController.pauseTracking();
-    if (paused) {
-      await NotificationService.instance.showTripAutoPaused();
-    }
+    await TrackingController.pauseTracking();
   }
 
   static Future<void> _closeForGood(SharedPreferences prefs) async {

@@ -16,7 +16,6 @@ import '../services/cgc_governance_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/vehicle_service.dart';
 import 'run_segment_anchor.dart';
-import '../services/notification_service.dart';
 import '../services/odometer_capture_service.dart';
 import '../screens/odometer_capture_screen.dart';
 import 'antifraud_engine.dart';
@@ -561,12 +560,6 @@ class TrackingController {
       currentState = TrackingState.running;
       unawaited(TripInactivity.reset());
 
-      // BUG FIX (toggle de notificaciones inerte): recordatorio de "viaje
-      // olvidado" — se cancela en stopTracking(). Respeta el toggle de
-      // Settings internamente (ver NotificationService), así que es seguro
-      // llamarlo siempre acá sin chequear el setting en este archivo.
-      await NotificationService.instance.scheduleForgottenTripReminder();
-
       _logDebug('TRIP_START_OK', 'Session and section created successfully');
     } catch (e) {
       _logError('TRIP_FLOW_ERROR', e.toString());
@@ -731,24 +724,6 @@ class TrackingController {
           );
         }
 
-        // Recordatorio de pausa (pedido explícito, 2026-09-15): mismo
-        // mecanismo que scheduleForgottenTripReminder -- AlarmManager vía
-        // zonedSchedule, dispara aunque el proceso quede en background o
-        // el SO lo mate. Cancelado en resumeTracking/stopTracking/
-        // endCurrentSection de abajo; no debe tumbar la pausa si falla.
-        // restart: true -- esta es la pausa REAL, arranca un ancla nueva.
-        // Los caminos de recuperación llaman sin restart para respetar el
-        // ancla ya existente (ver schedulePauseReminder).
-        await NotificationService.instance.schedulePauseReminder(restart: true);
-
-        // BUG FIX (pedido explícito, 2026-09-18): BackgroundGpsService.
-        // stopTracking() de arriba apaga el foreground-service real de
-        // TraceletEngine junto con SU notificación -- este es el
-        // reemplazo persistente para toda la ventana de pausa (ver el
-        // comentario del canal en notification_service.dart para el
-        // diagnóstico completo). Cancelado en resumeTracking/
-        // stopTracking de abajo, igual que el recordatorio de arriba.
-        await NotificationService.instance.showPausedTrackingNotification();
       } catch (e) {
         _logError('PAUSE_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -862,8 +837,6 @@ class TrackingController {
           payload: {"miles": _totalSectionMiles},
         );
 
-        await NotificationService.instance.cancelPauseReminder();
-        await NotificationService.instance.cancelPausedTrackingNotification();
       } catch (e) {
         _logError('RESUME_SIDE_EFFECT_ERROR', e.toString());
       }
@@ -1035,9 +1008,6 @@ class TrackingController {
 
     try {
       await BackgroundGpsService.stopTracking();
-      // No-op si no había ninguno pendiente (p.ej. End Trip desde 'running').
-      await NotificationService.instance.cancelPauseReminder();
-      await NotificationService.instance.cancelPausedTrackingNotification();
 
       final sectionClosed = await endCurrentSection();
       if (!sectionClosed) {
@@ -1149,13 +1119,6 @@ class TrackingController {
         autoFlashEvent.value = 'end';
       }
 
-      // Efecto secundario best-effort: la sesión ya quedó cerrada arriba.
-      try {
-        await NotificationService.instance.cancelForgottenTripReminder();
-      } catch (e) {
-        _logError('STOP_SIDE_EFFECT_ERROR', e.toString());
-      }
-
       lastStopDiscarded = discarded;
       lastStopAt = DateTime.now();
       DiagLog.add('trip stopped', {'discarded': discarded, 'miles': _lastLoggedStopMiles.toStringAsFixed(3)});
@@ -1163,12 +1126,11 @@ class TrackingController {
       unawaited(DriveWake.refreshFence());
       // A General trip has no purpose yet: ask once it is over. Closed from the
       // End trip button the app asks right away (lastClosedGeneralSectionId);
-      // closed by the phone itself (no screen), a notification asks later.
+      // closed by the phone itself (no screen), the dashboard asks the next time it opens.
       final isGeneralTrip = !discarded && closedSectionId != null && lastSegmentApp == 'custom';
       lastClosedGeneralSectionId = isGeneralTrip ? closedSectionId : null;
       if (isGeneralTrip && wasAutoDetect && !askPurposeInApp) {
         purposePendingSectionId = closedSectionId;
-        unawaited(NotificationService.instance.showTripPurposePrompt());
       }
       if (lastSegmentDropped) segmentDiscarded.value = lastSegmentApp;
       _logDebug(
@@ -1410,40 +1372,6 @@ class TrackingController {
     );
   }
 
-  /// BUG FIX (toggle de notificaciones inerte): re-arma el recordatorio de
-  /// "viaje olvidado" tras cualquier recuperación de estado que resulte en
-  /// currentState == running (reinicio de app, headless, lo que sea).
-  ///
-  /// Limitación conocida y aceptada: como el checkpoint local no guarda el
-  /// start_time original de la SESIÓN (solo el de la sección activa, que
-  /// puede no ser la primera si hubo switches de gig app), esto reinicia el
-  /// conteo de 8 horas desde el momento de la recuperación, no desde el
-  /// inicio real del viaje. Para un recordatorio informativo no crítico es
-  /// un costo aceptable — documentado para que no sorprenda si se revisa
-  /// más adelante.
-  static Future<void> _rescheduleForgottenTripReminderIfRunning() async {
-    if (currentState == TrackingState.running) {
-      await NotificationService.instance.scheduleForgottenTripReminder();
-    }
-  }
-
-  /// Mismo criterio que _rescheduleForgottenTripReminderIfRunning justo
-  /// arriba, pero para el recordatorio de pausa: si la app se recupera con
-  /// currentState == paused (reinicio de app, headless, lo que sea), el
-  /// recordatorio programado antes de morir el proceso se perdió junto con
-  /// él -- re-armarlo desde AHORA en cada uno de los 3 puntos de
-  /// recuperación, igual que ya se hace para 'running'.
-  static Future<void> _reschedulePauseReminderIfPaused() async {
-    if (currentState == TrackingState.paused) {
-      await NotificationService.instance.schedulePauseReminder();
-      // BUG FIX (pedido explícito, 2026-09-18): mismo motivo que arriba --
-      // si el proceso murió mientras estaba en pausa, la notificación
-      // persistente de pausa también se perdió con él y necesita
-      // re-armarse en cada uno de los mismos 3 puntos de recuperación.
-      await NotificationService.instance.showPausedTrackingNotification();
-    }
-  }
-
   static Future<bool> _hasGoodConnection() async {
     try {
       return Supabase.instance.client.auth.currentUser != null;
@@ -1525,8 +1453,6 @@ class TrackingController {
         if (currentState == TrackingState.running && startGps) {
           await BackgroundGpsService.startTracking();
         }
-        await _rescheduleForgottenTripReminderIfRunning();
-        await _reschedulePauseReminderIfPaused();
         unawaited(_resumeLiveHeartbeat());
         _logDebug(
           'RECOVERY_OK',
@@ -1545,8 +1471,6 @@ class TrackingController {
         if (currentState == TrackingState.running && startGps) {
           await BackgroundGpsService.startTracking();
         }
-        await _rescheduleForgottenTripReminderIfRunning();
-        await _reschedulePauseReminderIfPaused();
         unawaited(_resumeLiveHeartbeat());
         _logDebug(
           'RECOVERY_OK',
@@ -1644,8 +1568,6 @@ class TrackingController {
         if (currentState == TrackingState.running && startGps) {
           await BackgroundGpsService.startTracking();
         }
-        await _rescheduleForgottenTripReminderIfRunning();
-        await _reschedulePauseReminderIfPaused();
 
         await _saveLocalCheckpoint();
         unawaited(_resumeLiveHeartbeat());

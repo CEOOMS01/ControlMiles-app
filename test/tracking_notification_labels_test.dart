@@ -31,21 +31,33 @@ void main() {
     expect(l.body, isNot(contains('Uber')));
   });
 
-  test('a real trip shows distance, gig app and the timer', () {
-    final l = labels(trip: true);
-    expect(l.title, 'ControlMiles · 12.4 mi');
-    expect(l.body, 'Uber');
-    expect(l.showTimer, isTrue);
+  test('a real trip is fixed and minimal: no distance, no gig app, no timer', () {
+    for (final metric in [false, true]) {
+      final l = labels(trip: true, metric: metric);
+      expect(l.title, 'ControlMiles');
+      expect(l.body, kTripNotificationBody);
+      expect(l.showTimer, isFalse);
+      expect(l.title, isNot(contains('mi')));
+      expect(l.body, isNot(contains('Uber')));
+    }
   });
 
-  test('a real trip in kilometres', () {
-    expect(labels(trip: true, miles: 10, metric: true).title, 'ControlMiles · 16.1 km');
+  test('the trip text does not change with the miles, so it is never re-posted', () {
+    expect(labels(trip: true, miles: 1).title, labels(trip: true, miles: 99).title);
+    expect(labels(trip: true, miles: 1).body, labels(trip: true, miles: 99).body);
   });
 
-  test('a trip whose app is not known yet still shows the timer', () {
-    final l = labels(trip: true, app: null);
-    expect(l.showTimer, isTrue);
-    expect(l.body, kDefaultNotificationText);
+  test('a translated trip text is used, a blank one falls back', () {
+    final t = trackingNotificationLabels(
+      hasActiveTrip: true, miles: 3, metric: false, gigAppName: null,
+      idleTitle: 'x', idleBody: 'y', tripBody: 'ControlMiles está registrando tu viaje',
+    );
+    expect(t.body, 'ControlMiles está registrando tu viaje');
+    final blank = trackingNotificationLabels(
+      hasActiveTrip: true, miles: 3, metric: false, gigAppName: null,
+      idleTitle: 'x', idleBody: 'y', tripBody: '  ',
+    );
+    expect(blank.body, kTripNotificationBody);
   });
 
   test('missing translations fall back to the original texts, never blank', () {

@@ -32,6 +32,14 @@ The shared Supabase backend stays here (`supabase/`).
 
 ## 1.3.22+62 — 2026-11-06 (built, for Play)
 
+- Notifications cut to four: the trip-recording notice, "Checking your drive...", "Did you finish your trip?" and
+  "Trip finished". Removed: forgotten-trip and pause reminders, the paused notice, the weekly summary, work-hours
+  and work-place reminders (and the work places feature), GPS alerts, auto-start / app-switch / failed notices,
+  the categorize-your-trip notice, the per-type switches in Settings and the exact-alarm permission. Alarms and
+  channels from older versions are cancelled on first start.
+- The trip notification is now fixed and minimal ("ControlMiles is recording your trip"): no live miles, no
+  ticking timer, and the Android 16 Live Update promotion is removed. Opening the app no longer flashes
+  the tracking notification (the engine is only stopped when it is really running).
 - The version number no longer shows a leading "v" (Settings and the menu).
 - Reports: the three buttons (This month, Total trips, Generate report) stay pinned at the top while the trips scroll.
 - PDF report redone in landscape (A4), in the style of the reports drivers already know: header with

@@ -11,19 +11,12 @@ import '../i18n/app_texts.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/gig_app_detection_service.dart';
-import '../services/notification_service.dart';
-import '../models/gig_app.dart';
 import '../utils/permission_status.dart';
-import '../utils/permission_gate.dart';
 import '../views/permissions_flow_screen.dart';
 import '../views/rates_screen.dart';
 import '../views/auto_schedule_screen.dart';
 import '../services/diag_log.dart';
 import '../views/work_type_screen.dart';
-import '../services/work_schedule.dart';
-import '../services/work_places.dart';
-import '../services/work_place_service.dart';
-import 'package:tracelet/tracelet.dart' as tl;
 import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
@@ -66,18 +59,15 @@ class _SettingsScreenState extends State<SettingsScreen>
   // since returning from system Settings is the only reliable moment to
   // notice either one changed.
   bool? _ignoringBatteryOptimizations;
-  bool? _hasExactAlarmPermission;
 
   Future<void> _refreshBackgroundReliabilityStatus() async {
     final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
-    final exactAlarm = await NotificationService.instance.hasExactAlarmPermission();
     final perms = <PermKind, bool>{
       for (final k in _statusKinds) k: await PermissionStatusService.isOk(k),
     };
     if (mounted) {
       setState(() {
         _ignoringBatteryOptimizations = batteryStatus.isGranted;
-        _hasExactAlarmPermission = exactAlarm;
         _permOk = perms;
       });
     }
@@ -94,29 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     PermKind.camera,
   ];
   Map<PermKind, bool> _permOk = {};
-
-  /// Estado de los toggles por tipo de aviso (pedido explícito
-  /// 2026-09-16). La verdad vive en SharedPreferences vía
-  /// NotificationService; esto es solo la copia que pinta la UI.
-  /// Ausente = activado, igual que el default del servicio.
-  final Map<String, bool> _notifTypeEnabled = {};
-
-  Future<void> _loadNotificationTypePrefs() async {
-    const keys = [
-      NotificationService.prefPauseReminder,
-      NotificationService.prefForgottenTrip,
-      NotificationService.prefWeeklySummary,
-      NotificationService.prefGigAppSwitch,
-      NotificationService.prefAutoTripStarted,
-      NotificationService.prefWorkSchedule,
-      NotificationService.prefWorkPlaces,
-    ];
-    final loaded = <String, bool>{};
-    for (final k in keys) {
-      loaded[k] = await NotificationService.instance.isTypeEnabled(k);
-    }
-    if (mounted) setState(() => _notifTypeEnabled.addAll(loaded));
-  }
 
   @override
   void dispose() {
@@ -162,316 +129,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       _refreshUsageAccessStatus();
     }
     _refreshBackgroundReliabilityStatus();
-    _loadNotificationTypePrefs();
-    WorkSchedule.load().then((s) {
-      if (mounted) setState(() => _workSchedule = s);
-    });
-    WorkPlaceStore.load().then((p) {
-      if (mounted) setState(() => _workPlaces = p);
-    });
-    WorkPlaceStore.autoStart().then((on) {
-      if (mounted) setState(() => _workAutoStart = on);
-    });
-  }
-
-  // Work-hours reminder: the copy the UI paints; the truth is in
-  // SharedPreferences (WorkSchedule) and the alarms in NotificationService.
-  WorkSchedule _workSchedule = WorkSchedule.defaults;
-
-  Future<void> _updateWorkSchedule(WorkSchedule next) async {
-    setState(() => _workSchedule = next);
-    await next.save();
-    await NotificationService.instance.rescheduleWorkSchedule();
-  }
-
-  String _formatMinutes(int minutes) =>
-      TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60).format(context);
-
-  String _workScheduleSummary(AppState appState) {
-    if (!_workSchedule.enabled) return appState.tr('work_reminder_subtitle');
-    final names = MaterialLocalizations.of(context).narrowWeekdays;
-    final days = (_workSchedule.days.toList()..sort())
-        .map((d) => names[d % 7])
-        .join(' ');
-    return '$days · ${_formatMinutes(_workSchedule.startMinutes)} – ${_formatMinutes(_workSchedule.endMinutes)}';
-  }
-
-  List<WorkPlace> _workPlaces = [];
-  bool _workAutoStart = false;
-
-  /// "What kind of place is this?" -- null result = cancelled, '' = gig work
-  /// place (reminders only), otherwise an IrsPurposeCatalog id.
-  Future<String?> _pickPlacePurpose(AppState appState, BuildContext sheetContext) {
-    return showDialog<String>(
-      context: sheetContext,
-      builder: (ctx) => SimpleDialog(
-        title: Text(appState.tr('work_places_purpose_title')),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: Text(appState.tr('work_places_purpose_gig')),
-          ),
-          for (final id in WorkPlace.purposes)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, id),
-              child: Text(appState.tr(IrsPurposeCatalog.labelKeyFor(id)!)),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _removeWorkPlace(WorkPlace place) async {
-    final next = _workPlaces.where((p) => p.id != place.id).toList();
-    setState(() => _workPlaces = next);
-    await WorkPlaceStore.save(next);
-    await WorkPlaceService.sync();
-  }
-
-  /// Saves the place where the driver is standing right now.
-  Future<void> _addCurrentWorkPlace(AppState appState, BuildContext sheetContext) async {
-    final messenger = ScaffoldMessenger.of(context);
-    if (!appState.premiumEntitled) {
-      _showPremiumLockedDialog(appState);
-      return;
-    }
-    if (_workPlaces.length >= WorkPlace.maxPlaces) {
-      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_limit'))));
-      return;
-    }
-    // Arrival reminders from a closed app need "Allow all the time".
-    if (!sheetContext.mounted) return;
-    if (!await PermissionGate.ensure(sheetContext, requireAlways: true)) {
-      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_need_always'))));
-      return;
-    }
-
-    final controller = TextEditingController();
-    if (!sheetContext.mounted) return;
-    final name = await showDialog<String>(
-      context: sheetContext,
-      builder: (ctx) => AlertDialog(
-        title: Text(appState.tr('work_places_name_title')),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 40,
-          decoration: InputDecoration(hintText: appState.tr('work_places_name_hint')),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(appState.tr('work_places_save')),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.isEmpty) return;
-    if (!sheetContext.mounted) return;
-    final purpose = await _pickPlacePurpose(appState, sheetContext);
-    if (purpose == null) return;
-
-    try {
-      final location = await tl.Tracelet.getCurrentPosition(timeout: 20, persist: false);
-      final place = WorkPlace(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        name: name,
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        radius: WorkPlace.defaultRadius,
-        purpose: purpose.isEmpty ? null : purpose,
-      );
-      final next = [..._workPlaces, place];
-      setState(() => _workPlaces = next);
-      await WorkPlaceStore.save(next);
-      await WorkPlaceService.sync();
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(appState.tr('work_places_no_location'))));
-    }
-  }
-
-  void _showWorkScheduleSheet(AppState appState, bool isDark) {
-    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
-    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
-    final primary = Theme.of(context).colorScheme.primary;
-    final names = MaterialLocalizations.of(context).narrowWeekdays;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1C1812) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            Future<void> change(WorkSchedule next) async {
-              setSheetState(() {});
-              await _updateWorkSchedule(next);
-            }
-
-            Future<void> pickTime(bool isStart) async {
-              final current = isStart ? _workSchedule.startMinutes : _workSchedule.endMinutes;
-              final picked = await showTimePicker(
-                context: sheetContext,
-                initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
-              );
-              if (picked == null) return;
-              final minutes = picked.hour * 60 + picked.minute;
-              await change(isStart
-                  ? _workSchedule.copyWith(startMinutes: minutes)
-                  : _workSchedule.copyWith(endMinutes: minutes));
-            }
-
-            Widget timeTile(String labelKey, int minutes, bool isStart) {
-              return Expanded(
-                child: OutlinedButton(
-                  onPressed: () => pickTime(isStart),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(appState.tr(labelKey),
-                          style: TextStyle(fontSize: 11, color: subTextColor)),
-                      const SizedBox(height: 2),
-                      Text(_formatMinutes(minutes),
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700, color: textColor)),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white24 : Colors.black12,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      appState.tr('work_reminder_title'),
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      appState.tr('work_reminder_sheet_hint'),
-                      style: TextStyle(fontSize: 12, color: subTextColor),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(appState.tr('work_reminder_days'),
-                        style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        for (final weekday in const [1, 2, 3, 4, 5, 6, 7])
-                          FilterChip(
-                            label: Text(names[weekday % 7]),
-                            selected: _workSchedule.days.contains(weekday),
-                            showCheckmark: false,
-                            selectedColor: primary.withValues(alpha: 0.25),
-                            visualDensity: VisualDensity.compact,
-                            onSelected: (on) {
-                              final days = {..._workSchedule.days};
-                              on ? days.add(weekday) : days.remove(weekday);
-                              change(_workSchedule.copyWith(days: days));
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        timeTile('work_reminder_start', _workSchedule.startMinutes, true),
-                        const SizedBox(width: 12),
-                        timeTile('work_reminder_end', _workSchedule.endMinutes, false),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      appState.tr('work_reminder_footer'),
-                      style: TextStyle(fontSize: 12, color: subTextColor),
-                    ),
-                    const Divider(height: 28),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(appState.tr('work_places_title'),
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
-                        ),
-                        if (!appState.premiumEntitled)
-                          Icon(Icons.lock_outline_rounded, size: 18, color: subTextColor),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(appState.tr('work_places_hint'),
-                        style: TextStyle(fontSize: 12, color: subTextColor)),
-                    const SizedBox(height: 8),
-                    for (final place in _workPlaces)
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(place.name, style: TextStyle(color: textColor)),
-                        subtitle: Text(
-                          appState.tr(place.purpose == null
-                              ? 'work_places_purpose_gig'
-                              : IrsPurposeCatalog.labelKeyFor(place.purpose)!),
-                          style: TextStyle(fontSize: 12, color: subTextColor),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          onPressed: () async {
-                            await _removeWorkPlace(place);
-                            setSheetState(() {});
-                          },
-                        ),
-                      ),
-                    OutlinedButton(
-                      onPressed: () async {
-                        await _addCurrentWorkPlace(appState, sheetContext);
-                        setSheetState(() {});
-                      },
-                      child: Text(appState.tr('work_places_add')),
-                    ),
-                    if (_workPlaces.any((p) => p.purpose != null))
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(appState.tr('work_places_autostart'),
-                            style: TextStyle(fontSize: 14, color: textColor)),
-                        subtitle: Text(appState.tr('work_places_autostart_hint'),
-                            style: TextStyle(fontSize: 12, color: subTextColor)),
-                        value: _workAutoStart,
-                        onChanged: (v) async {
-                          setState(() => _workAutoStart = v);
-                          setSheetState(() {});
-                          await WorkPlaceStore.setAutoStart(v);
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   Future<void> _handleAutoDetectToggle(AppState appState, bool value) async {
@@ -561,21 +218,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ...[
             _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
             _buildAutoDetectSection(appState, isDark),
-
-            // Work-hours reminder (2026-11-01): the Basic-tier way to start
-            // tracking on time. One row; days and hours open in a sheet.
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildToggleSetting(
-                title: appState.tr('work_reminder_title'),
-                subtitle: _workScheduleSummary(appState),
-                value: _workSchedule.enabled,
-                isDark: isDark,
-                onChanged: (v) => _updateWorkSchedule(_workSchedule.copyWith(enabled: v)),
-                onTap: () => _showWorkScheduleSheet(appState, isDark),
-              ),
-            ),
 
             // Explicit user requirement (2026-09-09): generating a Report
             // Portal access code used to only exist on controlmiles.com --
@@ -1002,15 +644,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           // editando.
           _buildToggleSetting(
             title: appState.tr('notifications'),
-            subtitle: appState.notificationsEnabled
-                ? appState.tr('notification_types_manage_hint')
-                : null,
             value: appState.notificationsEnabled,
             isDark: isDark,
             onChanged: (v) => appState.setNotificationsEnabled(v),
-            onTap: appState.notificationsEnabled
-                ? () => _showNotificationTypesSheet(appState, isDark)
-                : null,
           ),
 
           if (appState.accountType == 'gig') ...[
@@ -1099,17 +735,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         _ignoringBatteryOptimizations,
         () async {
           await Permission.ignoreBatteryOptimizations.request();
-          await _refreshBackgroundReliabilityStatus();
-        },
-      ),
-      (
-        appState.tr('exact_alarm_title'),
-        _hasExactAlarmPermission == null
-            ? appState.tr('checking_status')
-            : appState.tr(_hasExactAlarmPermission! ? 'exact_alarm_granted' : 'exact_alarm_missing'),
-        _hasExactAlarmPermission,
-        () async {
-          await NotificationService.instance.requestExactAlarmPermission();
           await _refreshBackgroundReliabilityStatus();
         },
       ),
@@ -1225,110 +850,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                 child: Text(appState.tr('fix_it')),
               ),
       ),
-    );
-  }
-
-  /// Bottom sheet con los 5 tipos de aviso individuales (pedido explícito,
-  /// 2026-09-16: poder callar un aviso concreto sin apagar todos). Vive
-  /// en un sheet aparte, no en línea en Settings -- ver el comentario en
-  /// _buildPreferencesSection.
-  ///
-  /// Lo que NO está acá, a propósito: el aviso de error "auto-detect no
-  /// pudo iniciar" (silenciarlo devuelve el fallo silencioso que costó una
-  /// semana de detección muerta) y las capturas semanales de odómetro, que
-  /// son acciones obligatorias, no avisos.
-  void _showNotificationTypesSheet(AppState appState, bool isDark) {
-    // BUG FIX (real bug found live, 2026-09-19, testing Basic vs Premium
-    // gating on a real device): this sheet showed ALL 5 alert types to
-    // every gig user, Basic included -- but "Gig app switched" and "Trip
-    // started automatically" are notifications ONLY the auto-detect
-    // feature can ever fire (showMidTripAutoSwitchedNotification /
-    // showAutoTripStartedNotification), and auto-detect itself is
-    // correctly locked behind premiumEntitled everywhere else in this
-    // screen (see _buildAutoDetectSection's own `locked` check just
-    // above). A Basic user saw two toggles for alerts that could never
-    // reach them, with no indication either was Premium-only. Filtered
-    // out here instead of touching NotificationService or the toggles
-    // list's other 3 entries, which are correct for every tier as-is.
-    final types = <(String, String)>[
-      (NotificationService.prefPauseReminder, 'notif_type_pause_reminder'),
-      (NotificationService.prefForgottenTrip, 'notif_type_forgotten_trip'),
-      (NotificationService.prefWeeklySummary, 'notif_type_weekly_summary'),
-      (NotificationService.prefWorkSchedule, 'notif_type_work_schedule'),
-      if (appState.premiumEntitled) ...[
-        (NotificationService.prefWorkPlaces, 'notif_type_work_places'),
-        (NotificationService.prefGigAppSwitch, 'notif_type_gig_app_switch'),
-        (NotificationService.prefAutoTripStarted, 'notif_type_auto_trip_started'),
-      ],
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1C1812) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white24 : Colors.black12,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      appState.tr('notification_types_sheet_title'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF2E281F),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    for (final (prefKey, labelKey) in types) ...[
-                      _buildToggleSetting(
-                title: appState.tr(labelKey),
-                        value: _notifTypeEnabled[prefKey] ?? true,
-                        isDark: isDark,
-                        onChanged: (v) async {
-                          // Optimista en la UI, pero la fuente de verdad es
-                          // el servicio: setTypeEnabled además CANCELA las
-                          // alarmas ya programadas, para que apagar un
-                          // toggle no deje uno pendiente disparando más
-                          // tarde. setSheetState refresca el sheet mismo;
-                          // setState refresca Settings por detrás para que
-                          // ambos queden en sync apenas se cierre el sheet.
-                          setSheetState(() => _notifTypeEnabled[prefKey] = v);
-                          setState(() => _notifTypeEnabled[prefKey] = v);
-                          await NotificationService.instance.setTypeEnabled(prefKey, v);
-                          if (prefKey == NotificationService.prefWorkPlaces) {
-                            await WorkPlaceService.sync();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 

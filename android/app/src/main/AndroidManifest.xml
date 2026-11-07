@@ -35,37 +35,13 @@
     <!-- Activity Recognition (Auto Drive Detection) -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
-    <!-- Local Notifications (recordatorio de viaje olvidado + resumen semanal) -->
+    <!-- Local notifications (trip still-moving question and closed-trip notice) -->
     <!-- Requerido en Android 13+ para mostrar notificaciones. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Android 16+: lets the tracking notification be presented as a Live
-         Update (status-bar chip / lock-screen live notification / Now Bar).
-         Normal permission, no runtime prompt. Ignored on older versions. -->
-    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
-
-    <!-- BUG FIX (pedido explícito, 2026-09-18): el recordatorio de tracking
-         pausado SÍ es time-critical; existe exactamente para avisar a un
-         driver que dejó el teléfono y no está mirando la app. La versión
-         anterior de este comentario asumía que ningún recordatorio local
-         era time-critical y usaba solo scheduling inexacto
-         (AndroidScheduleMode.inexactAllowWhileIdle) para evitar este
-         permiso, pero "inexacto" bajo Doze puede diferirse hasta que el
-         SO le dé una ventana de mantenimiento a la app, lo que en la
-         práctica significa "no se ve hasta que abres la app de nuevo",
-         justo el síntoma reportado. SCHEDULE_EXACT_ALARM se otorga
-         automáticamente al instalar en Android 12/12L; en 13+ el usuario
-         debe habilitarlo manualmente en Ajustes (mismo tipo de permiso
-         "especial" que PACKAGE_USAGE_STATS arriba, sin diálogo runtime);
-         NotificationService pide activarlo y cae de vuelta a scheduling
-         inexacto si se niega, nunca falla en seco. El recordatorio de
-         viaje olvidado y el resumen semanal siguen usando scheduling
-         inexacto a propósito, ya que no son time-critical de igual forma. -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
     <!-- BUG FIX (real root cause, 2026-09-19, same symptom reported again
-         after the SCHEDULE_EXACT_ALARM fix above: "solo aparecen los
-         avisos al abrir la app, no en segundo plano"). SCHEDULE_EXACT_ALARM
-         only controls whether AlarmManager fires at the exact requested
+         after an earlier fix: "solo aparecen los
+         avisos al abrir la app, no en segundo plano").         An exact alarm only controls whether AlarmManager fires at the exact requested
          time; it does NOT stop most Android OEMs (Samsung, Xiaomi/MIUI,
          Huawei, Oppo, etc.) from freezing the app's process and deferring
          or dropping its alarms/background work entirely once battery
@@ -125,14 +101,6 @@
             </intent-filter>
 
         </activity>
-
-        <!-- Starts the Live Update promoter with the app process (also when only
-             the background tracking service is brought back). Holds no data. -->
-        <provider
-            android:name=".LiveUpdateInitProvider"
-            android:authorities="${applicationId}.liveupdate-init"
-            android:exported="false"
-            android:initOrder="100"/>
 
         <!-- Geolocator Foreground Service -->
         <service

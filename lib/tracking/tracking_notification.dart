@@ -4,18 +4,11 @@
 // Pure rules for the persistent "tracking is running" notification, kept free
 // of Flutter and of the tracking plugin so they can be tested on their own.
 //
-// The notification is the driver's at-a-glance "card" on a long trip. The
-// tracking plugin's native notification only supports a title, one line of
-// text and a chronometer (no expanded styles, no custom layout), so the card is
-// laid out like this:
-//   * CHRONOMETER (header): a SELF-TICKING timer drawn by Android itself,
-//     counting the ACTIVE driving time -- the same figure as the dashboard
-//     card. It needs no Dart wake-ups, so it keeps counting even while the app
-//     is suspended or the phone is in Doze.
-//   * TITLE: "ControlMiles - 12.4 mi", the distance recorded so far. A timer
-//     alone only proves the notification is alive; distance that keeps growing
-//     proves GPS is still being recorded.
-//   * TEXT: the gig app being tracked.
+// 2026-11-06: the notification is fixed and minimal. Android requires one while
+// a trip records, but it no longer shows live miles or a ticking timer (they
+// cost constant updates and battery, and the dashboard already shows them).
+// A trip says "ControlMiles is recording your trip"; auto-detect that is armed
+// but has no trip says it is ready.
 
 /// Epoch milliseconds the notification's count-up clock should start from, so
 /// that it reads [activeElapsed] right now. Using the ACTIVE time (not "since
@@ -40,12 +33,16 @@ String trackingNotificationText({required double miles, required bool metric}) {
 const String kDefaultNotificationTitle = 'ControlMiles Tracking';
 const String kDefaultNotificationText = 'Recording miles securely';
 
+/// What a trip in progress says (the app passes it translated).
+const String kTripNotificationBody = 'ControlMiles is recording your trip';
+
 /// "ControlMiles \u00b7 12.4 mi" -- brand name plus digits and a unit, nothing
 /// to translate.
 String trackingNotificationTitle({required double miles, required bool metric}) =>
     'ControlMiles \u00b7 ${trackingNotificationText(miles: miles, metric: metric)}';
 
 /// The gig app being tracked ("Uber"), or the neutral default when unknown.
+/// (No longer shown while a trip records; kept for other uses.)
 String trackingNotificationBody(String? gigAppName) {
   final name = (gigAppName ?? '').trim();
   return name.isEmpty ? kDefaultNotificationText : name;
@@ -73,8 +70,7 @@ class TrackingNotificationLabels {
   final String title;
   final String body;
 
-  /// Only a real trip shows the chronometer (and is worth promoting to a Live
-  /// Update). Waiting for a gig app must never look like a running trip.
+  /// Kept for the plugin's setting; always false now (no ticking timer).
   final bool showTimer;
 
   const TrackingNotificationLabels({
@@ -87,8 +83,8 @@ class TrackingNotificationLabels {
 /// Two very different situations share the same foreground-service
 /// notification, because Android requires one whenever the background service
 /// runs:
-///  * a TRIP is in progress: distance in the title, gig app in the text and the
-///    chronometer counting active driving time;
+///  * a TRIP is in progress: "ControlMiles" and "ControlMiles is recording your
+///    trip", fixed (no distance, no timer);
 ///  * auto-detect is ARMED but no trip has started: the driver must not be
 ///    told a trip is being recorded. It says auto-detect is listening, with no
 ///    timer and no distance.
@@ -101,6 +97,7 @@ TrackingNotificationLabels trackingNotificationLabels({
   required String? gigAppName,
   required String idleTitle,
   required String idleBody,
+  String tripBody = kTripNotificationBody,
 }) {
   if (!hasActiveTrip) {
     return TrackingNotificationLabels(
@@ -110,8 +107,8 @@ TrackingNotificationLabels trackingNotificationLabels({
     );
   }
   return TrackingNotificationLabels(
-    title: trackingNotificationTitle(miles: miles, metric: metric),
-    body: trackingNotificationBody(gigAppName),
-    showTimer: true,
+    title: 'ControlMiles',
+    body: tripBody.trim().isEmpty ? kTripNotificationBody : tripBody.trim(),
+    showTimer: false,
   );
 }

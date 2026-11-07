@@ -50,9 +50,7 @@ import 'package:tracelet/tracelet.dart' as tl;
 import '../../i18n/app_texts.dart';
 import '../../models/gig_app.dart';
 import '../../services/supabase_bootstrap.dart';
-import '../../services/work_place_service.dart';
 import '../tracking_controller.dart';
-import '../live_update_bridge.dart';
 import '../location_profile.dart';
 import '../tracking_notification.dart';
 import '../../services/diag_log.dart';
@@ -84,13 +82,6 @@ class TraceletEngine {
   static void _headlessTask(tl.HeadlessEvent event) async {
     debugPrint('[TraceletEngine] Headless: ${event.name}');
     DiagLog.tag = 'headless';
-
-    // Work places (Gig Premium): arrival / exit reminders, also when the app
-    // is closed. See WorkPlaceService.
-    if (event.name == 'geofence') {
-      await WorkPlaceService.handleEvent(tl.GeofenceEvent.fromMap(event.event));
-      return;
-    }
 
     if (event.name != 'location') return;
 
@@ -256,9 +247,6 @@ class TraceletEngine {
         AutoTripDetectionService.instance.handleMotionChange(location.isMoving);
       });
 
-      // Work places: geofence transitions while the app is open.
-      tl.Tracelet.geofenceStream.listen(WorkPlaceService.handleEvent);
-
       _isInitialized = true;
       debugPrint('[TraceletEngine] Initialized successfully');
     } catch (e) {
@@ -319,9 +307,6 @@ class TraceletEngine {
       DiagLog.add('engine start', {'enabled': state.enabled, 'trip': hasTrip});
       _instance.isTracking = state.enabled;
       if (state.enabled) {
-        // Android 16+: presentar la notificacion como Live Update (chip de la
-        // barra, pantalla de bloqueo, Now Bar). Best-effort y silencioso.
-        await LiveUpdateBridge.ensureRunning();
         debugPrint('[TraceletEngine] GPS Tracking Started');
       } else {
         debugPrint('[TraceletEngine ERROR] start() returned without throwing, but the engine is not enabled');
@@ -334,11 +319,31 @@ class TraceletEngine {
     }
   }
 
+  /// The work-place reminders were removed (2026-11-06): drop the geofences an older
+  /// version registered (their ids start with "wp:").
+  static Future<void> removeLegacyWorkPlaceGeofences() async {
+    try {
+      for (final g in await tl.Tracelet.getGeofences()) {
+        if (g.identifier.startsWith('wp:')) await tl.Tracelet.removeGeofence(g.identifier);
+      }
+    } catch (e) {
+      debugPrint('[TraceletEngine] removing old work places failed: $e');
+    }
+  }
+
   // =========================================================
   // STOP TRACKING
   // =========================================================
   static Future<void> stopTracking() async {
     try {
+      // Nothing is running: leave it alone. Tracelet.stop() starts its foreground
+      // service just to shut it down, and the notification flashed on every app
+      // open (seen on the Samsung 2026-11-06: service onCreate/onDestroy 17 ms apart).
+      final running = (await tl.Tracelet.getState()).enabled;
+      if (!running) {
+        _instance.isTracking = false;
+        return;
+      }
       // Apaga el cronómetro ANTES de detener: si el servicio se re-arma solo
       // (startOnBoot) no debe reaparecer con la hora de un viaje anterior.
       _lastNotificationText = null;
@@ -354,8 +359,6 @@ class TraceletEngine {
       await tl.Tracelet.stop();
       _instance.isTracking = false;
       debugPrint('[TraceletEngine] GPS Tracking Stopped');
-      // stop() also stops the geofences: resume the work-place reminders.
-      await WorkPlaceService.rearmAfterTrip();
     } catch (e) {
       debugPrint('[TraceletEngine ERROR] Stop failed: $e');
     }
@@ -503,19 +506,14 @@ class TraceletEngine {
     if (general) {
       // Only a drive the phone detected says it is recording; while it waits the
       // card just says it is ready.
-      final labels = trackingNotificationLabels(
+      return trackingNotificationLabels(
         hasActiveTrip: TrackingController.activeSection != null,
         miles: TrackingController.activeDistance,
         metric: metric,
         gigAppName: null,
         idleTitle: AppTexts.get('auto_detect_general_title', lang),
         idleBody: AppTexts.get('auto_detect_general_subtitle', lang),
-      );
-      if (!labels.showTimer) return labels;
-      return TrackingNotificationLabels(
-        title: labels.title,
-        body: AppTexts.get('auto_detect_general_trip_body', lang),
-        showTimer: true,
+        tripBody: AppTexts.get('tracking_notif_recording', lang),
       );
     }
     return trackingNotificationLabels(
@@ -525,6 +523,7 @@ class TraceletEngine {
       gigAppName: gigId == null ? null : GigAppCatalog.byId(gigId).name,
       idleTitle: AppTexts.get('auto_detect_status_listening', lang),
       idleBody: AppTexts.get('auto_detect_status_listening_subtitle', lang),
+      tripBody: AppTexts.get('tracking_notif_recording', lang),
     );
   }
 

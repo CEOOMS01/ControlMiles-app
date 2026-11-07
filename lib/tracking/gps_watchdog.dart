@@ -26,7 +26,6 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/audit_service.dart';
-import '../services/notification_service.dart';
 import 'tracking_controller.dart';
 
 enum GpsIssue { none, gpsOff, permissionOff, gpsBackOn, noSignal }
@@ -119,7 +118,6 @@ class GpsWatchdog {
     if (_pausedByGps) await _persist(false);
     if (issue.value != GpsIssue.none) {
       issue.value = GpsIssue.none;
-      await NotificationService.instance.cancelGpsAlert();
     }
   }
 
@@ -165,7 +163,6 @@ class GpsWatchdog {
               : (v == GpsVerdict.gpsOff ? GpsIssue.gpsOff : GpsIssue.permissionOff);
           if (issue.value != next) {
             issue.value = next;
-            await NotificationService.instance.showGpsAlert(next);
           }
         }
       }
@@ -186,7 +183,6 @@ class GpsWatchdog {
     await _persist(true);
     issue.value = why;
     try {
-      await NotificationService.instance.showGpsAlert(why);
       if (sessionId != null) {
         await AuditService.logEvent(
           sessionId: sessionId,
@@ -231,7 +227,6 @@ class GpsWatchdog {
       if (issue.value != GpsIssue.noSignal) {
         _noSignalSince = now;
         issue.value = GpsIssue.noSignal;
-        await NotificationService.instance.showGpsAlert(GpsIssue.noSignal);
       }
     } catch (_) {
       // Location errors that are not a timeout are handled by the on/off check above.
