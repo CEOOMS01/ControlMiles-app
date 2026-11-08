@@ -30,6 +30,13 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.27+67 — 2026-11-07 (built, for Play)
+
+- One Flutter engine (Android), modelled on MileIQ's single drive service: the screen and the trips share the app's
+  only engine (SharedEngine). DriveWakeService starts it with the app closed and keeps it while a trip or a drive
+  check needs it; opening the app attaches the screen to it. The message channel between two engines (trip_link.dart)
+  is gone, and Tracelet's headless engine only restarts the service.
+
 ## 1.3.26+66 — 2026-11-07 (built, for Play)
 
 - The GPS no longer switches itself off during a trip after 5 minutes parked. That stop never undid itself, so trips

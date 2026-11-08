@@ -1,9 +1,8 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/diag_log.dart
 //
-// Diagnostic log (2026-11-06). Trips run in the trip engine and the screens in the
-// app (see trip_link.dart), neither of which can be watched from outside in a store
-// build. Both append
+// Diagnostic log (2026-11-06). Trips run in the background, which cannot be
+// watched from outside in a store build. The app appends
 // short lines to the same file; Settings can send it to the server so a trip can be
 // reconstructed afterwards. It holds no personal text: times, coordinates rounded to
 // ~100 m, counts and reasons.
@@ -18,7 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class DiagLog {
   DiagLog._();
 
-  /// Which engine writes: 'ui' (the screens) or 'engine' (the one trip engine).
+  /// Which engine writes: the app's own ('ui'); the name stays for older logs.
   static String tag = 'ui';
 
   static const _maxBytes = 400 * 1024;

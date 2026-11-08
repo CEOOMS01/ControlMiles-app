@@ -32,7 +32,6 @@ import com.google.android.gms.tasks.CancellationTokenSource
 object DriveWakeRegistrar {
     const val PREFS = "cm_drive_wake"
     const val KEY_ARMED = "armed"
-    const val KEY_HANDLE = "callback_handle"
     const val KEY_FENCE_LAT = "fence_lat"
     const val KEY_FENCE_LNG = "fence_lng"
     const val KEY_FENCE_AT = "fence_at"

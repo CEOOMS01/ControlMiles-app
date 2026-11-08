@@ -6,7 +6,7 @@
 // path), neither of which depends on one signal alone:
 //   * Android says the phone entered a vehicle (Activity Recognition), or
 //   * the phone left a small fence around the place it was last parked.
-// The wake runs [driveWakeEntry], the one trip engine (see trip_link.dart). Neither
+// The wake starts the app's engine (see TripHost). Neither
 // signal proves the car is moving (a walk, a bus, sitting in a parked car), so both
 // are checked with a short GPS burst before they count as a trip.
 // The fence centre is also where the trip really began, so the miles from there to
@@ -14,17 +14,12 @@
 
 import 'dart:async';
 import 'dart:io' show Platform;
-import 'dart:ui' show PluginUtilities;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
-import '../services/supabase_bootstrap.dart';
 import 'auto_trip_detection_service.dart';
-import 'background_gps_service.dart';
 import 'tracking_controller.dart';
-import 'trip_link.dart';
 import '../services/diag_log.dart';
 
 /// What woke the app and where the phone was parked.
@@ -49,10 +44,8 @@ class DriveWake {
   /// Subscribes to the wake-ups. True when Android accepted the vehicle one.
   static Future<bool> register() async {
     if (!isSupported) return false;
-    final handle = PluginUtilities.getCallbackHandle(driveWakeEntry);
-    if (handle == null) return false;
     try {
-      return (await _channel.invokeMethod<bool>('register', {'handle': handle.toRawHandle()})) ?? false;
+      return (await _channel.invokeMethod<bool>('register')) ?? false;
     } catch (e) {
       debugPrint('[DriveWake] register failed: $e');
       return false;
@@ -95,75 +88,94 @@ class DriveWake {
   }
 }
 
-/// The one trip engine (see trip_link.dart). DriveWakeService runs it when a drive
-/// may be starting, when the app sends a command, or when Tracelet has a fix and no
-/// engine. It owns every trip until the trip ends, then stops.
-@pragma('vm:entry-point')
-Future<void> driveWakeEntry() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DiagLog.tag = 'engine';
-  DiagLog.add('trip engine started');
-  const bg = MethodChannel('controlmiles/drive_wake_bg');
-  try {
-    await SupabaseBootstrap.ensure();
-    TripLink.serve();
-    await BackgroundGpsService.initialize();
-    await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
-    // A trip that was running when the last engine died carries on here.
-    await TrackingController.initializeOrRecover();
-    TripLink.markReady();
-    bg.setMethodCallHandler((call) async {
-      if (call.method == 'wake') unawaited(_onWake());
+/// One engine (2026-11-07, modelled on MileIQ's single drive service): the screens
+/// and the trips share the app's only Flutter engine. DriveWakeService starts that
+/// engine when the app is closed (a drive may be starting, or Tracelet has a fix
+/// for an open trip) and keeps it alive while a trip or a drive check needs it; the
+/// app's screen attaches to the same engine when it opens. There is no second
+/// copy of a trip anywhere.
+class TripHost {
+  TripHost._();
+
+  static const _bg = MethodChannel('controlmiles/drive_wake_bg');
+  static bool _serviceUp = false;
+  static bool _waking = false;
+  static String? _held;
+  static DateTime _idleSince = DateTime.now();
+
+  static Future<void> start() async {
+    if (!DriveWake.isSupported) return;
+    _bg.setMethodCallHandler((call) async {
+      if (call.method == 'wake') {
+        _serviceUp = true;
+        unawaited(_onWake());
+      }
       return null;
     });
-    unawaited(_onWake());
-    await _holdWhileNeeded(bg);
-    if (TrackingController.currentState == TrackingState.idle) await BackgroundGpsService.stopTracking();
-  } catch (e) {
-    debugPrint('[DriveWake] trip engine failed: $e');
-    DiagLog.add('trip engine failed', {'error': e});
+    // A trip that was running when the process died carries on here.
+    await TrackingController.initializeOrRecover();
+    // The service may have started this engine for a drive check.
+    try {
+      if (await _bg.invokeMethod<bool>('hello') == true) {
+        _serviceUp = true;
+        unawaited(_onWake());
+      }
+      _serviceUp = true;
+    } catch (_) {}
+    Timer.periodic(const Duration(seconds: 3), (_) => unawaited(_tick()));
   }
-  TripLink.stopServing();
-  DiagLog.add('trip engine finished');
-  try {
-    await bg.invokeMethod('finished');
-  } catch (_) {}
-}
 
-bool _waking = false;
-
-/// A drive may be starting ("vehicle" or "fence"). A start for the app's sake has
-/// nothing to check.
-Future<void> _onWake() async {
-  final info = await DriveWake.wakeInfo();
-  if (info.source == 'app' || _waking) return;
-  _waking = true;
-  try {
-    await AutoTripDetectionService.instance.onWake(info);
-  } finally {
-    _waking = false;
+  /// A drive may be starting ("vehicle" or "fence").
+  static Future<void> _onWake() async {
+    final info = await DriveWake.wakeInfo();
+    if (info.source == 'app' || _waking) return;
+    _waking = true;
+    try {
+      await AutoTripDetectionService.instance.onWake(info);
+    } finally {
+      _waking = false;
+    }
   }
-}
 
-/// Keeps the engine while a trip is open, a drive is being checked, or the app is
-/// using it. A running trip shows only its own tracking notice; a paused one (GPS
-/// off) keeps the engine's notice so Android does not stop it.
-Future<void> _holdWhileNeeded(MethodChannel bg) async {
-  String? shown;
-  while (true) {
+  /// While a trip is open the service keeps the engine (only the trip's own
+  /// tracking notice shows; a paused trip, with the GPS off, keeps the service's
+  /// notice so Android does not stop it). With nothing to do it lets go.
+  static Future<void> _tick() async {
     final state = TrackingController.currentState;
     final mode = state == TrackingState.running
         ? 'trip'
         : state == TrackingState.paused
             ? 'paused'
             : null;
-    if (mode != null && mode != shown) {
+    if (mode != null) {
+      _idleSince = DateTime.now();
+      if (mode == _held && _serviceUp) return;
       try {
-        await bg.invokeMethod('keepAlive', {'notice': mode == 'paused'});
-      } catch (_) {}
-      shown = mode;
+        await _bg.invokeMethod('keepAlive', {'notice': mode == 'paused'});
+        DiagLog.add('engine held', {'for': mode});
+        _held = mode;
+        _serviceUp = true;
+      } catch (_) {
+        // No service yet (a trip started from the button): start it, then hold.
+        _serviceUp = false;
+        _held = null;
+        try {
+          await _channel.invokeMethod('startEngine');
+        } catch (e) {
+          debugPrint('[TripHost] could not start the service: $e');
+        }
+      }
+      return;
     }
-    if (mode == null && !_waking && TripLink.idleFor > const Duration(seconds: 90)) return;
-    await Future<void>.delayed(const Duration(seconds: 3));
+    _held = null;
+    if (!_serviceUp || _waking) return;
+    if (DateTime.now().difference(_idleSince) < const Duration(seconds: 60)) return;
+    _serviceUp = false;
+    DiagLog.add('engine released');
+    try {
+      await _bg.invokeMethod('finished');
+    } catch (_) {}
   }
+
+  static const _channel = MethodChannel('controlmiles/drive_wake');
 }

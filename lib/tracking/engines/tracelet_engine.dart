@@ -42,7 +42,6 @@
 // between one tick and the next is losing that one tick's worth of
 // distance/time (seconds, a few meters) -- not the trip.
 import 'dart:async';
-import 'dart:ui' show PluginUtilities;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +55,6 @@ import '../location_profile.dart';
 import '../tracking_notification.dart';
 import '../../services/diag_log.dart';
 import '../auto_trip_detection_service.dart';
-import '../drive_wake.dart';
 
 class TraceletEngine {
   static final TraceletEngine _instance = TraceletEngine._internal();
@@ -75,15 +73,14 @@ class TraceletEngine {
   // callback handle via dart:ui's PluginUtilities, same constraint
   // flutter_background_geolocation's registerHeadlessTask already has
   // (see bg_geolocation_engine.dart, unchanged there).
-  // 2026-11-07, one trip engine: Tracelet runs this in an engine of its own when a
-  // fix arrives and no engine is listening (Android only). It records nothing: it
-  // starts the trip engine, which picks up the open trip, and ends.
+  // 2026-11-07: Tracelet runs this in an engine of its own when a fix arrives and
+  // the app's engine is gone (Android only). It records nothing: it starts
+  // DriveWakeService, which brings the app's engine back to pick up the open trip.
   @pragma('vm:entry-point')
   static void _headlessTask(tl.HeadlessEvent event) async {
     if (event.name != 'location') return;
     try {
-      final handle = PluginUtilities.getCallbackHandle(driveWakeEntry);
-      await const MethodChannel('controlmiles/drive_wake').invokeMethod('startEngine', {'handle': handle?.toRawHandle()});
+      await const MethodChannel('controlmiles/drive_wake').invokeMethod('startEngine');
     } catch (e) {
       debugPrint('[TraceletEngine] Headless: could not start the trip engine: $e');
     }

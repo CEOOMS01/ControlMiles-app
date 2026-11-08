@@ -11,25 +11,23 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
-import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.view.FlutterCallbackInformation
 
 /**
- * Short-lived: started by [DriveWakeReceiver] when the phone enters a vehicle. It
- * runs the app's Dart entry point in its own Flutter engine (so it works with the
- * app closed); that code starts the trip -- which brings up the real tracking
- * service -- and then reports "finished" and this service stops. It also stops by
- * itself after [MAX_LIFETIME_MS] whatever happens.
+ * Keeps the app's engine (see SharedEngine) running in the background: when a drive
+ * may be starting, while a trip is open, and when Tracelet has a fix for an open
+ * trip with the app closed. The Dart side (TripHost) tells it to hold the engine
+ * for a trip and to let go when nothing is left to do; it also stops by itself
+ * after [MAX_LIFETIME_MS] unless it is holding a trip.
  */
 class DriveWakeService : Service() {
     private var engine: FlutterEngine? = null
     private var bgChannel: MethodChannel? = null
     private val handler = Handler(Looper.getMainLooper())
-    // Set by the engine while it carries a trip: no time limit, and its notice
+    // A drive check the Dart side has not picked up yet.
+    private var pendingWake = false
+    // Set by the Dart side while a trip is open: no time limit, and this notice
     // hidden while the trip's own tracking notice shows (kept while paused).
     private var keptForTrip = false
     private var keptNotice = false
@@ -38,8 +36,11 @@ class DriveWakeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         showForeground()
-        // Already running: it is the one trip engine, tell it what happened.
-        if (engine == null) startEngine() else bgChannel?.invokeMethod("wake", null)
+        SharedEngine.serviceRunning = true
+        val source = getSharedPreferences(DriveWakeRegistrar.PREFS, Context.MODE_PRIVATE)
+            .getString(DriveWakeRegistrar.KEY_WAKE_SOURCE, "vehicle")
+        if (source != "app") pendingWake = true
+        if (engine == null) attachEngine() else deliverWake()
         if (keptForTrip) {
             if (!keptNotice) stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -47,6 +48,15 @@ class DriveWakeService : Service() {
             handler.postDelayed({ stopSelf() }, MAX_LIFETIME_MS)
         }
         return START_NOT_STICKY
+    }
+
+    private fun deliverWake() {
+        if (!pendingWake) return
+        bgChannel?.invokeMethod("wake", null, object : MethodChannel.Result {
+            override fun success(result: Any?) { pendingWake = false }
+            override fun error(code: String, message: String?, details: Any?) {}
+            override fun notImplemented() {}
+        })
     }
 
     private fun showForeground() {
@@ -78,58 +88,47 @@ class DriveWakeService : Service() {
         }
     }
 
-    private fun startEngine() {
-        val handle = getSharedPreferences(DriveWakeRegistrar.PREFS, Context.MODE_PRIVATE)
-            .getLong(DriveWakeRegistrar.KEY_HANDLE, 0L)
-        if (handle == 0L) {
-            Log.w(TAG, "No Dart entry point saved; stopping")
-            stopSelf()
-            return
-        }
-        val loader = FlutterInjector.instance().flutterLoader()
-        loader.startInitialization(applicationContext)
-        loader.ensureInitializationComplete(applicationContext, null)
-
-        // Registers the app's plugins (Supabase storage, Tracelet, ...) too.
-        val e = FlutterEngine(applicationContext)
+    private fun attachEngine() {
+        val (e, created) = SharedEngine.obtain(this)
         engine = e
         val channel = MethodChannel(e.dartExecutor.binaryMessenger, BG_CHANNEL)
         bgChannel = channel
         channel.setMethodCallHandler { call, result ->
-            if (call.method == "finished") {
-                result.success(null)
-                stopSelf()
-            } else if (call.method == "keepAlive") {
-                keptForTrip = true
-                keptNotice = call.argument<Boolean>("notice") ?: false
-                handler.removeCallbacksAndMessages(null)
-                if (keptNotice) showForeground() else stopForeground(STOP_FOREGROUND_REMOVE)
-                result.success(null)
-            } else {
-                result.notImplemented()
+            when (call.method) {
+                // A newly started engine asks once it is ready.
+                "hello" -> {
+                    result.success(pendingWake)
+                    pendingWake = false
+                }
+                "finished" -> {
+                    result.success(null)
+                    stopSelf()
+                }
+                "keepAlive" -> {
+                    keptForTrip = true
+                    keptNotice = call.argument<Boolean>("notice") ?: false
+                    handler.removeCallbacksAndMessages(null)
+                    if (keptNotice) showForeground() else stopForeground(STOP_FOREGROUND_REMOVE)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
             }
         }
-        val info = FlutterCallbackInformation.lookupCallbackInformation(handle)
-        if (info == null) {
-            Log.w(TAG, "Dart entry point not found; stopping")
-            stopSelf()
-            return
-        }
-        e.dartExecutor.executeDartCallback(
-            DartExecutor.DartCallback(assets, loader.findAppBundlePath(), info)
-        )
+        // An engine that was already running (the screen is open) gets told now.
+        if (!created) deliverWake()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        bgChannel?.setMethodCallHandler(null)
         bgChannel = null
-        engine?.destroy()
         engine = null
+        SharedEngine.serviceRunning = false
+        SharedEngine.releaseIfUnused()
         super.onDestroy()
     }
 
     companion object {
-        private const val TAG = "CmDriveWake"
         private const val CHANNEL = "controlmiles_drive_wake"
         private const val BG_CHANNEL = "controlmiles/drive_wake_bg"
         private const val NOTIFICATION_ID = 7702

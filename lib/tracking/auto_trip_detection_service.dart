@@ -61,7 +61,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'background_gps_service.dart';
 import 'drive_wake.dart';
 import 'tracking_controller.dart';
-import 'trip_link.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/diag_log.dart';
@@ -193,7 +192,7 @@ class AutoTripDetectionService {
       return gpsOk;
     } else {
       await DriveWake.unregister();
-      if (!TripLink.isClient && TrackingController.currentState == TrackingState.idle) {
+      if (TrackingController.currentState == TrackingState.idle) {
         await BackgroundGpsService.stopTracking();
       }
     }

@@ -29,7 +29,6 @@ import 'drive_wake.dart';
 import '../services/diag_log.dart';
 import 'route_recorder.dart';
 import 'trip_inactivity.dart';
-import 'trip_link.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -220,145 +219,6 @@ class TrackingController {
   }
 
   // ============================================================
-  // ONE TRIP ENGINE (see trip_link.dart)
-  // ============================================================
-
-  /// What the engine tells the app about the trip.
-  static Map<String, Object?> engineState() {
-    final s = activeSection;
-    final pos = livePosition.value;
-    return {
-      'state': currentState.name,
-      'sessionId': activeSessionId,
-      'orgId': activeOrganizationId,
-      'vehicleId': activeVehicleId,
-      'gigApp': currentGigApp,
-      'section': s == null
-          ? null
-          : {
-              'id': s.id,
-              'session_id': s.sessionId,
-              'user_id': s.userId,
-              'gig_app': s.gigApp,
-              'section_status': s.status,
-              'start_time': s.startTime.toUtc().toIso8601String(),
-              'total_miles': s.totalMiles,
-              'total_duration_seconds': s.totalDurationSeconds,
-              'irs_purpose': s.irsPurpose,
-            },
-      'sectionMiles': _totalSectionMiles,
-      'sessionMiles': _totalSessionMiles,
-      'runStartMs': _runSegmentStartedAt?.millisecondsSinceEpoch,
-      'pos': pos == null ? null : [pos.lat, pos.lng],
-      'lastStopDiscarded': lastStopDiscarded,
-      'lastClosedGeneral': lastClosedGeneralSectionId,
-      'detectedApp': AutoTripDetectionService.instance.lastDetectedGigAppId,
-    };
-  }
-
-  /// The app mirrors the engine's trip, so the screens read it as before.
-  static void applyEngineState(Map<String, Object?> s) {
-    currentState = TrackingState.values.byName(s['state'] as String? ?? 'idle');
-    activeSessionId = s['sessionId'] as String?;
-    activeOrganizationId = s['orgId'] as String?;
-    activeVehicleId = s['vehicleId'] as String?;
-    currentGigApp = s['gigApp'] as String?;
-    final section = s['section'];
-    activeSection = section is Map ? SessionSection.fromMap(Map<String, dynamic>.from(section)) : null;
-    _totalSectionMiles = (s['sectionMiles'] as num?)?.toDouble() ?? 0;
-    _totalSessionMiles = (s['sessionMiles'] as num?)?.toDouble() ?? 0;
-    final runStart = s['runStartMs'] as int?;
-    _runSegmentStartedAt = runStart == null ? null : DateTime.fromMillisecondsSinceEpoch(runStart);
-    final pos = s['pos'];
-    final newPos = pos is List ? (lat: (pos[0] as num).toDouble(), lng: (pos[1] as num).toDouble()) : null;
-    if (livePosition.value != newPos) livePosition.value = newPos;
-    final from = s['routeFrom'] as int? ?? 0;
-    final flat = (s['route'] as List?) ?? const [];
-    final added = [
-      for (var i = 0; i + 1 < flat.length; i += 2)
-        (lat: (flat[i] as num).toDouble(), lng: (flat[i + 1] as num).toDouble()),
-    ];
-    if (from == 0) {
-      if (added.isNotEmpty || liveRoute.value.isNotEmpty) liveRoute.value = added;
-    } else if (added.isNotEmpty && from == liveRoute.value.length) {
-      liveRoute.value = [...liveRoute.value, ...added];
-    }
-    lastStopDiscarded = s['lastStopDiscarded'] == true;
-    lastClosedGeneralSectionId = s['lastClosedGeneral'] as String?;
-    AutoTripDetectionService.instance.lastDetectedGigAppId = s['detectedApp'] as String?;
-  }
-
-  static void applyEngineEvent(String name, Object? value) {
-    if (value is! String) return;
-    if (name == 'autoFlash') autoFlashEvent.value = value;
-    if (name == 'segmentDiscarded') segmentDiscarded.value = value;
-  }
-
-  /// Start from the button: the odometer photo, when this period still needs
-  /// one, is taken here on screen; the engine then starts the trip with it.
-  static Future<void> _startFromApp({
-    required BuildContext? context,
-    required String gigApp,
-    String? irsPurpose,
-    String? organizationId,
-    String? shiftBlockId,
-    String? preSelectedVehicleId,
-    bool useAutoDetectOdometer = false,
-  }) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-    var withPhoto = useAutoDetectOdometer;
-    if (!withPhoto && context != null) {
-      final vehicle = await VehicleService().getActiveOrAssignedVehicle(
-        user.id,
-        organizationId: organizationId,
-        preSelectedVehicleId: preSelectedVehicleId,
-      );
-      if (vehicle != null && await OdometerCaptureService().needsCheckpointStartThisWeek(vehicle.id)) {
-        if (!context.mounted) return;
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const OdometerCaptureScreen(isStart: true)),
-        );
-        if (result is! Map || result['success'] != true) return;
-        final raw = result['odometer_value'];
-        final value = raw is num ? raw.toDouble() : double.tryParse('$raw');
-        final imageUrl = result['imageUrl'] as String?;
-        if (value == null || imageUrl == null) return;
-        await AutoTripDetectionService.instance.setShiftStartOdometer(value: value, imageUrl: imageUrl);
-        withPhoto = true;
-      }
-    }
-    await TripLink.command('start', {
-      'gigApp': gigApp,
-      'irsPurpose': irsPurpose,
-      'organizationId': organizationId,
-      'shiftBlockId': shiftBlockId,
-      'preSelectedVehicleId': preSelectedVehicleId,
-      'useAutoDetectOdometer': withPhoto,
-    });
-  }
-
-  /// A trip saved on this phone, or open on the server.
-  static Future<bool> _tripMayBeOpen() async {
-    try {
-      if (await LocalStorageService.getRecoverableState() != null) return true;
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return false;
-      final rows = await Supabase.instance.client
-          .from('sessions')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_closed', false)
-          .isFilter('organization_id', null)
-          .limit(1);
-      return (rows as List).isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  // ============================================================
   // START TRIP FLOW (Flujo principal desde botón)
   // ============================================================
   static bool _starting = false;
@@ -376,18 +236,6 @@ class TrackingController {
     String? preSelectedVehicleId,
     bool useAutoDetectOdometer = false,
   }) async {
-    if (TripLink.isClient) {
-      await _startFromApp(
-        context: context,
-        gigApp: gigApp,
-        irsPurpose: irsPurpose,
-        organizationId: organizationId,
-        shiftBlockId: shiftBlockId,
-        preSelectedVehicleId: preSelectedVehicleId,
-        useAutoDetectOdometer: useAutoDetectOdometer,
-      );
-      return;
-    }
     if (_starting || currentState != TrackingState.idle) return;
     _starting = true;
     try {
@@ -902,7 +750,6 @@ class TrackingController {
   // quedó bien guardado (eso sería peor: mostraría "sigue corriendo"
   // sobre un viaje que en realidad ya se pausó bien).
   static Future<bool> pauseTracking() async {
-    if (TripLink.isClient) return await TripLink.command('pause') == true;
     if (currentState != TrackingState.running) return false;
 
     try {
@@ -976,7 +823,6 @@ class TrackingController {
   // PRIMERO: si falla, no se toca GPS ni el reloj de manejo activo --
   // nada que revertir.
   static Future<bool> resumeTracking() async {
-    if (TripLink.isClient) return await TripLink.command('resume') == true;
     if (currentState != TrackingState.paused) return false;
     if (activeSessionId == null || activeSection == null) return false;
 
@@ -1111,9 +957,6 @@ class TrackingController {
     String newGigApp, {
     String? irsPurpose,
   }) async {
-    if (TripLink.isClient) {
-      return await TripLink.command('switch', {'gigApp': newGigApp, 'irsPurpose': irsPurpose}) == true;
-    }
     if (currentState != TrackingState.running || activeSessionId == null) {
       return false;
     }
@@ -1224,7 +1067,6 @@ class TrackingController {
   /// [endedAt]: when the trip really ended (the car stopped), for a trip the
   /// phone closes later on; null = now.
   static Future<bool> stopTracking({bool askPurposeInApp = false, DateTime? endedAt}) async {
-    if (TripLink.isClient) return await TripLink.command('stop', {'askPurposeInApp': askPurposeInApp}) == true;
     if (currentState == TrackingState.idle || activeSessionId == null) {
       // BUG FIX: this guard used to return false completely silently --
       // if this were ever hit for a trip the user could still see on
@@ -1581,10 +1423,7 @@ class TrackingController {
   /// seconds before the switch plus the seconds after reopening. The swipe-
   /// away path also marked the trip as paused. Both now go through the same
   /// checkpoint the controller uses (base + segment start, real state).
-  static Future<void> saveCheckpoint() async {
-    if (TripLink.isClient) return; // the engine saves its own
-    await _saveLocalCheckpoint();
-  }
+  static Future<void> saveCheckpoint() => _saveLocalCheckpoint();
 
   static Future<void> _saveLocalCheckpoint() async {
     if (activeSessionId == null || activeSection == null) return;
@@ -1618,12 +1457,6 @@ class TrackingController {
   }
 
   static Future<void> initializeOrRecover() async {
-    if (TripLink.isClient) {
-      // The app only asks: the engine owns the trip. It is started only when a
-      // trip may be open, so opening the app never wakes it for nothing.
-      await TripLink.command('hello', const {}, await _tripMayBeOpen());
-      return;
-    }
     await _recoverActiveState(startGps: true);
     // A trip left open while the phone sat still (the app was closed, or forced
     // to stop) ends now, at the moment it really stopped.

@@ -25,7 +25,7 @@ import 'theme/cm_colors.dart';
 import 'theme/screen_fit.dart';
 
 // Servicios de Hardware y Fondo
-import 'tracking/trip_link.dart';
+import 'tracking/drive_wake.dart';
 import 'tracking/background_gps_service.dart';
 import 'tracking/auto_trip_detection_service.dart';
 import 'services/notification_service.dart';
@@ -119,9 +119,6 @@ Future<void> main() async {
     onError: (Object e) => debugPrint('[Main] Supabase init failed: $e'),
   ));
 
-  // One trip engine: the app only sends commands and mirrors the trip.
-  TripLink.startClient();
-
   startupMark('before runApp');
   // Inyectar el Estado Global
   runApp(
@@ -133,7 +130,16 @@ Future<void> main() async {
 
   // Everything below used to run BEFORE the first frame (7-8 s to open the app).
   // None of it is needed to draw the start-up screen, so it now runs right after.
-  WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_startBackgroundServices()));
+  // A started-in-the-background engine draws no frame, so a timer starts the
+  // services there; with a screen the first frame does, whichever comes first.
+  var servicesStarted = false;
+  void startServices() {
+    if (servicesStarted) return;
+    servicesStarted = true;
+    unawaited(_startBackgroundServices());
+  }
+  WidgetsBinding.instance.addPostFrameCallback((_) => startServices());
+  Timer(const Duration(seconds: 3), startServices);
 }
 
 /// Completes when every language's date names are loaded; the start-up screen
@@ -168,10 +174,9 @@ Future<void> _startBackgroundServices() async {
     debugPrint('[Main] Warning: date formats failed: $e');
   }
 
-  // Inicializar Background GPS Service (iOS only: on Android the trip engine owns
-  // the GPS, see trip_link.dart).
+  // Inicializar Background GPS Service
   try {
-    if (!TripLink.isClient) await BackgroundGpsService.initialize();
+    await BackgroundGpsService.initialize();
     debugPrint('[Main] BackgroundGpsService initialized successfully');
   } catch (e) {
     debugPrint('[Main] Warning: BackgroundGpsService failed to initialize: $e');
@@ -198,10 +203,15 @@ Future<void> _startBackgroundServices() async {
 
   // The work-place reminders are gone: drop any geofences an older version left behind.
   try {
-    if (!TripLink.isClient) await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
+    await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
   } catch (e) {
     debugPrint('[Main] Warning: removing old work places failed: $e');
   }
+  // One engine for screens and trips (2026-11-07): Android may have started this
+  // engine with no screen (a drive began, or a trip carries on with the app
+  // closed). The open trip is picked up and DriveWakeService keeps the engine alive
+  // while a trip or a drive check needs it.
+  await TripHost.start();
   startupMark('background services ready');
 }
 

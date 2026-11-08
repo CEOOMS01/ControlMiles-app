@@ -28,9 +28,7 @@ class CmDriveWakePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         val prefs = ctx.getSharedPreferences(DriveWakeRegistrar.PREFS, Context.MODE_PRIVATE)
         when (call.method) {
             "register" -> {
-                val handle = (call.argument<Number>("handle"))?.toLong() ?: 0L
-                prefs.edit().putBoolean(DriveWakeRegistrar.KEY_ARMED, true)
-                    .putLong(DriveWakeRegistrar.KEY_HANDLE, handle).apply()
+                prefs.edit().putBoolean(DriveWakeRegistrar.KEY_ARMED, true).apply()
                 DriveWakeRegistrar.register(ctx) { ok -> result.success(ok) }
                 // Fence around where the phone is now, so the first drive is also caught.
                 DriveWakeRegistrar.refreshFenceHere(ctx)
@@ -45,12 +43,9 @@ class CmDriveWakePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(true)
             }
             "isArmed" -> result.success(DriveWakeRegistrar.isArmed(ctx))
-            // The app (or Tracelet with no engine) needs the trip engine.
+            // A trip needs the engine kept alive (the app, or Tracelet with no engine).
             "startEngine" -> {
-                val handle = (call.argument<Number>("handle"))?.toLong() ?: 0L
-                val edit = prefs.edit().putString(DriveWakeRegistrar.KEY_WAKE_SOURCE, "app")
-                if (handle != 0L) edit.putLong(DriveWakeRegistrar.KEY_HANDLE, handle)
-                edit.apply()
+                prefs.edit().putString(DriveWakeRegistrar.KEY_WAKE_SOURCE, "app").apply()
                 try {
                     androidx.core.content.ContextCompat.startForegroundService(
                         ctx, android.content.Intent(ctx, DriveWakeService::class.java)
