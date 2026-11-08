@@ -61,6 +61,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'background_gps_service.dart';
 import 'drive_wake.dart';
 import 'tracking_controller.dart';
+import 'trip_link.dart';
 import '../logic/app_state.dart';
 import '../services/gig_app_detection_service.dart';
 import '../services/diag_log.dart';
@@ -98,15 +99,8 @@ class AutoTripDetectionService {
     return (prefs.getStringList(_selectedGigAppIdsPrefKey) ?? const <String>[]).where((id) => id != 'custom').toSet();
   }
 
-  // Polling interval for "is a gig app in the foreground right now" --
-  // relies on the SAME foreground service flutter_background_geolocation
-  // already keeps alive while armed (persistent notification, immune to
-  // Android killing the process), not a separate background mechanism.
-  static const Duration _gigAppPollInterval = Duration(seconds: 30);
-
   bool _armed = false;
   bool _promptActive = false;
-  Timer? _pollTimer;
   Timer? _promptStuckTimer;
 
   // Real bug found live (2026-08-27, "solo detecta 1 o 2 apps y no
@@ -176,8 +170,6 @@ class AutoTripDetectionService {
   /// restoreFromPrefs's notification -- can now tell.
   Future<bool> setEnabled(bool enabled) async {
     _armed = enabled;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     if (!enabled) {
       lastDetectedGigAppId = null;
       // Don't carry a stale prompt guard into the NEXT activation --
@@ -195,32 +187,13 @@ class AutoTripDetectionService {
       // Android: the phone sleeps until Android says it entered a vehicle (no GPS,
       // no notification while idle; see drive_wake.dart). Elsewhere the engine
       // keeps listening the old way.
-      if (DriveWake.isSupported && TrackingController.currentState == TrackingState.idle) {
-        // A listening service left over from an older version: no trip is running,
-        // so let it go (its notification goes with it).
-        await BackgroundGpsService.stopTracking();
-      }
       final gpsOk = DriveWake.isSupported
           ? await DriveWake.register()
           : await BackgroundGpsService.startTracking();
-      if (GigAppDetectionService.instance.isSupported) {
-        // Pre-warm the package catalog NOW, while this call is guaranteed
-        // to be running from a real foreground user action (the Settings/
-        // drawer toggle) -- see GigAppDetectionService's own comment on
-        // why leaving this to the poll timer's first tick is fragile.
-        // Best-effort: if it fails here (rare -- would need a real outage
-        // right at this moment), the poll's own lazy retry is still the
-        // fallback, unchanged.
-        await GigAppDetectionService.instance.preloadCatalog();
-        _pollTimer = Timer.periodic(
-          _gigAppPollInterval,
-          (_) => _pollForGigApp(),
-        );
-      }
       return gpsOk;
     } else {
       await DriveWake.unregister();
-      if (TrackingController.currentState == TrackingState.idle) {
+      if (!TripLink.isClient && TrackingController.currentState == TrackingState.idle) {
         await BackgroundGpsService.stopTracking();
       }
     }
@@ -454,48 +427,6 @@ class AutoTripDetectionService {
     return true;
   }
 
-  // REAL BUG FIX (2026-08-28, "bug silencioso en auto-detección"): the
-  // 30s poll used to only ever check for a gig app, never whether the
-  // GPS engine underneath was still actually alive -- it could die
-  // AFTER a successful activation (permission revoked mid-session,
-  // Android killing the plugin, etc.) with nothing ever re-checking.
-  // One attempted restart per idle poll tick; a real notification only
-  // fires with a cooldown (not every 30s) so a genuinely stuck state
-  // doesn't spam the driver.
-
-  Future<void> _pollForGigApp() async {
-    if (!_armed) return;
-
-    final state = TrackingController.currentState;
-
-    if (state != TrackingState.idle) {
-      // A trip is open: handleRunningFix follows the apps from the GPS fixes.
-      lastDetectedGigAppId = null;
-      return;
-    }
-
-    // Android sleeps without GPS on purpose (see drive_wake.dart): an idle engine is
-    // not a fault there, and starting it here would bring its notification back.
-    if (!DriveWake.isSupported && !BackgroundGpsService.isRunning) {
-      final restarted = await BackgroundGpsService.startTracking();
-      if (!restarted) {
-        DiagLog.add('health check: GPS engine did not restart');
-        return;
-      }
-    }
-
-    if (_promptActive) return;
-    // General: no app decides anything, driving does (see handleIdleFix).
-    if (await _isGeneralMode()) {
-      lastDetectedGigAppId = null;
-      return;
-    }
-    // 2026-11-05: opening the app is no longer enough. The trip starts when the
-    // driver also MOVES (see handleIdleFix), so a gig app left open at home
-    // never records a trip.
-    lastDetectedGigAppId = await GigAppDetectionService.instance.detectActiveGigAppId(await _selectedApps());
-  }
-
   /// REVISED 2026-08-28, explicit user request: "la detección automática
   /// de gig app es automática... el flujo no debe ni tiene que pedirle a
   /// un cliente que toque una notificación para hacer switch." The old
@@ -598,6 +529,14 @@ class AutoTripDetectionService {
   /// Armed in this isolate, or armed according to the saved setting. The second
   /// is what the headless isolate Android starts while the app is closed sees:
   /// it never ran setEnabled, so its own flag is false.
+  /// The engine reads the photo the app just took for a trip started by the button.
+  Future<void> reloadShiftStartOdometer() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
+    shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
+  }
+
   Future<bool> _isArmedNow() async {
     final prefs = await SharedPreferences.getInstance();
     // The headless isolate's cache can be older than what the app saved since.
@@ -741,7 +680,9 @@ class AutoTripDetectionService {
           .maybeSingle();
       if (row?['premium_entitled'] == true) return true;
     } catch (_) {
-      return true;
+      // No signal: the plan the phone last saw decides (Basic never gets automatic trips).
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('controlmiles_premium_entitled') ?? false) return true;
     }
     DiagLog.add('automatic detection off: the account is not Premium');
     _armed = false;

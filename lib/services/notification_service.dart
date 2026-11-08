@@ -24,7 +24,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../i18n/app_texts.dart';
 import '../theme/app_colors.dart';
-import '../tracking/trip_inactivity.dart';
 
 class NotificationService {
   NotificationService._internal();
@@ -34,20 +33,18 @@ class NotificationService {
 
   bool _initialized = false;
 
-  // Ids of the two notifications that remain.
-  static const int _tripStillId = 1044;
+  // Id of the one notification that remains.
   static const int _tripInfoId = 1045;
-  static const String _actTripContinue = 'trip_still_continue';
-  static const String _actTripEnd = 'trip_still_end';
 
   static const String _channelId = 'controlmiles_trip_alerts';
   static const String _channelName = 'Trip alerts';
-  static const String _channelDescription = 'Asks if your trip is over, and tells you when a still trip was closed';
+  static const String _channelDescription = 'Tells you when a trip that stopped moving was closed';
 
   // Ids and channels of the notifications that no longer exist: cancelled and
   // removed once on startup so an update leaves nothing behind (scheduled alarms
   // included).
   static const List<int> _oldIds = [
+    1044, // "did you end your trip?" (2026-11-07: closed without asking now)
     1001, 1002, 1004, 1005, 1006, // forgotten trip, weekly summary, app switch, auto start, auto failed
     1007, 1008, 1009, 1010, 1011, 1012, // pause reminder ladder
     1013, 1014, // paused status, GPS alert
@@ -139,14 +136,7 @@ class NotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    // "Did you finish your trip?" buttons (see TripInactivity).
-    if (response.payload == 'trip_still') {
-      if (response.actionId == _actTripEnd) {
-        unawaited(TripInactivity.endNow());
-      } else if (response.actionId == _actTripContinue) {
-        unawaited(TripInactivity.continueTrip());
-      }
-    }
+    // Every notice only opens the app; none has buttons of its own.
   }
 
   // The language comes straight from SharedPreferences (same key as AppState),
@@ -167,44 +157,9 @@ class NotificationService {
   }
 
   // ============================================================
-  // A TRIP THAT STOPPED MOVING (see TripInactivity)
-  // The question has two buttons that open the app and answer it; the other is
-  // a plain notice of what the app just did.
+  // A TRIP THAT STOPPED MOVING (see TripInactivity): a plain notice of what
+  // the app just did.
   // ============================================================
-  Future<void> showTripStillPrompt() async {
-    if (!await _lightInit()) return;
-    final title = await _tr('trip_still_title');
-    final body = await _tr('trip_still_body');
-    final keepGoing = await _tr('trip_still_continue');
-    final endTrip = await _tr('trip_still_end');
-    await _plugin.show(
-      _tripStillId,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          color: kBrandSeed,
-          timeoutAfter: 5 * 60 * 1000,
-          actions: [
-            AndroidNotificationAction(_actTripContinue, keepGoing, showsUserInterface: true, cancelNotification: true),
-            AndroidNotificationAction(_actTripEnd, endTrip, showsUserInterface: true, cancelNotification: true),
-          ],
-        ),
-      ),
-      payload: 'trip_still',
-    );
-  }
-
-  Future<void> cancelTripStillPrompt() async {
-    if (!await _lightInit()) return;
-    await _plugin.cancel(_tripStillId);
-  }
-
   /// The app closed a trip that sat still for too long.
   Future<void> showTripAutoClosed() async {
     if (!await _lightInit()) return;

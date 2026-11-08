@@ -52,13 +52,6 @@ class GigAppDetectionService {
     }
   }
 
-  /// Public entry point so callers can pre-warm the catalog at a moment
-  /// they know has real network access (see AutoTripDetectionService.
-  /// setEnabled/restoreFromPrefs) instead of leaving the first-ever fetch
-  /// to whenever the poll timer happens to tick -- see _ensureCatalogLoaded's
-  /// own comment for why that timing matters.
-  Future<void> preloadCatalog() => _ensureCatalogLoaded();
-
   Future<void> _ensureCatalogLoaded() async {
     if (_packageToGigAppId != null) return;
     try {
@@ -89,10 +82,8 @@ class GigAppDetectionService {
       // app stays backgrounded (the driver is still in the gig app --
       // exactly when detection matters most), it can keep failing for
       // the rest of that armed stint, with detection silently dead the
-      // whole time. Callers should prefer preloadCatalog() at a moment
-      // guaranteed to have real foreground network access (see
-      // AutoTripDetectionService.setEnabled/restoreFromPrefs) instead of
-      // relying on this lazy path succeeding eventually.
+      // whole time. Since 2026-11-07 only the trip engine looks apps up,
+      // and it runs as a foreground service with network access.
     }
   }
 

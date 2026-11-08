@@ -25,6 +25,7 @@ import 'theme/cm_colors.dart';
 import 'theme/screen_fit.dart';
 
 // Servicios de Hardware y Fondo
+import 'tracking/trip_link.dart';
 import 'tracking/background_gps_service.dart';
 import 'tracking/auto_trip_detection_service.dart';
 import 'services/notification_service.dart';
@@ -118,6 +119,9 @@ Future<void> main() async {
     onError: (Object e) => debugPrint('[Main] Supabase init failed: $e'),
   ));
 
+  // One trip engine: the app only sends commands and mirrors the trip.
+  TripLink.startClient();
+
   startupMark('before runApp');
   // Inyectar el Estado Global
   runApp(
@@ -164,9 +168,10 @@ Future<void> _startBackgroundServices() async {
     debugPrint('[Main] Warning: date formats failed: $e');
   }
 
-  // Inicializar Background GPS Service
+  // Inicializar Background GPS Service (iOS only: on Android the trip engine owns
+  // the GPS, see trip_link.dart).
   try {
-    await BackgroundGpsService.initialize();
+    if (!TripLink.isClient) await BackgroundGpsService.initialize();
     debugPrint('[Main] BackgroundGpsService initialized successfully');
   } catch (e) {
     debugPrint('[Main] Warning: BackgroundGpsService failed to initialize: $e');
@@ -193,7 +198,7 @@ Future<void> _startBackgroundServices() async {
 
   // The work-place reminders are gone: drop any geofences an older version left behind.
   try {
-    await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
+    if (!TripLink.isClient) await BackgroundGpsService.removeLegacyWorkPlaceGeofences();
   } catch (e) {
     debugPrint('[Main] Warning: removing old work places failed: $e');
   }

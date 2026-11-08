@@ -42,19 +42,21 @@
 // between one tick and the next is losing that one tick's worth of
 // distance/time (seconds, a few meters) -- not the trip.
 import 'dart:async';
+import 'dart:ui' show PluginUtilities;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracelet/tracelet.dart' as tl;
 
 import '../../i18n/app_texts.dart';
 import '../../models/gig_app.dart';
-import '../../services/supabase_bootstrap.dart';
 import '../tracking_controller.dart';
 import '../location_profile.dart';
 import '../tracking_notification.dart';
 import '../../services/diag_log.dart';
 import '../auto_trip_detection_service.dart';
+import '../drive_wake.dart';
 
 class TraceletEngine {
   static final TraceletEngine _instance = TraceletEngine._internal();
@@ -63,11 +65,6 @@ class TraceletEngine {
 
   bool isTracking = false;
   static bool _isInitialized = false;
-
-  // True in the headless isolate Android starts while the app is closed. There the
-  // native engine is already configured and running; configuring it again from
-  // this isolate (Tracelet.ready) is not attempted.
-  static bool _inHeadless = false;
 
   static bool get isRunning => _instance.isTracking;
 
@@ -78,46 +75,18 @@ class TraceletEngine {
   // callback handle via dart:ui's PluginUtilities, same constraint
   // flutter_background_geolocation's registerHeadlessTask already has
   // (see bg_geolocation_engine.dart, unchanged there).
+  // 2026-11-07, one trip engine: Tracelet runs this in an engine of its own when a
+  // fix arrives and no engine is listening (Android only). It records nothing: it
+  // starts the trip engine, which picks up the open trip, and ends.
   @pragma('vm:entry-point')
   static void _headlessTask(tl.HeadlessEvent event) async {
-    debugPrint('[TraceletEngine] Headless: ${event.name}');
-    DiagLog.tag = 'headless';
-
     if (event.name != 'location') return;
-
-    _inHeadless = !_isInitialized;
-    final location = tl.Location.fromMap(event.event);
-    final coords = location.coords;
-    final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
-    final isMock = location.mockHeuristics?.platformFlagMock == true;
-    DiagLog.add('fix', {
-      'lat': DiagLog.coarse(coords.latitude),
-      'lng': DiagLog.coarse(coords.longitude),
-      'v': safeSpeed.toStringAsFixed(1),
-      'acc': coords.accuracy.toStringAsFixed(0),
-      'mock': isMock,
-      'state': TrackingController.currentState.name,
-    });
-
-    // This isolate never ran main(): the backend client must exist before the
-    // tick looks for an open trip.
     try {
-      await SupabaseBootstrap.ensure();
+      final handle = PluginUtilities.getCallbackHandle(driveWakeEntry);
+      await const MethodChannel('controlmiles/drive_wake').invokeMethod('startEngine', {'handle': handle?.toRawHandle()});
     } catch (e) {
-      debugPrint('[TraceletEngine] Headless: backend not ready: $e');
-      return;
+      debugPrint('[TraceletEngine] Headless: could not start the trip engine: $e');
     }
-
-    await TrackingController.processGpsTick(
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      speed: safeSpeed,
-      accuracy: coords.accuracy,
-      timestamp: DateTime.parse(location.timestamp),
-      isMock: isMock,
-    );
-
-    await _afterFix(safeSpeed, coords.accuracy, isMock);
   }
 
   /// After a fix was counted, in whichever engine received it. It runs second so a
@@ -264,7 +233,7 @@ class TraceletEngine {
   // START TRACKING
   // =========================================================
   static Future<bool> startTracking() async {
-    if (!_isInitialized && !_inHeadless) {
+    if (!_isInitialized) {
       await initialize();
       if (!_isInitialized) return false;
     }
@@ -403,6 +372,11 @@ class TraceletEngine {
               locationUpdateInterval: profile.intervalMs,
               fastestLocationUpdateInterval: profile.fastestIntervalMs,
             ),
+            // 2026-11-07: Tracelet's own stop detection switched the GPS off after
+            // 5 minutes parked and did not switch it back on when the car moved
+            // again: trips lost most of their miles and nothing counted the 10
+            // still minutes. During a trip the GPS stays on and TripInactivity ends it.
+            motion: tl.MotionConfig(disableStopDetection: hasTrip),
           ),
         );
         _appliedProfileIsTrip = hasTrip;

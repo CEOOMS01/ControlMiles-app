@@ -30,6 +30,20 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.26+66 — 2026-11-07 (built, for Play)
+
+- The GPS no longer switches itself off during a trip after 5 minutes parked. That stop never undid itself, so trips
+  lost most of their miles (2026-11-07: about 53 of 111 miles, measured against another tracker on the same phone).
+- A trip the phone starts with the app closed stays alive until it ends, instead of losing its GPS seconds later.
+- A trip still for 10 minutes ends by itself, at the moment the car stopped, with a notice. No question first, on every
+  plan. A trip left open (app closed, or forced to stop) is closed the same way when the app opens.
+- Diagnostic log: no more cut lines, and one upload per tap.
+- One trip engine (Android): a single background engine owns every trip -- GPS, start, gig-app switch, pause, end and
+  the 10-minute close. The open app only sends commands and shows what the engine reports, and Tracelet's headless
+  engine only wakes it. Before, up to three engines held their own copy of the same trip.
+- Removed dead code: the 30-second gig-app poll, the catalog pre-warm and the headless engine's own trip recording.
+- Basic: with no signal, the phone's last known plan decides; automatic trips stay Premium only.
+
 ## 1.3.25+65 — 2026-11-07 (built, for Play)
 
 - Odometer: two photos a year is the rule on every plan. Premium can choose weekly or monthly in the vehicle's odometer

@@ -27,15 +27,25 @@ import io.flutter.view.FlutterCallbackInformation
  */
 class DriveWakeService : Service() {
     private var engine: FlutterEngine? = null
+    private var bgChannel: MethodChannel? = null
     private val handler = Handler(Looper.getMainLooper())
+    // Set by the engine while it carries a trip: no time limit, and its notice
+    // hidden while the trip's own tracking notice shows (kept while paused).
+    private var keptForTrip = false
+    private var keptNotice = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         showForeground()
-        if (engine == null) startEngine()
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({ stopSelf() }, MAX_LIFETIME_MS)
+        // Already running: it is the one trip engine, tell it what happened.
+        if (engine == null) startEngine() else bgChannel?.invokeMethod("wake", null)
+        if (keptForTrip) {
+            if (!keptNotice) stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            handler.removeCallbacksAndMessages(null)
+            handler.postDelayed({ stopSelf() }, MAX_LIFETIME_MS)
+        }
         return START_NOT_STICKY
     }
 
@@ -83,10 +93,18 @@ class DriveWakeService : Service() {
         // Registers the app's plugins (Supabase storage, Tracelet, ...) too.
         val e = FlutterEngine(applicationContext)
         engine = e
-        MethodChannel(e.dartExecutor.binaryMessenger, BG_CHANNEL).setMethodCallHandler { call, result ->
+        val channel = MethodChannel(e.dartExecutor.binaryMessenger, BG_CHANNEL)
+        bgChannel = channel
+        channel.setMethodCallHandler { call, result ->
             if (call.method == "finished") {
                 result.success(null)
                 stopSelf()
+            } else if (call.method == "keepAlive") {
+                keptForTrip = true
+                keptNotice = call.argument<Boolean>("notice") ?: false
+                handler.removeCallbacksAndMessages(null)
+                if (keptNotice) showForeground() else stopForeground(STOP_FOREGROUND_REMOVE)
+                result.success(null)
             } else {
                 result.notImplemented()
             }
@@ -104,6 +122,7 @@ class DriveWakeService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        bgChannel = null
         engine?.destroy()
         engine = null
         super.onDestroy()

@@ -10,6 +10,7 @@ import '../models/gig_app.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_bootstrap.dart';
 import '../services/auth_service.dart';
+import '../tracking/trip_link.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../tracking/background_gps_service.dart';
 
@@ -524,7 +525,11 @@ class AppState extends ChangeNotifier {
     await prefs.setStringList(_kWorkMode, [mode]);
     await _saveOwn(prefs, _kWorkMode, [mode]);
     // The always-on card words itself by mode (General vs gig apps).
-    await BackgroundGpsService.resyncNotification();
+    if (TripLink.isClient) {
+      await TripLink.command('resync', const {}, false);
+    } else {
+      await BackgroundGpsService.resyncNotification();
+    }
   }
 
   List<String> get gigAppOrder => List.unmodifiable(_gigAppOrder);

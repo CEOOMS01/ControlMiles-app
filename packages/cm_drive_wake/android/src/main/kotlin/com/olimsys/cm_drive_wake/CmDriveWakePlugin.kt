@@ -45,6 +45,21 @@ class CmDriveWakePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(true)
             }
             "isArmed" -> result.success(DriveWakeRegistrar.isArmed(ctx))
+            // The app (or Tracelet with no engine) needs the trip engine.
+            "startEngine" -> {
+                val handle = (call.argument<Number>("handle"))?.toLong() ?: 0L
+                val edit = prefs.edit().putString(DriveWakeRegistrar.KEY_WAKE_SOURCE, "app")
+                if (handle != 0L) edit.putLong(DriveWakeRegistrar.KEY_HANDLE, handle)
+                edit.apply()
+                try {
+                    androidx.core.content.ContextCompat.startForegroundService(
+                        ctx, android.content.Intent(ctx, DriveWakeService::class.java)
+                    )
+                    result.success(true)
+                } catch (e: Exception) {
+                    result.error("start_failed", e.message, null)
+                }
+            }
             // What woke the app ("vehicle" or "fence") and where the phone was parked.
             "wakeInfo" -> {
                 val a = DriveWakeRegistrar.anchor(ctx)

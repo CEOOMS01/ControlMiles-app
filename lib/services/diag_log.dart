@@ -1,9 +1,9 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/services/diag_log.dart
 //
-// Diagnostic log (2026-11-06). Background tracking runs in several Dart isolates
-// (the open app, the short-lived wake engine, Tracelet's headless engine), none of
-// which can be watched from outside in a store build. Every one of them appends
+// Diagnostic log (2026-11-06). Trips run in the trip engine and the screens in the
+// app (see trip_link.dart), neither of which can be watched from outside in a store
+// build. Both append
 // short lines to the same file; Settings can send it to the server so a trip can be
 // reconstructed afterwards. It holds no personal text: times, coordinates rounded to
 // ~100 m, counts and reasons.
@@ -18,7 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class DiagLog {
   DiagLog._();
 
-  /// Which isolate writes: 'ui', 'wake' or 'headless'. Each entry point sets it.
+  /// Which engine writes: 'ui' (the screens) or 'engine' (the one trip engine).
   static String tag = 'ui';
 
   static const _maxBytes = 400 * 1024;
@@ -42,7 +42,9 @@ class DiagLog {
       await f.writeAsString(line, mode: FileMode.append, flush: true);
       if (await f.length() > _maxBytes) {
         final text = await f.readAsString();
-        await f.writeAsString(text.substring(text.length ~/ 2));
+        // Keep the newer half, starting at a whole line.
+        final cut = text.indexOf('\n', text.length ~/ 2);
+        await f.writeAsString(cut < 0 ? '' : text.substring(cut + 1));
       }
     } catch (e) {
       debugPrint('[DiagLog] $e');
@@ -53,7 +55,12 @@ class DiagLog {
   static String coarse(double v) => v.toStringAsFixed(3);
 
   /// Sends the file to the server; true when it was saved there.
+  static bool _uploading = false;
+
   static Future<bool> upload() async {
+    // Repeated taps sent the same file several times (2026-11-07: 10 rows, 2 distinct).
+    if (_uploading) return false;
+    _uploading = true;
     try {
       final f = await _open();
       if (!await f.exists()) return false;
@@ -69,6 +76,8 @@ class DiagLog {
     } catch (e) {
       debugPrint('[DiagLog] upload failed: $e');
       return false;
+    } finally {
+      _uploading = false;
     }
   }
 }
