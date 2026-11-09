@@ -95,7 +95,7 @@ class TripAddressService {
           .from('session_sections')
           .select('id')
           .eq('user_id', uid)
-          .eq('section_status', 'closed')
+          .inFilter('section_status', const ['closed', 'switched'])
           .isFilter('organization_id', null)
           .eq('address_edited', false)
           .or('and(start_address.is.null,start_latitude.not.is.null),and(end_address.is.null,end_latitude.not.is.null)')

@@ -1033,7 +1033,11 @@ class TrackingController {
         segmentDiscarded.value = oldSection.gigApp;
       }
       // The old segment is closed: send its route drawing.
-      if (oldSection != null) unawaited(RouteRecorder.upload(oldSection.id));
+      if (oldSection != null) {
+        unawaited(RouteRecorder.upload(oldSection.id));
+        // A segment that ends on an app switch needs its addresses too.
+        unawaited(TripAddressService.fillSection(oldSection.id));
+      }
 
       _logDebug('SWITCH_OK', 'Switched atomically → gig_app: $newGigApp');
       return true;
