@@ -1169,7 +1169,7 @@ const Map<String, String> zhTexts = {
   'purpose_edit_address': "修改地址",
   'purpose_uncategorized_banner': "{n} 次行程待分类",
   'purpose_categorize_now': "去分类",
-  'trip_autoclosed_body': "因 10 分钟没有移动，我们已将其结束。打开 ControlMiles 进行核对。",
+  'trip_autoclosed_body': "因 5 分钟没有移动，我们已将其结束。打开 ControlMiles 进行核对。",
   'work_type_title': "您是怎么工作的？",
   'work_type_sub': "这决定您看到哪些按钮。您可以随时在设置中更改。",
   'work_type_gig': "使用 DoorDash 或 Uber 等应用",

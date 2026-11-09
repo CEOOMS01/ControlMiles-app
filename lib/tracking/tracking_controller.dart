@@ -1198,7 +1198,10 @@ class TrackingController {
       }
 
       lastStopDiscarded = discarded;
-      lastStopAt = DateTime.now();
+      // A trip closed for not moving already waited [TripInactivity.stillFor]: the
+      // restart cooldown counts from when the car stopped, or the next drive would
+      // lose its first minutes.
+      lastStopAt = endedAt ?? DateTime.now();
       DiagLog.add('trip stopped', {'discarded': discarded, 'miles': _lastLoggedStopMiles.toStringAsFixed(3)});
       // The car is parked here: the next exit fence goes here (Android also reports it).
       unawaited(DriveWake.refreshFence());

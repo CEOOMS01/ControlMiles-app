@@ -1150,7 +1150,7 @@ const Map<String, String> hiTexts = {
   'purpose_edit_address': "पता बदलें",
   'purpose_uncategorized_banner': "{n} यात्राओं की श्रेणी चुनना बाकी है",
   'purpose_categorize_now': "श्रेणी चुनें",
-  'trip_autoclosed_body': "10 मिनट तक कोई हलचल न होने पर हमने इसे बंद कर दिया। जाँचने के लिए ControlMiles खोलें।",
+  'trip_autoclosed_body': "5 मिनट तक कोई हलचल न होने पर हमने इसे बंद कर दिया। जाँचने के लिए ControlMiles खोलें।",
   'work_type_title': "आप कैसे काम करते हैं?",
   'work_type_sub': "इससे तय होता है कि आपको कौन-से बटन दिखें। आप इसे कभी भी सेटिंग्स में बदल सकते हैं।",
   'work_type_gig': "DoorDash या Uber जैसे ऐप के साथ",

@@ -1168,7 +1168,7 @@ const Map<String, String> frTexts = {
   'purpose_edit_address': "Modifier l'adresse",
   'purpose_uncategorized_banner': "{n} trajets à catégoriser",
   'purpose_categorize_now': "Catégoriser",
-  'trip_autoclosed_body': "Nous l'avons fermé après 10 minutes sans mouvement. Ouvrez ControlMiles pour le vérifier.",
+  'trip_autoclosed_body': "Nous l'avons fermé après 5 minutes sans mouvement. Ouvrez ControlMiles pour le vérifier.",
   'work_type_title': "Comment travaillez-vous ?",
   'work_type_sub': "Cela détermine les boutons que vous voyez. Vous pouvez le changer à tout moment dans les Réglages.",
   'work_type_gig': "Avec des apps comme DoorDash ou Uber",

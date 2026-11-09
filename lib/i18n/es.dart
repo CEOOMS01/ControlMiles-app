@@ -713,7 +713,7 @@ const Map<String, String> esTexts = {
   'purpose_edit_address':'Editar dirección',
   'purpose_uncategorized_banner': '{n} viajes sin categoría',
   'purpose_categorize_now': 'Categorizar',
-  'trip_autoclosed_body': 'Lo cerramos tras 10 minutos sin movimiento. Abre ControlMiles para revisarlo.',
+  'trip_autoclosed_body': 'Lo cerramos tras 5 minutos sin movimiento. Abre ControlMiles para revisarlo.',
   'work_type_title': '¿Cómo trabajas?',
   'work_type_sub': 'Así decidimos qué botones ves. Lo puedes cambiar cuando quieras en Ajustes.',
   'work_type_gig': 'Con apps como DoorDash o Uber',

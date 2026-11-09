@@ -30,13 +30,20 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## 1.3.29+69 — 2026-11-09 (built, for Play)
+## 1.3.28+68 — 2026-11-09
+
+- A trip now closes after 5 minutes without movement (it was 10), still ending when the car stopped. The automatic
+  restart wait after such a close counts from when the car stopped, so the next drive keeps its first minutes.
+- Only 2.5 m/s or faster (or a jump of 25 m) now counts as movement for that clock; GPS noise at 1.5 m/s while parked
+  kept restarting it.
+
+## 1.3.27/2 — 2026-11-09 (built, not uploaded; included in 1.3.28+68)
 
 - My Trips shows each trip's whole route: the map keeps its own shape instead of a short band that cut off the top
   and bottom. New start (blue arrow) and arrival (gold) icons replace the green and red ones on the trip card; the
   maps themselves are drawn by the website (controlmiles-web, `src/lib/trip-map/markers.ts`).
 
-## 1.3.28+68 — 2026-11-09 (built, for Play)
+## 1.3.27/1 — 2026-11-09 (built, not uploaded; included in 1.3.28+68)
 
 - Reports: "Generate report" now asks PDF or CSV. The CSV (Excel, Google Sheets) has one line per segment, oldest
   first, with date, times, category, app, addresses, miles, rate, value, vehicle, odometer and notes. It reads the

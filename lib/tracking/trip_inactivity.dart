@@ -1,8 +1,9 @@
 // Olympus Mont Systems LLC - ControlMiles
 // lib/tracking/trip_inactivity.dart
 //
-// A trip that stops moving (2026-11-07, explicit decision, same for every plan):
-// after 10 minutes without movement the trip is closed by itself, ending when the
+// A trip that stops moving (2026-11-07, explicit decision, same for every plan;
+// 10 minutes until 2026-11-09, when the owner lowered it):
+// after 5 minutes without movement the trip is closed by itself, ending when the
 // car stopped, and a notice says so. Moving again starts a new trip. The driver
 // can always end it sooner with End trip. Personal trips only: fleet trips are
 // never touched.
@@ -13,8 +14,9 @@
 // isolate sees the movement and read back (with a reload) by the timer and by the
 // next fix, so they all agree.
 //
-// What counts as motion: a valid fix at 1.5 m/s or faster, or a jump of 25 m or
-// more since the previous one. GPS jitter while parked is smaller than both.
+// What counts as motion: a valid fix at 2.5 m/s or faster, or a jump of 25 m or
+// more since the previous one. GPS jitter while parked is smaller than both
+// (2026-11-09: a parked phone read 1.5 m/s, the old limit, and restarted the clock).
 
 import 'dart:async';
 
@@ -28,8 +30,8 @@ import 'tracking_controller.dart';
 class TripInactivity {
   TripInactivity._();
 
-  static const Duration stillFor = Duration(minutes: 10);
-  static const double movingSpeedMps = 1.5;
+  static const Duration stillFor = Duration(minutes: 5);
+  static const double movingSpeedMps = 2.5;
   static const double movingJumpMeters = 25.0;
 
   static const _kLastMotion = 'trip_last_motion_ms';
@@ -124,7 +126,7 @@ class TripInactivity {
         now: DateTime.now(),
       );
       if (endedAt == null) return;
-      DiagLog.add('trip still for 10 minutes: closing it');
+      DiagLog.add('trip still for ${stillFor.inMinutes} minutes: closing it');
       if (await TrackingController.stopTracking(endedAt: endedAt)) {
         await NotificationService.instance.showTripAutoClosed();
       }

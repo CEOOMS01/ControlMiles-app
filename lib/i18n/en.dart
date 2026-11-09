@@ -729,7 +729,7 @@ const Map<String, String> enTexts = {
   'purpose_edit_address':'Edit address',
   'purpose_uncategorized_banner': '{n} trips need a category',
   'purpose_categorize_now': 'Categorize',
-  'trip_autoclosed_body': 'We closed it after 10 minutes without movement. Open ControlMiles to review it.',
+  'trip_autoclosed_body': 'We closed it after 5 minutes without movement. Open ControlMiles to review it.',
   'work_type_title': 'How do you work?',
   'work_type_sub': 'This sets which buttons you see. You can change it any time in Settings.',
   'work_type_gig': 'With apps like DoorDash or Uber',
