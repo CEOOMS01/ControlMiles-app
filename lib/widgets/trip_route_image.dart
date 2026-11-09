@@ -12,6 +12,11 @@ import 'package:provider/provider.dart';
 import '../logic/app_state.dart';
 import 'brand_loader.dart';
 
+/// The route picture of a trip, or of one segment of it. `v` is the drawing's
+/// version: closed trips are cached for a year, so a new drawing needs a new address.
+String tripMapUrl(String sessionId, String mapToken, {String? sectionId}) =>
+    'https://controlmiles.com/api/trip-map/$sessionId/$mapToken?${sectionId == null ? '' : 'section=$sectionId&'}lite=1&v=2';
+
 class TripRouteImage extends StatefulWidget {
   final String sessionId;
   final String mapToken;
@@ -22,7 +27,6 @@ class TripRouteImage extends StatefulWidget {
 }
 
 class _TripRouteImageState extends State<TripRouteImage> {
-  static const _base = 'https://controlmiles.com/api/trip-map';
   bool _open = false;
 
   @override
@@ -45,7 +49,7 @@ class _TripRouteImageState extends State<TripRouteImage> {
             child: AspectRatio(
               aspectRatio: 640 / 360,
               child: SvgPicture.network(
-                '$_base/${widget.sessionId}/${widget.mapToken}?lite=1',
+                tripMapUrl(widget.sessionId, widget.mapToken),
                 fit: BoxFit.cover,
                 placeholderBuilder: (_) => const Center(child: BrandLoader(size: 36)),
               ),

@@ -194,6 +194,9 @@ const Map<String, String> enTexts = {
   'generate_pdf': 'Generate PDF',
   'generate_global_pdf': 'Generate Global PDF',
   'generate_report_btn': "Generate report",
+  'report_choose_format': "Choose the report format",
+  'report_format_pdf_desc': "To print or send",
+  'report_format_csv_desc': "To open in Excel or Google Sheets",
   'tracking_notif_recording': "ControlMiles is recording your trip",
   'trip_note': 'Trip note',
   'trip_note_hint': 'e.g. "missed 5 miles — GPS signal lost"',
@@ -1196,7 +1199,7 @@ const Map<String, String> enTexts = {
   'vehicle_limit_reached_title': 'Vehicle limit reached',
   'vehicle_limit_reached_body': 'Your plan allows up to {max} vehicle(s). Upgrade to add more.',
   'export_limit_reached_title': 'Export limit reached',
-  'export_limit_reached_body': 'Basic plans include 2 PDF exports per month. Upgrade to Premium for unlimited exports.',
+  'export_limit_reached_body': 'Basic plans include 2 report exports (PDF or CSV) per month. Upgrade to Premium for unlimited exports.',
 
   // Fleet driver invite link (Sprint 1 close, 2026-09-09)
   'invite_landing_title': '{org} invited you to join',

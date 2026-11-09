@@ -779,6 +779,9 @@ const Map<String, String> frTexts = {
   'forgot_password_body': 'Entrez l\'email de votre compte et nous vous enverrons un code pour réinitialiser votre mot de passe.',
   'generate_global_pdf': 'Générer le PDF global',
   'generate_report_btn': "Générer le rapport",
+  'report_choose_format': "Choisissez le format du rapport",
+  'report_format_pdf_desc': "Pour imprimer ou envoyer",
+  'report_format_csv_desc': "À ouvrir dans Excel ou Google Sheets",
   'tracking_notif_recording': "ControlMiles enregistre votre trajet",
   'greeting_afternoon': 'Bon après-midi',
   'greeting_evening': 'Bonsoir',
@@ -976,7 +979,7 @@ const Map<String, String> frTexts = {
   'vehicle_limit_reached_title': 'Limite de véhicules atteinte',
   'vehicle_limit_reached_body': 'Votre forfait autorise jusqu\'à {max} véhicule(s). Passez à un forfait supérieur pour en ajouter.',
   'export_limit_reached_title': "Limite d'export atteinte",
-  'export_limit_reached_body': "Le forfait Basic inclut 2 exports PDF par mois. Passez à Premium pour des exports illimités.",
+  'export_limit_reached_body': "Le forfait Basic inclut 2 exports de rapports (PDF ou CSV) par mois. Passez à Premium pour des exports illimités.",
 
   // Lien d'invitation de flotte (clôture Sprint 1, 2026-09-09)
   'invite_landing_title': '{org} vous a invité à rejoindre',

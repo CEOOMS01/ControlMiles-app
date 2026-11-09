@@ -30,6 +30,19 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.29+69 — 2026-11-09 (built, for Play)
+
+- My Trips shows each trip's whole route: the map keeps its own shape instead of a short band that cut off the top
+  and bottom. New start (blue arrow) and arrival (gold) icons replace the green and red ones on the trip card; the
+  maps themselves are drawn by the website (controlmiles-web, `src/lib/trip-map/markers.ts`).
+
+## 1.3.28+68 — 2026-11-09 (built, for Play)
+
+- Reports: "Generate report" now asks PDF or CSV. The CSV (Excel, Google Sheets) has one line per segment, oldest
+  first, with date, times, category, app, addresses, miles, rate, value, vehicle, odometer and notes. It reads the
+  same rows as the PDF, and counts toward the same monthly export limit on Basic. New package: share_plus.
+- Gig segments closed by an app switch now get their start and end addresses, and old ones fill in when the app opens.
+
 ## 1.3.27+67 — 2026-11-07 (built, for Play)
 
 - One Flutter engine (Android), modelled on MileIQ's single drive service: the screen and the trips share the app's

@@ -14,15 +14,22 @@
 // business-group trips use the business rate, medical/moving and charity their
 // own rates, personal ones nothing.
 //
-// Only the global report exists (one PDF for the date range chosen in Reports).
+// Only the global report exists (one file for the date range chosen in Reports).
+//
+// 2026-11-09: the same trip log can leave as CSV, for Excel or Google Sheets.
+// Both formats read _logRows, so a CSV and a PDF of one range always agree.
 
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 
 import '../data/irs_rates.dart';
@@ -39,6 +46,36 @@ class _Slice {
   final double miles;
   final double cents; // value in cents
   double get dollars => cents / 100.0;
+}
+
+/// One line of the trip log: a segment, or a whole trip with no usable segment.
+class _LogRow {
+  _LogRow({
+    required this.session,
+    required this.at,
+    required this.endAt,
+    required this.seconds,
+    required this.why,
+    required this.app,
+    required this.start,
+    required this.end,
+    required this.miles,
+    required this.money,
+    required this.notes,
+  });
+  final TrackingSession session;
+  final DateTime? at;
+  final DateTime? endAt;
+  final int? seconds;
+  final String why;
+  final String app;
+  final String start; // empty when the address is not known
+  final String end;
+  final double miles;
+  final double money; // dollars
+  final String notes;
+
+  double get rate => miles > 0 ? money / miles : 0.0;
 }
 
 class ReportService {
@@ -89,11 +126,130 @@ class ReportService {
     await Printing.layoutPdf(
       onLayout: (_) async => bytes,
       format: PdfPageFormat.a4.landscape,
-      name: 'ControlMiles_Report_'
-          '${DateFormat('yyyyMMdd').format(dateRange.start)}_'
-          '${DateFormat('yyyyMMdd').format(dateRange.end)}.pdf',
+      name: _fileName(dateRange, 'pdf'),
     );
   }
+
+  /// Makes the CSV and opens the phone's share sheet.
+  static Future<void> shareCsvReport({
+    required List<TrackingSession> sessions,
+    required Map<String, List<SessionSection>> sectionsBySession,
+    required DateTimeRange dateRange,
+    String mileageMethod = 'standard',
+    List<Vehicle> vehiclesUsed = const [],
+    double? periodCheckpointStart,
+    double? periodCheckpointEnd,
+  }) async {
+    final csv = buildCsv(
+      sessions: sessions,
+      sectionsBySession: sectionsBySession,
+      dateRange: dateRange,
+      mileageMethod: mileageMethod,
+      vehiclesUsed: vehiclesUsed,
+      periodCheckpointStart: periodCheckpointStart,
+      periodCheckpointEnd: periodCheckpointEnd,
+    );
+    final name = _fileName(dateRange, 'csv');
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$name');
+    // The byte-order mark is what makes Excel read accents and symbols correctly.
+    await file.writeAsBytes(utf8.encode('﻿$csv'), flush: true);
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path, mimeType: 'text/csv')],
+      title: name,
+      subject: 'ControlMiles mileage report',
+    ));
+  }
+
+  /// The trip log as CSV text: a header, then one line per segment, oldest first.
+  /// No totals line and no currency signs, so the columns can be summed as they are.
+  static String buildCsv({
+    required List<TrackingSession> sessions,
+    required Map<String, List<SessionSection>> sectionsBySession,
+    required DateTimeRange dateRange,
+    String mileageMethod = 'standard',
+    List<Vehicle> vehiclesUsed = const [],
+    double? periodCheckpointStart,
+    double? periodCheckpointEnd,
+  }) {
+    final isActual = mileageMethod == 'actual';
+    final sorted = [...sessions]..sort((a, b) => (a.startTime ?? DateTime(0)).compareTo(b.startTime ?? DateTime(0)));
+    final rows = _logRows(sorted, sectionsBySession, dateRange.end);
+
+    double? firstOdometer = periodCheckpointStart;
+    double? lastOdometer = periodCheckpointEnd;
+    if (firstOdometer == null) {
+      for (final s in sorted) {
+        if (s.startOdometerValue != null) {
+          firstOdometer = s.startOdometerValue;
+          break;
+        }
+      }
+    }
+    if (lastOdometer == null) {
+      for (final s in sorted.reversed) {
+        if (s.endOdometerValue != null) {
+          lastOdometer = s.endOdometerValue;
+          break;
+        }
+      }
+    }
+
+    final vehicleNames = {
+      for (final v in vehiclesUsed) v.id: '${v.year != null ? '${v.year} ' : ''}${v.displayName}'.trim(),
+    };
+    final day = DateFormat('yyyy-MM-dd');
+    final time = DateFormat('HH:mm');
+    String stamp(DateFormat f, DateTime? t) => t == null ? '' : f.format(t.toLocal());
+    String duration(int? seconds) {
+      if (seconds == null) return '';
+      final minutes = (seconds ~/ 60) % 60;
+      final rest = seconds % 60;
+      return '${seconds ~/ 3600}:${minutes.toString().padLeft(2, '0')}:${rest.toString().padLeft(2, '0')}';
+    }
+
+    final lines = <String>[
+      'Date,Start time,End time,Duration,Category,App,Start address,End address,Miles,Rate,Value,'
+          'Vehicle,Odometer start,Odometer end,Notes,Trip ID',
+    ];
+    for (var i = 0; i < rows.length; i++) {
+      final r = rows[i];
+      // As in the PDF: the odometer is read per period, not per trip.
+      final odoStart = i == 0 && firstOdometer != null ? firstOdometer.toStringAsFixed(0) : '';
+      final odoEnd = i == rows.length - 1 && lastOdometer != null ? lastOdometer.toStringAsFixed(0) : '';
+      lines.add([
+        stamp(day, r.at),
+        stamp(time, r.at),
+        stamp(time, r.endAt),
+        duration(r.seconds),
+        _csvText(r.why),
+        _csvText(r.app),
+        _csvText(r.start),
+        _csvText(r.end),
+        r.miles.toStringAsFixed(2),
+        isActual ? '' : r.rate.toStringAsFixed(3),
+        isActual ? '' : r.money.toStringAsFixed(2),
+        _csvText(vehicleNames[r.session.vehicleId] ?? ''),
+        odoStart,
+        odoEnd,
+        _csvText(r.notes),
+        r.session.id.length >= 8 ? r.session.id.substring(0, 8).toUpperCase() : r.session.id,
+      ].join(','));
+    }
+    return '${lines.join('\r\n')}\r\n';
+  }
+
+  /// A text cell. Text the driver can type (an edited address, a note) must not
+  /// run as a formula when the file is opened in a spreadsheet.
+  static String _csvText(String value) {
+    final safe = RegExp(r'^[=+\-@\t\r]').hasMatch(value) ? "'$value" : value;
+    if (!RegExp(r'[",\r\n]').hasMatch(safe)) return safe;
+    return '"${safe.replaceAll('"', '""')}"';
+  }
+
+  static String _fileName(DateTimeRange range, String extension) => 'ControlMiles_Report_'
+      '${DateFormat('yyyyMMdd').format(range.start)}_'
+      '${DateFormat('yyyyMMdd').format(range.end)}.$extension';
 
   /// The PDF as bytes (separate from printing so it can be tested).
   static Future<Uint8List> buildGlobalReport({
@@ -127,15 +283,10 @@ class ReportService {
     for (final s in sorted) {
       final tripMiles = _tripMiles(s, sectionsBySession);
       final secs = sectionsBySession[s.id] ?? const <SessionSection>[];
-      final slices = <_Slice>[];
+      final slices = _tripSlices(s, sectionsBySession, dateRange.end);
       var sectioned = 0.0;
       for (final sec in secs) {
         sectioned += sec.totalMiles;
-        // Gig-app trips are business; a General trip uses the category picked.
-        // A General trip not categorized yet is priced as business (as in My Trips).
-        final purpose = (sec.gigApp == 'custom' ? sec.irsPurpose : 'business') ?? 'business';
-        final rate = ratePerMileCentsForPurpose(purpose, sec.startTime);
-        slices.add(_Slice(purpose, sec.totalMiles, sec.totalMiles * rate));
         if (nonBusinessUse.contains(sec.irsPurpose)) {
           nonBusinessUseMiles += sec.totalMiles;
         } else {
@@ -143,11 +294,7 @@ class ReportService {
         }
       }
       final left = tripMiles - sectioned;
-      if (left > 0) {
-        final at = s.startTime ?? dateRange.end;
-        slices.add(_Slice('business', left, left * ratePerMileCentsForPurpose('business', at)));
-        businessUseMiles += left;
-      }
+      if (left > 0) businessUseMiles += left;
       slicesBySession[s.id] = slices;
       totalMiles += tripMiles;
       totalCents += slices.fold<double>(0, (a, x) => a + x.cents);
@@ -224,7 +371,7 @@ class ReportService {
           pw.SizedBox(height: 14),
           _sectionTitle('Trip log'),
           pw.SizedBox(height: 6),
-          _tripTable(sorted, sectionsBySession, slicesBySession, isActual,
+          _tripTable(_logRows(sorted, sectionsBySession, dateRange.end), isActual,
               startOdometer: periodCheckpointStart ?? firstOdoSession?.startOdometerValue,
               endOdometer: periodCheckpointEnd ?? lastOdoSession?.endOdometerValue),
           pw.SizedBox(height: 6),
@@ -248,6 +395,80 @@ class ReportService {
     final secs = sectionsBySession[session.id] ?? const <SessionSection>[];
     final sum = secs.fold<double>(0, (acc, x) => acc + x.totalMiles);
     return sum > 0 ? sum : session.totalMiles;
+  }
+
+  /// A trip's miles and value by category: one slice per segment, plus the miles
+  /// no segment accounts for, priced as business.
+  static List<_Slice> _tripSlices(
+    TrackingSession session,
+    Map<String, List<SessionSection>> sectionsBySession,
+    DateTime fallbackDate,
+  ) {
+    final slices = <_Slice>[];
+    var sectioned = 0.0;
+    for (final sec in sectionsBySession[session.id] ?? const <SessionSection>[]) {
+      sectioned += sec.totalMiles;
+      // Gig-app trips are business; a General trip uses the category picked.
+      // A General trip not categorized yet is priced as business (as in My Trips).
+      final purpose = (sec.gigApp == 'custom' ? sec.irsPurpose : 'business') ?? 'business';
+      slices.add(_Slice(purpose, sec.totalMiles, sec.totalMiles * ratePerMileCentsForPurpose(purpose, sec.startTime)));
+    }
+    final left = _tripMiles(session, sectionsBySession) - sectioned;
+    if (left > 0) {
+      final at = session.startTime ?? fallbackDate;
+      slices.add(_Slice('business', left, left * ratePerMileCentsForPurpose('business', at)));
+    }
+    return slices;
+  }
+
+  /// The trip log, shared by the PDF and the CSV. One row per segment (a trip that
+  /// switched gig app or category has one row for each, with its own addresses,
+  /// miles and value); a trip with no usable segment keeps a single row.
+  static List<_LogRow> _logRows(
+    List<TrackingSession> sorted,
+    Map<String, List<SessionSection>> sectionsBySession,
+    DateTime fallbackDate,
+  ) {
+    String text(String? v) => (v ?? '').trim();
+    final rows = <_LogRow>[];
+    for (final s in sorted) {
+      final all = [...(sectionsBySession[s.id] ?? const <SessionSection>[])]
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      final tracked = all.where((x) => x.totalMiles >= 0.01).toList();
+      if (tracked.isEmpty) {
+        rows.add(_LogRow(
+          session: s,
+          at: s.startTime,
+          endAt: s.endTime,
+          seconds: s.effectiveDurationSeconds,
+          why: _tripCategory(all),
+          app: _tripApps(all),
+          start: all.isEmpty ? '' : text(all.first.startAddress),
+          end: all.isEmpty ? '' : text(all.last.endAddress),
+          miles: _tripMiles(s, sectionsBySession),
+          money: _tripSlices(s, sectionsBySession, fallbackDate).fold<double>(0, (a, x) => a + x.dollars),
+          notes: all.map((x) => text(x.notes)).where((n) => n.isNotEmpty).join('; '),
+        ));
+        continue;
+      }
+      for (final sec in tracked) {
+        final purpose = (sec.gigApp == 'custom' ? sec.irsPurpose : 'business') ?? 'business';
+        rows.add(_LogRow(
+          session: s,
+          at: sec.startTime,
+          endAt: sec.endTime,
+          seconds: sec.effectiveDurationSeconds,
+          why: _tripCategory([sec]),
+          app: _tripApps([sec]),
+          start: text(sec.startAddress),
+          end: text(sec.endAddress),
+          miles: sec.totalMiles,
+          money: sec.totalMiles * ratePerMileCentsForPurpose(purpose, sec.startTime) / 100.0,
+          notes: text(sec.notes),
+        ));
+      }
+    }
+    return rows;
   }
 
   /// "$0.760/mi", or both rates when the range crosses the mid-year change.
@@ -520,78 +741,33 @@ class ReportService {
   }
 
   static pw.Widget _tripTable(
-    List<TrackingSession> sorted,
-    Map<String, List<SessionSection>> sectionsBySession,
-    Map<String, List<_Slice>> slices,
+    List<_LogRow> log,
     bool isActual, {
     double? startOdometer,
     double? endOdometer,
   }) {
-    if (sorted.isEmpty) {
+    if (log.isEmpty) {
       return pw.Text('No trips in this period.', style: const pw.TextStyle(fontSize: 9, color: _dim));
     }
     final when = DateFormat('EEE, MMM d\nh:mm a');
     final odo = NumberFormat('#,##0');
-    String addr(String? a) => (a == null || a.trim().isEmpty) ? '--' : a.trim();
+    String addr(String a) => a.isEmpty ? '--' : a;
 
-    // One row per segment (a trip that switched gig app or category has one row for
-    // each, with its own addresses, miles and value). A trip with no usable
-    // segment keeps a single row.
-    final rows = <List<String>>[];
-    List<String> row({
-      required DateTime? at,
-      required String why,
-      required String app,
-      required String start,
-      required String end,
-      required double miles,
-      required double money,
-    }) =>
-        [
-          at != null ? when.format(at.toLocal()) : '--',
-          why,
-          app,
-          start,
-          end,
-          isActual ? 'n/a' : '\$${(miles > 0 ? money / miles : 0.0).toStringAsFixed(3)}',
-          _mi(miles),
-          isActual ? 'n/a' : _money(money),
+    final rows = [
+      for (final r in log)
+        <String>[
+          r.at != null ? when.format(r.at!.toLocal()) : '--',
+          r.why,
+          r.app,
+          addr(r.start),
+          addr(r.end),
+          isActual ? 'n/a' : '\$${r.rate.toStringAsFixed(3)}',
+          _mi(r.miles),
+          isActual ? 'n/a' : _money(r.money),
           '',
           '',
-        ];
-
-    for (final s in sorted) {
-      final all = [...(sectionsBySession[s.id] ?? const <SessionSection>[])]
-        ..sort((a, b) => a.startTime.compareTo(b.startTime));
-      final tracked = all.where((x) => x.totalMiles >= 0.01).toList();
-      if (tracked.isEmpty) {
-        final miles = _tripMiles(s, sectionsBySession);
-        final money = (slices[s.id] ?? const <_Slice>[]).fold<double>(0, (a, x) => a + x.dollars);
-        rows.add(row(
-          at: s.startTime,
-          why: _tripCategory(all),
-          app: _tripApps(all),
-          start: all.isEmpty ? '--' : addr(all.first.startAddress),
-          end: all.isEmpty ? '--' : addr(all.last.endAddress),
-          miles: miles,
-          money: money,
-        ));
-        continue;
-      }
-      for (final sec in tracked) {
-        final purpose = (sec.gigApp == 'custom' ? sec.irsPurpose : 'business') ?? 'business';
-        final money = sec.totalMiles * ratePerMileCentsForPurpose(purpose, sec.startTime) / 100.0;
-        rows.add(row(
-          at: sec.startTime,
-          why: _tripCategory([sec]),
-          app: _tripApps([sec]),
-          start: addr(sec.startAddress),
-          end: addr(sec.endAddress),
-          miles: sec.totalMiles,
-          money: money,
-        ));
-      }
-    }
+        ],
+    ];
 
     // The odometer is read weekly or yearly, not per trip: the first row carries the
     // reading the period starts with, the last row the one it ends with.

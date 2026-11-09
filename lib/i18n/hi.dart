@@ -518,7 +518,7 @@ const Map<String, String> hiTexts = {
   'vehicle_limit_reached_title': 'वाहन सीमा पूरी हो गई',
   'vehicle_limit_reached_body': 'आपकी योजना में अधिकतम {max} वाहन(वाहन) की अनुमति है। और जोड़ने के लिए अपग्रेड करें।',
   'export_limit_reached_title': 'एक्सपोर्ट सीमा पूरी हो गई',
-  'export_limit_reached_body': 'Basic योजना में हर महीने 2 PDF एक्सपोर्ट शामिल हैं। असीमित एक्सपोर्ट के लिए Premium में अपग्रेड करें।',
+  'export_limit_reached_body': 'Basic योजना में हर महीने 2 रिपोर्ट एक्सपोर्ट (PDF या CSV) शामिल हैं। असीमित एक्सपोर्ट के लिए Premium में अपग्रेड करें।',
 
   // Weekly odometer checkpoint (2026-09-03), added 2026-09-08 -- was
   // missing entirely for this language (dialog fell back to raw keys).
@@ -641,6 +641,9 @@ const Map<String, String> hiTexts = {
   'last_12_months': 'पिछले 12 महीने',
   'generate_global_pdf': 'संपूर्ण PDF बनाएं',
   'generate_report_btn': "रिपोर्ट बनाएं",
+  'report_choose_format': "रिपोर्ट का फ़ॉर्मेट चुनें",
+  'report_format_pdf_desc': "प्रिंट करने या भेजने के लिए",
+  'report_format_csv_desc': "Excel या Google Sheets में खोलने के लिए",
   'tracking_notif_recording': "ControlMiles आपकी यात्रा दर्ज कर रहा है",
   'trip_note': 'यात्रा टिप्पणी',
   'trip_note_hint': 'उदा. "5 मील छूट गए — GPS सिग्नल खो गया"',

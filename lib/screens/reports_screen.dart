@@ -19,6 +19,7 @@ import '../services/report_service.dart';
 import '../widgets/cm_card_header.dart';
 import '../widgets/pinned_bar.dart';
 import '../widgets/full_bleed.dart';
+import '../widgets/trip_route_image.dart';
 import '../utils/duration_format.dart';
 import '../onboarding/product_tour.dart';
 
@@ -398,66 +399,73 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // nuevo de sesiones porque el date-range picker que ya existe cumple
   // ese rol.
   // ════════════════════════════════════════════════════════════
-  Future<void> _exportGlobalPdf(AppState appState) async {
-    if (_sessions.isEmpty) {
-      // BUG FIX (2026-08-29, real bug the user actually hit): 'no_reports_found'
-      // was never defined in ANY language file, not even English -- the
-      // i18n_validator can't catch this class of bug (it only diffs non-English
-      // against English; a key missing everywhere is invisible to it). Every
-      // user, every language, saw the literal raw key. Reused the existing,
-      // semantically-fitting 'no_trips_yet' key instead of inventing a
-      // near-duplicate.
-      _showSnack(appState.tr('no_trips_yet'), error: true);
-      return;
-    }
+  /// "Generate report" asks for the format first (2026-11-09).
+  Future<void> _chooseReportFormat(AppState appState) async {
+    final format = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(appState.tr('report_choose_format'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            ListTile(
+              leading: Icon(Icons.picture_as_pdf_rounded, color: Colors.red.shade700),
+              title: const Text('PDF'),
+              subtitle: Text(appState.tr('report_format_pdf_desc')),
+              onTap: () => Navigator.pop(ctx, 'pdf'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart_rounded, color: Color(0xFF2C6C99)),
+              title: const Text('CSV'),
+              subtitle: Text(appState.tr('report_format_csv_desc')),
+              onTap: () => Navigator.pop(ctx, 'csv'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (format == null || !mounted) return;
+    await (format == 'csv' ? _exportCsv(appState) : _exportGlobalPdf(appState));
+  }
 
-    // Subscription-tier enforcement (explicit user requirement,
-    // 2026-09-04): Free/Basic capped at 2 PDF exports per calendar month;
-    // Premium (and exempt accounts) unlimited. The RPC is the real floor
-    // (SECURITY DEFINER, counts pdf_export_log server-side) -- PDF
-    // generation itself is 100% client-side with no other server round
-    // trip, so this check has to happen here, before generation starts,
-    // not as a follow-up validation.
+  Future<void> _exportCsv(AppState appState) async {
+    if (!await _exportAllowed(appState) || !mounted) return;
+    setState(() {
+      _isLoading       = true;
+      _progressMessage = appState.tr('generating_report_progress');
+    });
     try {
-      final limitCheck = await Supabase.instance.client
-          .rpc('check_and_log_pdf_export')
-          .single();
-      if (limitCheck['allowed'] != true) {
-        if (!mounted) return;
-        await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(appState.tr('export_limit_reached_title')),
-            content: Text(appState.tr('export_limit_reached_body')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(appState.tr('cancel')),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pushNamed(context, AppRoutes.subscription);
-                },
-                child: Text(appState.tr('upgrade_plan')),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+      await ReportService.shareCsvReport(
+        sessions:          _sessions,
+        sectionsBySession: _sections,
+        dateRange:         _dateRange,
+        mileageMethod:     appState.mileageMethod,
+        vehiclesUsed:      _vehiclesUsed,
+        periodCheckpointStart: _periodCheckpointStart,
+        periodCheckpointEnd:   _periodCheckpointEnd,
+      );
+      if (mounted) _showSnack(appState.tr('report_generated'));
     } catch (e) {
-      // Fails open, same convention as every other best-effort guard in
-      // this codebase (e.g. the payload/rate-limit checks in CGC Core) --
-      // a broken limit check must never block a real report a user is
-      // entitled to generate.
-      debugPrint('[ReportsScreen] export limit check failed (failing open): $e');
+      debugPrint('[ReportsScreen] CSV error: $e');
+      if (mounted) _showSnack('${appState.tr('error')}: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _exportGlobalPdf(AppState appState) async {
+    if (!await _exportAllowed(appState) || !mounted) return;
 
     setState(() {
       _isLoading       = true;
       // BUG FIX (2026-08-29): 'generating_report' was never defined in ANY
-      // language file either -- see the 'no_trips_yet' comment above, same
+      // language file either -- see the 'no_trips_yet' comment below, same
       // root cause. New real key, translated into all 6 fully-covered
       // languages (no existing key fit this specific progress message).
       _progressMessage = appState.tr('generating_report_progress');
@@ -491,6 +499,66 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Whether this export may go ahead: there are trips and the plan's monthly
+  /// limit allows it. A CSV counts the same as a PDF.
+  Future<bool> _exportAllowed(AppState appState) async {
+    if (_sessions.isEmpty) {
+      // BUG FIX (2026-08-29, real bug the user actually hit): 'no_reports_found'
+      // was never defined in ANY language file, not even English -- the
+      // i18n_validator can't catch this class of bug (it only diffs non-English
+      // against English; a key missing everywhere is invisible to it). Every
+      // user, every language, saw the literal raw key. Reused the existing,
+      // semantically-fitting 'no_trips_yet' key instead of inventing a
+      // near-duplicate.
+      _showSnack(appState.tr('no_trips_yet'), error: true);
+      return false;
+    }
+
+    // Subscription-tier enforcement (explicit user requirement,
+    // 2026-09-04): Free/Basic capped at 2 PDF exports per calendar month;
+    // Premium (and exempt accounts) unlimited. The RPC is the real floor
+    // (SECURITY DEFINER, counts pdf_export_log server-side) -- PDF
+    // generation itself is 100% client-side with no other server round
+    // trip, so this check has to happen here, before generation starts,
+    // not as a follow-up validation.
+    try {
+      final limitCheck = await Supabase.instance.client
+          .rpc('check_and_log_pdf_export')
+          .single();
+      if (limitCheck['allowed'] != true) {
+        if (!mounted) return false;
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(appState.tr('export_limit_reached_title')),
+            content: Text(appState.tr('export_limit_reached_body')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(appState.tr('cancel')),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(context, AppRoutes.subscription);
+                },
+                child: Text(appState.tr('upgrade_plan')),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
+    } catch (e) {
+      // Fails open, same convention as every other best-effort guard in
+      // this codebase (e.g. the payload/rate-limit checks in CGC Core) --
+      // a broken limit check must never block a real report a user is
+      // entitled to generate.
+      debugPrint('[ReportsScreen] export limit check failed (failing open): $e');
+    }
+    return true;
   }
 
   // ════════════════════════════════════════════════════════════
@@ -989,7 +1057,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: _sessions.isEmpty ? null : () => _exportGlobalPdf(appState),
+                onPressed: _sessions.isEmpty ? null : () => _chooseReportFormat(appState),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade700,
                   foregroundColor: Colors.white,
@@ -1241,12 +1309,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   // ── Route map ──────────────────────────────────────────────
-  static const String _tripMapBase = 'https://controlmiles.com/api/trip-map';
-
   Widget _buildRouteMapToggle(AppState appState, TrackingSession session,
       List<SessionSection> sections, bool isDark) {
     final open = _openMaps.contains(session.id);
-    final base = '$_tripMapBase/${session.id}/${_mapTokens[session.id]}';
+    final token = _mapTokens[session.id]!;
     // Segments with miles only (no miles, no segment -- legacy trips can
     // still hold empty ones).
     final tracked = sections.where((s) => s.totalMiles >= 0.05).toList();
@@ -1263,7 +1329,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             label: Text(appState.tr(open ? 'route_map_hide' : 'route_map_show')),
           ),
           if (open) ...[
-            _routeImage('$base?lite=1', isDark),
+            _routeImage(tripMapUrl(session.id, token), isDark),
             if (tracked.length > 1) ...[
               const SizedBox(height: 8),
               GridView.count(
@@ -1274,7 +1340,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 crossAxisSpacing: 8,
                 childAspectRatio: 16 / 9,
                 children: [
-                  for (final s in tracked) _routeImage('$base?section=${s.id}&lite=1', isDark),
+                  for (final s in tracked) _routeImage(tripMapUrl(session.id, token, sectionId: s.id), isDark),
                 ],
               ),
             ],

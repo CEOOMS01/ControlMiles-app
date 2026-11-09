@@ -781,6 +781,9 @@ const Map<String, String> zhTexts = {
   'forgot_password_body': '输入您账户的邮箱地址，我们会发送验证码以重置密码。',
   'generate_global_pdf': '生成全局 PDF',
   'generate_report_btn': "生成报告",
+  'report_choose_format': "选择报告格式",
+  'report_format_pdf_desc': "用于打印或发送",
+  'report_format_csv_desc': "在 Excel 或 Google 表格中打开",
   'tracking_notif_recording': "ControlMiles 正在记录您的行程",
   'greeting_afternoon': '下午好',
   'greeting_evening': '晚上好',
@@ -965,7 +968,7 @@ const Map<String, String> zhTexts = {
   'vehicle_limit_reached_title': '已达车辆数量上限',
   'vehicle_limit_reached_body': '您的套餐最多支持 {max} 辆车。升级套餐以添加更多车辆。',
   'export_limit_reached_title': '已达导出次数上限',
-  'export_limit_reached_body': 'Basic 套餐每月可导出 2 次 PDF。升级到 Premium 可无限导出。',
+  'export_limit_reached_body': 'Basic 套餐每月可导出 2 次报告（PDF 或 CSV）。升级到 Premium 可无限导出。',
 
   // 车队邀请链接（Sprint 1 收尾，2026-09-09）
   'invite_landing_title': '{org} 邀请你加入',

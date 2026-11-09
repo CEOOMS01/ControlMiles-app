@@ -194,6 +194,9 @@ const Map<String, String> esTexts = {
   'generate_pdf': 'Generar PDF',
   'generate_global_pdf': 'Generar PDF Global',
   'generate_report_btn': "Generar reporte",
+  'report_choose_format': "Elige el formato del reporte",
+  'report_format_pdf_desc': "Para imprimir o enviar",
+  'report_format_csv_desc': "Para abrir en Excel o Google Sheets",
   'tracking_notif_recording': "ControlMiles está registrando tu viaje",
   'trip_note': 'Nota del viaje',
   'trip_note_hint': 'ej. "faltaron 5 millas — se perdió señal GPS"',
@@ -1158,7 +1161,7 @@ const Map<String, String> esTexts = {
   'vehicle_limit_reached_title': 'Límite de vehículos alcanzado',
   'vehicle_limit_reached_body': 'Tu plan permite hasta {max} vehículo(s). Mejorá tu plan para agregar más.',
   'export_limit_reached_title': 'Límite de exportación alcanzado',
-  'export_limit_reached_body': 'El plan Basic incluye 2 exportaciones de PDF por mes. Mejorá a Premium para exportar sin límite.',
+  'export_limit_reached_body': 'El plan Basic incluye 2 exportaciones de reportes (PDF o CSV) por mes. Mejorá a Premium para exportar sin límite.',
 
   // Enlace de invitación de flota (cierre Sprint 1, 2026-09-09)
   'invite_landing_title': '{org} te invitó a unirte',

@@ -19,6 +19,7 @@ import '../models/session_section.dart';
 import '../models/tracking_session.dart';
 import '../theme/cm_colors.dart';
 import 'brand_loader.dart';
+import 'trip_route_image.dart';
 
 /// One trip (a session) with its sections -- or, in the My Trips list, ONE section of a
 /// session that switched gig app ([segment]), so each leg is its own card.
@@ -104,7 +105,6 @@ class TripData {
 }
 
 const _businessGroup = {'business', 'delivery', 'errand', 'client', 'travel'};
-const _mapBase = 'https://controlmiles.com/api/trip-map';
 
 String tripDistance(AppState s, double miles) {
   final v = s.useMetricSystem ? miles * 1.60934 : miles;
@@ -228,12 +228,13 @@ class TripCard extends StatelessWidget {
           ),
         ),
         if (trip.mapToken != null)
-          SizedBox(
-            height: 130,
-            width: double.infinity,
+          // The picture's own shape (2026-11-09): a short band cut off its top and
+          // bottom, which is where the start and end of many routes are.
+          AspectRatio(
+            aspectRatio: 640 / 360,
             child: SvgPicture.network(
-              '$_mapBase/${trip.session.id}/${trip.mapToken}?${trip.segment ? 'section=${trip.sections.first.id}&' : ''}lite=1',
-              fit: BoxFit.cover,
+              tripMapUrl(trip.session.id, trip.mapToken!, sectionId: trip.segment ? trip.sections.first.id : null),
+              fit: BoxFit.contain,
               placeholderBuilder: (_) => const Center(child: BrandLoader(size: 28)),
             ),
           ),
@@ -241,9 +242,9 @@ class TripCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: Column(
             children: [
-              _stop(Icons.circle, const Color(0xFF3B6D11), trip.fromAddress ?? s.tr('trips_address_unknown'), tripClock(trip.start), ink, dim),
+              _stop('assets/images/marker_start.svg', trip.fromAddress ?? s.tr('trips_address_unknown'), tripClock(trip.start), ink, dim),
               const SizedBox(height: 6),
-              _stop(Icons.square_rounded, const Color(0xFFD85A30), trip.toAddress ?? s.tr('trips_address_unknown'), tripClock(trip.end), ink, dim),
+              _stop('assets/images/marker_end.svg', trip.toAddress ?? s.tr('trips_address_unknown'), tripClock(trip.end), ink, dim),
             ],
           ),
         ),
@@ -283,9 +284,9 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  Widget _stop(IconData icon, Color color, String address, String time, Color ink, Color dim) => Row(
+  Widget _stop(String icon, String address, String time, Color ink, Color dim) => Row(
         children: [
-          Icon(icon, size: 11, color: color),
+          SvgPicture.asset(icon, width: 18, height: 18),
           const SizedBox(width: 10),
           Expanded(child: Text(address, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: ink))),
           const SizedBox(width: 8),
