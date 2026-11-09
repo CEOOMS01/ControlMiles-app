@@ -17,6 +17,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auto_trip_detection_service.dart';
 import 'tracking_controller.dart';
@@ -114,6 +115,7 @@ class TripHost {
     });
     // A trip that was running when the process died carries on here.
     await TrackingController.initializeOrRecover();
+    await _reportDeniedWake();
     // The service may have started this engine for a drive check.
     try {
       if (await _bg.invokeMethod<bool>('hello') == true) {
@@ -123,6 +125,20 @@ class TripHost {
       _serviceUp = true;
     } catch (_) {}
     Timer.periodic(const Duration(seconds: 3), (_) => unawaited(_tick()));
+  }
+
+  /// Android refused a drive check while the app was closed: leave it in the log.
+  static Future<void> _reportDeniedWake() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final ms = prefs.getInt('cm_wake_denied_ms');
+      if (ms == null) return;
+      DiagLog.add('wake denied by Android', {'at': DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()});
+      await prefs.remove('cm_wake_denied_ms');
+    } catch (e) {
+      debugPrint('[TripHost] could not read the denied wake: $e');
+    }
   }
 
   /// A drive may be starting ("vehicle" or "fence").

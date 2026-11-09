@@ -24,7 +24,7 @@
              starts the trip, then hands over to the tracking service. -->
         <service
             android:name="com.olimsys.cm_drive_wake.DriveWakeService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="location|shortService"
             android:exported="false"/>
 
     </application>

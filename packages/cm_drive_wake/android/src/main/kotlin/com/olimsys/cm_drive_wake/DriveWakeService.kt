@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -35,7 +36,12 @@ class DriveWakeService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        showForeground()
+        if (!showForeground() && !keptForTrip) {
+            // Android refused: nothing can record now, so stop without taking the app down.
+            noteDenied()
+            stopSelf()
+            return START_NOT_STICKY
+        }
         SharedEngine.serviceRunning = true
         val source = getSharedPreferences(DriveWakeRegistrar.PREFS, Context.MODE_PRIVATE)
             .getString(DriveWakeRegistrar.KEY_WAKE_SOURCE, "vehicle")
@@ -59,7 +65,20 @@ class DriveWakeService : Service() {
         })
     }
 
-    private fun showForeground() {
+    /** The next diagnostic log says Android refused a drive check. */
+    private fun noteDenied() {
+        getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            .edit().putLong("flutter.$KEY_DENIED_MS", System.currentTimeMillis()).apply()
+    }
+
+    /**
+     * True when the service runs as a location service. Android can refuse that type
+     * when the app is in the background, and an uncaught refusal closed the app
+     * (seen 2026-11-09). A service started with startForegroundService must still
+     * call startForeground, so a refusal falls back to a short service that the caller
+     * stops at once.
+     */
+    private fun showForeground(): Boolean {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             nm.createNotificationChannel(
@@ -81,11 +100,24 @@ class DriveWakeService : Service() {
             .setContentText(if (spanish) "Revisando tu manejo…" else "Checking your drive…")
             .setOngoing(true)
             .build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            return true
+        } catch (e: Exception) {
+            Log.w("CmDriveWake", "Location service refused: $e")
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            try {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+            } catch (e: Exception) {
+                Log.w("CmDriveWake", "Short service refused: $e")
+            }
+        }
+        return false
     }
 
     private fun attachEngine() {
@@ -133,5 +165,6 @@ class DriveWakeService : Service() {
         private const val BG_CHANNEL = "controlmiles/drive_wake_bg"
         private const val NOTIFICATION_ID = 7702
         private const val MAX_LIFETIME_MS = 4 * 60 * 1000L
+        private const val KEY_DENIED_MS = "cm_wake_denied_ms"
     }
 }

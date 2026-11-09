@@ -45,7 +45,9 @@ class CgcGovernanceService {
       debugPrint(
         sealed
             ? '[CgcGovernanceService] Trip $sessionId sealed: ${data['decision_id']}'
-            : '[CgcGovernanceService] Trip $sessionId not sealed: ${data is Map ? data['reason'] : data}',
+            : data is Map && data['queued'] == true
+                ? '[CgcGovernanceService] Trip $sessionId: the server seals it after the close'
+                : '[CgcGovernanceService] Trip $sessionId not sealed: ${data is Map ? data['reason'] : data}',
       );
     } catch (e) {
       // Best-effort by design -- never let a governance-sealing failure

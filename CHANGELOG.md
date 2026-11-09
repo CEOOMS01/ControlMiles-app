@@ -30,6 +30,15 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.29+69 — 2026-11-09
+
+- New notification icon: the pin with a steering wheel on a full disc, filling the whole icon space. It replaces the old
+  one everywhere (`ic_stat_tracking`, all five densities).
+- When Android refuses the drive check in the background the app no longer closes (two crashes seen 2026-11-09 at
+  5:59); the refusal goes to the diagnostic log. That one drive check is still lost.
+- A trip closing while the app opens no longer leaves the GPS and its notice on: the recoveries share one run and do
+  not restart the GPS during a close.
+
 ## 1.3.28+68 — 2026-11-09
 
 - A trip now closes after 5 minutes without movement (it was 10), still ending when the car stopped. The automatic

@@ -29,6 +29,7 @@ import 'drive_wake.dart';
 import '../services/diag_log.dart';
 import 'route_recorder.dart';
 import 'trip_inactivity.dart';
+import 'single_flight.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -1070,7 +1071,18 @@ class TrackingController {
   /// after, so no "tell us what it was for" notification is posted.
   /// [endedAt]: when the trip really ended (the car stopped), for a trip the
   /// phone closes later on; null = now.
+  static int _stopsInProgress = 0;
+
   static Future<bool> stopTracking({bool askPurposeInApp = false, DateTime? endedAt}) async {
+    _stopsInProgress++;
+    try {
+      return await _stopTrackingNow(askPurposeInApp: askPurposeInApp, endedAt: endedAt);
+    } finally {
+      _stopsInProgress--;
+    }
+  }
+
+  static Future<bool> _stopTrackingNow({bool askPurposeInApp = false, DateTime? endedAt}) async {
     if (currentState == TrackingState.idle || activeSessionId == null) {
       // BUG FIX: this guard used to return false completely silently --
       // if this were ever hit for a trip the user could still see on
@@ -1184,6 +1196,9 @@ class TrackingController {
       final closedSectionId = activeSection?.id;
 
       _resetState();
+
+      // Nothing may keep the GPS (and its notice) on once the trip is over.
+      await BackgroundGpsService.stopTracking();
 
       // Route drawing of the last segment (the trip's earlier segments were
       // sent at each switch). A discarded trip has nothing to draw.
@@ -1463,7 +1478,24 @@ class TrackingController {
     }
   }
 
-  static Future<void> initializeOrRecover() async {
+  // Recovery can be asked for by the app opening, the dashboard and the service at
+  // once: they share one run, so one of them cannot restart the GPS while another
+  // is closing the trip.
+  static final SingleFlight _recovery = SingleFlight();
+
+  static Future<void> initializeOrRecover() => _recovery.run(_initializeOrRecoverNow);
+
+  /// Recovery wants the GPS on, unless the trip is being closed right now.
+  static Future<void> _startGpsAfterRecovery() async {
+    if (_stopsInProgress > 0) return;
+    await BackgroundGpsService.startTracking();
+    // The trip may have closed while the engine was starting.
+    if (currentState != TrackingState.running) {
+      await BackgroundGpsService.stopTracking();
+    }
+  }
+
+  static Future<void> _initializeOrRecoverNow() async {
     await _recoverActiveState(startGps: true);
     // A trip left open while the phone sat still (the app was closed, or forced
     // to stop) ends now, at the moment it really stopped.
@@ -1540,7 +1572,7 @@ class TrackingController {
       if (hydratedLocally) {
         _applyRecoveredCheckpointFields(localState);
         if (currentState == TrackingState.running && startGps) {
-          await BackgroundGpsService.startTracking();
+          await _startGpsAfterRecovery();
         }
         unawaited(_resumeLiveHeartbeat());
         _logDebug(
@@ -1558,7 +1590,7 @@ class TrackingController {
       if (hydratedFromDb) {
         _applyRecoveredCheckpointFields(localState);
         if (currentState == TrackingState.running && startGps) {
-          await BackgroundGpsService.startTracking();
+          await _startGpsAfterRecovery();
         }
         unawaited(_resumeLiveHeartbeat());
         _logDebug(
@@ -1655,7 +1687,7 @@ class TrackingController {
             : null;
 
         if (currentState == TrackingState.running && startGps) {
-          await BackgroundGpsService.startTracking();
+          await _startGpsAfterRecovery();
         }
 
         await _saveLocalCheckpoint();
