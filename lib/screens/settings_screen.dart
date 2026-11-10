@@ -14,9 +14,7 @@ import '../services/gig_app_detection_service.dart';
 import '../utils/permission_status.dart';
 import '../views/permissions_flow_screen.dart';
 import '../views/rates_screen.dart';
-import '../views/auto_schedule_screen.dart';
 import '../services/diag_log.dart';
-import '../views/work_type_screen.dart';
 import '../tracking/auto_trip_detection_service.dart';
 import '../legal/legal_documents.dart';
 import 'legal_document_screen.dart';
@@ -25,8 +23,13 @@ import '../errors/app_error.dart';
 import '../widgets/language_selector_tile.dart';
 import '../widgets/app_version_text.dart';
 
+/// The side menu's categories that live on this screen.
+enum AccountSection { tracking, vehiclesReports, preferences, help, deleteAccount }
+
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final AccountSection section;
+
+  const SettingsScreen({super.key, required this.section});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -100,9 +103,16 @@ class _SettingsScreenState extends State<SettingsScreen>
   final _tReliability = GlobalKey();
   bool _tourChecked = false;
 
+  bool get _hasTour => widget.section == AccountSection.tracking || widget.section == AccountSection.vehiclesReports;
+
   void _startTour({bool force = false}) {
+    if (!_hasTour) return;
+    final portal = widget.section == AccountSection.vehiclesReports;
     ProductTour.run(context,
-        id: TourIds.settings, scope: _tour, keys: [_tPortal, _tReliability], force: force);
+        id: portal ? TourIds.settingsPortal : TourIds.settings,
+        scope: _tour,
+        keys: [portal ? _tPortal : _tReliability],
+        force: force);
   }
 
   @override
@@ -194,10 +204,16 @@ class _SettingsScreenState extends State<SettingsScreen>
           : const Color(0xFFFAF6EE),
       appBar: AppBar(
         actions: [
-          TourHelpButton(onPressed: () => _startTour(force: true)),
+          if (_hasTour) TourHelpButton(onPressed: () => _startTour(force: true)),
         ],
         title: Text(
-          appState.tr('settings').toUpperCase(),
+          appState.tr(switch (widget.section) {
+            AccountSection.tracking => 'account_tracking',
+            AccountSection.vehiclesReports => 'account_vehicles_reports',
+            AccountSection.preferences => 'preferences',
+            AccountSection.help => 'account_help',
+            AccountSection.deleteAccount => 'delete_account',
+          }).toUpperCase(),
           style: const TextStyle(
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
@@ -211,54 +227,86 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),
-        children: [
-          _buildSectionHeader(appState, 'language', isDark),
-          _buildLanguageSection(appState, isDark),
+        children: _sectionChildren(appState, isDark),
+      ),
+    );
+  }
 
-          ...[
-            _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
-            _buildAutoDetectSection(appState, isDark),
-
-            // Explicit user requirement (2026-09-09): generating a Report
-            // Portal access code used to only exist on controlmiles.com --
-            // but a gig driver should never need to log into the web at
-            // all (web is fleet-admin only going forward). Moved here so
-            // the "no login needed for your preparer" pitch is actually
-            // true for the driver too, not just the preparer.
-            _buildSectionHeader(appState, 'report_portal_section', isDark),
-            TourTarget(
-              showcaseKey: _tPortal,
-              scope: _tour,
-              step: 1,
-              total: 2,
-              titleKey: 'ptour_portal_title',
-              bodyKey: 'ptour_portal_body',
-              child: _buildReportPortalSection(appState, isDark),
-            ),
-          ],
-
-          _buildSectionHeader(appState, 'preferences', isDark),
-          _buildPreferencesSection(appState, isDark),
-
-          _buildSectionHeader(appState, 'background_reliability_section', isDark),
+  /// Each category shows only its own options; every option lives in one place.
+  List<Widget> _sectionChildren(AppState appState, bool isDark) {
+    switch (widget.section) {
+      case AccountSection.tracking:
+        return [
+          _buildSectionHeader(appState, 'automatic_tracking_section', isDark),
+          _buildAutoDetectSection(appState, isDark),
+          _buildSectionHeader(appState, 'account_permissions', isDark),
           TourTarget(
             showcaseKey: _tReliability,
             scope: _tour,
-            step: 2,
-            total: 2,
+            step: 1,
+            total: 1,
             titleKey: 'ptour_reliability_title',
             bodyKey: 'ptour_reliability_body',
             child: _buildBackgroundReliabilitySection(appState, isDark),
           ),
-
+        ];
+      case AccountSection.vehiclesReports:
+        return [
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildLegalLinkRow(
+              label: appState.tr('account_vehicles'),
+              isDark: isDark,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.vehicle),
+            ),
+          ),
+          // A gig driver never needs the web: the access code for their tax
+          // preparer is generated here (2026-09-09).
+          _buildSectionHeader(appState, 'report_portal_section', isDark),
+          TourTarget(
+            showcaseKey: _tPortal,
+            scope: _tour,
+            step: 1,
+            total: 1,
+            titleKey: 'ptour_portal_title',
+            bodyKey: 'ptour_portal_body',
+            child: _buildReportPortalSection(appState, isDark),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                _buildMileageMethodRow(appState, isDark),
+                const SizedBox(height: 10),
+                _buildLegalLinkRow(
+                  label: appState.tr('rates_title'),
+                  isDark: isDark,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RatesScreen())),
+                ),
+              ],
+            ),
+          ),
+        ];
+      case AccountSection.preferences:
+        return [
+          _buildSectionHeader(appState, 'language', isDark),
+          _buildLanguageSection(appState, isDark),
+          _buildSectionHeader(appState, 'preferences', isDark),
+          _buildPreferencesSection(appState, isDark),
+        ];
+      case AccountSection.help:
+        return [
           _buildSectionHeader(appState, 'about_app', isDark),
           _buildAboutSection(appState, isDark),
-
+        ];
+      case AccountSection.deleteAccount:
+        return [
           _buildSectionHeader(appState, 'danger_zone', isDark),
           _buildDangerZoneSection(appState, isDark),
-        ],
-      ),
-    );
+        ];
+    }
   }
 
   // ════════════════════════════════════════════════════════════
@@ -480,7 +528,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: ListTile(
+        child: Material(color: Colors.transparent, child: ListTile(
           leading: Icon(Icons.qr_code_2_rounded, color: primary),
           title: Text(
             appState.tr('generate_report_code_title'),
@@ -495,7 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             context,
             MaterialPageRoute(builder: (_) => const GenerateReportCodeScreen()),
           ),
-        ),
+        )),
       ),
     );
   }
@@ -521,7 +569,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: cardColor,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: ListTile(
+            child: Material(color: Colors.transparent, child: ListTile(
               leading: Icon(
                 Icons.auto_awesome_rounded,
                 color: locked ? subTextColor : primary,
@@ -580,7 +628,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             activeThumbColor: primary,
                           )),
               onTap: locked ? () => _showPremiumLockedDialog(appState) : null,
-            ),
+            )),
           ),
           // Real primary trigger, per explicit user correction ("no por
           // movimiento"): gig-app-foreground detection needs its OWN
@@ -595,7 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 color: cardColor,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: ListTile(
+              child: Material(color: Colors.transparent, child: ListTile(
                 title: Text(
                   appState.tr('gig_app_detection_title'),
                   style: TextStyle(
@@ -618,7 +666,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ? null
                     : () => GigAppDetectionService.instance
                           .openUsageAccessSettings(),
-              ),
+              )),
             ),
           ],
         ],
@@ -649,42 +697,56 @@ class _SettingsScreenState extends State<SettingsScreen>
             onChanged: (v) => appState.setNotificationsEnabled(v),
           ),
 
-          if (appState.accountType == 'gig') ...[
-            const SizedBox(height: 10),
-            _buildLegalLinkRow(
-              label: appState.tr('work_type_setting'),
-              subtitle: appState.tr(switch (appState.workMode) {
-                'gig' => 'work_type_value_gig',
-                'general' => 'work_type_value_general',
-                _ => 'work_type_value_all',
-              }),
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const WorkTypeScreen(dismissible: true)),
-              ),
-            ),
-            // General mode: the days and hours the phone may start trips by itself.
-            // Premium only: Basic does not track by itself.
-            if (appState.premiumEntitled && appState.workMode == 'general') ...[
-              const SizedBox(height: 10),
-              _buildLegalLinkRow(
-                label: appState.tr('auto_schedule_title'),
-                subtitle: autoScheduleSummary(appState, context),
-                isDark: isDark,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AutoScheduleScreen()),
-                ),
-              ),
-            ],
-          ],
           const SizedBox(height: 10),
           _buildToggleSetting(
             title: appState.tr('metric_system'), // Llave validada
             value: appState.useMetricSystem,
             isDark: isDark,
             onChanged: (v) => appState.setUseMetricSystem(v),
+          ),
+          const SizedBox(height: 10),
+          _buildToggleSetting(
+            title: appState.tr('dark_mode'),
+            value: appState.isDarkMode,
+            isDark: isDark,
+            onChanged: (_) => appState.toggleDarkMode(),
+          ),
+          const SizedBox(height: 10),
+          _buildHeaderPeriodSelector(appState, isDark),
+        ],
+      ),
+    );
+  }
+
+  // Which total the home header shows (2026-10-09): this week / month / year.
+  Widget _buildHeaderPeriodSelector(AppState appState, bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1812) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appState.tr('header_miles_period'),
+            style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF2E281F)),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(value: 'week', label: Text(appState.tr('this_week'))),
+                ButtonSegment(value: 'month', label: Text(appState.tr('this_month'))),
+                ButtonSegment(value: 'year', label: Text(appState.tr('this_year'))),
+              ],
+              selected: {appState.headerMilesPeriod},
+              onSelectionChanged: (v) => appState.setHeaderMilesPeriod(v.first),
+            ),
           ),
         ],
       ),
@@ -776,7 +838,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 borderRadius: BorderRadius.circular(16),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Theme(
+              child: Material(color: Colors.transparent, child: Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   tilePadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -795,7 +857,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ],
                   ],
                 ),
-              ),
+              )),
             ),
         ],
       ),
@@ -819,7 +881,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: ListTile(
+      child: Material(color: Colors.transparent, child: ListTile(
         title: Text(
           title,
           style: TextStyle(
@@ -849,7 +911,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 onPressed: onTap,
                 child: Text(appState.tr('fix_it')),
               ),
-      ),
+      )),
     );
   }
 
@@ -976,16 +1038,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             const SizedBox(height: 10),
           ],
-          // Personal plans and the IRS mileage method.
           ...[
-            _buildMileageMethodRow(appState, isDark),
-            const SizedBox(height: 10),
-            _buildLegalLinkRow(
-              label: appState.tr('rates_title'),
-              isDark: isDark,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RatesScreen())),
-            ),
-            const SizedBox(height: 10),
             _buildLegalLinkRow(
               label: appState.tr('diag_send_title'),
               subtitle: appState.tr('diag_send_hint'),
@@ -995,12 +1048,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                 final ok = await DiagLog.upload();
                 messenger.showSnackBar(SnackBar(content: Text(appState.tr(ok ? 'diag_send_ok' : 'diag_send_failed'))));
               },
-            ),
-            const SizedBox(height: 10),
-            _buildLegalLinkRow(
-              label: appState.tr('subscription'),
-              isDark: isDark,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
             ),
             const SizedBox(height: 10),
           ],
@@ -1121,12 +1168,13 @@ class _SettingsScreenState extends State<SettingsScreen>
         color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: ListTile(
+      child: Material(color: Colors.transparent, child: ListTile(
         title: Text(
           appState.tr('mileage_method_label'),
           style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
         ),
-        trailing: DropdownButton<String>(
+        subtitle: DropdownButton<String>(
+          isExpanded: true,
           value: appState.mileageMethod,
           underline: const SizedBox.shrink(),
           style: TextStyle(color: subTextColor, fontSize: 13),
@@ -1145,7 +1193,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             if (v != null) appState.setMileageMethod(v);
           },
         ),
-      ),
+      )),
     );
   }
 
@@ -1162,7 +1210,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         color: isDark ? const Color(0xFF1C1812) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: ListTile(
+      child: Material(color: Colors.transparent, child: ListTile(
         title: Text(
           label,
           style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
@@ -1170,7 +1218,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         subtitle: subtitle == null ? null : Text(subtitle, style: TextStyle(fontSize: 12, color: subTextColor)),
         trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
         onTap: onTap,
-      ),
+      )),
     );
   }
 
@@ -1178,19 +1226,25 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        Flexible(
+          child: Text(
           label,
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white : const Color(0xFF2E281F),
           ),
         ),
-        Text(
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
           value,
+          textAlign: TextAlign.end,
           style: TextStyle(
             color: isDark ? Colors.white54 : const Color(0xFF6B6250),
             fontSize: 13,
           ),
+        ),
         ),
       ],
     );

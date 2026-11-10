@@ -32,6 +32,9 @@ class SessionSection {
   // IRS (solo para gig_app = 'custom')
   final String? irsPurpose;
 
+  // 'regular_trip' or 'work_hours' when the database classified the trip; never sent back.
+  final String? autoPurposeSource;
+
   // Campos opcionales para futuro / auditoría
   final String? sectionHash;
 
@@ -66,6 +69,7 @@ class SessionSection {
     this.startOdometerValue,
     this.endOdometerValue,
     this.irsPurpose,
+    this.autoPurposeSource,
     this.sectionHash,
     this.notes,
     this.startAddress,
@@ -123,6 +127,7 @@ class SessionSection {
       startOdometerValue: _toDoubleOrNull(map['start_odometer_value']),
       endOdometerValue: _toDoubleOrNull(map['end_odometer_value']),
       irsPurpose: map['irs_purpose'],
+      autoPurposeSource: map['auto_purpose_source'] as String?,
       sectionHash: map['section_hash'],
       notes: map['notes'],
       startAddress: map['start_address'] as String?,
@@ -166,6 +171,7 @@ class SessionSection {
     String? startOdometerImageUrl,
     String? endOdometerImageUrl,
     String? irsPurpose,
+    bool clearAutoPurposeSource = false,
     String? sectionHash,
     String? gigApp,
     String? notes,
@@ -194,6 +200,7 @@ class SessionSection {
       startOdometerImageUrl: startOdometerImageUrl ?? this.startOdometerImageUrl,
       endOdometerImageUrl: endOdometerImageUrl ?? this.endOdometerImageUrl,
       irsPurpose: irsPurpose ?? this.irsPurpose,
+      autoPurposeSource: clearAutoPurposeSource ? null : autoPurposeSource,
       sectionHash: sectionHash ?? this.sectionHash,
       notes: clearNotes ? null : (notes ?? this.notes),
       startAddress: startAddress ?? this.startAddress,

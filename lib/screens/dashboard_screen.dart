@@ -27,7 +27,8 @@ import '../widgets/brand_loader.dart';
 import '../widgets/full_bleed.dart';
 import '../widgets/cm_card_header.dart';
 import '../widgets/driver_live_map_view.dart';
-import '../widgets/main_drawer.dart';
+import '../widgets/dashboard_action.dart';
+import 'app_menu_screen.dart';
 import '../widgets/tracking_action_button.dart';
 import '../widgets/gig_app_selector.dart';
 import '../widgets/gps_issue_banner.dart';
@@ -54,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   final _tStart = GlobalKey();
   final _tMiles = GlobalKey();
   final _tBottom = GlobalKey();
+  final _tReports = GlobalKey();
   final _tMenu = GlobalKey();
   final _tFirstTrip = GlobalKey();
   bool _tourChecked = false;
@@ -141,7 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     TrackingController.segmentDiscarded.addListener(_onSegmentDiscarded);
   }
 
-  List<GlobalKey> get _dashboardTourKeys => [_tVehicle, _tApps, _tStart, _tMiles, _tBottom, _tMenu];
+  List<GlobalKey> get _dashboardTourKeys => [_tVehicle, _tApps, _tStart, _tMiles, _tBottom, _tReports, _tMenu];
 
   // Once the screen has its data: the welcome sheet the first time, then the
   // dashboard tour. Never while a trip is being recorded.
@@ -1050,7 +1052,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      drawer: const MainDrawer(),
       bottomNavigationBar: _buildBottomButtons(isDark, appState),
       // Brand-blue header with a rounded bottom (warm palette, 2026-10-09).
       // Header, option B (owner's pick, 2026-10-09): the app's warm brown
@@ -1062,23 +1063,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         elevation: 0,
         scrolledUnderElevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(22))),
-        titleSpacing: 0,
-        leading: Builder(
-          builder: (ctx) => TourTarget(
-            showcaseKey: _tMenu,
-            scope: _tour,
-            step: 6,
-            total: 6,
-            titleKey: 'ptour_menu_title',
-            bodyKey: 'ptour_menu_body',
-            radius: const BorderRadius.all(Radius.circular(24)),
-            child: IconButton(
-              icon: const Icon(Icons.menu_rounded),
-              tooltip: MaterialLocalizations.of(ctx).openAppDrawerTooltip,
-              onPressed: () => Scaffold.of(ctx).openDrawer(),
-            ),
-          ),
-        ),
+        titleSpacing: 16,
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Icon(_isDaytime ? Icons.wb_sunny_rounded : Icons.nightlight_round,
@@ -1120,7 +1106,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               showcaseKey: _tMiles,
               scope: _tour,
               step: 4,
-              total: 6,
+              total: 7,
               titleKey: 'ptour_miles_title',
               bodyKey: 'ptour_miles_body',
               radius: const BorderRadius.all(Radius.circular(10)),
@@ -1191,7 +1177,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           showcaseKey: _tVehicle,
                           scope: _tour,
                           step: 1,
-                          total: 6,
+                          total: 7,
                           titleKey: 'ptour_vehicle_title',
                           bodyKey: 'ptour_vehicle_body',
                           radius: BorderRadius.zero,
@@ -1206,9 +1192,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 showcaseKey: _tStart,
                 scope: _tour,
                 step: 3,
-                total: 6,
-                titleKey: 'ptour_start_title',
-                bodyKey: 'ptour_start_body',
+                total: 7,
+                titleKey: appState.premiumEntitled && appState.autoDetectEnabled ? 'ptour_auto_title' : 'ptour_start_title',
+                bodyKey: appState.premiumEntitled && appState.autoDetectEnabled ? 'ptour_start_body_auto' : 'ptour_start_body',
                 child: TrackingActionButton(
                 compact: true,
                 selectedGigApp: _selectedGigApp,
@@ -1328,9 +1314,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 showcaseKey: _tApps,
                 scope: _tour,
                 step: 2,
-                total: 6,
-                titleKey: 'ptour_apps_title',
-                bodyKey: 'ptour_apps_body',
+                total: 7,
+                titleKey: appState.workMode == 'general' ? 'ptour_general_title' : 'ptour_apps_title',
+                bodyKey: appState.workMode == 'general' ? 'ptour_general_body' : 'ptour_apps_body',
                 radius: BorderRadius.zero,
                 // The carousel stays even while detection is on, so a trip can
                 // still be started by hand; the status card says it is awake.
@@ -1623,55 +1609,75 @@ class _DashboardScreenState extends State<DashboardScreen>
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: TourTarget(
-            showcaseKey: _tBottom,
-            scope: _tour,
-            step: 5,
-            total: 6,
-            titleKey: 'ptour_bottom_title',
-            bodyKey: 'ptour_bottom_body',
-            child: Row(
-        children: [
-          Expanded(
-            child: TourTarget(
-              showcaseKey: _tFirstTrip,
-              scope: _tour,
-              step: 1,
-              total: 1,
-              titleKey: 'ptour_first_trip_title',
-              bodyKey: 'ptour_first_trip_body',
-              child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/history'),
-              icon: const Icon(Icons.history),
-              label: Text(appState.tr('history').toUpperCase()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E281F),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
+          child: Row(
+              children: [
+                // The same three sizes on purpose (owner's request, 2026-11-09).
+                Expanded(
+                  child: TourTarget(
+                    showcaseKey: _tMenu,
+                    scope: _tour,
+                    step: 7,
+                    total: 7,
+                    titleKey: 'ptour_menu_title',
+                    bodyKey: 'ptour_menu_body',
+                    child: DashboardAction(
+                      icon: Icons.menu_rounded,
+                      label: appState.tr('ptour_menu_title').toUpperCase(),
+                      background: isDark ? const Color(0xFF3D352A) : const Color(0xFFF3ECDF),
+                      foreground: isDark ? Colors.white : const Color(0xFF2E281F),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AppMenuScreen()),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TourTarget(
+                    showcaseKey: _tBottom,
+                    scope: _tour,
+                    step: 5,
+                    total: 7,
+                    titleKey: 'history',
+                    bodyKey: 'ptour_bottom_body',
+                    child: TourTarget(
+                    showcaseKey: _tFirstTrip,
+                    scope: _tour,
+                    step: 1,
+                    total: 1,
+                    titleKey: 'ptour_first_trip_title',
+                    bodyKey: 'ptour_first_trip_body',
+                    child: DashboardAction(
+                      icon: Icons.history,
+                      label: appState.tr('history').toUpperCase(),
+                      background: const Color(0xFF2E281F),
+                      foreground: Colors.white,
+                      onPressed: () => Navigator.pushNamed(context, '/history'),
+                    ),
+                  ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TourTarget(
+                    showcaseKey: _tReports,
+                    scope: _tour,
+                    step: 6,
+                    total: 7,
+                    titleKey: 'reports',
+                    bodyKey: 'ptour_reports_body',
+                    child: DashboardAction(
+                    icon: Icons.fact_check,
+                    label: appState.tr('reports').toUpperCase(),
+                    background: Theme.of(context).colorScheme.primary,
+                    foreground: Colors.white,
+                    onPressed: () => Navigator.pushNamed(context, '/reports'),
+                  ),
+                  ),
+                ),
+              ],
             ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/reports'),
-              icon: const Icon(Icons.fact_check),
-              label: Text(appState.tr('reports').toUpperCase()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-          ),
-        ],
-      ),
-          ),
         ),
       ),
     );

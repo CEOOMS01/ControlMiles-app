@@ -17,6 +17,7 @@ import 'brand_loader.dart';
 import 'purpose_prompt.dart';
 import 'trip_card.dart';
 import 'trip_edits.dart';
+import '../views/regular_trips_screen.dart';
 
 class TripReviewSheet {
   TripReviewSheet._();
@@ -113,6 +114,7 @@ class _BodyState extends State<_Body> {
                         framed: false,
                         onPurpose: _pick,
                         onMore: _more,
+                        onSaveRegular: RegularTripFlow.canSave(trip, s) ? () => RegularTripFlow.openFromTrip(context, trip) : null,
                         onEditAddress: () async {
                           if (await TripEdits.editAddresses(context, trip) && mounted) setState(() {});
                         },

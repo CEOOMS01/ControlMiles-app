@@ -30,6 +30,22 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.31+71 — 2026-11-09
+
+- App tour updated to the new design: seven steps, one per bottom button, and the text follows how the driver works
+  (General, gig, automatic or manual). Accounts that already saw it get it once more.
+- The dashboard has three equal buttons at the bottom: Menu, My trips and Reports. Menu opens a full page with every
+  option (Dashboard, History, Reports, Account, My work, Tracking, Vehicles and reports, Preferences, Help and legal),
+  each option in one
+  place only. Account keeps your name, email, subscription and account deletion; name and email are edited in their own
+  rows. A new email only takes effect after confirming the link sent to it.
+- New: **Regular Trips** and **Work Hours** (Premium), under "My work". General trips classify
+  themselves when they close: by saved route, or by the time they started; a regular trip wins. Routes can be added by
+  hand, saved from a finished trip, or accepted from a suggestion the third time a route gets the same category.
+- Work type and Automatic tracking hours moved from Settings to "My work".
+- The dashboard no longer keeps saying "Detected: Uber · Starting your trip automatically..." with no trip open: the
+  detected app is cleared as soon as the automatic start finishes.
+
 ## 1.3.29+69 — 2026-11-09
 
 - New notification icon: the pin with a steering wheel on a full disc, filling the whole icon space. It replaces the old

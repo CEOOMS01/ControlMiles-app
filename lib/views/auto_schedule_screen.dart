@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/app_state.dart';
+import '../widgets/cm_dark_app_bar.dart';
 
 const _dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -76,7 +77,7 @@ class _AutoScheduleScreenState extends State<AutoScheduleScreen> {
     String t(int m) => TimeOfDay(hour: m ~/ 60, minute: m % 60).format(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.tr('auto_schedule_title'))),
+      appBar: cmDarkAppBar(context, s.tr('auto_schedule_title')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

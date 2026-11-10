@@ -77,6 +77,14 @@ class TripData {
 
   bool get needsCategory => isGeneral && purpose == null;
 
+  /// Which rule classified this trip by itself (null when the driver did).
+  String? get autoPurposeSource {
+    for (final s in sections) {
+      if (s.gigApp == 'custom' && s.autoPurposeSource != null) return s.autoPurposeSource;
+    }
+    return null;
+  }
+
   double get miles {
     final fromSections = sections.fold<double>(0, (a, s) => a + s.totalMiles);
     return fromSections > 0 ? fromSections : session.totalMiles;
@@ -143,6 +151,9 @@ class TripCard extends StatelessWidget {
   final VoidCallback onEditAddress;
   final VoidCallback onNote;
 
+  /// Finished General trips only: save this route as a regular trip.
+  final VoidCallback? onSaveRegular;
+
   /// Only the list shows these two.
   final VoidCallback? onDelete;
   final VoidCallback? onToggleDetails;
@@ -158,6 +169,7 @@ class TripCard extends StatelessWidget {
     required this.onMore,
     required this.onEditAddress,
     required this.onNote,
+    this.onSaveRegular,
     this.onDelete,
     this.onToggleDetails,
     this.detailsOpen = false,
@@ -356,6 +368,20 @@ class TripCard extends StatelessWidget {
             ),
           ],
         ),
+        if (trip.autoPurposeSource != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              s.tr(trip.autoPurposeSource == 'regular_trip' ? 'regular_trip_tag' : 'work_hours_tag'),
+              style: TextStyle(fontSize: 12, color: dark ? Colors.white60 : CmColors.inkDim),
+            ),
+          ),
+        if (onSaveRegular != null)
+          TextButton.icon(
+            onPressed: onSaveRegular,
+            icon: const Icon(Icons.repeat_rounded, size: 18),
+            label: Text(s.tr('regular_trip_make')),
+          ),
       ],
     );
   }

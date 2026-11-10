@@ -51,6 +51,12 @@ class AppRoutes {
   // ============================================================
   static const String profile = '/profile';
   static const String settings = '/settings';
+  // The side menu's categories (2026-11-09).
+  static const String myWork = '/my-work';
+  static const String accountTracking = '/account-tracking';
+  static const String vehiclesReports = '/vehicles-reports';
+  static const String accountPreferences = '/account-preferences';
+  static const String helpLegal = '/help-legal';
   static const String preferences = '/preferences';
   static const String subscription = '/subscription';
   // BUG FIX (pedido explícito): gestión de vehículo se separó de Profile —

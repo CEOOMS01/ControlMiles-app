@@ -69,6 +69,13 @@ class PurposePrompt {
     if (_showing) return;
     _showing = true;
     try {
+      // A regular trip or Work Hours may have classified it as it closed.
+      final row = await Supabase.instance.client
+          .from('session_sections')
+          .select('irs_purpose')
+          .eq('id', sectionId)
+          .maybeSingle();
+      if (row?['irs_purpose'] != null || !context.mounted) return;
       final saved = await TripReviewSheet.show(context, sectionId: sectionId);
       if (!saved) {
         // Later: the dashboard must not ask again, the trips list still has it.
@@ -123,14 +130,14 @@ class PurposePrompt {
 
   /// The purposes sheet alone (History uses it to correct a trip's purpose).
   /// Null when it is dismissed.
-  static Future<String?> choose(BuildContext context) => showModalBottomSheet<String>(
+  static Future<String?> choose(BuildContext context, {String? dismissKey}) => showModalBottomSheet<String>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (sheetContext) => _sheet(sheetContext),
+        builder: (sheetContext) => _sheet(sheetContext, dismissKey: dismissKey),
       );
 
-  static Widget _sheet(BuildContext context, {String? subtitle, VoidCallback? onEditAddress}) {
+  static Widget _sheet(BuildContext context, {String? subtitle, VoidCallback? onEditAddress, String? dismissKey}) {
     final appState = context.read<AppState>();
     final theme = Theme.of(context);
     final muted = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6);
@@ -197,7 +204,7 @@ class PurposePrompt {
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(appState.tr('purpose_prompt_later')),
+                  child: Text(appState.tr(dismissKey ?? 'purpose_prompt_later')),
                 ),
               ),
             ],

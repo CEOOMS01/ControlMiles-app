@@ -7,12 +7,15 @@
 // times and coordinates are never touched (the server freezes them).
 // Each call changes the [TripData] in place and returns true when something was saved.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../errors/app_error.dart';
 import '../logic/app_state.dart';
+import '../views/regular_trips_screen.dart';
 import 'trip_card.dart';
 
 class TripEdits {
@@ -35,8 +38,9 @@ class TripEdits {
     try {
       await Supabase.instance.client.from('session_sections').update({'irs_purpose': purpose}).inFilter('id', ids);
       for (var i = 0; i < trip.sections.length; i++) {
-        if (trip.sections[i].gigApp == 'custom') trip.sections[i] = trip.sections[i].copyWith(irsPurpose: purpose);
+        if (trip.sections[i].gigApp == 'custom') trip.sections[i] = trip.sections[i].copyWith(irsPurpose: purpose, clearAutoPurposeSource: true);
       }
+      unawaited(RegularTripFlow.suggestAfterCategorized(ids.first));
       return true;
     } catch (e) {
       if (context.mounted) showError(context, e);

@@ -1,15 +1,18 @@
 // Olympus Mont Systems LLC - ControlMiles
-// lib/widgets/main_drawer.dart - FULL I18N PRODUCTION READY
+// lib/screens/app_menu_screen.dart
+//
+// The app's menu (2026-11-09): opened from the bottom left button of the dashboard,
+// a full page with what used to be the side menu.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../i18n/app_texts.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
-import '../i18n/app_texts.dart';
-import 'app_version_text.dart';
+import '../widgets/app_version_text.dart';
 
-class MainDrawer extends StatelessWidget {
-  const MainDrawer({super.key});
+class AppMenuScreen extends StatelessWidget {
+  const AppMenuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +28,9 @@ class MainDrawer extends StatelessWidget {
    final dividerColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
    final chevronColor = isDark ? Colors.white24 : const Color(0xFFCFC3A8);
 
-    return Drawer(
+    return Scaffold(
       backgroundColor: bgColor,
-      child: Column(
+      body: Column(
         children: [
           Expanded(
             child: ListView(
@@ -65,55 +68,80 @@ class MainDrawer extends StatelessWidget {
                   textColor: textColor,
                   chevronColor: chevronColor,
                 ),
-                // BUG FIX (pedido explícito): gestión de vehículo se separó
-                // de Settings — pantalla propia debajo de Reports.
-                _buildMenuItem(
-                  context: context,
-                  appState: appState,
-                  icon: Icons.directions_car_rounded,
-                  labelKey: 'vehicle',
-                  route: AppRoutes.vehicle,
-                  textColor: textColor,
-                  chevronColor: chevronColor,
-                ),
-
                 Divider(indent: 20, endIndent: 20, height: 20, color: dividerColor),
-
-                // --- Sección: Preferencias ---
-                _buildSectionHeader(appState, 'settings', labelColor),
-
-                // BUG FIX (pedido explícito): botón dedicado para alternar
-                // modo oscuro directo desde el sidebar, sin tener que entrar
-                // a Settings.
-                _buildDarkModeToggle(context, appState, textColor),
 
                 _buildMenuItem(
                   context: context,
                   appState: appState,
                   icon: Icons.person_rounded,
-                  labelKey: 'profile',
+                  labelKey: 'account_title',
                   route: AppRoutes.profile,
                   textColor: textColor,
                   chevronColor: chevronColor,
                 ),
-                // Settings last, under Profile (owner's request, 2026-10-09).
+                if (appState.accountType == 'gig')
+                  _buildMenuItem(
+                  context: context,
+                  appState: appState,
+                  icon: Icons.work_rounded,
+                  labelKey: 'my_work_title',
+                  route: AppRoutes.myWork,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
+                ),
                 _buildMenuItem(
                   context: context,
                   appState: appState,
-                  icon: Icons.settings_rounded,
-                  labelKey: 'settings',
-                  route: AppRoutes.settings,
+                  icon: Icons.location_on_rounded,
+                  labelKey: 'account_tracking',
+                  route: AppRoutes.accountTracking,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
+                ),
+                _buildMenuItem(
+                  context: context,
+                  appState: appState,
+                  icon: Icons.directions_car_rounded,
+                  labelKey: 'account_vehicles_reports',
+                  route: AppRoutes.vehiclesReports,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
+                ),
+                _buildMenuItem(
+                  context: context,
+                  appState: appState,
+                  icon: Icons.tune_rounded,
+                  labelKey: 'preferences',
+                  route: AppRoutes.accountPreferences,
+                  textColor: textColor,
+                  chevronColor: chevronColor,
+                ),
+                _buildMenuItem(
+                  context: context,
+                  appState: appState,
+                  icon: Icons.help_rounded,
+                  labelKey: 'account_help',
+                  route: AppRoutes.helpLegal,
                   textColor: textColor,
                   chevronColor: chevronColor,
                 ),
 
                 Divider(indent: 20, endIndent: 20, height: 20, color: dividerColor),
-                _buildLogoutButton(context, appState),
+                ListTile(
+                  leading: const Icon(Icons.logout_rounded, color: Colors.red),
+                  title: Text(
+                    appState.tr('logout'),
+                    style: const TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () => _confirmLogout(context, appState),
+                  trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
+                ),
               ],
             ),
           ),
 
-          _buildFooter(appState, isDark, dividerColor),
+          // Edge to edge on recent Android: the phone's own buttons covered this.
+          SafeArea(top: false, child: _buildFooter(appState, isDark, dividerColor)),
         ],
       ),
     );
@@ -277,17 +305,29 @@ class MainDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(AppState appState, String labelKey, Color labelColor) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        appState.tr(labelKey).toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          color: labelColor,
-          letterSpacing: 1.0,
-        ),
+  void _confirmLogout(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(appState.tr('logout')),
+        content: Text(appState.tr('logout_confirmation')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(appState.tr('cancel'))),
+          TextButton(
+            onPressed: () async {
+              // Taken before anything closes: this context lives inside the Drawer,
+              // and without the root navigator sign-out never reached Login.
+              final rootNavigator = Navigator.of(context, rootNavigator: true);
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+              // Never throws and always clears the cached account.
+              await appState.signOutAndClear();
+              rootNavigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(appState.tr('logout'), style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -302,101 +342,21 @@ class MainDrawer extends StatelessWidget {
     required Color chevronColor,
   }) {
     return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
       title: Text(
         appState.tr(labelKey),
         style: TextStyle(
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: textColor,
         ),
       ),
       onTap: () {
         Navigator.pop(context);
-        Navigator.pushNamed(context, route);
+        // The dashboard is already underneath this page.
+        if (route != AppRoutes.dashboard) Navigator.pushNamed(context, route);
       },
       trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
-    );
-  }
-
-  Widget _buildDarkModeToggle(BuildContext context, AppState appState, Color textColor) {
-    return ListTile(
-      leading: Icon(
-        appState.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-        color: Theme.of(context).colorScheme.primary,
-        size: 22,
-      ),
-      title: Text(
-        appState.tr('dark_mode'),
-        style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
-      ),
-      trailing: Switch.adaptive(
-        value: appState.isDarkMode,
-        onChanged: (_) => appState.toggleDarkMode(),
-        activeThumbColor: Theme.of(context).colorScheme.primary,
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context, AppState appState) {
-    return ListTile(
-      leading: const Icon(Icons.logout_rounded, color: Colors.red),
-      title: Text(
-        appState.tr('logout'),
-        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-      ),
-      onTap: () => _showLogoutConfirmation(context, appState),
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFFCFC3A8)),
-    );
-  }
-
-  void _showLogoutConfirmation(BuildContext context, AppState appState) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(appState.tr('logout')),
-        content: Text(appState.tr('logout_confirmation')), 
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(appState.tr('cancel')),
-          ),
-          TextButton(
-            onPressed: () async {
-              // BUG FIX (pedido explícito, "logout se queda en modo
-              // invernación, solo lleva a Login si se cierra la app por
-              // completo"): el `context` de este botón vive DENTRO del
-              // Drawer. `Navigator.pop(context)` dos líneas abajo cierra
-              // ese Drawer -- y con él, Flutter puede desmontar el
-              // subárbol del Drawer en cualquier momento del frame
-              // siguiente. Cuando eso pasaba ANTES de que el `await`
-              // terminara, `context.mounted` daba false y el
-              // `pushNamedAndRemoveUntil` de abajo se saltaba en
-              // silencio: la sesión SÍ se cerraba (signOutAndClear ya
-              // corrió), pero nadie navegaba a Login -- exactamente el
-              // síntoma reportado. Capturar el NavigatorState del
-              // navigator RAÍZ ANTES de cualquier pop/await lo hace
-              // inmune a que este context puntual se desmonte después;
-              // el Navigator raíz de la app vive mientras la app viva.
-              final rootNavigator = Navigator.of(context, rootNavigator: true);
-
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-
-              // BUG FIX (pedido explícito): AuthService().signOut() directo
-              // sin try/catch dejaba la app "colgada" si esa llamada de red
-              // fallaba (la navegación de abajo nunca se ejecutaba), y
-              // nunca limpiaba AppState.userDisplayId -- el próximo login
-              // con otra cuenta mostraba el ID de esta. signOutAndClear()
-              // nunca lanza y siempre limpia el estado cacheado.
-              await appState.signOutAndClear();
-
-              rootNavigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(appState.tr('logout'), style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
     );
   }
 

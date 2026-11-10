@@ -13,6 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import '../logic/app_state.dart';
 import '../errors/app_error.dart';
+import '../routes/app_routes.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -29,7 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
 
-  bool _isEditing = false;
+  // Which row is being edited ('first', 'last' or 'email') and what it said before.
+  String? _editing;
+  String _beforeEdit = '';
   bool _isLoading = false;
 
   @override
@@ -90,10 +94,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final firstName = _nameController.text.trim();
       final lastName = _lastNameController.text.trim();
+      final newEmail = _emailController.text.trim();
+      final emailChanged = newEmail != (user.email ?? '');
 
       await _supabase.auth.updateUser(
         UserAttributes(
-          email: _emailController.text.trim(),
+          email: emailChanged ? newEmail : null,
           data: {
             'first_name': firstName,
             'last_name': lastName,
@@ -126,13 +132,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // actualiza al toque, sin cerrar/reabrir la app.
       await appState.fetchUserProfile();
 
-      setState(() => _isEditing = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appState.tr('profile_updated_success')), backgroundColor: Colors.green),
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        _editing = null;
+        // A new address only takes effect once its link is confirmed.
+        if (emailChanged) _emailController.text = user.email ?? '';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(appState.tr(emailChanged ? 'account_email_confirm' : 'profile_updated_success')),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         final appError = AppError.from(e);
@@ -157,11 +168,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              appState.tr('profile').toUpperCase(),
+              appState.tr('account_title').toUpperCase(),
               style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             Text(
@@ -169,23 +183,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w400,
-                // Was Colors.white70: invisible on the light app bar
-                // (found live 2026-09-29). Follow the app bar's own color.
-                color: (theme.appBarTheme.foregroundColor ??
-                        theme.colorScheme.onSurface)
-                    .withValues(alpha: 0.7),
+                color: Colors.white70,
                 letterSpacing: 1.2,
               ),
             ),
           ],
         ),
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit_note_rounded),
-              onPressed: () => setState(() => _isEditing = true),
-            )
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 40),
@@ -193,17 +196,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _buildHeader(appState, isDark),
             const SizedBox(height: 10),
-            if (_isEditing)
-              _buildEditForm(appState, isDark)
-            else
-              _buildInfoCard(appState, isDark),
+            _buildInfoCard(appState, isDark),
 
-            _buildSectionTitle(appState.tr('settings')),
-            _buildHeaderPeriodSelector(appState, isDark),
-            const SizedBox(height: 12),
-            _buildUnitSelector(appState, isDark),
-            const SizedBox(height: 12),
-            _buildDarkModeSwitch(appState, isDark),
+            const SizedBox(height: 16),
+            _navRow(
+              label: appState.tr('subscription'),
+              subtitle: appState.tr(appState.premiumEntitled ? 'account_plan_premium' : 'account_plan_basic'),
+              isDark: isDark,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
+            ),
+            _navRow(
+              label: appState.tr('delete_account'),
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen(section: AccountSection.deleteAccount)),
+              ),
+            ),
             const SizedBox(height: 30),
           ],
         ),
@@ -248,22 +257,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ====================== DARK MODE SWITCH ======================
-  Widget _buildDarkModeSwitch(AppState appState, bool isDark) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: isDark ? const Color(0xFF2E281F) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: SwitchListTile(
-        title: Text(appState.tr('dark_mode'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(appState.tr('dark_mode_description'), style: const TextStyle(fontSize: 12)),
-        value: appState.isDarkMode,
-        onChanged: (value) => appState.setDarkMode(value),
-        secondary: Icon(appState.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded, 
-                    color: appState.isDarkMode ? Colors.amber : Colors.blue),
-      ),
-    );
-  }
-
   // ====================== INFO CARD ======================
   Widget _buildInfoCard(AppState appState, bool isDark) {
     return Card(
@@ -278,65 +271,99 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _infoRow(appState.tr('name'), "${_nameController.text} ${_lastNameController.text}".trim(), isDark),
-            const Divider(height: 24),
-            _infoRow(appState.tr('email'), _emailController.text, isDark),
+            _fieldRow(appState, 'first', appState.tr('name'), _nameController, isDark),
+            const Divider(height: 8),
+            _fieldRow(appState, 'last', appState.tr('last_name'), _lastNameController, isDark),
+            const Divider(height: 8),
+            _fieldRow(appState, 'email', appState.tr('email'), _emailController, isDark, keyboard: TextInputType.emailAddress),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white60 : Colors.grey)),
-          Text(value.isNotEmpty ? value : '—', style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
+  TextEditingController _controllerFor(String field) => switch (field) {
+        'first' => _nameController,
+        'last' => _lastNameController,
+        _ => _emailController,
+      };
+
+  void _startEdit(String field) {
+    setState(() {
+      // Only one row at a time: another row's unsaved text is put back.
+      if (_editing != null) _controllerFor(_editing!).text = _beforeEdit;
+      _editing = field;
+      _beforeEdit = _controllerFor(field).text;
+    });
   }
 
-  // ====================== EDIT FORM ======================
-  Widget _buildEditForm(AppState appState, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2E281F) : Colors.white, 
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF3D352A) : Colors.transparent)
-      ),
-      child: Column(
+  void _cancelEdit() {
+    setState(() {
+      if (_editing != null) _controllerFor(_editing!).text = _beforeEdit;
+      _editing = null;
+    });
+  }
+
+  /// A row of the card: tap it and it becomes its own field, saved right there.
+  Widget _fieldRow(
+    AppState appState,
+    String field,
+    String label,
+    TextEditingController controller,
+    bool isDark, {
+    TextInputType? keyboard,
+  }) {
+    final dim = isDark ? Colors.white60 : Colors.grey;
+    if (_editing == field) {
+      return Row(
         children: [
-          TextField(controller: _nameController, decoration: InputDecoration(labelText: appState.tr('name'))),
-          const SizedBox(height: 12),
-          TextField(controller: _lastNameController, decoration: InputDecoration(labelText: appState.tr('last_name'))),
-          const SizedBox(height: 12),
-          TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: appState.tr('email'))),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E281F), 
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-              ),
-              onPressed: _isLoading ? null : () => _saveProfile(appState),
-              child: _isLoading 
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(appState.tr('save')),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: keyboard,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _saveProfile(appState),
+              decoration: InputDecoration(labelText: label, isDense: true),
             ),
           ),
-          TextButton(
-            onPressed: () => setState(() => _isEditing = false),
-            child: Text(appState.tr('cancel')),
+          IconButton(
+            tooltip: appState.tr('save'),
+            onPressed: _isLoading ? null : () => _saveProfile(appState),
+            icon: _isLoading
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.check_rounded, color: Colors.green),
+          ),
+          IconButton(
+            tooltip: appState.tr('cancel'),
+            onPressed: _isLoading ? null : _cancelEdit,
+            icon: Icon(Icons.close_rounded, color: dim),
           ),
         ],
+      );
+    }
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: _isLoading ? null : () => _startEdit(field),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: dim)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                controller.text.isNotEmpty ? controller.text : '—',
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.edit_outlined, size: 16, color: dim),
+          ],
+        ),
       ),
     );
   }
@@ -351,72 +378,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // mismo toggle correctamente traducido (metric_system, sin subtítulo)
   // -- se reusa esa clave en vez de inventar traducciones nuevas para
   // claves que nunca debieron duplicar esa función.
-  Widget _buildUnitSelector(AppState appState, bool isDark) {
+  Widget _navRow({required String label, String? subtitle, required bool isDark, required VoidCallback onTap}) {
+    final textColor = isDark ? Colors.white : const Color(0xFF2E281F);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF6B6250);
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      elevation: 0,
       color: isDark ? const Color(0xFF2E281F) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: SwitchListTile(
-        title: Text(appState.tr('metric_system'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        value: appState.useMetricSystem,
-        onChanged: (value) => appState.setUseMetricSystem(value),
-        secondary: const Icon(Icons.straighten_rounded),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: isDark ? const Color(0xFF3D352A) : Colors.grey[200]!),
       ),
-    );
-  }
-
-  // Which total the home header shows (2026-10-09): this week / month / year.
-  Widget _buildHeaderPeriodSelector(AppState appState, bool isDark) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: isDark ? const Color(0xFF2E281F) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.speed_rounded),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(appState.tr('header_miles_period'),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: 'week', label: Text(appState.tr('this_week'))),
-                  ButtonSegment(value: 'month', label: Text(appState.tr('this_month'))),
-                  ButtonSegment(value: 'year', label: Text(appState.tr('this_year'))),
-                ],
-                selected: {appState.headerMilesPeriod},
-                onSelectionChanged: (v) => appState.setHeaderMilesPeriod(v.first),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, top: 30, bottom: 12),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(title.toUpperCase(), 
-          style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-              letterSpacing: 1.2,
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0E6D2) : const Color(0xFF2E281F))),
+      child: ListTile(
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+        subtitle: subtitle == null ? null : Text(subtitle, style: TextStyle(fontSize: 12, color: subTextColor)),
+        trailing: Icon(Icons.chevron_right_rounded, color: subTextColor),
+        onTap: onTap,
       ),
     );
   }

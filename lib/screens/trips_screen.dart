@@ -21,6 +21,7 @@ import '../widgets/purpose_prompt.dart';
 import '../widgets/trip_card.dart';
 import '../widgets/pinned_bar.dart';
 import '../widgets/trip_edits.dart';
+import '../views/regular_trips_screen.dart';
 
 enum _Filter { unclassified, all, summary }
 
@@ -266,6 +267,7 @@ class _TripsScreenState extends State<TripsScreen> {
               trip: t,
               onPurpose: (p) => _purpose(t, p),
               onMore: () => _more(t),
+              onSaveRegular: RegularTripFlow.canSave(t, context.read<AppState>()) ? () => RegularTripFlow.openFromTrip(context, t) : null,
               onEditAddress: () async {
                 if (await TripEdits.editAddresses(context, t) && mounted) setState(() {});
               },

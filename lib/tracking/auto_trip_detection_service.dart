@@ -583,7 +583,13 @@ class AutoTripDetectionService {
     );
     if (gigAppId == null) return;
     lastDetectedGigAppId = gigAppId;
-    await _autoStartTrip(gigAppId);
+    try {
+      await _autoStartTrip(gigAppId);
+    } finally {
+      // The card says "starting your trip": true only during this attempt. Left set,
+      // it stayed on the dashboard after the trip was over (seen 2026-11-09).
+      lastDetectedGigAppId = null;
+    }
   }
 
   /// A wake-up from [DriveWake]. "vehicle": Android thinks the phone is in a vehicle;

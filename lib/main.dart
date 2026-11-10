@@ -43,6 +43,7 @@ import 'screens/trips_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
+import 'views/my_work_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/vehicle_screen.dart';
 
@@ -465,7 +466,12 @@ final Map<String, WidgetBuilder> _appRoutes = {
   AppRoutes.profile: (_) => const ProfileScreen(),
   AppRoutes.reports: (_) => const ReportsScreen(),
   AppRoutes.history: (_) => const TripsScreen(),
-  AppRoutes.settings: (_) => const SettingsScreen(),
+  AppRoutes.settings: (_) => const ProfileScreen(),
+  AppRoutes.myWork: (_) => const MyWorkScreen(),
+  AppRoutes.accountTracking: (_) => const SettingsScreen(section: AccountSection.tracking),
+  AppRoutes.vehiclesReports: (_) => const SettingsScreen(section: AccountSection.vehiclesReports),
+  AppRoutes.accountPreferences: (_) => const SettingsScreen(section: AccountSection.preferences),
+  AppRoutes.helpLegal: (_) => const SettingsScreen(section: AccountSection.help),
   AppRoutes.subscription: (_) => const SubscriptionScreen(),
   AppRoutes.vehicle: (_) => const VehicleScreen(),
   AppRoutes.odometerCapture: (context) {

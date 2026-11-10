@@ -10,11 +10,11 @@
 // re-playable on demand.
 //
 //  * Welcome sheet once per account: "Show me around" / "Not now".
-//  * Dashboard: 6 spotlights over the real controls.
-//  * Contextual: Reports, History and Settings show their own tips the
+//  * Dashboard: 7 spotlights over the real controls.
+//  * Contextual: Reports, History, Tracking and Vehicles and reports show their own tips the
 //    first time they're opened; a "?" in their app bar replays them.
 //  * Milestone: after the first finished trip, History is highlighted.
-//  * Settings -> "App tour" replays everything.
+//  * Help and legal -> "App tour" replays everything.
 //
 // Seen tours are kept per account on the device and in
 // user_onboarding.tour_seen (server), so a reinstall doesn't repeat them.
@@ -33,12 +33,13 @@ import '../logic/app_state.dart';
 /// Tour ids. Bump the suffix to show a tour again after a big redesign.
 class TourIds {
   static const welcome = 'gig_welcome_v1';
-  static const dashboard = 'gig_dashboard_v1';
+  static const dashboard = 'gig_dashboard_v2'; // v2: the three-button dashboard
   static const reports = 'gig_reports_v1';
   static const history = 'gig_history_v1';
   static const settings = 'gig_settings_v1';
+  static const settingsPortal = 'gig_settings_portal_v1';
   static const firstTrip = 'gig_first_trip_v1';
-  static const all = [welcome, dashboard, reports, history, settings, firstTrip];
+  static const all = [welcome, dashboard, reports, history, settings, settingsPortal, firstTrip];
 }
 
 class ProductTour {
