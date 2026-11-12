@@ -58,3 +58,7 @@ app.*.map.json
 
 # Supabase CLI local cache (holds only a cli-latest version marker).
 supabase/.temp/
+
+# Symbol files of obfuscated release builds (tool/build_release.ps1): needed to read
+# stack traces, kept on this PC only.
+/release-symbols/

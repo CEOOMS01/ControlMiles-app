@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Observador de ciclo de vida
 import 'observers/app_lifecycle_observer.dart';
 import 'services/supabase_bootstrap.dart';
+import 'services/diag_log.dart';
 import 'services/cgc_monitor_service.dart';
 
 // Rutas, Estado e Internacionalización
@@ -55,7 +56,25 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Cold-start timing (debug log only): how long each step of opening the app takes.
 final Stopwatch startupWatch = Stopwatch();
-void startupMark(String label) => debugPrint('[StartupTiming] $label ${startupWatch.elapsedMilliseconds} ms');
+// Also kept in the diagnostic log (release builds print nothing to the console), so
+// a log sent from Settings shows how long each cold start took. Marks made before
+// the first frame are held and written together, to keep file access off the path
+// to the first frame.
+final List<String> _startupMarks = [];
+bool _startupFlushed = false;
+void startupMark(String label) {
+  final ms = startupWatch.elapsedMilliseconds;
+  debugPrint('[StartupTiming] $label $ms ms');
+  if (_startupFlushed) {
+    unawaited(DiagLog.add('startup', {'step': label.replaceAll(' ', '_'), 'ms': ms}));
+    return;
+  }
+  _startupMarks.add('${label.replaceAll(' ', '_')}=$ms');
+  if (label == 'route resolved') {
+    _startupFlushed = true;
+    unawaited(DiagLog.add('startup', {'steps': _startupMarks.join(','), 'unit': 'ms'}));
+  }
+}
 
 Future<void> main() async {
   startupWatch.start();

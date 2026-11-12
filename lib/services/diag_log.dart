@@ -7,9 +7,12 @@
 // reconstructed afterwards. It holds no personal text: times, coordinates rounded to
 // ~100 m, counts and reasons.
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -50,8 +53,32 @@ class DiagLog {
     }
   }
 
+  static final Map<String, DateTime> _lastSampled = {};
+
+  /// Like [add], but at most once per [every] for the same [key] (default: the
+  /// event name). For lines that arrive every second while driving -- one per GPS
+  /// fix, one per mile step -- which filled the 400 KB file in ~5 hours
+  /// (2026-11-11: 1979 'miles' + 524 'fix' lines in one day's log). The values
+  /// that matter stay: 'miles' carries the running section total, so a sample
+  /// still shows where the count stood.
+  static Future<void> addSampled(
+    String event,
+    Duration every, [
+    Map<String, Object?> data = const {},
+    String? key,
+  ]) {
+    final k = key ?? event;
+    final now = DateTime.now();
+    final last = _lastSampled[k];
+    if (last != null && now.difference(last) < every) return Future.value();
+    _lastSampled[k] = now;
+    return add(event, data);
+  }
+
   /// Coordinates to ~100 m (3 decimals) so the log never shows an exact address.
   static String coarse(double v) => v.toStringAsFixed(3);
+
+  static const _kLastUploadHash = 'diag_last_upload_hash';
 
   /// Sends the file to the server; true when it was saved there.
   static bool _uploading = false;
@@ -65,12 +92,23 @@ class DiagLog {
       if (!await f.exists()) return false;
       final content = await f.readAsString();
       if (content.trim().isEmpty) return false;
+      final body = content.length > 590000 ? content.substring(content.length - 590000) : content;
+
+      // The in-flight guard above does not cover a second tap a second or two
+      // after the first one finished (2026-11-08..10: pairs of identical rows
+      // 1-2 s apart). The server already has exactly this text: say so instead of
+      // inserting it again.
+      final hash = sha256.convert(utf8.encode(body)).toString();
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString(_kLastUploadHash) == hash) return true;
+
       final info = await PackageInfo.fromPlatform();
       await Supabase.instance.client.from('diagnostic_logs').insert({
         'app_version': '${info.version}+${info.buildNumber}',
         'device': Platform.operatingSystemVersion,
-        'content': content.length > 590000 ? content.substring(content.length - 590000) : content,
+        'content': body,
       });
+      await prefs.setString(_kLastUploadHash, hash);
       return true;
     } catch (e) {
       debugPrint('[DiagLog] upload failed: $e');

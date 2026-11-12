@@ -191,7 +191,9 @@ class TraceletEngine {
         final coords = location.coords;
         final safeSpeed = coords.speed < 0 ? 0.0 : coords.speed;
         final isMock = location.mockHeuristics?.platformFlagMock == true;
-        DiagLog.add('fix', {
+        // One sample every 20 s (a fix per second filled the file in hours); a
+        // mock location is always logged.
+        DiagLog.addSampled('fix', isMock ? Duration.zero : const Duration(seconds: 20), {
           'lat': DiagLog.coarse(coords.latitude),
           'lng': DiagLog.coarse(coords.longitude),
           'v': safeSpeed.toStringAsFixed(1),

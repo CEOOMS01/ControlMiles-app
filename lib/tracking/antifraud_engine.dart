@@ -107,7 +107,14 @@ class AntifraudEngine {
       // siguiente cálculo, lo cual podía inyectar millas falsas o comerse
       // millas reales en el siguiente tick. Ahora se descarta sin mover el
       // baseline — se sigue comparando contra la última posición buena.
-      if (distance > maxJumpDistanceMeters) {
+      //
+      // 2026-11-11: the jump only counts as impossible when it is also too fast for
+      // the time that passed. With a fixed 1500 m cap, a GPS gap (the Fort McHenry
+      // tunnel, 85 s at 45 mph = 2 km) left the baseline behind the car for good:
+      // every later point was "a jump", 3.5 minutes of real driving were dropped
+      // and the trip closed as if the car were parked. Now the point after the gap
+      // is accepted and the straight line across the gap counts, as it is driven.
+      if (distance > maxJumpDistanceMeters && distance / timeDiff > maxAllowedSpeedMps) {
         return AntifraudResult.reject("Impossible movement jump", 0.0);
       }
 
