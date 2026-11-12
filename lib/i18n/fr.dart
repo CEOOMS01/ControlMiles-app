@@ -1259,6 +1259,8 @@ const Map<String, String> frTexts = {
   'odometer_cycle_annual': "Une fois par an",
   'odometer_cycle_annual_hint': "Deux photos du compteur par an : au début et à la fin de l'année.",
   'odometer_cycle_monthly_hint': "Une photo du compteur le 1er de chaque mois (Premium).",
+  'odometer_cycle_semimonthly': "Tous les 15 jours",
+  'odometer_cycle_semimonthly_hint': "Une photo du compteur le 1er et le 15 de chaque mois (Premium).",
   'odometer_cycle_weekly_hint': "Une photo du compteur chaque lundi (Premium).",
   'gig_reorder_hint': "Appuyez longuement sur une carte, puis faites-la glisser pour la réordonner.",
   'premium_feature_locked_body_apps': "Choisir quelles apps apparaissent dans votre liste (et lesquelles la détection automatique surveille) est une fonction Premium. Passez à Premium pour l'activer.",

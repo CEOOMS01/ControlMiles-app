@@ -30,6 +30,16 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## Unreleased — after 1.3.33+73
+
+- The odometer photo follows the vehicle's cycle only: annual for every account; Premium may choose every 15 days
+  or monthly (the vehicle's cycle dialog lists them, with a lock for Basic). The reading taken when automatic
+  trips were turned on is no longer saved and carried to every automatic trip: turning them on asks for a photo only
+  when the current cycle has none, and saves it as that cycle's reading. A phone that still held the old saved
+  reading clears it on the next start.
+- An automatic trip that begins with the app closed, in a cycle with no reading yet, does not start; the app asks
+  for the photo the next time it opens.
+
 ## 1.3.31+71 — 2026-11-09
 
 - App tour updated to the new design: seven steps, one per bottom button, and the text follows how the driver works

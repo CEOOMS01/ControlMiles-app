@@ -1193,6 +1193,8 @@ const Map<String, String> esTexts = {
   'odometer_cycle_annual_hint': 'Dos fotos del odómetro al año: al inicio y al final del año.',
   'odometer_cycle_monthly': 'Mensual',
   'odometer_cycle_monthly_hint': 'Una foto del odómetro el día 1 de cada mes (Premium).',
+  'odometer_cycle_semimonthly': "Cada 15 días",
+  'odometer_cycle_semimonthly_hint': "Una foto del odómetro el día 1 y el 15 de cada mes (Premium).",
   'odometer_cycle_weekly_hint': "Una foto del odómetro cada lunes (Premium).",
   'odometer_cycle_updated': 'Ciclo de odómetro actualizado.',
   'gig_reorder_hint': 'Mantén pulsada una tarjeta y arrástrala para reordenar.',

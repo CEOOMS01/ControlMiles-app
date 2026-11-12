@@ -1241,6 +1241,8 @@ const Map<String, String> hiTexts = {
   'odometer_cycle_annual': "साल में एक बार",
   'odometer_cycle_annual_hint': "साल में दो ओडोमीटर फ़ोटो: साल की शुरुआत और अंत में।",
   'odometer_cycle_monthly_hint': "हर महीने की 1 तारीख़ को एक ओडोमीटर फ़ोटो (प्रीमियम)।",
+  'odometer_cycle_semimonthly': "हर 15 दिन",
+  'odometer_cycle_semimonthly_hint': "हर महीने की 1 और 15 तारीख़ को एक ओडोमीटर फ़ोटो (प्रीमियम)।",
   'odometer_cycle_weekly_hint': "हर सोमवार एक ओडोमीटर फ़ोटो (प्रीमियम)।",
   'gig_reorder_hint': "किसी कार्ड को देर तक दबाएँ, फिर क्रम बदलने के लिए खींचें।",
   'premium_feature_locked_body_apps': "आपकी सूची में कौन-से ऐप दिखें (और ऑटो-डिटेक्शन किन्हें देखे), यह चुनना प्रीमियम सुविधा है। इसे चालू करने के लिए प्रीमियम लें।",

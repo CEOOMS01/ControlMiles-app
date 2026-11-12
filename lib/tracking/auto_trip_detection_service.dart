@@ -13,15 +13,10 @@
 // REVISED 2026-08-27, explicit user request ("elimina el preguntar en
 // gig app"): a trip whose gig app was identified with real confidence
 // now starts SILENTLY, no confirmation screen -- see _autoStartTrip. The
-// odometer-mandatory requirement from the original design is still
-// fully honored: it's satisfied once, for real, at activation time
-// (requestEnable's own camera capture), and every auto-started trip
-// afterward carries that same reading forward (TrackingController.
-// startTripFlow's useAutoDetectOdometer path) -- asking the driver to
-// additionally tap "confirm" before every single detected trip no
-// longer served that evidentiary purpose, it was pure friction. Only an
-// informational notification fires afterward, same pattern already used
-// for mid-trip auto-switch.
+// odometer photo is not asked per trip: it follows the vehicle's cycle
+// (annual for everyone; Premium may pick every 15 days or monthly), see
+// OdometerCaptureService. Only an informational notification fires
+// afterward, same pattern already used for mid-trip auto-switch.
 //
 // REVISED AGAIN 2026-08-28, explicit user request ("aun continua trip
 // detected, confirm and start... elimina ese módulo"): the motion-only
@@ -80,8 +75,10 @@ class AutoTripDetectionService {
       AutoTripDetectionService._internal();
 
   static const String _enabledPrefKey = 'controlmiles_auto_detect_enabled';
-  static const String _shiftOdoValueKey = 'controlmiles_shift_odometer_value';
-  static const String _shiftOdoImageKey = 'controlmiles_shift_odometer_image_url';
+  // Old per-activation odometer cache (removed 2026-11-11: the odometer photo follows the
+  // vehicle's cycle only). The keys are cleared once so no stale photo stays on a phone.
+  static const String _legacyShiftOdoValueKey = 'controlmiles_shift_odometer_value';
+  static const String _legacyShiftOdoImageKey = 'controlmiles_shift_odometer_image_url';
 
   // Premium-exclusive "select gig apps for working shift" (explicit user
   // request, 2026-09-18). Same key AppState.setSelectedGigAppIds persists
@@ -131,22 +128,6 @@ class AutoTripDetectionService {
   // one the trip is currently tracking under, switch silently, same as
   // trip-start. See handleRunningFix.
 
-  // Shift-start odometer reading, captured once (real photo, real
-  // evidence -- see OdometerCaptureService.processEvidence's standalone
-  // mode) and carried forward onto every trip auto-detected afterward,
-  // explicit user requirement: "que la activacion de auto detection
-  // dispare el registro de odometro... de esta manera no hay que
-  // hacerlo durante el tracking". Cleared on disarm (setEnabled(false))
-  // so the NEXT activation always starts with a fresh reading --
-  // persisted to SharedPreferences too, so a stale in-memory-only value
-  // doesn't survive a real app restart mid-shift with the wrong
-  // semantics; restoreFromPrefs() reloads it alongside the armed state.
-  double? shiftStartOdometerValue;
-  String? shiftStartOdometerImageUrl;
-
-  bool get hasShiftStartOdometer =>
-      shiftStartOdometerValue != null && shiftStartOdometerImageUrl != null;
-
   bool get isArmed => _armed;
 
   /// Called from AppState.setAutoDetectEnabled -- turns the always-on
@@ -171,15 +152,10 @@ class AutoTripDetectionService {
     _armed = enabled;
     if (!enabled) {
       lastDetectedGigAppId = null;
-      // Don't carry a stale prompt guard into the NEXT activation --
-      // same reasoning as the shift-odometer clear right below.
+      // Don't carry a stale prompt guard into the NEXT activation.
       _promptStuckTimer?.cancel();
       _promptStuckTimer = null;
       _promptActive = false;
-      // Explicit user requirement: turning auto-detect off clears the
-      // shift-start reading -- the next activation must capture a fresh
-      // one, never silently reuse a stale one from an earlier session.
-      await clearShiftStartOdometer();
     }
 
     if (enabled) {
@@ -215,43 +191,13 @@ class AutoTripDetectionService {
   /// with no UI up yet) when the GPS engine doesn't actually come back.
   Future<void> restoreFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_legacyShiftOdoValueKey);
+    await prefs.remove(_legacyShiftOdoImageKey);
     final enabled = prefs.getBool(_enabledPrefKey) ?? false;
     if (!enabled) return;
 
-    // Reload the cached shift-start reading BEFORE arming, so a real app
-    // restart mid-shift doesn't lose it (setEnabled(true) itself never
-    // touches this cache -- only setEnabled(false)/clearShiftStartOdometer
-    // do).
-    shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
-    shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
-
     final gpsOk = await setEnabled(true);
     if (!gpsOk) DiagLog.add('auto-detect could not start');
-  }
-
-  /// Called once the standalone OdometerCaptureScreen capture succeeds
-  /// (see requestEnable below) -- caches the real, already-uploaded
-  /// photo/value so every trip detected for the rest of this armed
-  /// stint can carry it forward instead of asking again.
-  Future<void> setShiftStartOdometer({
-    required double value,
-    required String imageUrl,
-  }) async {
-    shiftStartOdometerValue = value;
-    shiftStartOdometerImageUrl = imageUrl;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_shiftOdoValueKey, value.toString());
-    await prefs.setString(_shiftOdoImageKey, imageUrl);
-  }
-
-  Future<void> clearShiftStartOdometer() async {
-    shiftStartOdometerValue = null;
-    shiftStartOdometerImageUrl = null;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_shiftOdoValueKey);
-    await prefs.remove(_shiftOdoImageKey);
   }
 
   static bool _armTriedThisRun = false;
@@ -294,9 +240,9 @@ class AutoTripDetectionService {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final vehicle = await VehicleService().getActiveOrAssignedVehicle(user.id, organizationId: null);
+      // No vehicle, or this cycle's photo already taken: nothing to ask.
       final existing = vehicle == null ? null : await OdometerCaptureService().currentWeekStartReading(vehicle.id);
-      if (existing != null) {
-        await instance.setShiftStartOdometer(value: existing.value, imageUrl: existing.imageUrl);
+      if (vehicle == null || existing != null) {
         await appState.setAutoDetectEnabled(true);
         return;
       }
@@ -308,11 +254,10 @@ class AutoTripDetectionService {
 
   /// Full "turn auto-detect on" flow -- called from Settings/the drawer
   /// toggle INSTEAD of calling appState.setAutoDetectEnabled(true)
-  /// directly, since activation now also has to capture the shift-start
-  /// odometer first (explicit user requirement). Checks permissions,
-  /// then opens the same OdometerCaptureScreen every manual trip already
-  /// uses (standalone mode -- sessionId: null, see the screen/service's
-  /// own comments), and only actually arms auto-detect if that capture
+  /// directly, since activation also checks the vehicle's odometer cycle.
+  /// Checks permissions, then -- only when the current cycle has no reading
+  /// yet -- opens the odometer camera screen and saves the photo as that
+  /// cycle's reading, and only arms auto-detect if that capture
   /// succeeds. Returns false (nothing enabled) if the user backs out at
   /// any step -- permission denied, or cancelled the camera screen.
   static Future<bool> requestEnable(BuildContext context, AppState appState) async {
@@ -358,47 +303,33 @@ class AutoTripDetectionService {
       }
     }
 
-    // Weekly odometer checkpoint (explicit user request, 2026-09-03): if
-    // this vehicle's current calendar week already has a start reading
-    // (fresh this week, or rolled forward from a missed close last week),
-    // arming auto-detect needs no new photo at all -- just reuse it.
-    double? value;
-    String? imageUrl;
-
+    // The odometer photo follows the vehicle's cycle (annual for everyone; Premium may
+    // choose every 15 days or monthly), never the trip and never the activation. When
+    // the current cycle still has no reading, the photo is taken now and saved as that
+    // cycle's reading, so the first trip of the cycle asks for nothing.
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final activeVehicle = await VehicleService().getActiveOrAssignedVehicle(
         user.id,
         organizationId: null,
       );
-      if (activeVehicle != null) {
-        final existing = await OdometerCaptureService()
-            .currentWeekStartReading(activeVehicle.id);
-        if (existing != null) {
-          value = existing.value;
-          imageUrl = existing.imageUrl;
-        }
+      if (activeVehicle != null &&
+          await OdometerCaptureService().needsCheckpointStartThisWeek(activeVehicle.id)) {
+        if (!context.mounted) return false;
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OdometerCaptureScreen(
+              isStart: true,
+              weeklyCheckpointMode: true,
+              vehicleId: activeVehicle.id,
+            ),
+          ),
+        );
+        if (result is! Map || result['success'] != true) return false;
       }
     }
 
-    if (value == null || imageUrl == null) {
-      if (!context.mounted) return false;
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const OdometerCaptureScreen(isStart: true),
-        ),
-      );
-
-      if (result is! Map || result['success'] != true) return false;
-
-      final rawValue = result['odometer_value'];
-      value = rawValue is num ? rawValue.toDouble() : double.tryParse(rawValue.toString());
-      imageUrl = result['imageUrl'] as String?;
-      if (value == null || imageUrl == null) return false;
-    }
-
-    await instance.setShiftStartOdometer(value: value, imageUrl: imageUrl);
     final gpsOk = await appState.setAutoDetectEnabled(true);
 
     // REAL BUG FIX (2026-08-28): this used to return true unconditionally
@@ -528,24 +459,11 @@ class AutoTripDetectionService {
   /// Armed in this isolate, or armed according to the saved setting. The second
   /// is what the headless isolate Android starts while the app is closed sees:
   /// it never ran setEnabled, so its own flag is false.
-  /// The engine reads the photo the app just took for a trip started by the button.
-  Future<void> reloadShiftStartOdometer() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.reload();
-    shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
-    shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
-  }
-
   Future<bool> _isArmedNow() async {
     final prefs = await SharedPreferences.getInstance();
     // The headless isolate's cache can be older than what the app saved since.
     await prefs.reload();
-    if (!_armed && !(prefs.getBool(_enabledPrefKey) ?? false)) return false;
-    if (!hasShiftStartOdometer) {
-      shiftStartOdometerValue = double.tryParse(prefs.getString(_shiftOdoValueKey) ?? '');
-      shiftStartOdometerImageUrl = prefs.getString(_shiftOdoImageKey);
-    }
-    return true;
+    return _armed || (prefs.getBool(_enabledPrefKey) ?? false);
   }
 
   /// Every GPS fix that arrives while no trip is running -- from the app or from
@@ -730,13 +648,9 @@ class AutoTripDetectionService {
 
   /// Explicit user request (2026-08-27): once a specific gig app is
   /// identified with real confidence, start the trip silently -- no
-  /// confirmation screen. The mandatory-odometer requirement is still
-  /// fully honored (see requestEnable's own camera capture at
-  /// activation time, carried forward via useAutoDetectOdometer below),
-  /// so a manual "tap to confirm" per detected trip no longer served
-  /// any evidentiary purpose -- it was pure friction. Only an
-  /// informational notification fires afterward, matching the pattern
-  /// already used for mid-trip auto-switch.
+  /// confirmation screen. The odometer photo follows the vehicle's cycle,
+  /// not the trip. Only an informational notification fires afterward,
+  /// matching the pattern already used for mid-trip auto-switch.
   Future<void> _autoStartTrip(String gigAppId) async {
     if (_promptActive) return;
     _promptActive = true;
@@ -754,9 +668,9 @@ class AutoTripDetectionService {
     // here means the widget tree itself isn't up yet (very early startup
     // race) -- just let the next poll retry rather than crash.
     // No navigator (the app is closed and this runs in the headless isolate):
-    // the trip starts without a screen. It only needs one to ask for an
-    // odometer photo, and then it does not start (the shift-start reading
-    // taken when auto-detect was armed is what a closed-app start carries).
+    // the trip starts without a screen. It only needs one when the vehicle's
+    // odometer cycle has no reading yet, and then it does not start; the app asks
+    // for that photo the next time it opens (see ensureArmed).
     final nav = NotificationService.instance.navigatorKey?.currentState;
 
     // Headless isolate: Supabase and the saved account are not loaded yet.
@@ -784,7 +698,7 @@ class AutoTripDetectionService {
     await TrackingController.startTripFlow(
       context: (nav != null && nav.mounted) ? nav.context : null,
       gigApp: gigAppId,
-      useAutoDetectOdometer: true,
+      startedAutomatically: true,
     );
 
     _promptStuckTimer?.cancel();

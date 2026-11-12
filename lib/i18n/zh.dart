@@ -1260,6 +1260,8 @@ const Map<String, String> zhTexts = {
   'odometer_cycle_annual': "每年一次",
   'odometer_cycle_annual_hint': "每年拍两张里程表照片：年初和年末。",
   'odometer_cycle_monthly_hint': "每月 1 日拍一张里程表照片（高级版）。",
+  'odometer_cycle_semimonthly': "每 15 天",
+  'odometer_cycle_semimonthly_hint': "每月 1 日和 15 日各拍一张里程表照片（高级版）。",
   'odometer_cycle_weekly_hint': "每周一拍一张里程表照片（高级版）。",
   'gig_reorder_hint': "长按卡片，然后拖动以重新排序。",
   'premium_feature_locked_body_apps': "选择哪些应用显示在列表中（以及自动检测监视哪些应用）是高级版功能。升级到高级版即可开启。",

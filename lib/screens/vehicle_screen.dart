@@ -274,10 +274,10 @@ class _VehicleScreenState extends State<VehicleScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 2026-11-07 (pedido explícito): annual (two photos a year, the
-                // native rule) is for everyone; weekly and monthly are Premium's
-                // optional choice, same lock pattern as AutoDetectAppsButton.
-                for (final cycle in const ['annual', 'monthly', 'weekly'])
+                // 2026-11-11 (pedido explícito): annual (two photos a year, the
+                // native rule) is for everyone; every 15 days and monthly are
+                // Premium's optional choice, same lock pattern as AutoDetectAppsButton.
+                for (final cycle in const ['annual', 'semimonthly', 'monthly'])
                   RadioListTile<String>(
                     value: cycle,
                     title: Text(appState.tr('odometer_cycle_$cycle')),
