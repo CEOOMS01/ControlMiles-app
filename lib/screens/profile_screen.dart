@@ -15,6 +15,7 @@ import '../logic/app_state.dart';
 import '../errors/app_error.dart';
 import '../routes/app_routes.dart';
 import 'settings_screen.dart';
+import '../onboarding/product_tour.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -33,12 +34,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Which row is being edited ('first', 'last' or 'email') and what it said before.
   String? _editing;
+  final _scope = TourScope('account');
+  final _tName = GlobalKey();
+  bool _tourChecked = false;
   String _beforeEdit = '';
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _scope.register();
     _loadUserProfile();
   }
 
@@ -47,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _scope.unregister();
     super.dispose();
   }
 
@@ -159,9 +165,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _startTour({bool force = false}) {
+    ProductTour.run(context, id: TourIds.account, scope: _scope.name, keys: [_tName], force: force);
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    if (!_tourChecked) {
+      _tourChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startTour();
+      });
+    }
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -171,6 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: isDark ? const Color(0xFF1C1812) : const Color(0xFF2E281F),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [TourHelpButton(onPressed: () => _startTour(force: true))],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -271,7 +288,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _fieldRow(appState, 'first', appState.tr('name'), _nameController, isDark),
+            TourTarget(
+              showcaseKey: _tName,
+              scope: _scope.name,
+              step: 1,
+              total: 1,
+              titleKey: 'account_title',
+              bodyKey: 'ptour_account_body',
+              child: _fieldRow(appState, 'first', appState.tr('name'), _nameController, isDark),
+            ),
             const Divider(height: 8),
             _fieldRow(appState, 'last', appState.tr('last_name'), _lastNameController, isDark),
             const Divider(height: 8),

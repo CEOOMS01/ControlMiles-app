@@ -22,6 +22,7 @@ import '../widgets/purpose_prompt.dart';
 import '../widgets/trip_card.dart';
 import '../widgets/trip_edits.dart';
 import '../widgets/cm_dark_app_bar.dart';
+import '../onboarding/product_tour.dart';
 
 class RegularTripDraft {
   final double? startLatitude;
@@ -169,6 +170,9 @@ class RegularTripsScreen extends StatefulWidget {
 }
 
 class _RegularTripsScreenState extends State<RegularTripsScreen> {
+  final _scope = TourScope('regular_trips');
+  final _tAdd = GlobalKey();
+  bool _tourChecked = false;
   TripClassificationSettings? _settings;
   List<RegularTrip> _trips = const [];
   bool _failed = false;
@@ -176,7 +180,18 @@ class _RegularTripsScreenState extends State<RegularTripsScreen> {
   @override
   void initState() {
     super.initState();
+    _scope.register();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scope.unregister();
+    super.dispose();
+  }
+
+  void _startTour({bool force = false}) {
+    ProductTour.run(context, id: TourIds.regularTrips, scope: _scope.name, keys: [_tAdd], force: force);
   }
 
   Future<void> _load() async {
@@ -189,6 +204,12 @@ class _RegularTripsScreenState extends State<RegularTripsScreen> {
           _trips = trips;
           _failed = false;
         });
+        if (!_tourChecked) {
+          _tourChecked = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _startTour();
+          });
+        }
       }
     } catch (e) {
       debugPrint('[RegularTrips] load failed: $e');
@@ -223,7 +244,11 @@ class _RegularTripsScreenState extends State<RegularTripsScreen> {
     final settings = _settings;
 
     return Scaffold(
-      appBar: cmDarkAppBar(context, s.tr('regular_trips_title')),
+      appBar: cmDarkAppBar(
+        context,
+        s.tr('regular_trips_title'),
+        actions: [TourHelpButton(onPressed: () => _startTour(force: true))],
+      ),
       body: settings == null
           ? Center(child: _failed ? Text(s.tr('error')) : const BrandLoader(size: 36))
           : ListView(
@@ -270,13 +295,21 @@ class _RegularTripsScreenState extends State<RegularTripsScreen> {
                     onTap: () => _open(existing: trip),
                   ),
                 const SizedBox(height: 16),
-                SizedBox(
+                TourTarget(
+                  showcaseKey: _tAdd,
+                  scope: _scope.name,
+                  step: 1,
+                  total: 1,
+                  titleKey: 'regular_trips_add',
+                  bodyKey: 'ptour_regular_add_body',
+                  child: SizedBox(
                   height: 52,
                   child: FilledButton.icon(
                     onPressed: () => _open(),
                     icon: const Icon(Icons.add_rounded),
                     label: Text(s.tr('regular_trips_add')),
                   ),
+                ),
                 ),
               ],
             ),

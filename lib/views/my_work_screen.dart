@@ -14,13 +14,47 @@ import 'regular_trips_screen.dart';
 import 'work_hours_screen.dart';
 import 'work_type_screen.dart';
 import '../widgets/cm_dark_app_bar.dart';
+import '../onboarding/product_tour.dart';
 
-class MyWorkScreen extends StatelessWidget {
+class MyWorkScreen extends StatefulWidget {
   const MyWorkScreen({super.key});
+
+  @override
+  State<MyWorkScreen> createState() => _MyWorkScreenState();
+}
+
+class _MyWorkScreenState extends State<MyWorkScreen> {
+  final _scope = TourScope('my_work');
+  final _tHours = GlobalKey();
+  final _tRegular = GlobalKey();
+  bool _tourChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scope.register();
+  }
+
+  @override
+  void dispose() {
+    _scope.unregister();
+    super.dispose();
+  }
+
+  // Premium only: Basic has just the work type here, nothing to explain.
+  void _startTour({bool force = false}) {
+    ProductTour.run(context, id: TourIds.myWork, scope: _scope.name, keys: [_tHours, _tRegular], force: force);
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    if (!_tourChecked) {
+      _tourChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startTour();
+      });
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ink = isDark ? Colors.white : CmColors.ink;
     final dim = isDark ? Colors.white60 : CmColors.inkDim;
@@ -48,14 +82,36 @@ class MyWorkScreen extends StatelessWidget {
       if (s.premiumEntitled && s.workMode == 'general')
         row(Icons.schedule_rounded, s.tr('auto_schedule_title'), autoScheduleSummary(s, context), const AutoScheduleScreen()),
       if (s.premiumEntitled && s.workMode != 'gig') ...[
-        row(Icons.event_available_outlined, s.tr('work_hours_title'), s.tr('work_hours_row_hint'), const WorkHoursScreen()),
-        row(Icons.repeat_rounded, s.tr('regular_trips_title'), s.tr('regular_trips_row_hint'), const RegularTripsScreen()),
+        TourTarget(
+          showcaseKey: _tHours,
+          scope: _scope.name,
+          step: 1,
+          total: 2,
+          titleKey: 'work_hours_title',
+          bodyKey: 'ptour_work_hours_body',
+          radius: BorderRadius.zero,
+          child: row(Icons.event_available_outlined, s.tr('work_hours_title'), s.tr('work_hours_row_hint'), const WorkHoursScreen()),
+        ),
+        TourTarget(
+          showcaseKey: _tRegular,
+          scope: _scope.name,
+          step: 2,
+          total: 2,
+          titleKey: 'regular_trips_title',
+          bodyKey: 'ptour_regular_body',
+          radius: BorderRadius.zero,
+          child: row(Icons.repeat_rounded, s.tr('regular_trips_title'), s.tr('regular_trips_row_hint'), const RegularTripsScreen()),
+        ),
       ],
     ];
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF12100C) : CmColors.cream,
-      appBar: cmDarkAppBar(context, s.tr('my_work_title')),
+      appBar: cmDarkAppBar(
+        context,
+        s.tr('my_work_title'),
+        actions: [if (s.premiumEntitled && s.workMode != 'gig') TourHelpButton(onPressed: () => _startTour(force: true))],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

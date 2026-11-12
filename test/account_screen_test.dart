@@ -8,18 +8,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:controlmiles/logic/app_state.dart';
+import 'package:controlmiles/routes/app_routes.dart';
 import 'package:controlmiles/screens/app_menu_screen.dart';
 import 'package:controlmiles/screens/profile_screen.dart';
 import 'package:controlmiles/screens/settings_screen.dart';
 import 'package:controlmiles/views/my_work_screen.dart';
 import 'package:controlmiles/widgets/dashboard_action.dart';
+import 'package:controlmiles/onboarding/product_tour.dart';
 
 void main() {
   late AppState appState;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences.setMockInitialValues({});
+    // Tours are tested on the phone; here they must not cover the screens.
+    SharedPreferences.setMockInitialValues({'cm_product_tour_seen_anon': TourIds.all});
     await Supabase.initialize(
       url: 'https://example.supabase.co',
       publishableKey: 'test-key',
@@ -105,6 +108,27 @@ void main() {
       expect(sizes.length, 1);
     });
   }
+
+  testWidgets('going back from an option returns to the menu', (tester) async {
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ChangeNotifierProvider<AppState>.value(
+      value: appState,
+      child: MaterialApp(
+        home: const AppMenuScreen(),
+        routes: {AppRoutes.profile: (_) => const Scaffold(body: Text('account page'))},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.text(appState.tr('account_title')));
+    await tester.pumpAndSettle();
+    expect(find.text('account page'), findsOneWidget);
+    final nav = tester.state<NavigatorState>(find.byType(Navigator));
+    nav.pop();
+    await tester.pumpAndSettle();
+    expect(find.text(appState.tr('account_help')), findsOneWidget);
+  });
 
   testWidgets('a row turns into its own field and there is no edit button on top', (tester) async {
     await tester.pumpWidget(app(const ProfileScreen()));

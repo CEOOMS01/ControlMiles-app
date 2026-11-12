@@ -10,9 +10,56 @@ import '../i18n/app_texts.dart';
 import '../logic/app_state.dart';
 import '../routes/app_routes.dart';
 import '../widgets/app_version_text.dart';
+import '../onboarding/product_tour.dart';
 
-class AppMenuScreen extends StatelessWidget {
+class AppMenuScreen extends StatefulWidget {
   const AppMenuScreen({super.key});
+
+  @override
+  State<AppMenuScreen> createState() => _AppMenuScreenState();
+}
+
+class _AppMenuScreenState extends State<AppMenuScreen> {
+  // First time here: one tip per category, so people know where things are.
+  final _scope = TourScope('menu');
+  final _tourKeys = <String, GlobalKey>{};
+  List<String> _tourOrder = const [];
+  bool _tourChecked = false;
+
+  static const _tourBodies = {
+    'account_title': 'ptour_menu_account_body',
+    'my_work_title': 'ptour_menu_work_body',
+    'account_tracking': 'ptour_menu_tracking_body',
+    'account_vehicles_reports': 'ptour_menu_vehicles_body',
+    'preferences': 'ptour_menu_prefs_body',
+    'account_help': 'ptour_menu_help_body',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _scope.register();
+  }
+
+  @override
+  void dispose() {
+    _scope.unregister();
+    super.dispose();
+  }
+
+  void _maybeStartTour(AppState appState) {
+    if (_tourChecked) return;
+    _tourChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ProductTour.run(
+        context,
+        id: appState.premiumEntitled ? TourIds.menu : TourIds.menuBasic,
+        scope: _scope.name,
+        keys: [for (final k in _tourOrder) _tourKeys[k]!],
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +74,18 @@ class AppMenuScreen extends StatelessWidget {
    final labelColor = isDark ? Colors.white38 : const Color(0xFFA39A86);
    final dividerColor = isDark ? const Color(0xFF2E281F) : const Color(0xFFE3D9C4);
    final chevronColor = isDark ? Colors.white24 : const Color(0xFFCFC3A8);
+   _tourOrder = [
+     'account_title',
+     if (appState.accountType == 'gig') 'my_work_title',
+     'account_tracking',
+     'account_vehicles_reports',
+     'preferences',
+     'account_help',
+   ];
+   for (final k in _tourOrder) {
+     _tourKeys.putIfAbsent(k, () => GlobalKey());
+   }
+   _maybeStartTour(appState);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -341,7 +400,7 @@ class AppMenuScreen extends StatelessWidget {
     required Color textColor,
     required Color chevronColor,
   }) {
-    return ListTile(
+    final tile = ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
       title: Text(
         appState.tr(labelKey),
@@ -352,11 +411,29 @@ class AppMenuScreen extends StatelessWidget {
         ),
       ),
       onTap: () {
-        Navigator.pop(context);
-        // The dashboard is already underneath this page.
-        if (route != AppRoutes.dashboard) Navigator.pushNamed(context, route);
+        if (route == AppRoutes.dashboard) {
+          // The dashboard is already underneath this page.
+          Navigator.pop(context);
+        } else {
+          // Opened on top of the menu, so going back returns to it (owner's request,
+          // 2026-11-09: closing the menu first sent the driver back to the dashboard).
+          Navigator.pushNamed(context, route);
+        }
       },
       trailing: Icon(Icons.chevron_right, size: 18, color: chevronColor),
+    );
+    final step = _tourOrder.indexOf(labelKey);
+    if (step < 0) return tile;
+    final basic = !appState.premiumEntitled && (labelKey == 'my_work_title' || labelKey == 'account_tracking');
+    return TourTarget(
+      showcaseKey: _tourKeys[labelKey]!,
+      scope: _scope.name,
+      step: step + 1,
+      total: _tourOrder.length,
+      titleKey: labelKey,
+      bodyKey: '${_tourBodies[labelKey]!}${basic ? '_basic' : ''}',
+      radius: BorderRadius.zero,
+      child: tile,
     );
   }
 

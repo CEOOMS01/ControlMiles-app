@@ -157,11 +157,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       final go = await ProductTour.showWelcome(context);
       if (!go) {
         await ProductTour.markSeen(TourIds.dashboard);
+        await ProductTour.markSeen(TourIds.dashboardBasic);
         return;
       }
     }
     if (!mounted) return;
-    await ProductTour.run(context, id: TourIds.dashboard, scope: _tour, keys: _dashboardTourKeys);
+    final premium = context.read<AppState>().premiumEntitled;
+    await ProductTour.run(context,
+        id: premium ? TourIds.dashboard : TourIds.dashboardBasic, scope: _tour, keys: _dashboardTourKeys);
   }
 
   // Settings -> "App tour": play it here, on top of this dashboard.
@@ -1194,7 +1197,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 step: 3,
                 total: 7,
                 titleKey: appState.premiumEntitled && appState.autoDetectEnabled ? 'ptour_auto_title' : 'ptour_start_title',
-                bodyKey: appState.premiumEntitled && appState.autoDetectEnabled ? 'ptour_start_body_auto' : 'ptour_start_body',
+                bodyKey: appState.premiumEntitled
+                    ? (appState.autoDetectEnabled ? 'ptour_start_body_auto' : 'ptour_start_body')
+                    : 'ptour_start_body_basic',
                 child: TrackingActionButton(
                 compact: true,
                 selectedGigApp: _selectedGigApp,
@@ -1316,7 +1321,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 step: 2,
                 total: 7,
                 titleKey: appState.workMode == 'general' ? 'ptour_general_title' : 'ptour_apps_title',
-                bodyKey: appState.workMode == 'general' ? 'ptour_general_body' : 'ptour_apps_body',
+                bodyKey: appState.workMode == 'general'
+                    ? (appState.premiumEntitled ? 'ptour_general_body' : 'ptour_general_body_basic')
+                    : 'ptour_apps_body',
                 radius: BorderRadius.zero,
                 // The carousel stays even while detection is on, so a trip can
                 // still be started by hand; the status card says it is awake.

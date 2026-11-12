@@ -10,7 +10,9 @@
 // re-playable on demand.
 //
 //  * Welcome sheet once per account: "Show me around" / "Not now".
-//  * Dashboard: 7 spotlights over the real controls.
+//  * Dashboard: 7 spotlights over the real controls, one tour for Premium and one
+//    for Basic.
+//  * Menu, My work, Regular Trips and Account explain themselves the first time.
 //  * Contextual: Reports, History, Tracking and Vehicles and reports show their own tips the
 //    first time they're opened; a "?" in their app bar replays them.
 //  * Milestone: after the first finished trip, History is highlighted.
@@ -39,7 +41,15 @@ class TourIds {
   static const settings = 'gig_settings_v1';
   static const settingsPortal = 'gig_settings_portal_v1';
   static const firstTrip = 'gig_first_trip_v1';
-  static const all = [welcome, dashboard, reports, history, settings, settingsPortal, firstTrip];
+  // 2026-11-09: Basic gets its own dashboard and menu tours (no automatic trips, no
+  // regular trips); upgrading to Premium shows the Premium ones once.
+  static const dashboardBasic = 'gig_dashboard_basic_v1';
+  static const menu = 'gig_menu_v1';
+  static const menuBasic = 'gig_menu_basic_v1';
+  static const myWork = 'gig_my_work_v1';
+  static const regularTrips = 'gig_regular_trips_v1';
+  static const account = 'gig_account_v1';
+  static const all = [welcome, dashboard, reports, history, settings, settingsPortal, firstTrip, dashboardBasic, menu, menuBasic, myWork, regularTrips, account];
 }
 
 class ProductTour {
