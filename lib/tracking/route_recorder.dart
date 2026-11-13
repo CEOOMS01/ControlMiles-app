@@ -67,6 +67,22 @@ class RouteRecorder {
     }
   }
 
+  /// Puts [lat],[lng] at the very beginning of [sectionId]'s route (2026-11-11): the
+  /// parking spot an automatic trip starts from is decided after the first GPS point
+  /// was already recorded, and the map has to start where the trip starts. Never throws.
+  static Future<void> startAt(String sectionId, double lat, double lng) async {
+    try {
+      final file = await _file(sectionId);
+      final rest = await file.exists() ? await file.readAsString() : '';
+      await file.writeAsString(
+        '${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}\n$rest',
+        flush: true,
+      );
+    } catch (e) {
+      debugPrint('[RouteRecorder] startAt failed: $e');
+    }
+  }
+
   /// Uploads [sectionId]'s route (write-once in the DB) and deletes the local
   /// file on success. Safe to call twice and for sections the DB dropped.
   static Future<bool> upload(String sectionId) async {

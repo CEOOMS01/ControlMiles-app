@@ -39,7 +39,13 @@ class CmDriveWakePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(true)
             }
             "refreshFence" -> {
-                if (DriveWakeRegistrar.isArmed(ctx)) DriveWakeRegistrar.refreshFenceHere(ctx)
+                if (DriveWakeRegistrar.isArmed(ctx)) {
+                    // Where the trip ended, when the app knows it (2026-11-11); else ask now.
+                    val lat = call.argument<Double>("lat")
+                    val lng = call.argument<Double>("lng")
+                    if (lat != null && lng != null) DriveWakeRegistrar.setFence(ctx, lat, lng)
+                    else DriveWakeRegistrar.refreshFenceHere(ctx)
+                }
                 result.success(true)
             }
             "isArmed" -> result.success(DriveWakeRegistrar.isArmed(ctx))

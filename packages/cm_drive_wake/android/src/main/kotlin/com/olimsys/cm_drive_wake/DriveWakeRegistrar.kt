@@ -38,7 +38,12 @@ object DriveWakeRegistrar {
     const val KEY_WAKE_SOURCE = "wake_source"
     const val ACTION = "com.olimsys.cm_drive_wake.TRANSITION"
     const val ACTION_FENCE = "com.olimsys.cm_drive_wake.FENCE"
-    const val FENCE_RADIUS_M = 150f
+    // 2026-11-11: 100 m (was 150) and a 5 s notice (was up to 30 s) so the phone wakes
+    // closer to where the car was parked: the stretch before the first GPS point has no
+    // data and was drawn as a straight line across the block (186 to 434 m). 100 m is the
+    // smallest radius Google recommends for a reliable exit.
+    const val FENCE_RADIUS_M = 100f
+    const val FENCE_RESPONSIVENESS_MS = 5_000
     private const val FENCE_ID = "parking"
     private const val TAG = "CmDriveWake"
 
@@ -120,7 +125,7 @@ object DriveWakeRegistrar {
             .setCircularRegion(lat, lng, FENCE_RADIUS_M)
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT)
-            .setNotificationResponsiveness(30_000)
+            .setNotificationResponsiveness(FENCE_RESPONSIVENESS_MS)
             .build()
         val request = GeofencingRequest.Builder()
             .setInitialTrigger(0)
@@ -155,7 +160,9 @@ object DriveWakeRegistrar {
         }
         val client = LocationServices.getFusedLocationProviderClient(ctx.applicationContext)
         val cts = CancellationTokenSource()
-        client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
+        // One precise fix (2026-11-11): a low-power one can be off by more than the 100 m
+        // fence itself.
+        client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
             .addOnSuccessListener { loc ->
                 if (loc != null && isSimulated(loc)) {
                     // A faked position must never become the start of a trip.

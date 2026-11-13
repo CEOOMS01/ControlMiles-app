@@ -29,6 +29,7 @@ import '../services/diag_log.dart';
 import 'route_recorder.dart';
 import 'trip_inactivity.dart';
 import 'single_flight.dart';
+import 'trip_start_point.dart';
 
 enum TrackingState { idle, running, paused }
 
@@ -1134,8 +1135,10 @@ class TrackingController {
       // lose its first minutes.
       lastStopAt = endedAt ?? DateTime.now();
       DiagLog.add('trip stopped', {'discarded': discarded, 'miles': _lastLoggedStopMiles.toStringAsFixed(3)});
-      // The car is parked here: the next exit fence goes here (Android also reports it).
-      unawaited(DriveWake.refreshFence());
+      // The car is parked here: the next exit fence goes on the trip's own end point
+      // (precise GPS), or where the phone is if there is none.
+      final parkedAt = await _savedParking();
+      unawaited(DriveWake.refreshFence(lat: parkedAt?.$1, lng: parkedAt?.$2));
       // A General trip has no purpose yet: ask once it is over. Closed from the
       // End trip button the app asks right away (lastClosedGeneralSectionId);
       // closed by the phone itself, the dashboard asks at once if it is open, or when it
@@ -1209,7 +1212,9 @@ class TrackingController {
       // debug). Esto solo ayuda a diagnosticar en desarrollo — no escribe
       // en la DB ni en el audit log, para no llenarlo de ruido.
       _rejectedGpsTicks++;
-      DiagLog.add('tick rejected', {'why': result.reason});
+      // Once a minute per reason: the same rejection repeated every second.
+      DiagLog.addSampled('tick rejected', const Duration(seconds: 60), {'why': result.reason},
+          'tick rejected ${result.reason}');
       _logDebug(
         'GPS_TICK_REJECTED',
         '${result.reason} (score: ${result.drivingSignatureScore})',
@@ -1246,17 +1251,27 @@ class TrackingController {
       var startLng = longitude;
       try {
         final anchor = await _takeTripAnchor(activeSection!.startTime);
-        if (anchor != null) {
-          final meters = anchorBackfillMeters(anchor.$1, anchor.$2, latitude, longitude);
-          if (meters != null) {
-            startLat = anchor.$1;
-            startLng = anchor.$2;
-            final miles = meters / 1609.34;
-            _totalSectionMiles += miles;
-            _totalSessionMiles += miles;
-            activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
-            await LocalStorageService.updateTotalMiles(_totalSectionMiles, _totalSessionMiles);
-          }
+        // Automatic trips start where the car was parked (2026-11-10, see
+        // trip_start_point.dart); a trip started by hand starts where the driver is.
+        final automatic = startedViaAutoDetect || anchor != null;
+        final parking = automatic ? await _lastParking(activeSection!.startTime) : null;
+        final from = TripStartPoint.choose(parking: parking, fence: anchor, lat: latitude, lng: longitude);
+        if (from != null) {
+          final meters = TripStartPoint.meters(from.$1, from.$2, latitude, longitude);
+          DiagLog.add('trip start point', {'from': from == parking ? 'parking' : 'fence', 'meters': meters.round()});
+          startLat = from.$1;
+          startLng = from.$2;
+          // The drawn route starts there too, not at the first GPS point (2026-11-11:
+          // the address said "219 Allendale" while the map began 250 m away).
+          await RouteRecorder.startAt(activeSection!.id, startLat, startLng);
+          liveRoute.value = [(lat: startLat, lng: startLng), ...liveRoute.value];
+          // The miles from there to this first point count too (a straight line:
+          // never more than the road).
+          final miles = meters / 1609.34;
+          _totalSectionMiles += miles;
+          _totalSessionMiles += miles;
+          activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
+          await LocalStorageService.updateTotalMiles(_totalSectionMiles, _totalSessionMiles);
         }
       } catch (e) {
         _logError('TRIP_ANCHOR_ERROR', e.toString());
@@ -1286,7 +1301,8 @@ class TrackingController {
       if (miles > 0.0012) {
         _totalSectionMiles += miles;
         _totalSessionMiles += miles;
-        DiagLog.add('miles', {'add': miles.toStringAsFixed(3), 'section': _totalSectionMiles.toStringAsFixed(3)});
+        DiagLog.addSampled('miles', const Duration(seconds: 60),
+            {'add': miles.toStringAsFixed(3), 'section': _totalSectionMiles.toStringAsFixed(3)});
 
         activeSection = activeSection!.copyWith(totalMiles: _totalSectionMiles);
 
@@ -1325,6 +1341,29 @@ class TrackingController {
   static double? anchorBackfillMeters(double anchorLat, double anchorLng, double lat, double lng) {
     final meters = _calculateHaversine(anchorLat, anchorLng, lat, lng);
     return meters >= 30 && meters <= 2500 ? meters : null;
+  }
+
+  static const _parkingPrefKey = 'controlmiles_last_parking';
+
+  /// Where the car was left when the last trip closed, for a trip that just began.
+  static Future<(double, double)?> _lastParking(DateTime sectionStart) async {
+    if (DateTime.now().difference(sectionStart) > const Duration(minutes: 4)) return null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    return TripStartPoint.parse(prefs.getString(_parkingPrefKey));
+  }
+
+  /// The end point the trip that just closed saved (within the last 2 minutes), or null.
+  static Future<(double, double)?> _savedParking() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_parkingPrefKey);
+      final at = int.tryParse(raw?.split(',').elementAtOrNull(2) ?? '');
+      if (at == null || DateTime.now().millisecondsSinceEpoch - at > 120000) return null;
+      return TripStartPoint.parse(raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// The parking spot saved when the phone woke up for this trip (see
@@ -1810,6 +1849,15 @@ class TrackingController {
 
       final closedSectionId = activeSection!.id;
       activeSection = null;
+      // The car is parked here: the next automatic trip starts from this point.
+      if (endLat != null && endLng != null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_parkingPrefKey, '$endLat,$endLng,${DateTime.now().millisecondsSinceEpoch}');
+        } catch (e) {
+          _logError('PARKING_SAVE_ERROR', e.toString());
+        }
+      }
       // Street addresses of the start and end, looked up on the phone once.
       unawaited(TripAddressService.fillSection(closedSectionId));
 

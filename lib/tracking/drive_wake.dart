@@ -62,11 +62,12 @@ class DriveWake {
     }
   }
 
-  /// Puts the fence around where the phone is now (after a trip, or a false alarm).
-  static Future<void> refreshFence() async {
+  /// Puts the fence around [lat],[lng] (where a trip ended), or around where the phone
+  /// is now when they are null (a false alarm, or no end point).
+  static Future<void> refreshFence({double? lat, double? lng}) async {
     if (!isSupported) return;
     try {
-      await _channel.invokeMethod('refreshFence');
+      await _channel.invokeMethod('refreshFence', lat != null && lng != null ? {'lat': lat, 'lng': lng} : null);
     } catch (e) {
       debugPrint('[DriveWake] refreshFence failed: $e');
     }

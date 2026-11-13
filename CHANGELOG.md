@@ -39,11 +39,37 @@ The shared Supabase backend stays here (`supabase/`).
   reading clears it on the next start.
 - An automatic trip that begins with the app closed, in a cycle with no reading yet, does not start; the app asks
   for the photo the next time it opens.
+- Diagnostic log: every line is written in one synchronous append and the file is trimmed through a side file, to
+  stop lines being cut in two when the app and the background engine write at the same time (153 cut lines in 19 h
+  on 2026-11-12). Each line now carries a short engine id (`[ui:3fa9]`). The dashboard's data-load time is logged
+  as `dashboard data_loaded_ms=` from the moment it opens, replacing the `dashboard ready` mark that counted from
+  the start of the process.
+
+## 1.3.33+73 — 2026-11-11
+
+- Miles are no longer lost after a GPS gap such as a tunnel. A point more than 1500 m from the last good one was
+  always rejected as a jump, whatever the time in between: out of the Fort McHenry tunnel (85 s without GPS at
+  45 mph) every later point was rejected for 3.5 minutes and the trip closed as if parked, twice on 2026-11-11.
+  Now a jump is only rejected when it is also too fast for the time that passed.
+- The route drawn for an automatic trip starts at the parking spot, like its start address. It used to begin at the
+  first GPS point, 186 to 342 m away, so the map looked as if the parking spot had been dropped.
+- The phone wakes sooner when a drive starts: the parking fence is 100 m (was 150), Android reports leaving it within
+  5 s (was up to 30 s), and it is centred on the trip's own GPS end point instead of a low-power reading. The stretch
+  before the first GPS point, drawn as a straight line, gets shorter.
+- Release bundles are built with the Dart code obfuscated (`tool/build_release.ps1`); the symbol files for each
+  version stay on the build PC in `release-symbols/`.
+
+## 1.3.32+72 — 2026-11-10
+
+- App tour covers the new design: the dashboard has its own tour for Basic (manual trips, odometer photo) and for
+  Premium (automatic trips); Menu, My work, Regular Trips and Account explain themselves the first time they open, each
+  with a "?" to replay. Accounts that already saw the dashboard tour get it once more.
+- An automatic trip starts where the car was parked (the end of the previous trip), as MileIQ does, not where
+  the phone first got GPS about 160 m away. The fence centre saved at wake-up stays as the fallback.
 
 ## 1.3.31+71 — 2026-11-09
 
-- App tour updated to the new design: seven steps, one per bottom button, and the text follows how the driver works
-  (General, gig, automatic or manual). Accounts that already saw it get it once more.
+- An option opened from Menu goes back to Menu, not to the dashboard.
 - The dashboard has three equal buttons at the bottom: Menu, My trips and Reports. Menu opens a full page with every
   option (Dashboard, History, Reports, Account, My work, Tracking, Vehicles and reports, Preferences, Help and legal),
   each option in one
