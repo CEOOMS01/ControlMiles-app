@@ -9,6 +9,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,11 @@ class DiagLog {
   static const _maxBytes = 400 * 1024;
   static File? _file;
 
+  /// Four hex digits, new for every Dart engine that starts (the app and the one Android
+  /// wakes in the background each get their own): a line shows which one wrote it, so a
+  /// log read afterwards can tell two engines apart.
+  static final String _engineId = Random().nextInt(0x10000).toRadixString(16).padLeft(4, '0');
+
   static Future<File> _open() async {
     final cached = _file;
     if (cached != null) return cached;
@@ -36,21 +42,41 @@ class DiagLog {
   }
 
   /// Appends one line. Never throws and never waits for the caller's flow.
+  ///
+  /// The app, the background GPS engine and the wake-up engine are separate Dart
+  /// isolates writing this one file. The old async write could be split in two by
+  /// another engine's line (2026-11-12: 153 cut lines in 19 h, 2309 in the whole
+  /// file). Now the whole line goes out in ONE synchronous write on an append-mode
+  /// handle: nothing else in this isolate can run in between, and a single append
+  /// write is not split by another process.
   static Future<void> add(String event, [Map<String, Object?> data = const {}]) async {
     try {
       final f = await _open();
       final extra = data.isEmpty ? '' : ' ${data.entries.map((e) => '${e.key}=${e.value}').join(' ')}';
-      final line = '${DateTime.now().toIso8601String()} [$tag] $event$extra\n';
-      await f.writeAsString(line, mode: FileMode.append, flush: true);
-      if (await f.length() > _maxBytes) {
-        final text = await f.readAsString();
-        // Keep the newer half, starting at a whole line.
-        final cut = text.indexOf('\n', text.length ~/ 2);
-        await f.writeAsString(cut < 0 ? '' : text.substring(cut + 1));
+      final line = '${DateTime.now().toIso8601String()} [$tag:$_engineId] $event$extra\n';
+      final raf = f.openSync(mode: FileMode.append);
+      try {
+        raf.writeFromSync(utf8.encode(line));
+        raf.flushSync();
+      } finally {
+        raf.closeSync();
       }
+      if (f.lengthSync() > _maxBytes) _trim(f);
     } catch (e) {
       debugPrint('[DiagLog] $e');
     }
+  }
+
+  /// Keeps the newer half, starting at a whole line. Written to a side file and renamed
+  /// over the log, so a reader (the upload) or another engine never sees a half-written
+  /// file; a line another engine appends during the swap can be lost, which is the
+  /// price of not locking.
+  static void _trim(File f) {
+    final text = f.readAsStringSync();
+    final cut = text.indexOf('\n', text.length ~/ 2);
+    final tmp = File('${f.path}.tmp');
+    tmp.writeAsStringSync(cut < 0 ? '' : text.substring(cut + 1), flush: true);
+    tmp.renameSync(f.path);
   }
 
   static final Map<String, DateTime> _lastSampled = {};

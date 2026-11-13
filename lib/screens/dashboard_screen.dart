@@ -17,7 +17,7 @@ import '../screens/trip_route_map_screen.dart';
 import '../data/irs_rates.dart';
 import '../widgets/purpose_prompt.dart';
 import '../widgets/work_mode_bar.dart';
-import '../main.dart' show startupMark;
+import '../services/diag_log.dart';
 import '../services/app_update_service.dart';
 import '../services/trip_address_service.dart';
 import '../utils/permission_gate.dart';
@@ -619,6 +619,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _initDashboard() async {
     setState(() => loading = true);
+    final openedAt = DateTime.now();
     // At the same time (they used to run one after the other): none depends on
     // another, and each is a separate server request.
     await Future.wait<void>([
@@ -627,6 +628,10 @@ class _DashboardScreenState extends State<DashboardScreen>
       _loadMonthSummary(),
       _loadHeaderMiles(),
     ]);
+    // How long the dashboard's own data took, from the moment it opened: the old
+    // 'dashboard ready' mark counted from the start of the process, so a process
+    // that woke in the background and was opened minutes later read 400-1500 s.
+    final loadedMs = DateTime.now().difference(openedAt).inMilliseconds;
     // Started / Basic: how do you work? Asked once, before the tour starts.
     if (mounted && context.read<AppState>().needsWorkTypeChoice) {
       await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const WorkTypeScreen()));
@@ -635,7 +640,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       _syncTrackingUiState();
       setState(() => loading = false);
     }
-    startupMark('dashboard ready');
+    unawaited(DiagLog.add('dashboard', {'data_loaded_ms': loadedMs}));
     // Addresses of recent trips that still have none (offline when they closed).
     unawaited(TripAddressService.backfillRecent());
     _askPurposeIfNeeded();
