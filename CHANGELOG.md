@@ -30,7 +30,7 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
-## Unreleased — after 1.3.34+74
+## 1.3.35+75 — 2026-11-15
 
 - One plan instead of two: ControlMiles at $9.99 a month or the yearly price (about $79.99), chosen on the
   Subscription screen, which opens on the yearly price with its savings shown. Basic is no longer sold (a purchase

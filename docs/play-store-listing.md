@@ -141,7 +141,7 @@ Capturas recomendadas (en este orden), tomadas con una cuenta con viajes reales:
 |---|---|---|---|
 | `controlmiles_basic_monthly` (ControlMiles Basic) | `monthly`, mensual, renovación automática, gracia 7 días | USD 5.99 | `free-trial-15d` — **ya no se vende desde 2026-11-13**: se deja activa para que una compra anterior siga verificándose, sin ofrecerla en la app |
 | `controlmiles_premium_monthly` (ControlMiles Premium) | `monthly`, igual | USD 9.99 | `free-trial-15d` |
-| `controlmiles_premium_monthly` (mismo producto) | **`annual`** (por crear), anual, renovación automática, gracia 7 días | USD 79.99 (≈ 33 % menos que 12 meses) | `free-trial-15d` |
+| `controlmiles_premium_monthly` (mismo producto) | **`annual`** (creado el 2026-11-13, en **borrador**: activarlo cuando la versión 1.3.35 esté en la prueba), anual, renovación automática, gracia 14 días (lo que Play recomienda para anual) | USD 79.99 en EE. UU. (178 países; convertido por Play: EUR 84.99, GBP 72.99, CAD 114.99) | sin oferta todavía (la `free-trial-15d` del mensual no aplica al anual) |
 
 **Un solo plan desde 2026-11-13** (decisión del dueño): se vende ControlMiles a
 USD 9.99 al mes o USD 79.99 al año. El plan anual se crea como un segundo plan
