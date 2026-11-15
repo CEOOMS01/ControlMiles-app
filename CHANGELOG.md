@@ -30,6 +30,14 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## Unreleased — after 1.3.34+74
+
+- One plan instead of two: ControlMiles at $9.99 a month or the yearly price (about $79.99), chosen on the
+  Subscription screen, which opens on the yearly price with its savings shown. Basic is no longer sold (a purchase
+  made before still works). The yearly price has to be created in Play Console first (see
+  `docs/play-store-listing.md`); until then the screen shows only the monthly one. The server's product table
+  also accepts `controlmiles_premium_annual`; `_shared/google_play.ts` must be redeployed with its functions.
+
 ## 1.3.34+74 — 2026-11-12
 
 - The odometer photo follows the vehicle's cycle only: annual for every account; Premium may choose every 15 days

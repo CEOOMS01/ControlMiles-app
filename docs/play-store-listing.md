@@ -49,7 +49,7 @@ FOR FLEETS
 • Fleet dashboard and billing at controlmiles.com.
 
 PLANS
-• Basic and Premium monthly subscriptions through Google Play, each with a 15-day free trial; cancel anytime in Google Play.
+• One subscription through Google Play, monthly or yearly, with a 15-day free trial; cancel anytime in Google Play.
 • Fleet plans are set up and billed on controlmiles.com.
 
 PRIVACY
@@ -89,7 +89,7 @@ PARA FLOTAS
 • Panel de flota y facturación en controlmiles.com.
 
 PLANES
-• Suscripciones mensuales Basic y Premium con Google Play, cada una con 15 días de prueba gratis; cancela cuando quieras en Google Play.
+• Una suscripción con Google Play, mensual o anual, con 15 días de prueba gratis; cancela cuando quieras en Google Play.
 • Los planes de flota se configuran y cobran en controlmiles.com.
 
 PRIVACIDAD
@@ -139,8 +139,16 @@ Capturas recomendadas (en este orden), tomadas con una cuenta con viajes reales:
 ## Suscripciones en Google Play (creadas 2026-10-07, activas)
 | Producto | Plan base | Precio | Oferta |
 |---|---|---|---|
-| `controlmiles_basic_monthly` (ControlMiles Basic) | `monthly`, mensual, renovación automática, gracia 7 días | USD 5.99 (resto de países convertido por Play) | `free-trial-15d` |
+| `controlmiles_basic_monthly` (ControlMiles Basic) | `monthly`, mensual, renovación automática, gracia 7 días | USD 5.99 | `free-trial-15d` — **ya no se vende desde 2026-11-13**: se deja activa para que una compra anterior siga verificándose, sin ofrecerla en la app |
 | `controlmiles_premium_monthly` (ControlMiles Premium) | `monthly`, igual | USD 9.99 | `free-trial-15d` |
+| `controlmiles_premium_monthly` (mismo producto) | **`annual`** (por crear), anual, renovación automática, gracia 7 días | USD 79.99 (≈ 33 % menos que 12 meses) | `free-trial-15d` |
+
+**Un solo plan desde 2026-11-13** (decisión del dueño): se vende ControlMiles a
+USD 9.99 al mes o USD 79.99 al año. El plan anual se crea como un segundo plan
+base del mismo producto `controlmiles_premium_monthly` (o, si se prefiere, como
+un producto aparte `controlmiles_premium_annual`: la app y el servidor aceptan
+las dos formas). La app distingue el mensual del anual por el período de cobro
+(P1M / P1Y), no por el nombre.
 
 Oferta `free-trial-15d`: *Adquisición de clientes nuevos* → **No tuvieron
 ninguna suscripción** en la app (una sola prueba por cuenta de Google: quien

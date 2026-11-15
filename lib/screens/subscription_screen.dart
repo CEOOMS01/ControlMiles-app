@@ -3,11 +3,12 @@
 //
 // Personal plans, billed natively through Google Play (user decision
 // 2026-09-29: no Stripe in the app; fleet plans stay on Stripe on
-// controlmiles.com). Two plans, Basic and Premium (Play subscriptions controlmiles_basic_monthly / _premium_monthly; any
-// Premium free trial is a Play Console offer). Prices shown are Google
-// Play's own, in the buyer's currency. This screen never grants anything:
-// PlayBillingService sends each purchase to verify-play-purchase, which
-// checks it with Google before turning Basic/Premium on.
+// controlmiles.com). One plan since 2026-11-13, sold monthly ($9.99) or yearly
+// (Play subscription controlmiles_premium_monthly with a yearly base plan, or
+// controlmiles_premium_annual; the 15-day free trial is a Play Console offer). Basic is no
+// longer sold. Prices shown are Google Play's own, in the buyer's currency. This
+// screen never grants anything: PlayBillingService sends each purchase to
+// verify-play-purchase, which checks it with Google before turning the plan on.
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -26,10 +27,13 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   final _billing = PlayBillingService.instance;
-  Map<String, ProductDetails> _products = {};
+  ProductDetails? _monthly;
+  ProductDetails? _annual;
+  // Yearly is what the card opens on when Play offers it (the cheaper way to pay).
+  bool _chooseAnnual = true;
   bool _storeAvailable = true;
   bool _loadingProducts = true;
-  // Which tier's button is spinning while Google Play's sheet is open.
+  // 'plan' while Google Play's sheet is open, 'restore' while restoring.
   String? _loadingTier;
 
   @override
@@ -51,11 +55,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       // upgrade (replacement), never a second subscription.
       await _billing.refreshOwned();
       final available = await _billing.isAvailable();
-      final products = available ? await _billing.loadProducts() : <String, ProductDetails>{};
+      final options = available ? await _billing.loadPlanOptions() : (monthly: null, annual: null);
       if (!mounted) return;
       setState(() {
         _storeAvailable = available;
-        _products = products;
+        _monthly = options.monthly;
+        _annual = options.annual;
+        _chooseAnnual = options.annual != null;
         _loadingProducts = false;
       });
     } catch (e) {
@@ -84,15 +90,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  Future<void> _upgrade(AppState appState, String productId) async {
-    final product = _products[productId];
+  Future<void> _upgrade(AppState appState) async {
+    final product = _chooseAnnual ? _annual : _monthly;
     if (product == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(appState.tr('subscriptions_not_configured'))),
       );
       return;
     }
-    setState(() => _loadingTier = productId);
+    setState(() => _loadingTier = 'plan');
     try {
       await _billing.buy(product);
     } catch (e) {
@@ -125,22 +131,74 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  String _priceLabel(String productId, String fallback) {
-    final p = _products[productId];
-    return p == null ? fallback : '${_billing.recurringPrice(p)}/mo';
+  String _monthlyLabel() =>
+      _monthly == null ? '\$9.99/mo' : '${_billing.recurringPrice(_monthly!)}/mo';
+
+  String _annualLabel() => _annual == null ? '' : '${_billing.recurringPrice(_annual!)}/yr';
+
+  Widget _billingChoice(
+    AppState appState, {
+    required bool selected,
+    required String titleKey,
+    required String price,
+    String? badge,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? scheme.primary : (isDark ? Colors.white24 : const Color(0xFFD9D2C3)),
+              width: selected ? 1.8 : 1,
+            ),
+            color: selected ? scheme.primary.withValues(alpha: 0.08) : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appState.tr(titleKey),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: isDark ? Colors.white : const Color(0xFF2E281F),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                price,
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: scheme.primary),
+              ),
+              if (badge != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.green),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildTierCard(
-    AppState appState, {
-    required bool isDark,
-    required String titleKey,
-    required String descriptionKey,
-    required String priceLabel,
-    required bool isCurrent,
-    required bool showUpgrade,
-    required String productId,
-  }) {
-    final isLoading = _loadingTier == productId;
+  /// The one plan. Monthly and yearly are two ways to pay for it: the choice only
+  /// appears when Play offers both.
+  Widget _buildPlanCard(AppState appState, {required bool isDark, required bool isCurrent}) {
+    final isLoading = _loadingTier == 'plan';
+    final both = _monthly != null && _annual != null;
+    final annualSelected = both && _chooseAnnual;
+    final savings = PlayBillingService.savingsPercent(_monthly, _annual);
+    final priceLabel = annualSelected ? _annualLabel() : _monthlyLabel();
 
     return Container(
       width: double.infinity,
@@ -159,7 +217,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                appState.tr(titleKey),
+                appState.tr('premium_plan'),
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
@@ -178,7 +236,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            appState.tr(descriptionKey),
+            appState.tr('premium_plan_description'),
             style: TextStyle(
               fontSize: 13,
               color: isDark ? Colors.white70 : const Color(0xFF6B6250),
@@ -196,13 +254,36 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
               ],
             )
-          else if (showUpgrade)
+          else ...[
+            if (both) ...[
+              Row(
+                children: [
+                  _billingChoice(
+                    appState,
+                    selected: !annualSelected,
+                    titleKey: 'billing_monthly',
+                    price: _monthlyLabel(),
+                    onTap: () => setState(() => _chooseAnnual = false),
+                  ),
+                  const SizedBox(width: 10),
+                  _billingChoice(
+                    appState,
+                    selected: annualSelected,
+                    titleKey: 'billing_annual',
+                    price: _annualLabel(),
+                    badge: savings == null
+                        ? null
+                        : appState.tr('billing_save').replaceFirst('{pct}', '$savings'),
+                    onTap: () => setState(() => _chooseAnnual = true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+            ],
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: (isLoading || _loadingProducts || !_storeAvailable)
-                    ? null
-                    : () => _upgrade(appState, productId),
+                onPressed: (isLoading || _loadingProducts || !_storeAvailable) ? null : () => _upgrade(appState),
                 child: isLoading
                     ? const SizedBox(
                         width: 18,
@@ -212,6 +293,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     : Text(appState.tr('upgrade_plan')),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -221,7 +303,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseEntitled = appState.baseEntitled;
     final premiumEntitled = appState.premiumEntitled;
     final onFreeTrial = appState.isOnFreeTrial;
     final trialDaysLeft = appState.freeTrialDaysLeft;
@@ -249,30 +330,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
             ),
           ],
-          _buildTierCard(
-            appState,
-            isDark: isDark,
-            titleKey: 'basic_plan',
-            descriptionKey: 'base_plan_description',
-            priceLabel: _priceLabel(PlayBillingService.basicProductId, '\$5.99/mo'),
-            isCurrent: baseEntitled && !premiumEntitled,
-            // Premium already includes Base -- no point offering a
-            // downgrade-shaped "Upgrade to Base" button to a Premium
-            // subscriber.
-            showUpgrade: !premiumEntitled,
-            productId: PlayBillingService.basicProductId,
-          ),
-          const SizedBox(height: 16),
-          _buildTierCard(
-            appState,
-            isDark: isDark,
-            titleKey: 'premium_plan',
-            descriptionKey: 'premium_plan_description',
-            priceLabel: _priceLabel(PlayBillingService.premiumProductId, '\$9.99/mo'),
-            isCurrent: premiumEntitled,
-            showUpgrade: !premiumEntitled,
-            productId: PlayBillingService.premiumProductId,
-          ),
+          _buildPlanCard(appState, isDark: isDark, isCurrent: premiumEntitled),
           if (!_loadingProducts && !_storeAvailable) ...[
             const SizedBox(height: 16),
             Text(
@@ -280,7 +338,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               style: TextStyle(fontSize: 12.5, color: isDark ? Colors.white60 : const Color(0xFF6B6250)),
             ),
           ],
-          if (baseEntitled || premiumEntitled) ...[
+          if (appState.baseEntitled || premiumEntitled) ...[
             const SizedBox(height: 24),
             OutlinedButton(
               onPressed: _manageSubscription,

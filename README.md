@@ -16,12 +16,17 @@ All three use the same Supabase project.
 
 ## Plans
 
-Only two plans exist: **Basic** and **Premium**. The automatic 15-day free trial
-stays, shown as one line of text.
+One plan is sold (decided 2026-11-13): **ControlMiles at $9.99 a month or a yearly
+price** (about $79.99), through Google Play. It includes everything: automatic
+trips, up to 5 vehicles, My work (work type, automatic tracking hours), Regular
+Trips and the odometer cycle choice. The automatic 15-day free trial stays, shown
+as one line of text; once it ends without a plan, starting a new trip is blocked.
 
-- **Basic**: manual trips, gig-app tagging, reports.
-- **Premium**: everything in Basic plus automatic trips, My work (work type,
-  automatic tracking hours) and Regular Trips (General trips only).
+**Basic is no longer sold.** Its product (`controlmiles_basic_monthly`) stays in Play
+Console and in the server's product table so a purchase made before keeps
+verifying. The yearly price is a second base plan of `controlmiles_premium_monthly`
+(or its own product `controlmiles_premium_annual`; both work: the app tells monthly
+from yearly by billing period). See `docs/play-store-listing.md`.
 
 The database decides the plan, not the phone's saved copy.
 

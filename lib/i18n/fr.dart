@@ -367,6 +367,9 @@ const Map<String, String> frTexts = {
   'premium_plan_description': "Débloquez la Détection Automatique et d'autres fonctionnalités premium. Jusqu'à 5 véhicules. Inclut un essai gratuit de 15 jours.",
   'base_plan_description': "L'expérience ControlMiles de base. 1 véhicule. Inclut un essai gratuit de 15 jours.",
   'current_plan': 'Forfait actuel',
+  'billing_monthly': "Mensuel",
+  'billing_annual': "Annuel",
+  'billing_save': "Économisez {pct} %",
   'trial_days_left': '{days} jours restants',
   'subscriptions_not_configured': 'Les abonnements ne sont pas encore disponibles.',
 

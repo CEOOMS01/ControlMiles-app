@@ -359,6 +359,9 @@ const Map<String, String> zhTexts = {
   'premium_plan_description': "解锁自动检测和其他高级功能。最多5辆车。含15天免费试用。",
   'base_plan_description': "ControlMiles 核心体验。1辆车。含15天免费试用。",
   'current_plan': '当前套餐',
+  'billing_monthly': "按月",
+  'billing_annual': "按年",
+  'billing_save': "节省 {pct}%",
   'trial_days_left': '剩余{days}天',
   'subscriptions_not_configured': '订阅功能尚未开放。',
 

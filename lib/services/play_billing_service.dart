@@ -32,9 +32,15 @@ class PlayBillingService {
   static final instance = PlayBillingService._();
 
   // Play Console subscription product IDs (must match _shared/google_play.ts).
+  // One plan is sold since 2026-11-13 (ControlMiles at $9.99/month or a yearly price):
+  // the monthly and the yearly price are two base plans of the same subscription, or
+  // two subscriptions -- either works, the screen tells them apart by billing period.
+  // Basic is no longer sold; its ID stays so a purchase made before still verifies.
   static const basicProductId = 'controlmiles_basic_monthly';
   static const premiumProductId = 'controlmiles_premium_monthly';
-  static const productIds = {basicProductId, premiumProductId};
+  static const premiumAnnualProductId = 'controlmiles_premium_annual';
+  static const productIds = {basicProductId, premiumProductId, premiumAnnualProductId};
+  static const _soldProductIds = {premiumProductId, premiumAnnualProductId};
 
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -101,6 +107,40 @@ class PlayBillingService {
       }
     }
     return byId;
+  }
+
+  /// The two prices of the one plan: monthly and yearly, found by billing period (P1M,
+  /// P1Y) so it does not matter whether they are two base plans of one subscription
+  /// or two subscriptions. For each, the free-trial offer wins over the bare base plan
+  /// (same rule as [loadProducts]). Either can be null (not set up in Play Console, or
+  /// not offered to this account).
+  Future<({ProductDetails? monthly, ProductDetails? annual})> loadPlanOptions() async {
+    final response = await _iap.queryProductDetails(_soldProductIds);
+    ProductDetails? monthly;
+    ProductDetails? annual;
+    for (final p in response.productDetails) {
+      final period = billingPeriod(p);
+      if (period == 'P1M') {
+        if (monthly == null || (_offerId(p) != null && _offerId(monthly) == null)) monthly = p;
+      } else if (period == 'P1Y') {
+        if (annual == null || (_offerId(p) != null && _offerId(annual) == null)) annual = p;
+      }
+    }
+    return (monthly: monthly, annual: annual);
+  }
+
+  /// ISO 8601 period of the recurring price: "P1M" monthly, "P1Y" yearly.
+  static String? billingPeriod(ProductDetails product) =>
+      _offer(product)?.pricingPhases.last.billingPeriod;
+
+  /// How much cheaper the yearly price is than twelve months, in whole percent, or null
+  /// when either price is unknown.
+  static int? savingsPercent(ProductDetails? monthly, ProductDetails? annual) {
+    final m = monthly == null ? null : _offer(monthly)?.pricingPhases.last.priceAmountMicros;
+    final a = annual == null ? null : _offer(annual)?.pricingPhases.last.priceAmountMicros;
+    if (m == null || a == null || m <= 0) return null;
+    final pct = ((1 - a / (m * 12)) * 100).round();
+    return pct > 0 ? pct : null;
   }
 
   /// The monthly price after any trial. ProductDetails.price is the offer's
