@@ -19,7 +19,10 @@ import '../logic/app_state.dart';
 import '../services/play_billing_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+  const SubscriptionScreen({super.key, this.previewPrices});
+
+  /// Test/preview only: prices to show without Google Play (monthly, yearly, saving %).
+  final ({String monthly, String annual, int? savings})? previewPrices;
 
   @override
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
@@ -131,10 +134,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  String _monthlyLabel() =>
-      _monthly == null ? '\$9.99/mo' : '${_billing.recurringPrice(_monthly!)}/mo';
+  String _monthlyLabel() => widget.previewPrices?.monthly ??
+      (_monthly == null ? '\$9.99/mo' : '${_billing.recurringPrice(_monthly!)}/mo');
 
-  String _annualLabel() => _annual == null ? '' : '${_billing.recurringPrice(_annual!)}/yr';
+  String _annualLabel() =>
+      widget.previewPrices?.annual ?? (_annual == null ? '' : '${_billing.recurringPrice(_annual!)}/yr');
 
   Widget _billingChoice(
     AppState appState, {
@@ -142,7 +146,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     required String titleKey,
     required String price,
     String? badge,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -151,6 +155,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
+          // Same height with or without the "Save %" line, so the two tiles line up.
+          constraints: const BoxConstraints(minHeight: 84),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -195,9 +201,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   /// appears when Play offers both.
   Widget _buildPlanCard(AppState appState, {required bool isDark, required bool isCurrent}) {
     final isLoading = _loadingTier == 'plan';
-    final both = _monthly != null && _annual != null;
+    final both = widget.previewPrices != null || (_monthly != null && _annual != null);
     final annualSelected = both && _chooseAnnual;
-    final savings = PlayBillingService.savingsPercent(_monthly, _annual);
+    final savings = widget.previewPrices != null
+        ? widget.previewPrices!.savings
+        : PlayBillingService.savingsPercent(_monthly, _annual);
     final priceLabel = annualSelected ? _annualLabel() : _monthlyLabel();
 
     return Container(
@@ -214,47 +222,94 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                appState.tr('premium_plan'),
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: isDark ? Colors.white : const Color(0xFF2E281F),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                ),
+                child: Icon(Icons.workspace_premium_rounded, color: Theme.of(context).colorScheme.primary, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  appState.tr('premium_plan'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 19,
+                    color: isDark ? Colors.white : const Color(0xFF2E281F),
+                  ),
                 ),
               ),
-              Text(
-                priceLabel,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.primary,
+              // The current plan shows no single price: the app cannot tell from Play whether this
+              // account pays monthly or yearly, and the yearly price was shown for both (2026-11-17).
+              if (isCurrent)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.verified_rounded, color: Colors.green, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        appState.tr('current_plan'),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Colors.green),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Text(
+                  priceLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Text(
             appState.tr('premium_plan_description'),
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
+              height: 1.4,
               color: isDark ? Colors.white70 : const Color(0xFF6B6250),
             ),
           ),
-          const SizedBox(height: 16),
-          if (isCurrent)
-            Row(
-              children: [
-                Icon(Icons.verified_rounded, color: Colors.green, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  appState.tr('current_plan'),
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green),
-                ),
-              ],
-            )
-          else ...[
+          const SizedBox(height: 18),
+          if (isCurrent) ...[
+            if (both)
+              Row(
+                children: [
+                  _billingChoice(
+                    appState,
+                    selected: false,
+                    titleKey: 'billing_monthly',
+                    price: _monthlyLabel(),
+                    onTap: null,
+                  ),
+                  const SizedBox(width: 10),
+                  _billingChoice(
+                    appState,
+                    selected: false,
+                    titleKey: 'billing_annual',
+                    price: _annualLabel(),
+                    badge: savings == null
+                        ? null
+                        : appState.tr('billing_save').replaceFirst('{pct}', '$savings'),
+                    onTap: null,
+                  ),
+                ],
+              ),
+          ] else ...[
             if (both) ...[
               Row(
                 children: [
@@ -340,9 +395,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ],
           if (appState.baseEntitled || premiumEntitled) ...[
             const SizedBox(height: 24),
-            OutlinedButton(
+            FilledButton.tonalIcon(
               onPressed: _manageSubscription,
-              child: Text(appState.tr('manage_subscription')),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: Text(appState.tr('manage_subscription')),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
             ),
           ],
           const SizedBox(height: 8),

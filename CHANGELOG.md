@@ -30,6 +30,14 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.37+77 — 2026-11-17
+
+- Subscription screen: an account that already has Premium no longer shows the yearly price as if it were its own
+  (it showed $79.99/yr even for a monthly subscriber). The current plan now shows "Current plan" and lists both
+  prices (monthly and yearly) for information; changing between them is done in Manage subscription (Google Play).
+- Subscription screen redesigned: plan icon, a green "Current plan" badge, the two prices as equal-height tiles,
+  and a filled Manage subscription button.
+
 ## 1.3.36+76 — 2026-11-17
 
 - Route drawing keeps more detail: a point every 5 m (was 15), up to 2500 points, and the saved line is thinned
