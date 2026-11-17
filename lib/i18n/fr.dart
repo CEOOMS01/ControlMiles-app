@@ -369,6 +369,7 @@ const Map<String, String> frTexts = {
   'current_plan': 'Forfait actuel',
   'billing_monthly': "Mensuel",
   'billing_annual': "Annuel",
+  'change_billing_period': "Changer la période de facturation",
   'billing_save': "Économisez {pct} %",
   'trial_days_left': '{days} jours restants',
   'subscriptions_not_configured': 'Les abonnements ne sont pas encore disponibles.',

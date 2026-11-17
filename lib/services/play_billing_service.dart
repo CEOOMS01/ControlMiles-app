@@ -160,12 +160,12 @@ class PlayBillingService {
 
   static String? _offerId(ProductDetails product) => _offer(product)?.offerId;
 
-  Future<void> buy(ProductDetails product) async {
+  Future<void> buy(ProductDetails product, {bool changePeriod = false}) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not signed in');
 
     final owned = _ownedSubscription;
-    final PurchaseParam param = (owned != null && owned.productID != product.id)
+    final PurchaseParam param = (owned != null && (owned.productID != product.id || changePeriod))
         ? GooglePlayPurchaseParam(
             productDetails: product,
             applicationUserName: userId,
@@ -173,7 +173,8 @@ class PlayBillingService {
               oldPurchaseDetails: owned,
               // Google's recommended mode for an upgrade: pay the prorated
               // difference now, keep the renewal date.
-              replacementMode: ReplacementMode.chargeProratedPrice,
+              // Changing monthly <-> yearly inside Premium waits for the next renewal (no double charge).
+              replacementMode: changePeriod ? ReplacementMode.deferred : ReplacementMode.chargeProratedPrice,
             ),
           )
         : PurchaseParam(productDetails: product, applicationUserName: userId);

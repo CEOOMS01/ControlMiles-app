@@ -577,6 +577,7 @@ const Map<String, String> esTexts = {
   'current_plan': 'Plan actual',
   'billing_monthly': "Mensual",
   'billing_annual': "Anual",
+  'change_billing_period': "Cambiar periodo de cobro",
   'billing_save': "Ahorra {pct}%",
   'trial_days_left': '{days} días restantes',
   'free_trial_note': 'Prueba gratis: {days} días restantes',

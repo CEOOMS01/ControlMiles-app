@@ -587,6 +587,7 @@ const Map<String, String> enTexts = {
   'current_plan': 'Current plan',
   'billing_monthly': "Monthly",
   'billing_annual': "Annual",
+  'change_billing_period': "Change billing period",
   'billing_save': "Save {pct}%",
   'trial_days_left': '{days} days left',
   'free_trial_note': 'Free trial: {days} days left',

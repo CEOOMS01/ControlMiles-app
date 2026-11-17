@@ -361,6 +361,7 @@ const Map<String, String> zhTexts = {
   'current_plan': '当前套餐',
   'billing_monthly': "按月",
   'billing_annual': "按年",
+  'change_billing_period': "更改计费周期",
   'billing_save': "节省 {pct}%",
   'trial_days_left': '剩余{days}天',
   'subscriptions_not_configured': '订阅功能尚未开放。',

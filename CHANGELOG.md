@@ -11,6 +11,13 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## 1.3.38+78 - 2026-11-17
+
+- Subscription screen: someone who already has Premium can now pick Monthly or
+  Annual and tap "Change billing period" (before, both prices showed but could
+  not be tapped). The change starts at the next renewal, so there is no double
+  charge.
+
 ## Backend — 2026-10-20 (no app release)
 
 - Driving school phase 2 (used by ControlMiles Fleet and the web):

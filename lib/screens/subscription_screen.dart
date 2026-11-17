@@ -103,7 +103,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
     setState(() => _loadingTier = 'plan');
     try {
-      await _billing.buy(product);
+      await _billing.buy(product, changePeriod: widget.previewPrices == null && context.read<AppState>().premiumEntitled);
     } catch (e) {
       debugPrint('[Subscription] purchase launch failed: $e');
       if (!mounted) return;
@@ -285,31 +285,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          if (isCurrent) ...[
-            if (both)
-              Row(
-                children: [
-                  _billingChoice(
-                    appState,
-                    selected: false,
-                    titleKey: 'billing_monthly',
-                    price: _monthlyLabel(),
-                    onTap: null,
-                  ),
-                  const SizedBox(width: 10),
-                  _billingChoice(
-                    appState,
-                    selected: false,
-                    titleKey: 'billing_annual',
-                    price: _annualLabel(),
-                    badge: savings == null
-                        ? null
-                        : appState.tr('billing_save').replaceFirst('{pct}', '$savings'),
-                    onTap: null,
-                  ),
-                ],
-              ),
-          ] else ...[
+          ...[
             if (both) ...[
               Row(
                 children: [
@@ -345,7 +321,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                       )
-                    : Text(appState.tr('upgrade_plan')),
+                    : Text(appState.tr(isCurrent ? 'change_billing_period' : 'upgrade_plan')),
               ),
             ),
           ],

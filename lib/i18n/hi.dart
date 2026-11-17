@@ -333,6 +333,7 @@ const Map<String, String> hiTexts = {
   'current_plan': 'वर्तमान प्लान',
   'billing_monthly': "मासिक",
   'billing_annual': "वार्षिक",
+  'change_billing_period': "बिलिंग अवधि बदलें",
   'billing_save': "{pct}% बचाएँ",
   'trial_days_left': '{days} दिन शेष',
 
