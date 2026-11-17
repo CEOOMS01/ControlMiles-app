@@ -42,6 +42,15 @@ void main() {
     expect(RouteRecorder.simplify(pts).length, lessThanOrEqualTo(RouteRecorder.maxPoints));
   });
 
+  test('the encoded route always fits the DB limit', () {
+    final rnd = math.Random(2);
+    final pts = [
+      for (var i = 0; i < 20000; i++)
+        math.Point(39.0 + i * 0.0001 + rnd.nextDouble() * 0.01, -76.6 + rnd.nextDouble() * 0.01),
+    ];
+    expect(RouteRecorder.encodeWithinLimit(pts).length, lessThanOrEqualTo(RouteRecorder.maxEncodedLength));
+  });
+
   test('distance is in meters', () {
     // ~111 m per 0.001 degree of latitude
     expect(RouteRecorder.distanceMeters(39.0, -76.6, 39.001, -76.6), closeTo(111.2, 0.5));

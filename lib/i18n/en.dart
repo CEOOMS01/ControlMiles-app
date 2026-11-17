@@ -1295,7 +1295,7 @@ const Map<String, String> enTexts = {
   'copy': 'Copy',
   'copied_to_clipboard': 'Copied to clipboard',
   'generate_report_code_title': 'Report access code',
-  'generate_report_code_body': 'Generate a one-time code for a date range of your trips. Your tax preparer enters it at controlmiles.com/portal/verify to view a read-only mileage summary -- no login, no account needed on their end.',
+  'generate_report_code_body': 'Generate a temporary code for a date range of your trips. It expires in 15 minutes and can be opened twice. Your tax preparer enters it at controlmiles.com/portal/verify to view a read-only mileage summary -- no login, no account needed on their end.',
   'generate_report_code_button': 'Generate code',
   'generate_report_code_your_code': 'Share this code with your tax preparer',
   'generate_report_code_expires_in': 'Expires in {mmss}',

@@ -27,11 +27,17 @@ class RouteRecorder {
 
   /// Points closer than this to the last stored one are skipped (GPS jitter,
   /// waiting at lights). Invisible on a trip-size map.
-  static const double minStepMeters = 15;
+  /// 2026-11-15: 5 m (was 15) so curves, ramps and short streets keep their shape.
+  static const double minStepMeters = 5;
 
   /// Douglas-Peucker tolerance; raised until the route fits [maxPoints].
-  static const double simplifyMeters = 6;
-  static const int maxPoints = 800;
+  /// 2026-11-15: 2 m / 2500 points (was 6 m / 800).
+  static const double simplifyMeters = 2;
+  static const int maxPoints = 2500;
+
+  /// The DB rejects a route_polyline longer than 20000 characters
+  /// (session_sections_route_polyline_len); stay under it with margin.
+  static const int maxEncodedLength = 18000;
 
   static String? _lastSectionId;
   static double? _lastLat;
@@ -92,7 +98,7 @@ class RouteRecorder {
 
       final points = _parse(await file.readAsString());
       if (points.length >= 2) {
-        final polyline = encodePolyline(simplify(points));
+        final polyline = encodeWithinLimit(points);
         await Supabase.instance.client
             .from('session_sections')
             .update({'route_polyline': polyline})
@@ -160,9 +166,20 @@ class RouteRecorder {
     return 2 * r * math.asin(math.sqrt(a));
   }
 
+  /// Simplifies and encodes [latLng], thinning further until the text fits the
+  /// DB limit ([maxEncodedLength]). Public for tests.
+  static String encodeWithinLimit(List<math.Point<double>> latLng) {
+    var cap = maxPoints;
+    while (true) {
+      final encoded = encodePolyline(simplify(latLng, cap: cap));
+      if (encoded.length <= maxEncodedLength || cap <= 50) return encoded;
+      cap = (cap * 0.7).floor();
+    }
+  }
+
   /// Douglas-Peucker in local meters; tolerance doubles until the result
-  /// has at most [maxPoints] points. First and last points are always kept.
-  static List<math.Point<double>> simplify(List<math.Point<double>> latLng) {
+  /// has at most [cap] (default [maxPoints]) points. First and last points are always kept.
+  static List<math.Point<double>> simplify(List<math.Point<double>> latLng, {int cap = maxPoints}) {
     if (latLng.length <= 2) return latLng;
     final lat0 = latLng.first.x * math.pi / 180;
     final mPerDegLat = 111320.0;
@@ -198,7 +215,7 @@ class RouteRecorder {
         for (var i = 0; i < latLng.length; i++)
           if (keep[i]) latLng[i],
       ];
-      if (result.length <= maxPoints) return result;
+      if (result.length <= cap) return result;
       tolerance *= 2;
     }
   }

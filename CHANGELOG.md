@@ -30,6 +30,12 @@ The shared Supabase backend stays here (`supabase/`).
   Enterprise tier in `create-checkout-session` and `stripe-webhook`, and
   `send-fuel-alerts` skipping fleets without fuel alerts -- all deployed.
 
+## 1.3.36+76 — 2026-11-17
+
+- Route drawing keeps more detail: a point every 5 m (was 15), up to 2500 points, and the saved line is thinned
+  automatically if it would exceed the server's length limit, so long trips still save.
+- The one-time report code is now described as a temporary code that expires in 15 minutes (English and Spanish).
+
 ## 1.3.35+75 — 2026-11-15
 
 - One plan instead of two: ControlMiles at $9.99 a month or the yearly price (about $79.99), chosen on the

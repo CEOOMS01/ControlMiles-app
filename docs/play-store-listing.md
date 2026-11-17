@@ -41,7 +41,7 @@ PROOF, NOT GUESSES
 REPORTS YOU CAN USE
 • PDF report for any date range: trip log, miles per app, business-use summary and an estimated IRS standard-mileage deduction.
 • A route map for every trip, with each gig app drawn in its own color.
-• Share a one-time code: your tax preparer opens a read-only report on the web — no account, nothing to install.
+• Share a temporary code that expires in 15 minutes: your tax preparer opens a read-only report on the web — no account, nothing to install.
 
 FOR FLEETS
 • Driver and vehicle roster, driver IDs, and per-driver trip history.
@@ -81,7 +81,7 @@ PRUEBAS, NO SUPOSICIONES
 REPORTES QUE SIRVEN
 • Reporte PDF por cualquier rango de fechas: registro de viajes, millas por app, resumen de uso de negocio y una deducción estimada del IRS por millaje estándar.
 • Un mapa de ruta de cada viaje, con cada app gig dibujada en su color.
-• Comparte un código de un solo uso: tu preparador abre un reporte de solo lectura en la web, sin cuenta y sin instalar nada.
+• Comparte un código temporal que vence a los 15 minutos: tu preparador abre un reporte de solo lectura en la web, sin cuenta y sin instalar nada.
 
 PARA FLOTAS
 • Plantilla de conductores y vehículos, IDs de conductor e historial por conductor.

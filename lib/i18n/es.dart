@@ -1258,7 +1258,7 @@ const Map<String, String> esTexts = {
   'copy': 'Copiar',
   'copied_to_clipboard': 'Copiado al portapapeles',
   'generate_report_code_title': 'Código de acceso al reporte',
-  'generate_report_code_body': 'Genera un código de un solo uso para un rango de fechas de tus viajes. Tu contador lo ingresa en controlmiles.com/portal/verify para ver un resumen de millas de solo lectura -- sin login ni cuenta de su parte.',
+  'generate_report_code_body': 'Genera un código temporal para un rango de fechas de tus viajes. Vence en 15 minutos y se puede abrir dos veces. Tu contador lo ingresa en controlmiles.com/portal/verify para ver un resumen de millas de solo lectura -- sin login ni cuenta de su parte.',
   'generate_report_code_button': 'Generar código',
   'generate_report_code_your_code': 'Comparte este código con tu contador',
   'generate_report_code_expires_in': 'Expira en {mmss}',
