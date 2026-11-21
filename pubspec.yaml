@@ -131,7 +131,7 @@ dependencies:
   # Native handles the pmtiles:// protocol natively on Android/iOS as of
   # its 2026 releases -- no custom protocol handler needed, unlike the
   # web/JS build which needs the `pmtiles` npm package's Protocol shim.
-  maplibre_gl: ^0.26.0
+  maplibre_gl: ^0.28.0
   # Was already present transitively (via flutter_test etc.) but declaring
   # it directly since fleet_live_map_screen.dart imports it for firstOrNull
   # -- relying on an undeclared transitive resolution isn't guaranteed by

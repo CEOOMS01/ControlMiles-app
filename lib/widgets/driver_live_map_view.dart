@@ -288,11 +288,18 @@ class DriverLiveMapViewState extends State<DriverLiveMapView> {
   Future<void> _recenter(LatLng point) async {
     final controller = _mapController;
     if (controller == null) return;
-    if (!_didCenterOnce) {
-      _didCenterOnce = true;
-      await controller.moveCamera(CameraUpdate.newLatLngZoom(point, 16));
-    } else {
-      await controller.animateCamera(CameraUpdate.newLatLng(point));
+    // maplibre_gl 0.28 throws when a camera call cannot run (map being
+    // disposed, style not ready) instead of doing nothing; this runs from the
+    // GPS stream, so a throw here must not escape.
+    try {
+      if (!_didCenterOnce) {
+        _didCenterOnce = true;
+        await controller.moveCamera(CameraUpdate.newLatLngZoom(point, 16));
+      } else {
+        await controller.animateCamera(CameraUpdate.newLatLng(point));
+      }
+    } catch (e) {
+      debugPrint('[DriverLiveMapView] recenter: $e');
     }
   }
 
