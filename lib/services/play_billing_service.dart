@@ -25,6 +25,12 @@ import 'package:in_app_purchase_android/billing_client_wrappers.dart'
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'diag_log.dart';
+
+// 2026-11-20: purchases happen out of sight (Google's sheet, then a server check), so before the
+// store launch each step leaves one line in the diagnostic log (Settings sends it): product ids,
+// statuses and error codes only. Never the purchase token, the user id or an e-mail.
+
 enum PlayBillingEvent { verified, pending, canceled, failed, notConfigured }
 
 class PlayBillingService {
@@ -57,7 +63,10 @@ class PlayBillingService {
     _onVerified = onVerified;
     _subscription ??= _iap.purchaseStream.listen(
       _onPurchases,
-      onError: (Object e) => debugPrint('[PlayBilling] purchase stream error: $e'),
+      onError: (Object e) {
+        debugPrint('[PlayBilling] purchase stream error: $e');
+        DiagLog.add('billing stream error', {'type': e.runtimeType.toString()});
+      },
     );
     if (Supabase.instance.client.auth.currentUser != null) unawaited(refreshOwned());
   }
@@ -90,6 +99,7 @@ class PlayBillingService {
       _ownedSubscription = owned;
     } catch (e) {
       debugPrint('[PlayBilling] loading owned purchases failed: $e');
+      DiagLog.add('billing owned failed', {'type': e.runtimeType.toString()});
     }
   }
 
@@ -126,6 +136,13 @@ class PlayBillingService {
         if (annual == null || (_offerId(p) != null && _offerId(annual) == null)) annual = p;
       }
     }
+    // A missing price here means the Play Console product is not set up or not offered to this account.
+    DiagLog.add('billing prices', {
+      'monthly': monthly != null,
+      'annual': annual != null,
+      'notFound': response.notFoundIDs.length,
+      'error': response.error?.code,
+    });
     return (monthly: monthly, annual: annual);
   }
 
@@ -165,6 +182,7 @@ class PlayBillingService {
     if (userId == null) throw Exception('Not signed in');
 
     final owned = _ownedSubscription;
+    DiagLog.add('billing buy', {'product': product.id, 'change': owned != null, 'period': changePeriod});
     final PurchaseParam param = (owned != null && (owned.productID != product.id || changePeriod))
         ? GooglePlayPurchaseParam(
             productDetails: product,
@@ -188,6 +206,7 @@ class PlayBillingService {
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
+      DiagLog.add('billing purchase', {'product': purchase.productID, 'status': purchase.status.name});
       switch (purchase.status) {
         case PurchaseStatus.pending:
           events.value = PlayBillingEvent.pending;
@@ -197,6 +216,7 @@ class PlayBillingService {
           break;
         case PurchaseStatus.error:
           debugPrint('[PlayBilling] purchase error: ${purchase.error}');
+          DiagLog.add('billing purchase error', {'code': purchase.error?.code, 'source': purchase.error?.source});
           events.value = PlayBillingEvent.failed;
           break;
         case PurchaseStatus.purchased:
@@ -220,7 +240,9 @@ class PlayBillingService {
         },
       );
       final data = response.data;
+      DiagLog.add('billing server answered', {'product': purchase.productID, 'http': response.status, 'quiet': quiet});
       if (data is Map && data['configured'] == false) {
+        DiagLog.add('billing server not configured');
         events.value = PlayBillingEvent.notConfigured;
         return;
       }
@@ -232,6 +254,7 @@ class PlayBillingService {
       if (!quiet) events.value = PlayBillingEvent.verified;
     } catch (e) {
       debugPrint('[PlayBilling] verification failed: $e');
+      DiagLog.add('billing verify failed', {'product': purchase.productID, 'type': e.runtimeType.toString(), 'quiet': quiet});
       if (!quiet) events.value = PlayBillingEvent.failed;
     }
   }

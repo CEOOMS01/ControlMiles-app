@@ -1186,6 +1186,17 @@ class TrackingController {
 
     lastGpsTickAt = DateTime.now();
 
+    // 2026-11-20 (diagnostic of the S926 phone, 11/17-11/20): about once a minute the location
+    // plugin hands over the SAME fix again (same or older timestamp). The antifraud engine rejects it
+    // ("Invalid timestamp") with no harm to the miles, but each one was counted as a rejected GPS tick,
+    // which pushes the rejected/total ratio sealed with the trip (CGC) up for a trip that was driven
+    // normally, and it filled the diagnostic with noise. A repeat is not a bad fix: skip it quietly.
+    final lastTs = AntifraudEngine.lastTimestamp;
+    if (lastTs != null && !timestamp.isAfter(lastTs)) {
+      DiagLog.addSampled('tick repeat', const Duration(minutes: 10), const {}, 'repeated fix ignored');
+      return;
+    }
+
     final prevLat = AntifraudEngine.lastLat;
     final prevLng = AntifraudEngine.lastLng;
 
