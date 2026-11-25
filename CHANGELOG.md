@@ -11,6 +11,33 @@ Fleet; Fleet is now its own project (`../controlmiles-fleet`) with its own
 changelog. Fleet management and billing live on the web (controlmiles.com).
 The shared Supabase backend stays here (`supabase/`).
 
+## 1.3.39+79 - 2026-11-24
+
+- **A new version is a required update.** When a newer build exists the app
+  shows a full-screen "Update" notice that cannot be dismissed and stays if the
+  driver comes back from Google Play without updating. It checks every time the
+  app is opened and remembers the answer offline. It never covers a trip being
+  recorded. Publishing rule: set `latest_build` in `app_versions` only when the
+  build can already be downloaded from Google Play.
+- **The setup survives an update.** Testers lost something after every update:
+  - A profile answer with no row (or missing fields) no longer resets the plan,
+    the name or the ID: only what the server really sends changes
+    (`lib/logic/profile_merge.dart`).
+  - The first start after an update no longer signs out a driver who turned
+    "Stay signed in" off (the update closed the app, not the driver).
+  - The first start after an update checks the location permissions right away
+    (Android can reset one when it replaces the app) instead of waiting out the
+    24-hour quiet period, and writes the result to the diagnostic log.
+  - Reading the saved session from the Android Keystore is tried 3 times
+    before giving up, and a failed read never deletes the saved session.
+- **Diagnostic sent from Settings is now a short readable report**: one block
+  per trip (route, GPS gaps with the place's name, rejected ticks, how it
+  ended) instead of one line per GPS fix (339 KB / 3850 lines became 14 KB /
+  167 lines). GPS gaps are matched to `assets/map/gps_zones.json` (first zone:
+  Fort McHenry Tunnel, I-95); gaps with no name are listed so they can be added.
+- Tracking and Play billing fixes and the maplibre_gl 0.28.0 camera guards
+  (committed 2026-11-21 after build 78) ship in this build.
+
 ## 1.3.38+78 - 2026-11-17
 
 - Subscription screen: someone who already has Premium can now pick Monthly or

@@ -18,6 +18,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'diag_report.dart';
+
 class DiagLog {
   DiagLog._();
 
@@ -30,7 +32,10 @@ class DiagLog {
   /// Four hex digits, new for every Dart engine that starts (the app and the one Android
   /// wakes in the background each get their own): a line shows which one wrote it, so a
   /// log read afterwards can tell two engines apart.
-  static final String _engineId = Random().nextInt(0x10000).toRadixString(16).padLeft(4, '0');
+  static final String _engineId = Random()
+      .nextInt(0x10000)
+      .toRadixString(16)
+      .padLeft(4, '0');
 
   static Future<File> _open() async {
     final cached = _file;
@@ -49,11 +54,17 @@ class DiagLog {
   /// file). Now the whole line goes out in ONE synchronous write on an append-mode
   /// handle: nothing else in this isolate can run in between, and a single append
   /// write is not split by another process.
-  static Future<void> add(String event, [Map<String, Object?> data = const {}]) async {
+  static Future<void> add(
+    String event, [
+    Map<String, Object?> data = const {},
+  ]) async {
     try {
       final f = await _open();
-      final extra = data.isEmpty ? '' : ' ${data.entries.map((e) => '${e.key}=${e.value}').join(' ')}';
-      final line = '${DateTime.now().toIso8601String()} [$tag:$_engineId] $event$extra\n';
+      final extra = data.isEmpty
+          ? ''
+          : ' ${data.entries.map((e) => '${e.key}=${e.value}').join(' ')}';
+      final line =
+          '${DateTime.now().toIso8601String()} [$tag:$_engineId] $event$extra\n';
       final raf = f.openSync(mode: FileMode.append);
       try {
         raf.writeFromSync(utf8.encode(line));
@@ -118,20 +129,42 @@ class DiagLog {
       if (!await f.exists()) return false;
       final content = await f.readAsString();
       if (content.trim().isEmpty) return false;
-      final body = content.length > 590000 ? content.substring(content.length - 590000) : content;
+      final rawBody = content.length > 590000
+          ? content.substring(content.length - 590000)
+          : content;
 
       // The in-flight guard above does not cover a second tap a second or two
       // after the first one finished (2026-11-08..10: pairs of identical rows
       // 1-2 s apart). The server already has exactly this text: say so instead of
       // inserting it again.
-      final hash = sha256.convert(utf8.encode(body)).toString();
+      final hash = sha256.convert(utf8.encode(rawBody)).toString();
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getString(_kLastUploadHash) == hash) return true;
 
       final info = await PackageInfo.fromPlatform();
+      final appVersion = '${info.version}+${info.buildNumber}';
+      final device = Platform.operatingSystemVersion;
+
+      // What is sent is the readable report (diag_report.dart): a block per trip, not
+      // one line per GPS fix. The raw file stays on the phone. If the report cannot be
+      // built, the raw text goes as before so a diagnostic is never lost.
+      var body = rawBody;
+      try {
+        final zones = await DiagReport.loadZones();
+        final report = DiagReport.build(
+          rawBody,
+          appVersion: appVersion,
+          device: device,
+          zones: zones,
+        );
+        if (report.trim().isNotEmpty) body = report;
+      } catch (e) {
+        debugPrint('[DiagLog] report failed, sending the raw log: $e');
+      }
+
       await Supabase.instance.client.from('diagnostic_logs').insert({
-        'app_version': '${info.version}+${info.buildNumber}',
-        'device': Platform.operatingSystemVersion,
+        'app_version': appVersion,
+        'device': device,
         'content': body,
       });
       await prefs.setString(_kLastUploadHash, hash);

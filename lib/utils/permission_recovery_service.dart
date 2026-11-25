@@ -73,7 +73,19 @@ class PermissionRecoveryService {
   static const Duration _nagCooldown = Duration(hours: 24);
   static bool _nagShownThisSession = false;
 
-  static Future<void> showRecoveryDialogThrottled(BuildContext context) async {
+  /// [afterUpdate]: the first start of a new build. Android can reset a permission when
+  /// it replaces the app, and the 24-hour quiet period would hide that for a day
+  /// (2026-11-24, testers: "after every update a permission is off"). Shown once.
+  static Future<void> showRecoveryDialogThrottled(BuildContext context, {bool afterUpdate = false}) async {
+    if (afterUpdate) {
+      if (_nagShownThisSession) return;
+      _nagShownThisSession = true;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_lastNagKey, DateTime.now().millisecondsSinceEpoch);
+      if (!context.mounted) return;
+      await showRecoveryDialog(context);
+      return;
+    }
     if (_nagShownThisSession) return;
 
     final prefs = await SharedPreferences.getInstance();

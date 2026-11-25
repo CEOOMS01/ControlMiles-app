@@ -18,7 +18,7 @@ import '../data/irs_rates.dart';
 import '../widgets/purpose_prompt.dart';
 import '../widgets/work_mode_bar.dart';
 import '../services/diag_log.dart';
-import '../services/app_update_service.dart';
+import '../services/update_guard.dart';
 import '../services/trip_address_service.dart';
 import '../utils/permission_gate.dart';
 import '../utils/permission_recovery_service.dart';
@@ -645,7 +645,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     unawaited(TripAddressService.backfillRecent());
     _askPurposeIfNeeded();
     _armDetection();
-    if (mounted) unawaited(AppUpdateService.checkAndPrompt(context));
+    // The update notice is no longer a dialog here: it is the full-screen UpdateGate
+    // (widgets/update_gate.dart), which cannot be skipped.
+    if (mounted && UpdateGuard.updatedThisLaunch) unawaited(_checkPermissionsAfterUpdate());
+  }
+
+  /// First start of a new build (2026-11-24): Android can reset a permission when it
+  /// replaces the app, and the passive reminder is quiet for 24 hours. Check now, say
+  /// so once, and write what was found to the diagnostic log.
+  Future<void> _checkPermissionsAfterUpdate() async {
+    try {
+      final ok = await PermissionRecoveryService.hasCriticalPermissions();
+      unawaited(DiagLog.add('permissions after update', {'critical_ok': ok}));
+      if (!ok && mounted) {
+        await PermissionRecoveryService.showRecoveryDialogThrottled(context, afterUpdate: true);
+      }
+    } catch (e) {
+      debugPrint('[Dashboard] permission check after update failed: $e');
+    }
   }
 
   /// Premium: automatic detection stays on by itself (no button).

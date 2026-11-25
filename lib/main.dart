@@ -16,6 +16,7 @@ import 'observers/app_lifecycle_observer.dart';
 import 'services/supabase_bootstrap.dart';
 import 'services/diag_log.dart';
 import 'services/cgc_monitor_service.dart';
+import 'services/update_guard.dart';
 
 // Rutas, Estado e Internacionalización
 import 'routes/app_routes.dart';
@@ -34,6 +35,7 @@ import 'services/notification_service.dart';
 // Screens & Views
 import 'services/startup_router.dart';
 import 'widgets/brand_loader.dart';
+import 'widgets/update_gate.dart';
 import 'views/welcome_page.dart';
 import 'screens/login_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -138,6 +140,10 @@ Future<void> main() async {
     (_) => startupMark('supabase ready'),
     onError: (Object e) => debugPrint('[Main] Supabase init failed: $e'),
   ));
+
+  // Is this the first start of a newer build? (see services/update_guard.dart) Read
+  // before any screen decides where to go; it is one small preferences read.
+  await UpdateGuard.noteLaunch();
 
   startupMark('before runApp');
   // Inyectar el Estado Global
@@ -293,7 +299,8 @@ class _ControlMilesAppState extends State<ControlMilesApp> {
         return ScreenFitScope(
           child: Directionality(
             textDirection: appState.currentLanguage.textDirection,
-            child: child!,
+            // Every new version is a required update (widgets/update_gate.dart).
+            child: UpdateGate(child: child!),
           ),
         );
       },

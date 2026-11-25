@@ -1,0 +1,13 @@
+{
+  "_about": "Places where GPS is known to drop (tunnels, parking decks). A diagnostic names a GPS gap that falls inside one of them. Each diagnostic lists the gaps that matched no zone: name them (OpenStreetMap, tunnel=yes) and add them here. Coordinates are the place's centre; radius_m covers its length.",
+  "zones": [
+    {
+      "name": "Fort McHenry Tunnel (I-95)",
+      "kind": "tunnel",
+      "lat": 39.2624,
+      "lng": -76.5781,
+      "radius_m": 1200,
+      "source": "OpenStreetMap ways 23014443 and 23014446, checked 2026-11-24"
+    }
+  ]
+}

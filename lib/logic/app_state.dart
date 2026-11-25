@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../i18n/app_texts.dart';
 import '../models/gig_app.dart';
+import 'profile_merge.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_bootstrap.dart';
 import '../services/auth_service.dart';
@@ -247,21 +248,33 @@ class AppState extends ChangeNotifier {
           .eq('id', user.id)
           .maybeSingle();
 
-      final String? newDisplayId = data?['display_id'] as String?;
-      final String? newFirstName = data?['first_name'] as String?;
-      final String newAccountType = data?['account_type'] as String? ?? 'gig';
-      final bool newPremiumEntitled = data?['premium_entitled'] as bool? ?? false;
-      final bool newBaseEntitled = data?['base_entitled'] as bool? ?? false;
-      // IRS Fase 3 (2026-08-28): which deduction method the driver is
-      // actually using -- 'standard' is the only one ControlMiles
-      // computes figures for today, and the only one the report's
-      // disclaimer text can honestly claim.
-      final String newMileageMethod = data?['mileage_method'] as String? ?? 'standard';
+      // 2026-11-24: an answer with no row, or without a field, no longer resets what the
+      // phone already knows (plan, name, id): testers lost their setup after updates
+      // because those defaults were saved over the good values. See profile_merge.dart.
+      // mileage_method: 'standard' is the only method ControlMiles computes figures for
+      // (IRS Fase 3, 2026-08-28), so it is also what a phone that never knew one starts with.
+      final merged = mergeProfile(
+        ProfileSnapshot(
+          displayId: _userDisplayId,
+          firstName: _firstName,
+          accountType: _accountType,
+          premiumEntitled: _premiumEntitled,
+          baseEntitled: _baseEntitled,
+          mileageMethod: _mileageMethod,
+          accountCreatedAt: _accountCreatedAt,
+          tierEnforcementExempt: _tierEnforcementExempt,
+        ),
+        data,
+      );
+      final String? newDisplayId = merged.displayId;
+      final String? newFirstName = merged.firstName;
+      final String newAccountType = merged.accountType;
+      final bool newPremiumEntitled = merged.premiumEntitled;
+      final bool newBaseEntitled = merged.baseEntitled;
+      final String newMileageMethod = merged.mileageMethod;
       // Subscription-tier enforcement (2026-09-04) -- see isFreeTrialExpired.
-      final DateTime? newAccountCreatedAt = data?['created_at'] != null
-          ? DateTime.tryParse(data!['created_at'] as String)
-          : null;
-      final bool newTierEnforcementExempt = data?['tier_enforcement_exempt'] as bool? ?? false;
+      final DateTime? newAccountCreatedAt = merged.accountCreatedAt;
+      final bool newTierEnforcementExempt = merged.tierEnforcementExempt;
       bool changed = _userDisplayId != newDisplayId ||
           _firstName != newFirstName ||
           _accountType != newAccountType ||

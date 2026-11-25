@@ -12,12 +12,42 @@
 // flutter_secure_storage instead (Android Keystore / iOS Keychain), so a
 // stolen device's app-data backup no longer contains a usable session.
 
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'diag_log.dart';
 
 const _secureStorage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
+
+/// Reads the saved session, trying again before giving up (2026-11-24). Right after an
+/// update or a phone start the Android Keystore can answer with an error for a moment;
+/// a single failed read looked like "no session" and sent the driver to sign in again,
+/// which cleared the setup. A read that keeps failing returns [fallback]; it never
+/// deletes what is saved, so the next start can still read it.
+Future<T> _readWithRetry<T>(Future<T> Function() read, T fallback) async {
+  for (var attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await read();
+    } catch (e) {
+      debugPrint('[SecureStorage] read failed (try $attempt of 3): $e');
+      if (attempt == 3) {
+        unawaited(
+          DiagLog.add('session storage read failed', {
+            'type': e.runtimeType.toString(),
+          }),
+        );
+      } else {
+        await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+      }
+    }
+  }
+  return fallback;
+}
 
 /// Replaces supabase_flutter's default SharedPreferencesLocalStorage.
 /// Same session-persistence contract (see LocalStorage in
@@ -33,12 +63,18 @@ class SecureSupabaseLocalStorage extends LocalStorage {
 
   @override
   Future<bool> hasAccessToken() async {
-    return await _secureStorage.containsKey(key: persistSessionKey);
+    return await _readWithRetry(
+      () => _secureStorage.containsKey(key: persistSessionKey),
+      false,
+    );
   }
 
   @override
   Future<String?> accessToken() async {
-    return _secureStorage.read(key: persistSessionKey);
+    return _readWithRetry<String?>(
+      () => _secureStorage.read(key: persistSessionKey),
+      null,
+    );
   }
 
   @override

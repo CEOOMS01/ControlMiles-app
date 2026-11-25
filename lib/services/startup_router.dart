@@ -13,6 +13,7 @@ import '../utils/permission_recovery_service.dart';
 import '../routes/app_routes.dart';
 import 'local_storage_service.dart';
 import 'login_prefs.dart';
+import 'update_guard.dart';
 
 /// Route to open on a cold start. Never throws: any failure falls back to login.
 Future<String> resolveStartRoute(AppState appState) async {
@@ -37,7 +38,10 @@ Future<String> resolveStartRoute(AppState appState) async {
     // cold start of the app, i.e. the app was closed -- so the session
     // ends here. Never while a trip is being recorded: that trip (and
     // the background tracking behind it) must not be cut off.
+    // Nor on the first start after an update (2026-11-24): the update closed the app,
+    // the driver did not, and signing out wiped the setup testers kept losing.
     if (appState.isAuthenticated &&
+        !UpdateGuard.updatedThisLaunch &&
         !await LoginPrefs.staySignedIn() &&
         !await LocalStorageService.hasActiveTrip()) {
       await appState.signOutAndClear();
